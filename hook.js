@@ -85,7 +85,7 @@
 			
 			refresher = setInterval(function() {
 				refreshEditableElements(document);
-			}, 500);
+			}, 400);
 		}
 	}
 
