@@ -302,7 +302,6 @@ var Map = function(one, two) {
 						sel.replace(r.newJamo);
 					}
 					
-					console.log("Keypress");
 					event.preventDefault();
 					return false;
 				},
