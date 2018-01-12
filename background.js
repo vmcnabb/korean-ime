@@ -18,7 +18,7 @@
 			switch (request.action) {
 				case "toggle":
 					setState(sender.tab, true);
-					sendResponse({ status: accepted });
+					sendResponse({ status: "accepted" });
 					break;
 			}
 		}
