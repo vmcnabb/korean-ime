@@ -30,8 +30,10 @@ var TwoWayMap = function(one, two) {
 
 var Jamo = function(i,m,f) {
 	return {
-		initial: i || '', medial: m || '', final: f || ''
-	}
+		initial: i || '',
+		medial: m || '',
+		final: f || ''
+	};
 }
 
 var HangeulMappings = function() {
@@ -94,7 +96,7 @@ var HangeulMappings = function() {
 		}
 	}
 	
-	this.deconstructJamo = function(char,separateDigraphs) {
+	this.deconstructJamo = function(char, separateDigraphs) {
 		var z = char.charCodeAt(0) - 44032;
 		if(z < 0) return new Jamo(char);
 		
@@ -114,11 +116,10 @@ var HangeulMappings = function() {
 
 var SelectionEditor = function(element) {
 	var selected;
-	// next three functions work in Firefox / Chrome / Safari, but not IE
 	var replace = this.replace = function(text) {
 		if(element.selectionStart != undefined) {
-			var start = element.selectionStart;
-			var end = element.selectionEnd;
+			const start = element.selectionStart;
+			let end = element.selectionEnd;
 			element.value = element.value.substring(0, start) +
 				text +
 				element.value.substring(end, element.value.length);
@@ -127,14 +128,14 @@ var SelectionEditor = function(element) {
 			element.selectionEnd = end;
 
 		} else {
-			var selection = element.ownerDocument.getSelection();
-			var range = selection.getRangeAt(0);
+			const selection = element.ownerDocument.getSelection();
+			const range = selection.getRangeAt(0);
 			
 			range.deleteContents();
 			range.insertNode(document.createTextNode(text));
 			selection.removeAllRanges();
 			selection.addRange(range);
-			selected = { 'range': range, 'selection': selection };
+			selected = { range, selection };
 		}
 	}
 
