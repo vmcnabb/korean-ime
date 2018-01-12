@@ -1,17 +1,14 @@
-(function() {
-	console.log('initialising popup');
-	
-	var original = document.getElementById('original');
-	var roman = document.getElementById('romanized');
-	var romanize = document.getElementById('romanize');
-	var hc = new HangeulConverter();
-	
-	var he = new HangeulEditor(original);
+(() => {
+	var original = document.getElementById('original'),
+		roman = document.getElementById('romanized'),
+		romanizeButton = document.getElementById('romanize'),
+		hc = new HangeulConverter(),
+		he = new HangeulEditor(original);
+
 	he.hook();
 
-	chrome.extension.onRequest.addListener(function(request,sender,callback) {
+	chrome.extension.onRequest.addListener((request,sender,callback) => {
 		var response = { success: true };
-		console.log('received request');
 		
 		switch(request.action) {
 			case 'fill':
@@ -28,7 +25,7 @@
 		return response;
 	});
 	
-	romanize.onclick = function() {
+	romanizeButton.onclick = () => {
 		roman.innerText = hc.romanize(original.innerText);
-	}
+	};
 })();
