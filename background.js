@@ -48,14 +48,16 @@
 						height: 350
 					},
 					function (window) {
-						chrome.tabs.sendRequest(
-							window.tabs[0].id,
-							{
-								action: 'fill',
-								original: event.selectionText,
-								roman: romanText
-							}
-						);
+						setTimeout(() => {
+							chrome.tabs.sendRequest(
+								window.tabs[0].id,
+								{
+									action: 'fill',
+									original: event.selectionText,
+									roman: romanText
+								}
+							);
+						}, 100);
 					}
 				);
 			}
