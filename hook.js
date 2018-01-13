@@ -1,12 +1,12 @@
-﻿// Copyright © 2012 Vincent McNabb
-(function() {
+﻿// Copyright © 2012-2018 Vincent McNabb
+(ime => {
 	var state = {
 		enabled: false
 	};
 
 	chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 		var response = { state };
-		
+
 		switch (request.action) {
 			case 'disable':
 				disable();
@@ -21,8 +21,9 @@
 				
 			case 'insertAfter':
 				let element = getActiveElement(document);
+
 				if (element) {
-					var sel = new SelectionEditor(element);
+					const sel = new ime.SelectionEditor(element);
 					sel.deselect();
 					sel.insert(request.data);
 					response.wasSuccessful = true;
@@ -59,24 +60,24 @@
 	
 	var processElement = function(el) {
 		// assuming an @contenteditable, textarea, or any type of input
-		if((el.tagName.toLowerCase() === 'input' && el.type.toLowerCase() !== 'text')) return;
+		if ((el.tagName.toLowerCase() === 'input' && el.type.toLowerCase() !== 'text')) return;
 		
 		var heId = el.dataset.heId = el.dataset.heId || nextId++;
 		var ee = editableElements[heId];
 		
 		if(!ee) {
-			var he = new HangeulEditor(el);
+			var he = new ime.HangeulEditor(el);
 			ee = editableElements[heId] = {
 				element: el,
 				editor: he
 			};
 		}
 		
-		if(ee.editor.isHooked() != state.enabled) {
+		if(ee.editor.isActive() != state.enabled) {
 			if(state.enabled)
-				ee.editor.hook();
+				ee.editor.activate();
 			else
-				ee.editor.unhook();
+				ee.editor.deactivate();
 		}
 	}
 	
@@ -92,7 +93,7 @@
 		return true;
 	}
 	
-	var refreshInterval;
+	let refreshInterval;
 	function enable () {
 		if(!state.enabled) {
 			state.enabled = true;
@@ -108,7 +109,7 @@
 		if (state.enabled) {
 			state.enabled = false;
 			clearInterval(refreshInterval);
-			Object.keys(editableElements).forEach(key => editableElements[key].editor.unhook());
+			Object.keys(editableElements).forEach(key => editableElements[key].editor.deactivate());
 		}
 	}
-})();
+})(window.koreanIme);

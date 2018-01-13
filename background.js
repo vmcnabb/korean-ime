@@ -1,7 +1,7 @@
 // Copyright © 2012-2018 Vincent McNabb
-(() => {
+(ime => {
 	let tabStates = {};
-	const converter = new HangeulConverter();
+	const converter = ime.converter;
 
 	chrome.tabs.onUpdated.addListener((tabid, changeInfo, tab) => {
 		setState(tab);
@@ -33,10 +33,13 @@
 
 			if (event.editable) {
 				// insert the romanized text after the hangeul
-				chrome.tabs.sendRequest(tab.id, {
-					action: 'insertAfter',
-					data: romanText
-				});
+				chrome.tabs.sendMessage(
+					tab.id,
+					{
+						action: 'insertAfter',
+						data: romanText
+					}
+				);
 
 			} else {
 				// put text into popup window
@@ -81,4 +84,4 @@
 			}
 		);
 	}
-})();
+})(window.koreanIme);
