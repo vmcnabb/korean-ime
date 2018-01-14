@@ -26,6 +26,8 @@
             "js": [
                 "mappings.js",
                 "composition.js",
+                "inputSelectionEditor.js",
+                "contentEditableSelectionEditor.js",
                 "selectionEditor.js",
                 "KoreaIME.js",
                 "hook.js"
