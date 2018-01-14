@@ -74,7 +74,7 @@
 		
 		chrome.pageAction.setIcon({
 			tabId: tab.id,
-			path: tabState.enabled ? 'icon16h.png' : 'icon16a.png'
+			path: tabState.enabled ? 'images/icon16h.png' : 'images/icon16a.png'
 		});
 
 		chrome.tabs.sendMessage(
