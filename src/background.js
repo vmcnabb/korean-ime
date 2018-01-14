@@ -45,10 +45,10 @@
 				// put text into popup window
 				chrome.windows.create(
 					{
-						url: 'popup.html',
+						url: 'popup-converter/popup-converter.html',
 						type: 'popup',
-						width: 540,
-						height: 350
+						width: 600,
+						height: 400
 					},
 					function (window) {
 						setTimeout(() => {
