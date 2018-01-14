@@ -4,24 +4,35 @@
 		<meta name="google" value="notranslate" />
 		<title>Korean IME Tools KIT</title>
 		<style>
+			html {
+				font-size: 1.2em;
+			}
+
+			body {
+				padding: 0;
+				margin: 1em;
+			}
+
 			div[contenteditable] {
 				height: 100px;
 				border: 1px solid #442244;
-				margin-left: 3px;
-				margin-right: 3px;
 				border-radius: 3px;
-				padding: 2px;
+				padding: 0.5em;
 				overflow: auto;
 			}
 			
 			h3 {
-				margin-bottom: 0;
-				margin-top: 6pt;
-				font-size: 0.95em;
+				margin-top: 1em;
+				margin-bottom: 0.5em;
+				font-size: 1em;
 				font-family: sans-serif;
 			}
 			
 		</style>
+		<script src="mappings.js"></script>
+		<script src="composition.js"></script>
+		<script src="hangeulConverter.js"></script>
+		<script src="selectionEditor.js"></script>
 		<script src="KoreaIME.js"></script>
 	</head>
 	<body>

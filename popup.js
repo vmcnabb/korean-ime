@@ -1,31 +1,28 @@
-(() => {
-	chrome.extension.onRequest.addListener((request,sender,callback) => {
-		var response = { success: true };
+(ime => {
+    chrome.extension.onRequest.addListener((request, sender, callback) => {
+        var response = { success: true };
 
-		switch(request.action) {
-			case 'fill':
-				original.innerText = request.original;
-				roman.innerText = request.roman;
-				break;
-				
-			default:
-				response.success = false;
-				response.error = 'Invalid command';
-				break;
-		}
+        switch(request.action) {
+            case 'fill':
+                original.innerText = request.original;
+                roman.innerText = request.roman;
+                break;
+                
+            default:
+                response.success = false;
+                response.error = 'Invalid command';
+                break;
+        }
 		
-		return response;
-	});
+		callback(response);
+    });
 
-	var original = document.getElementById('original'),
-		roman = document.getElementById('romanized'),
-		romanizeButton = document.getElementById('romanize'),
-		hc = new HangeulConverter(),
-		he = new HangeulEditor(original);
+    var original = document.getElementById('original'),
+        roman = document.getElementById('romanized'),
+        romanizeButton = document.getElementById('romanize'),
+        he = new ime.HangeulEditor(original);
 
-	he.hook();
+    he.activate();
 
-	romanizeButton.onclick = () => {
-		roman.innerText = hc.romanize(original.innerText);
-	};
-})();
+    romanizeButton.onclick = () => roman.innerText = ime.converter.romanize(original.innerText);
+})(window.koreanIme);
