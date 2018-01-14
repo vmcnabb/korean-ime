@@ -15,7 +15,7 @@ This release included major structural changes that should make it easier to imp
 ### Release Date
 2018-01-13
 ### Fixes
-* Allow hanguel to be edited in various places where it wouldn't before, including Gmail Chat.
+* Allow hangeul to be edited in various places where it wouldn't before, including Gmail Chat.
 * Prevent Gmail deselecting the morpheme block when using Hangeul as the first character in an email.
 ### Features
 * Allow user to toggle between Latin/Hangeul input by using the right hand Alt, or Alt-Gr key.
