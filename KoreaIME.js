@@ -67,8 +67,14 @@
                 const keycode = event.keyCode;
 
                 if (!compositor.isCompositing()) {
-                    // we're not editing a block.
-                    return true;
+                    if (event.shiftKey && keycode === keyCodes.Backspace) {
+                        const char = editor.selectPreviousCharacter();
+                        compositor.setCharacter(char);
+
+                    } else {
+                        // we're not editing a block.
+                        return true;
+                    }
                 }
                 
                 if (keycode >= keyCodes.A && keycode <= keyCodes.Z || keycode >= keyCodes.Shift && keycode <= keyCodes.Alt) {
@@ -77,7 +83,6 @@
                     return true; 
                     
                 } else if (keycode == keyCodes.Backspace) { // backspace
-                    // remove last jamo entered
                     const block = compositor.removeLastJamo();
                     if (block) {
                         editor.replace(block);
@@ -120,7 +125,7 @@
             
             while (listeners.length) {
                 let listener = listeners.pop();
-                element.removeEventListener(listener.event, listener.fn, listener.bool);
+                element.removeEventListener(listener.event, listener.fn, true);
             }
 
             isActive = false;
@@ -128,8 +133,8 @@
         };
 
         function addListener (event, fn) {
-            element.addEventListener(event,fn,true);
-            listeners.push({ event, fn, bool: true });
+            element.addEventListener(event, fn, true);
+            listeners.push({ event, fn });
         }
     };
 })(window.koreanIme);

@@ -76,6 +76,10 @@
             return block.toChar();
         };
 
+        this.setCharacter = char => {
+            block = Block.fromChar(char, true);
+        };
+
         this.isCompositing = () => block.initial.length > 0;
 
         function addInitialJamo (jamo) {
