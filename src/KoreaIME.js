@@ -1,4 +1,4 @@
-﻿// Copyright © 2009-2012 Vincent McNabb
+﻿// Copyright © 2009-2018 Vincent McNabb
 
 // Hangeul Editor
 // Created: 29 May 2009 
