@@ -4,9 +4,9 @@
     "manifest_version": 2,
     "description": "Allows one to type in Korean Hangeul and includes a rudimentary romanization tool.",
     "icons": {
-        "16": "icon16h.png",
-        "48": "icon48.png",
-        "128": "icon128.png"
+        "16": "images/icon16h.png",
+        "48": "images/icon48.png",
+        "128": "images/icon128.png"
     },
     "background": {
         "scripts": [
@@ -17,7 +17,7 @@
         ]
     },
     "page_action": {
-        "default_icon": "icon16a.png",
+        "default_icon": "images/icon16a.png",
         "default_title": "Hangeul Tools"
     },
     "content_scripts": [
