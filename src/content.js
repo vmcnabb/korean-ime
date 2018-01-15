@@ -26,9 +26,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
             if (element) {
                 const sel = SelectionEditorFactory.createSelectionEditor(element);
-                sel.deselect();
-                sel.insert(request.data);
-                response.wasSuccessful = true;
+                if (sel) {
+                    sel.deselect();
+                    sel.insert(request.data);
+                    response.wasSuccessful = true;
+
+                } else {
+                    response.wasSuccessful = false;
+                }
 
             } else {
                 response.wasSuccessful = false;
