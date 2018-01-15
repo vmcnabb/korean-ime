@@ -13,3 +13,12 @@ You can [install Korean IME extension from the Chrome Web Store](https://chrome.
   * You can remove the last jamo from an existing character by positioning the caret just after the character and typing Shift+Backspace.
 * Convert Hanguel text into its Latin equivalent.
   * Select the text to convert, right click, and choose "Romanize" from the menu.
+
+## Development Dependencies
+* Packaging script dependencies:
+  * Windows
+  * Webpack installed globally or locally (easiest through npm)
+    * npm install webpack -g
+  * 7-Zip in path
+
+It should be fairly easy to modify the script to use Grunt or to use different dependencies.
