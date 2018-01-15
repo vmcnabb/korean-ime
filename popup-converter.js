@@ -1,5 +1,4 @@
 import { HangeulEditor } from "../hangeulEditor.js";
-import { romanize } from "../hangeulConverter.js";
 
 chrome.extension.onRequest.addListener((request, sender, callback) => {
     const response = { success: true };
@@ -26,4 +25,4 @@ const original = document.getElementById('original'),
 
 he.activate();
 
-romanizeButton.onclick = () => roman.innerText = romanize(original.innerText);
+romanizeButton.onclick = () => roman.innerText = ime.converter.romanize(original.innerText);

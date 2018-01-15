@@ -1,87 +1,86 @@
 // Copyright © 2012-2018 Vincent McNabb
-(ime => {
-	let tabStates = {};
-	const converter = ime.converter;
+import { romanize } from "./hangeulConverter.js";
 
-	chrome.tabs.onUpdated.addListener((tabid, changeInfo, tab) => {
-		setState(tab);
-		chrome.pageAction.show(tabid);
-	});
+let tabStates = {};
 
-	// icon is clicked
-	chrome.pageAction.onClicked.addListener(tab => {
-		setState(tab, true);
-	});
+chrome.tabs.onUpdated.addListener((tabid, changeInfo, tab) => {
+    setState(tab);
+    chrome.pageAction.show(tabid);
+});
 
-	chrome.runtime.onMessage.addListener(
-		function (request, sender, sendResponse) {
-			switch (request.action) {
-				case "toggle":
-					setState(sender.tab, true);
-					sendResponse({ status: "accepted" });
-					break;
-			}
-		}
-	);
+// icon is clicked
+chrome.pageAction.onClicked.addListener(tab => {
+    setState(tab, true);
+});
 
-	chrome.contextMenus.create({
-		type: 'normal',
-		title: '&Romanize',
-		contexts: ['selection'],
-		onclick: (event, tab) => {
-			const romanText = converter.romanize(event.selectionText);
+chrome.runtime.onMessage.addListener(
+    function (request, sender, sendResponse) {
+        switch (request.action) {
+            case "toggle":
+                setState(sender.tab, true);
+                sendResponse({ status: "accepted" });
+                break;
+        }
+    }
+);
 
-			if (event.editable) {
-				// insert the romanized text after the hangeul
-				chrome.tabs.sendMessage(
-					tab.id,
-					{
-						action: 'insertAfter',
-						data: romanText
-					}
-				);
+chrome.contextMenus.create({
+    type: 'normal',
+    title: '&Romanize',
+    contexts: ['selection'],
+    onclick: (event, tab) => {
+        const romanText = romanize(event.selectionText);
 
-			} else {
-				// put text into popup window
-				chrome.windows.create(
-					{
-						url: 'popup-converter/popup-converter.html',
-						type: 'popup',
-						width: 600,
-						height: 400
-					},
-					function (window) {
-						setTimeout(() => {
-							chrome.tabs.sendRequest(
-								window.tabs[0].id,
-								{
-									action: 'fill',
-									original: event.selectionText,
-									roman: romanText
-								}
-							);
-						}, 100);
-					}
-				);
-			}
-		}
-	});
+        if (event.editable) {
+            // insert the romanized text after the hangeul
+            chrome.tabs.sendMessage(
+                tab.id,
+                {
+                    action: 'insertAfter',
+                    data: romanText
+                }
+            );
 
-	function setState (tab, toggle) {
-		var tabState = tabStates[tab.id] = tabStates[tab.id] || { enabled: false };
-		
-		if (toggle) tabState.enabled = !tabState.enabled;
-		
-		chrome.pageAction.setIcon({
-			tabId: tab.id,
-			path: tabState.enabled ? 'images/icon16h.png' : 'images/icon16a.png'
-		});
+        } else {
+            // put text into popup window
+            chrome.windows.create(
+                {
+                    url: 'popup-converter/popup-converter.html',
+                    type: 'popup',
+                    width: 600,
+                    height: 400
+                },
+                function (window) {
+                    setTimeout(() => {
+                        chrome.tabs.sendRequest(
+                            window.tabs[0].id,
+                            {
+                                action: 'fill',
+                                original: event.selectionText,
+                                roman: romanText
+                            }
+                        );
+                    }, 100);
+                }
+            );
+        }
+    }
+});
 
-		chrome.tabs.sendMessage(
-			tab.id,
-			{
-				action: tabState.enabled ? 'enable' : 'disable'
-			}
-		);
-	}
-})(window.koreanIme);
+function setState (tab, toggle) {
+    var tabState = tabStates[tab.id] = tabStates[tab.id] || { enabled: false };
+    
+    if (toggle) tabState.enabled = !tabState.enabled;
+    
+    chrome.pageAction.setIcon({
+        tabId: tab.id,
+        path: tabState.enabled ? 'images/icon16h.png' : 'images/icon16a.png'
+    });
+
+    chrome.tabs.sendMessage(
+        tab.id,
+        {
+            action: tabState.enabled ? 'enable' : 'disable'
+        }
+    );
+}
