@@ -15,12 +15,12 @@ export function ContentEditableSelectionEditor (element) {
     }
 
     const deselect = this.deselect = function() {
-        if (selected) {
-            selected.range.collapse(false);
-            selected.selection.removeAllRanges();
-            selected.selection.addRange(selected.range);
-            selected = undefined;
-        }
+        const selection = element.ownerDocument.getSelection();
+        const range = selection.getRangeAt(0);
+        range.collapse(false);
+        selection.removeAllRanges();
+        selection.addRange(range);
+        selected = undefined;
     }
 
     this.restore = () => {
