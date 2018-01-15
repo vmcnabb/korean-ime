@@ -14,7 +14,7 @@ You can [install Korean IME extension from the Chrome Web Store](https://chrome.
 * Convert Hanguel text into its Latin equivalent.
   * Select the text to convert, right click, and choose "Romanize" from the menu.
 
-## [Change Log](./CHANGELOG.MD)
+## [Change Log](CHANGELOG.md)
 
 ## Development Dependencies
 * Packaging script dependencies:
