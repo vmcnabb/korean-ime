@@ -1,6 +1,6 @@
 rmdir /s /q dist
 
-call webpack src/hook.js dist/content.js
+call webpack src/content.js dist/content.js
 call webpack src/background.js dist/background.js
 call webpack src/popup-converter/popup-converter.js dist/popup-converter/popup-converter.js
 
