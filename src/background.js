@@ -5,11 +5,11 @@ let tabStates = {};
 
 chrome.tabs.onUpdated.addListener((tabid, changeInfo, tab) => {
     setState(tab);
-    chrome.pageAction.show(tabid);
+    chrome.browserAction.enable(tabid);
 });
 
 // icon is clicked
-chrome.pageAction.onClicked.addListener(tab => {
+chrome.browserAction.onClicked.addListener(tab => {
     setState(tab, true);
 });
 
@@ -72,7 +72,7 @@ function setState (tab, toggle) {
     
     if (toggle) tabState.enabled = !tabState.enabled;
     
-    chrome.pageAction.setIcon({
+    chrome.browserAction.setIcon({
         tabId: tab.id,
         path: tabState.enabled ? 'images/icon16h.png' : 'images/icon16a.png'
     });
