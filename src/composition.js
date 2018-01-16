@@ -29,9 +29,8 @@ export class Block {
 
     /**
      * @param {string} character 
-     * @param {boolean} shouldSeparateDigraphs 
      */
-    static fromChar (character, shouldSeparateDigraphs) {
+    static fromChar (character, separateMedialDigraph = true, separateFinalDigraph = true) {
         let z = character.charCodeAt(0) - 44032;
         
         if (z < 0) return new Block(character);
@@ -44,8 +43,8 @@ export class Block {
         
         return new Block(
             initials[a],
-            (shouldSeparateDigraphs ? compoundVowels[medials[b]] : null) || medials[b],
-            (shouldSeparateDigraphs ? consonantDigraphs[finals[c]] : null) || finals[c]
+            (separateMedialDigraph ? compoundVowels[medials[b]] : null) || medials[b],
+            (separateFinalDigraph ? consonantDigraphs[finals[c]] : null) || finals[c]
         );
     }
 }
@@ -82,7 +81,7 @@ export function Compositor () {
      * @param {string} char
      */
     this.setCharacter = char => {
-        block = Block.fromChar(char, true);
+        block = Block.fromChar(char);
     };
 
     this.isCompositing = () => block.initial.length > 0;

@@ -3,7 +3,7 @@ class Map {
         if (keys.length !== values.length) throw "Keys and values must be of equal length.";
 
         for (let i = 0; i < keys.length; i++) {
-            if (this.hasOwnProperty(keys[i])) throw "Cannot have duplicate keys.";
+            if (this.hasOwnProperty(keys[i])) throw "Cannot have duplicate key:" + keys[i];
             this[keys[i]] = values[i];
         }
     }
@@ -24,6 +24,8 @@ class TwoWayMap {
     }
 }
 
+export const nDash = "–";
+
 export const hangeulMaps = Object.freeze({
     initials: "ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ",
     medials: "ㅏㅐㅑㅒㅓㅔㅕㅖㅗㅘㅙㅚㅛㅜㅝㅞㅟㅠㅡㅢㅣ",
@@ -36,19 +38,48 @@ export const hangeulMaps = Object.freeze({
             + "ㅁㅁㄴㄴㅇㅇㄹㄹㅎㅎㅗㅗㅓㅓㅏㅏㅣㅣ"
             + "ㅋㅋㅌㅌㅊㅊㅍㅍㅠㅠㅜㅜㅡㅡ"
     ),
-    hangeulRoman: new Map(
-        "ㅃㅂㅉㅈㄸㄷㄲㄱㅆㅅㅛㅕㅑㅒㅐㅖㅔ" +
-        "ㅁㄴㅇㄹㅎㅗㅓㅏㅣ" +
-        "ㅋㅌㅊㅍㅠㅜㅡ" +
-        "ㅘㅙㅚㅝㅞㅟㅢ",
-        ['bb','b','jj','j','dd','d','kk','g','ss','s','yo','yeo','ya','yae','ae','ye','e',
-        'm','n','ng','r','h','o','eo','a','i',
-        'k','t','ch','p','yu','u','eu',
-        'wa','wae','oe','wo','we','wi','ui'
+    hangeulVowelsRoman: new Map(
+        "ㅏㅐㅑㅒㅓㅔㅕㅖㅗㅘㅙㅚㅛㅜㅝㅞㅟㅠㅡㅢㅣ",
+        [   "a", "ae", "ya", "yae", "eo", "e", "yeo", "ye", "o", "wa", "wae",
+            "oe", "yo", "u", "wo", "we", "wi", "yu", "eu", "ui", "i"
+        ]
+    ),
+    hangeulIntialsRoman: new Map(
+        "ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ",
+        [   "g", "kk", "n", "d", "tt", "r", "m", "b", "pp", "s", "ss",
+            nDash, "j", "jj", "ch", "k", "t", "p", "h"
+        ]
+    ),
+    hangeulFinalsRoman: new Map(
+        "ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ",
+        [   "k", "k", "n", "t", nDash, "l", "m", "p", nDash, "t", "t", "ng", "t",
+            nDash, "t", "k", "t", "p", "h"
+        ]
+    ),
+    hangeulFinalInitialRoman: new Map(
+        [   "ㄱㅇ", "ㄱㄴ", "ㄱㄹ", "ㄱㅁ", "ㄱㅋ",
+            "ㄴㅇ", "ㄴㄱ", "ㄴㄹ", "ㄷㅇ", "ㄷㄴ", "ㄷㄹ", "ㄷㅌ", "ㄷㅎ",
+            "ㄹㅇ", "ㄹㄴ", "ㄹㄹ", "ㅁㅇ", "ㅁㄹ", "ㅂㅇ", "ㅂㄴ", "ㅂㄹ", "ㅂㅁ", "ㅂㅍ",
+            "ㅅㅇ", "ㅅㄴ", "ㅅㄹ", "ㅅㅁ", "ㅅㅌ", "ㅅㅎ",
+            "ㅇㄹ",
+            "ㅈㅇ", "ㅈㄴ", "ㅈㄹ", "ㅈㅁ", "ㅈㅌ", "ㅈㅎ",
+            "ㅊㅇ", "ㅊㄴ", "ㅊㄹ", "ㅊㅁ", "ㅊㅌ", "ㅊㅎ",
+            "ㅌㅇ", "ㅌㄴ", "ㅌㄹ", "ㅌㅁ", "ㅌㅌ", "ㅌㅎ",
+            "ㅎㅇ", "ㅎㄱ", "ㅎㄴ", "ㅎㄷ", "ㅎㄹ", "ㅎㅁ", "ㅎㅂ", "ㅎㅈ", "ㅎㅊ", "ㅎㅋ", 'ㅎㅌ', "ㅎㅍ", "ㅎㅎ"
+        ],
+        [   "g", "ngn", "ngn", "ngm", `k${nDash}k`,
+            "n", `n${nDash}g`, "ll", "d", "nn", "nn", "tt", "t",
+            "r", "ll", "ll", "m", "mn", "b", "mn", "mn", "mm", `p${nDash}p`,
+            "s", "nn", "nn", "nm", `t${nDash}t`, "t",
+            "ngn",
+            "j", "nn", "nn", "nm", `t${nDash}t`, "t",
+            "ch", "nn", "nn", "nm", `t${nDash}t`, "t",
+            "t", "nn", "nn", "nm", `t${nDash}t`, "t",
+            "h", "k", "nn", "t", "nn", "nm", "p", "ch", "tch", "tk", "tt", "tp", "t"
         ]
     ),
     compoundVowels: new TwoWayMap(
-        ["ㅗㅏ","ㅗㅐ","ㅗㅣ","ㅜㅓ","ㅜㅔ","ㅜㅣ","ㅡㅣ"],
+        ["ㅗㅏ", "ㅗㅐ", "ㅗㅣ", "ㅜㅓ", "ㅜㅔ", "ㅜㅣ", "ㅡㅣ"],
         "ㅘㅙㅚㅝㅞㅟㅢ"
     ),
     consonantDigraphs: new TwoWayMap(
