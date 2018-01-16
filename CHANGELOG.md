@@ -1,6 +1,12 @@
 Download the latest release at the Chrome Web Store:
 [https://chrome.google.com/webstore/detail/korean-ime/cimmbifnciobjhchpimjekibbndgmkfk?hl=en-GB]
 
+# 1.1.3
+### Release Date
+2018-01-17
+### Fixes
+* Compound vowels and double consonants weren't working
+
 # 1.1.2
 ### Release Date
 2018-01-17
