@@ -24,7 +24,7 @@ class TwoWayMap {
     }
 }
 
-export const nDash = "–";
+const nDash = "–";
 
 export const hangeulMaps = Object.freeze({
     initials: "ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ",
@@ -58,7 +58,8 @@ export const hangeulMaps = Object.freeze({
     ),
     hangeulFinalInitialRoman: new Map(
         [   "ㄱㅇ", "ㄱㄴ", "ㄱㄹ", "ㄱㅁ", "ㄱㅋ",
-            "ㄴㅇ", "ㄴㄱ", "ㄴㄹ", "ㄷㅇ", "ㄷㄴ", "ㄷㄹ", "ㄷㅌ", "ㄷㅎ",
+            "ㄴㅇ", "ㄴㄱ", "ㄴㄹ",
+            "ㄷㅇ", "ㄷㄴ", "ㄷㄹ", "ㄷㅌ", "ㄷㅎ",
             "ㄹㅇ", "ㄹㄴ", "ㄹㄹ", "ㅁㅇ", "ㅁㄹ", "ㅂㅇ", "ㅂㄴ", "ㅂㄹ", "ㅂㅁ", "ㅂㅍ",
             "ㅅㅇ", "ㅅㄴ", "ㅅㄹ", "ㅅㅁ", "ㅅㅌ", "ㅅㅎ",
             "ㅇㄹ",
@@ -68,7 +69,8 @@ export const hangeulMaps = Object.freeze({
             "ㅎㅇ", "ㅎㄱ", "ㅎㄴ", "ㅎㄷ", "ㅎㄹ", "ㅎㅁ", "ㅎㅂ", "ㅎㅈ", "ㅎㅊ", "ㅎㅋ", 'ㅎㅌ', "ㅎㅍ", "ㅎㅎ"
         ],
         [   "g", "ngn", "ngn", "ngm", `k${nDash}k`,
-            "n", `n${nDash}g`, "ll", "d", "nn", "nn", "tt", "t",
+            "n", `n${nDash}g`, "ll",
+            "d", "nn", "nn", "tt", "t",
             "r", "ll", "ll", "m", "mn", "b", "mn", "mn", "mm", `p${nDash}p`,
             "s", "nn", "nn", "nm", `t${nDash}t`, "t",
             "ngn",
