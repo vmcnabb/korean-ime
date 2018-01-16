@@ -5,7 +5,7 @@ Download the latest release at the Chrome Web Store:
 ### Release Date
 2018-01-17
 ### Fixes
-* Compound vowels and double consonants weren't working
+* Compound vowels and double consonants weren't working (broken since 1.1.1)
 
 # 1.1.2
 ### Release Date
