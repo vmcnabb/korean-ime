@@ -16,10 +16,10 @@ class TwoWayMap {
         for (let i = 0; i < left.length; i++) {
             if (this.hasOwnProperty(left[i]) || this.hasOwnProperty(right[i])) {
                 throw "left and right cannot share or repeat any values.";
-
-                this[left[i]] = right[i];
-                this[right[i]] = left[i];
             }
+
+            this[left[i]] = right[i];
+            this[right[i]] = left[i];
         }
     }
 }
