@@ -26,8 +26,40 @@ chrome.runtime.onMessage.addListener(
 
 chrome.contextMenus.create({
     type: 'normal',
-    title: '&Romanize',
-    contexts: ['selection'],
+    title: '&Romanize in Popup',
+    contexts: ['all'],
+    onclick: (event, tab) => {
+        const selectionText = event.selectionText || "";
+        const romanText = romanize(selectionText);
+
+        // put text into popup window
+        chrome.windows.create(
+            {
+                url: 'popup-converter/popup-converter.html',
+                type: 'popup',
+                width: 600,
+                height: 400
+            },
+            function (window) {
+                setTimeout(() => {
+                    chrome.tabs.sendRequest(
+                        window.tabs[0].id,
+                        {
+                            action: 'fill',
+                            original: selectionText,
+                            roman: romanText
+                        }
+                    );
+                }, 100);
+            }
+        );
+    }
+});
+
+chrome.contextMenus.create({
+    type: 'normal',
+    title: 'Romanize &Beside',
+    contexts: ['editable'],
     onclick: (event, tab) => {
         const romanText = romanize(event.selectionText);
 
