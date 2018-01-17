@@ -31,6 +31,14 @@ export function HangeulEditor (element) {
     this.deactivate = deactivate;
     this.isActive = () => isActive;
 
+    var self = this;
+
+    function notifyChange() {
+        if (self.onentry) {
+            self.onentry();
+        }
+    }
+
     const eventHandlers = {
         keypress: event => {
             const charCode = event.charCode || event.keyCode;
@@ -55,6 +63,7 @@ export function HangeulEditor (element) {
 
             if (r.inProgress) {
                 editor.replace(r.inProgress);
+                notifyChange();
             }
 
             event.preventDefault();
@@ -88,6 +97,7 @@ export function HangeulEditor (element) {
                 const block = compositor.removeLastJamo();
                 if (block) {
                     editor.replace(block);
+                    notifyChange();
                     event.preventDefault();
                     return false;
 

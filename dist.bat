@@ -6,6 +6,7 @@ call webpack src/popup-converter/popup-converter.js dist/popup-converter/popup-c
 
 xcopy /s src\images dist\images\
 copy src\popup-converter\popup-converter.html dist\popup-converter\
+copy src\popup-converter\popup-converter.css dist\popup-converter\
 
 copy src\manifest.json dist\
 
