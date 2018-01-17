@@ -1,6 +1,14 @@
 Download the latest release at the Chrome Web Store:
 [https://chrome.google.com/webstore/detail/korean-ime/cimmbifnciobjhchpimjekibbndgmkfk?hl=en-GB]
 
+# 1.1.4
+### Release Date
+2018-01-17
+### Features
+* Popup converter now romanises as you type
+* Popup converter looks prettier
+* You can now choose between romanising inline or romanising into a popup window, when right-clicking selected text in an editor
+
 # 1.1.3
 ### Release Date
 2018-01-17
