@@ -3,39 +3,15 @@
 	<head>
 		<meta name="google" value="notranslate" />
 		<title>Korean IME Tools KIT</title>
-		<style>
-			html {
-				font-size: 1.2em;
-			}
-
-			body {
-				padding: 0;
-				margin: 1em;
-			}
-
-			div[contenteditable] {
-				height: 100px;
-				border: 1px solid #442244;
-				border-radius: 3px;
-				padding: 0.5em;
-				overflow: auto;
-			}
-			
-			h3 {
-				margin-top: 1em;
-				margin-bottom: 0.5em;
-				font-size: 1em;
-				font-family: sans-serif;
-			}
-			
-		</style>
+		<link type="text/css" rel="stylesheet" href="popup-converter.css">
 		<script src="popup-converter.js" type="module"></script>
 	</head>
 	<body>
-		<h3>Original Text</h3>
-		<div id="original" contenteditable></div>
-		<button id="romanize" type="button">Romanize</button>
-		<h3>Romanized Text</h3>
-		<div id="romanized" contenteditable></div>
+		<div class="flex-container">
+			<h3>Original Text <span class="normal">(you can type hangeul here)</span></h3>
+			<div id="original" contenteditable data-placeholder="Enter your hangeul here"></div>
+			<h3>Romanized Text</h3>
+			<div id="romanized" contenteditable data-placeholder="The romanized version will appear here"></div>
+		</div>
 	</body>
 </html>

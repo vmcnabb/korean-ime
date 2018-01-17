@@ -26,4 +26,9 @@ const original = document.getElementById('original'),
 
 he.activate();
 
-romanizeButton.onclick = () => roman.innerText = romanize(original.innerText);
+function doRomanize() {
+    roman.innerText = romanize(original.innerText);
+}
+
+he.onentry = doRomanize;
+original.oninput = doRomanize;

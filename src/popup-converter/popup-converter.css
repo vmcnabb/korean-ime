@@ -1,0 +1,51 @@
+html, body {
+    padding: 0;
+    margin: 0;
+    height: 100%;
+}
+html {
+    font-size: 12pt;
+}
+
+div[contenteditable] {
+    border: 1px solid #ccc;
+    border-radius: 2px;
+    padding: 0.5em;
+    overflow: auto;
+    background-color: white;
+    box-shadow: #ddf 2px 2px 3px;
+}
+
+div[contenteditable]:empty:before {
+    content: attr(data-placeholder);
+    color: #666;
+}
+
+h3 {
+    margin-top: 1rem;
+    margin-bottom: 0.3em;
+    font-size: 0.9rem;
+    font-family: sans-serif;
+}
+h3>span.normal {
+    font-size: 1rem;
+    font-weight: normal;
+}
+h3:first-child {
+    margin-top: 0;
+}
+
+div.flex-container {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    height: 100%;
+    padding: 1em;
+    box-sizing: border-box;
+    background-color: #f0f0ff;
+}
+
+div.flex-container>div {
+    flex-grow: 1;
+    font-size: 1.1rem;
+}
