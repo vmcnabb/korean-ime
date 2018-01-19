@@ -24,20 +24,68 @@ class TwoWayMap {
     }
 }
 
+/**
+* @param {string} char 
+*/
+export function isHangeul (char) {
+   if (!char) return false;
+   const cc = char.charCodeAt(0);
+   return (cc >= 0xAC00 && cc <= 0xD7A3) || (cc >= 0x3131 && cc <= 0x318E);
+}
+
+
 const nDash = "–";
 
 export const hangeulMaps = Object.freeze({
     initials: "ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ",
     medials: "ㅏㅐㅑㅒㅓㅔㅕㅖㅗㅘㅙㅚㅛㅜㅝㅞㅟㅠㅡㅢㅣ",
     finals: "ㄱㄲㄳㄴㄵㄶㄷㄹㄺㄻㄼㄽㄾㄿㅀㅁㅂㅄㅅㅆㅇㅈㅊㅋㅌㅍㅎ",
-    qwertyHangeul: new Map(
-        "QqWwEeRrTtYyUuIiOoPp"
-            + "AaSsDdFfGgHhJjKkLl"
-            + "ZzXxCcVvBbNnMm",    
-        "ㅃㅂㅉㅈㄸㄷㄲㄱㅆㅅㅛㅛㅕㅕㅑㅑㅒㅐㅖㅔ"
-            + "ㅁㅁㄴㄴㅇㅇㄹㄹㅎㅎㅗㅗㅓㅓㅏㅏㅣㅣ"
-            + "ㅋㅋㅌㅌㅊㅊㅍㅍㅠㅠㅜㅜㅡㅡ"
-    ),
+    keyboardMap: {
+        "KeyQ": { normal: "ㅂ", shift: "ㅃ" },
+        "KeyW": { normal: "ㅈ", shift: "ㅉ" },
+        "KeyE": { normal: "ㄷ", shift: "ㄸ" },
+        "KeyR": { normal: "ㄱ", shift: "ㄲ" },
+        "KeyT": { normal: "ㅅ", shift: "ㅆ" },
+        "KeyY": { normal: "ㅛ" },
+        "KeyU": { normal: "ㅕ" },
+        "KeyI": { normal: "ㅑ" },
+        "KeyO": { normal: "ㅐ", shift: "ㅒ" },
+        "KeyP": { normal: "ㅔ", shift: "ㅖ" },
+        "KeyA": { normal: "ㅁ" },
+        "KeyS": { normal: "ㄴ" },
+        "KeyD": { normal: "ㅇ" },
+        "KeyF": { normal: "ㄹ" },
+        "KeyG": { normal: "ㅎ" },
+        "KeyH": { normal: "ㅗ" },
+        "KeyJ": { normal: "ㅓ" },
+        "KeyK": { normal: "ㅏ" },
+        "KeyL": { normal: "ㅣ" },
+        "KeyZ": { normal: "ㅋ" },
+        "KeyX": { normal: "ㅌ" },
+        "KeyC": { normal: "ㅊ" },
+        "KeyV": { normal: "ㅍ" },
+        "KeyB": { normal: "ㅠ" },
+        "KeyN": { normal: "ㅜ" },
+        "KeyM": { normal: "ㅡ" },
+        "Comma": { normal: ",", shift: "<" },
+        "Period": { normal: ".", shift: ">" },
+        "Slash": { normal: "/", shift: "?" },
+        "BracketLeft": { normal: "[", shift: "{" },
+        "BracketRight": { normal: "]", shift: "}" },
+        "Backquote": { normal: "`", shift: "~" },
+        "Digit1": { normal: "1", shift: "!" },
+        "Digit2": { normal: "2", shift: "@" },
+        "Digit3": { normal: "3", shift: "#" },
+        "Digit4": { normal: "4", shift: "$" },
+        "Digit5": { normal: "5", shift: "%" },
+        "Digit6": { normal: "6", shift: "^" },
+        "Digit7": { normal: "7", shift: "&" },
+        "Digit8": { normal: "8", shift: "*" },
+        "Digit9": { normal: "9", shift: "(" },
+        "Digit0": { normal: "0", shift: ")" },
+        "Minus": { normal: "-", shift: "_" },
+        "Equals": { normal: "=", shift: "+" }
+    },
     hangeulVowelsRoman: new Map(
         "ㅏㅐㅑㅒㅓㅔㅕㅖㅗㅘㅙㅚㅛㅜㅝㅞㅟㅠㅡㅢㅣ",
         [   "a", "ae", "ya", "yae", "eo", "e", "yeo", "ye", "o", "wa", "wae",
