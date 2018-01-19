@@ -119,5 +119,3 @@ function disable () {
         Object.keys(editableElements).forEach(key => editableElements[key].editor.deactivate());
     }
 }
-
-enable();
