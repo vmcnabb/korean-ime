@@ -1,5 +1,5 @@
 import { Block } from "./composition.js";
-import { hangeulMaps as maps } from "./mappings.js";
+import { hangeulMaps as maps, isHangeul } from "./mappings.js";
 
 /**
  * Return a string with the hangeul converted into Roman characters, e.g.
@@ -69,13 +69,4 @@ export function romanize (text) {
     } // for i
 
     return romanText;
-}
-
-/**
- * @param {string} char 
- */
-function isHangeul (char) {
-    if (!char) return false;
-    const cc = char.charCodeAt(0);
-    return cc >= 0xAC00 && cc <= 0xD7A3;
 }
