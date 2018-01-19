@@ -25,6 +25,7 @@
             "run_at": "document_end"
         }
     ],
+    "options_page": "settings/settings.html",
     "permissions": [
         "tabs",
         "contextMenus"

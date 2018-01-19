@@ -1,0 +1,46 @@
+<!doctype html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>Korean IME Options</title>
+        <link rel="stylesheet" type="text/css" href="settings.css">
+        <script src="settings.js"></script>
+    </head>
+    <body>
+        <h1>Korean IME Options</h1>
+        <div class="content">
+            <label>Default Layout For New Tab</label>
+            <div class="setting">
+                <select id="defaultLayout">
+                    <option value="qwerty">QWERTY</option>
+                    <option value="hangul">Hangul</option>
+                    <option value="lastSelection">Whatever was last selected</option>
+                </select>
+            </div>
+            <label><key>한/영</key> Key</label>
+            <div class="setting">
+                <select id="switchKey">
+                    <option value="rightAlt">Right Alt</option>
+                    <option value="ctrlSpace">Ctrl+Space</option>
+                </select>
+                <p>Used for switching between QWERTY and Hangul entry.</p>
+                <p>
+                    <label><input type="checkbox" id="individualLayout"> Only switch layout for current tab</label>
+                </p>
+            </div>
+            <label>Romanize in Window Shortcut</label>
+            <div class="setting">
+                <select id="romanizeShortcut">
+                    <option value="altR">Alt+R</option>
+                    <option value="ctrlSpace">Ctrl+Space</option>
+                </select>
+                <p>Used for switching between QWERTY and Hangul entry.</p>
+            </div>
+        </div>
+
+        <div style="clear: both;">
+            <input type="text" id="test">
+            <button>Reset To Defaults</button>
+        </div>
+    </body>
+</html>
