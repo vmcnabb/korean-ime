@@ -1,6 +1,12 @@
 Download the latest release at the Chrome Web Store:
 [https://chrome.google.com/webstore/detail/korean-ime/cimmbifnciobjhchpimjekibbndgmkfk?hl=en-GB]
 
+# 1.1.7
+2018-01-20
+### Features
+* Added British English translation
+* Added Korean translation
+
 # 1.1.6
 2018-01-20
 ### Fixes
