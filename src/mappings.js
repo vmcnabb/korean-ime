@@ -27,7 +27,7 @@ class TwoWayMap {
 /**
 * @param {string} char 
 */
-export function isHangeul (char) {
+export function isHangul (char) {
    if (!char) return false;
    const cc = char.charCodeAt(0);
    return (cc >= 0xAC00 && cc <= 0xD7A3) || (cc >= 0x3131 && cc <= 0x318E);
@@ -36,7 +36,7 @@ export function isHangeul (char) {
 
 const nDash = "–";
 
-export const hangeulMaps = Object.freeze({
+export const hangulMaps = Object.freeze({
     initials: "ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ",
     medials: "ㅏㅐㅑㅒㅓㅔㅕㅖㅗㅘㅙㅚㅛㅜㅝㅞㅟㅠㅡㅢㅣ",
     finals: "ㄱㄲㄳㄴㄵㄶㄷㄹㄺㄻㄼㄽㄾㄿㅀㅁㅂㅄㅅㅆㅇㅈㅊㅋㅌㅍㅎ",
@@ -86,25 +86,25 @@ export const hangeulMaps = Object.freeze({
         "Minus": { normal: "-", shift: "_" },
         "Equals": { normal: "=", shift: "+" }
     },
-    hangeulVowelsRoman: new Map(
+    hangulVowelsRoman: new Map(
         "ㅏㅐㅑㅒㅓㅔㅕㅖㅗㅘㅙㅚㅛㅜㅝㅞㅟㅠㅡㅢㅣ",
         [   "a", "ae", "ya", "yae", "eo", "e", "yeo", "ye", "o", "wa", "wae",
             "oe", "yo", "u", "wo", "we", "wi", "yu", "eu", "ui", "i"
         ]
     ),
-    hangeulIntialsRoman: new Map(
+    hangulIntialsRoman: new Map(
         "ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ",
         [   "g", "kk", "n", "d", "tt", "r", "m", "b", "pp", "s", "ss",
             nDash, "j", "jj", "ch", "k", "t", "p", "h"
         ]
     ),
-    hangeulFinalsRoman: new Map(
+    hangulFinalsRoman: new Map(
         "ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ",
         [   "k", "k", "n", "t", nDash, "l", "m", "p", nDash, "t", "t", "ng", "t",
             nDash, "t", "k", "t", "p", "h"
         ]
     ),
-    hangeulFinalInitialRoman: new Map(
+    hangulFinalInitialRoman: new Map(
         [   "ㄱㅇ", "ㄱㄴ", "ㄱㄹ", "ㄱㅁ", "ㄱㅋ",
             "ㄴㅇ", "ㄴㄱ", "ㄴㄹ",
             "ㄷㅇ", "ㄷㄴ", "ㄷㄹ", "ㄷㅌ", "ㄷㅎ",

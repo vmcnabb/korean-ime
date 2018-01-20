@@ -9,7 +9,7 @@ You can [install Korean IME extension from the Chrome Web Store](https://chrome.
 
 ## Features
 * Type in Hanguel using the Korean keyboard layout.
-  * Click the extension icon, or tap the right-hand Alt key to toggle between Hangeul and Latin.
+  * Click the extension icon, or tap the right-hand Alt key to toggle between Hangul and Latin.
   * You can remove the last jamo from an existing character by positioning the caret just after the character and typing Shift+Backspace.
 * Convert Hanguel text into its Latin equivalent.
   * Select the text to convert, right click, and choose "Romanize" from the menu.

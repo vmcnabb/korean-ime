@@ -1,5 +1,5 @@
-import { hangeulMaps, isHangeul } from "./mappings.js";
-const { initials, medials, finals, compoundVowels, consonantDigraphs } = hangeulMaps;
+import { hangulMaps, isHangul } from "./mappings.js";
+const { initials, medials, finals, compoundVowels, consonantDigraphs } = hangulMaps;
 
 export class Block {
     constructor (initial = "", medial = "", final = "") {
@@ -93,7 +93,7 @@ export function Compositor () {
     function addInitialJamo (jamo) {
         const combined = block.initial + jamo;
 
-        if (!isHangeul(jamo)) {
+        if (!isHangul(jamo)) {
             return { completed: jamo };
 
         } else if(compoundVowels[combined] || consonantDigraphs[combined] || !block.initial) {

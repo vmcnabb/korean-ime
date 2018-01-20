@@ -1,6 +1,6 @@
 ﻿// Copyright © 2012-2018 Vincent McNabb
 import { SelectionEditorFactory } from "./selectionEditorFactory.js";
-import { HangeulEditor } from "./hangeulEditor.js";
+import { HangulEditor } from "./hangulEditor.js";
 
 const state = {
     enabled: false
@@ -73,7 +73,7 @@ function processElement (el) {
     var ee = editableElements[heId];
     
     if (!ee) {
-        var he = new HangeulEditor(el);
+        var he = new HangulEditor(el);
         ee = editableElements[heId] = {
             element: el,
             editor: he
