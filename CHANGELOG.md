@@ -3,6 +3,8 @@ Download the latest release at the Chrome Web Store:
 
 # 1.1.7
 2018-01-20
+### Fixes
+* Shift+Backspace wasn't deleting the last jamo from the preceding character
 ### Features
 * Added British English translation
 * Added Korean translation
