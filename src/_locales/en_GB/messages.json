@@ -1,4 +1,7 @@
 {
+    "extension_name": {
+        "message": "Korean IME with Romanisation Tool"
+    },
     "extension_description": {
         "message": "Allows one to type in Korean Hangul and includes a romanisation tool."
     },
