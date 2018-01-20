@@ -1,6 +1,11 @@
 Download the latest release at the Chrome Web Store:
 [https://chrome.google.com/webstore/detail/korean-ime/cimmbifnciobjhchpimjekibbndgmkfk?hl=en-GB]
 
+# 1.1.6
+2018-01-20
+### Fixes
+* Arrow, Home, and End keys now work when clicking somewhere else in a contenteditable while a character is being composited.
+
 # 1.1.5
 ### Release Date
 2018-01-20

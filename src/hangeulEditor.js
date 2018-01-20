@@ -111,8 +111,14 @@ export function HangeulEditor (element) {
                 return true;        
             }
         },
-        blur: () => compositor.reset(),
-        mousedown: () => compositor.reset()
+        blur: () => {
+            compositor.reset();
+            editor.reset();
+        },
+        mousedown: () => {
+            compositor.reset();
+            editor.reset();
+        }
     };
     const listeners = [];
 
