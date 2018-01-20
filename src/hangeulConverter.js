@@ -1,8 +1,8 @@
 import { Block } from "./composition.js";
-import { hangeulMaps as maps, isHangeul } from "./mappings.js";
+import { hangulMaps as maps, isHangul } from "./mappings.js";
 
 /**
- * Return a string with the hangeul converted into Roman characters, e.g.
+ * Return a string with the hangul converted into Roman characters, e.g.
  * "hello 강" => "hello gang"
  * @param {string} text 
  */
@@ -11,7 +11,7 @@ export function romanize (text) {
 
     let romanText = '';
     let didPreviousCharSetInitial = false;
-    let isPreviousCharHangeul = false;
+    let isPreviousCharHangul = false;
     let nextBlock = Block.fromChar(text[0] || "", false);
 
     for (let i = 0; i < text.length; i++) {
@@ -20,52 +20,52 @@ export function romanize (text) {
         const nextChar = text[i + 1] || "";
         nextBlock = Block.fromChar(nextChar, false);
 
-        if (!isHangeul(thisChar)) {
+        if (!isHangul(thisChar)) {
             didPreviousCharSetInitial = false;
-            isPreviousCharHangeul = false;
+            isPreviousCharHangul = false;
             romanText += thisChar;
             continue;
         }
 
         if (!didPreviousCharSetInitial) {
-            if (!isPreviousCharHangeul && block.initial === "ㅇ") {
+            if (!isPreviousCharHangul && block.initial === "ㅇ") {
             } else {
-                romanText += maps.hangeulIntialsRoman[block.initial];
+                romanText += maps.hangulIntialsRoman[block.initial];
             }
             // TODO: check what happens for "ㄺ" or any other digraph finals used on their own.
         }
         if (block.medial.length > 0) {
-            romanText += maps.hangeulVowelsRoman[block.medial];
+            romanText += maps.hangulVowelsRoman[block.medial];
 
         } else {
             didPreviousCharSetInitial = false;
-            isPreviousCharHangeul = true;
+            isPreviousCharHangul = true;
             continue;
         }
 
         if (block.final.length == 0) {
             didPreviousCharSetInitial = false;
-            isPreviousCharHangeul = true;
+            isPreviousCharHangul = true;
             continue;
         }
 
         if (block.final.length == 2) {
             // double-consonant ending, romanise the first jamo as if it were an initial
-            romanText += maps.hangeulIntialsRoman[block.final[0]];
+            romanText += maps.hangulIntialsRoman[block.final[0]];
         }
 
         const thisFinal = block.final.substr(-1);
-        const special = maps.hangeulFinalInitialRoman[thisFinal + nextBlock.initial];
+        const special = maps.hangulFinalInitialRoman[thisFinal + nextBlock.initial];
 
-        if (isHangeul(nextChar) && special !== undefined) {
+        if (isHangul(nextChar) && special !== undefined) {
             romanText += special;
             didPreviousCharSetInitial = true;
 
         } else {
-            romanText += maps.hangeulFinalsRoman[thisFinal];
+            romanText += maps.hangulFinalsRoman[thisFinal];
             didPreviousCharSetInitial = false;
         }
-        isPreviousCharHangeul = true;
+        isPreviousCharHangul = true;
     } // for i
 
     return romanText;

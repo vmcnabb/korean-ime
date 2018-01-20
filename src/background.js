@@ -1,5 +1,5 @@
 // Copyright © 2012-2018 Vincent McNabb
-import { romanize } from "./hangeulConverter.js";
+import { romanize } from "./hangulConverter.js";
 
 let tabStates = {};
 
@@ -64,7 +64,7 @@ chrome.contextMenus.create({
         const romanText = romanize(event.selectionText);
 
         if (event.editable) {
-            // insert the romanized text after the hangeul
+            // insert the romanized text after the hangul
             chrome.tabs.sendMessage(
                 tab.id,
                 {

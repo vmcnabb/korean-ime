@@ -1,12 +1,12 @@
 ﻿// Copyright © 2009-2018 Vincent McNabb
 
-// Hangeul Editor
+// Hangul Editor
 // Created: 29 May 2009 
 
 // Romanization
 // Created: 9 April 2012
 
-import { hangeulMaps as maps } from "./mappings.js";
+import { hangulMaps as maps } from "./mappings.js";
 import { Block, Compositor } from "./composition.js";
 import { SelectionEditorFactory } from "./selectionEditorFactory.js";
 
@@ -22,7 +22,7 @@ const keyCodes = Object.freeze({
 /**
  * @param {HTMLElement} element 
  */
-export function HangeulEditor (element) {
+export function HangulEditor (element) {
     let isActive = false;
     const compositor = new Compositor();
     const editor = SelectionEditorFactory.createSelectionEditor(element);

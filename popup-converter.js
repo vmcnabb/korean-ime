@@ -1,4 +1,4 @@
-import { HangeulEditor } from "../hangeulEditor.js";
+import { HangulEditor } from "../hangulEditor.js";
 
 chrome.extension.onRequest.addListener((request, sender, callback) => {
     const response = { success: true };
@@ -21,7 +21,7 @@ chrome.extension.onRequest.addListener((request, sender, callback) => {
 const original = document.getElementById('original'),
     roman = document.getElementById('romanized'),
     romanizeButton = document.getElementById('romanize'),
-    he = new HangeulEditor(original);
+    he = new HangulEditor(original);
 
 he.activate();
 
