@@ -2,16 +2,19 @@
 <html>
 	<head>
 		<meta name="google" value="notranslate" />
-		<title>Korean IME - Romanization</title>
+		<title data-message="romanize_popup_title"></title>
 		<link type="text/css" rel="stylesheet" href="popup-converter.css">
-		<script src="popup-converter.js" type="module"></script>
 	</head>
 	<body>
 		<div class="flex-container">
-			<h3>Original Text <span class="normal">(you can type hangul here)</span></h3>
-			<div id="original" contenteditable data-placeholder="Enter your hangul here"></div>
-			<h3>Romanized Text</h3>
-			<div id="romanized" contenteditable data-placeholder="The romanized version will appear here"></div>
+			<h3>
+				<span data-message="romanize_popup_originalTextHeading"></span>
+				<span class="normal" data-message="romanize_popup_originalTextHeadingHint"></span>
+			</h3>
+			<div id="original" contenteditable data-placeholder-message="romanize_popup_originalTextTextboxHint"></div>
+			<h3 data-message="romanize_popup_romanizedTextHeading"></h3>
+			<div id="romanized" contenteditable data-placeholder-message="romanize_popup_romanizedTextTextboxHint"></div>
 		</div>
+		<script src="popup-converter.js" type="module"></script>
 	</body>
 </html>

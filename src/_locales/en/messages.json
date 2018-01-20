@@ -1,0 +1,32 @@
+{
+    "extension_name": {
+        "message": "Korean IME"
+    },
+    "extension_description": {
+        "message": "Allows one to type in Korean Hangul and includes a romanization tool."
+    },
+    "menu_romanizeInPopup": {
+        "message": "&Romanize in Popup"
+    },
+    "menu_romanizeBeside": {
+        "message": "Romanize &Beside"
+    },
+    "romanize_popup_title": {
+        "message": "Korean IME - Romanization"
+    },
+    "romanize_popup_originalTextHeading": {
+        "message": "Original Text"
+    },
+    "romanize_popup_originalTextHeadingHint": {
+        "message": "(you can type Hangul here)"
+    },
+    "romanize_popup_originalTextTextboxHint": {
+        "message": "Enter your Hangul here"
+    },
+    "romanize_popup_romanizedTextHeading": {
+        "message": "Romanized Text"
+    },
+    "romanize_popup_romanizedTextTextboxHint": {
+        "message": "The romanized version will appear here"
+    }
+}

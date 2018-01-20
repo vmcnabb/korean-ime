@@ -1,0 +1,20 @@
+{
+    "extension_description": {
+        "message": "Allows one to type in Korean Hangul and includes a romanisation tool."
+    },
+    "menu_romanizeInPopup": {
+        "message": "&Romanise in Popup"
+    },
+    "menu_romanizeBeside": {
+        "message": "Romanise &Beside"
+    },
+    "romanize_popup_title": {
+        "message": "Korean IME - Romanisation"
+    },
+    "romanize_popup_romanizedTextHeading": {
+        "message": "Romanised Text"
+    },
+    "romanize_popup_romanizedTextTextboxHint": {
+        "message": "The romanised version will appear here"
+    }
+}
