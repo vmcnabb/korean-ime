@@ -2,7 +2,7 @@
     "manifest_version": 2,
     "name": "Korean IME",
     "short_name": "Korean IME",
-    "version": "1.1.6",
+    "version": "1.1.7",
     "description": "Allows one to type in Korean Hangul and includes a rudimentary romanization tool.",
     "icons": {
         "16": "images/icon16h.png",
