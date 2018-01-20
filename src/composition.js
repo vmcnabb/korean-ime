@@ -1,4 +1,4 @@
-import { hangeulMaps } from "./mappings.js";
+import { hangeulMaps, isHangeul } from "./mappings.js";
 const { initials, medials, finals, compoundVowels, consonantDigraphs } = hangeulMaps;
 
 export class Block {
@@ -93,7 +93,10 @@ export function Compositor () {
     function addInitialJamo (jamo) {
         const combined = block.initial + jamo;
 
-        if(compoundVowels[combined] || consonantDigraphs[combined] || !block.initial) {
+        if (!isHangeul(jamo)) {
+            return { completed: jamo };
+
+        } else if(compoundVowels[combined] || consonantDigraphs[combined] || !block.initial) {
             // (V)V or (C)C or C or V, or nothing
             block.initial = combined;
             return {

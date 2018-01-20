@@ -41,13 +41,11 @@ export function HangeulEditor (element) {
 
     const eventHandlers = {
         keypress: event => {
-            const charCode = event.charCode || event.keyCode;
+            const code = event.code;
+            const key = maps.keyboardMap[code];
 
-            // allow combinations like "Ctrl+V" to work
-            if (!charCode || event.ctrlKey) return true;
-
-            const jamo = maps.qwertyHangeul[String.fromCharCode(charCode)];
-            if (!jamo) {
+            // don't interfere with keyboard shortcuts
+            if (!key || event.ctrlKey) {
                 if (compositor.isCompositing()) {
                     editor.deselect();
                     compositor.reset();
@@ -55,6 +53,7 @@ export function HangeulEditor (element) {
                 return true;
             }
 
+            const jamo = key.shift && event.shiftKey ? key.shift : key.normal;
             const r = compositor.addJamo(jamo);
 
             if (r.completed) {
@@ -112,8 +111,14 @@ export function HangeulEditor (element) {
                 return true;        
             }
         },
-        blur: () => compositor.reset(),
-        mousedown: () => compositor.reset()
+        blur: () => {
+            compositor.reset();
+            editor.reset();
+        },
+        mousedown: () => {
+            compositor.reset();
+            editor.reset();
+        }
     };
     const listeners = [];
 

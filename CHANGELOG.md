@@ -1,6 +1,21 @@
 Download the latest release at the Chrome Web Store:
 [https://chrome.google.com/webstore/detail/korean-ime/cimmbifnciobjhchpimjekibbndgmkfk?hl=en-GB]
 
+# 1.1.6
+2018-01-20
+### Fixes
+* Arrow, Home, and End keys now work when clicking somewhere else in a contenteditable while a character is being composited.
+
+# 1.1.5
+### Release Date
+2018-01-20
+### Features
+* Implemented new key mapping system
+    * Mappings now work correctly for most keyboards. Alt will switch between whatever one's base keyboard is to Korean, and back. Tested on
+        * Dvorak
+        * Russian
+        * Spanish
+
 # 1.1.4
 ### Release Date
 2018-01-17
@@ -20,7 +35,7 @@ Download the latest release at the Chrome Web Store:
 2018-01-17
 ### Fixes
 * Run extension in offline mode
-* Romanization now more closely follows romanization rules (issue #6)
+* Romanisation now more closely follows romanisation rules (issue #6)
 
 # 1.1.1
 ### Release Date
@@ -28,7 +43,7 @@ Download the latest release at the Chrome Web Store:
 ### Fixes
 * Inline romanization in [contenteditable]'s (e.g. Gmail Compose) was replacing the selected text instead of inserting after.
 ### Notes
-Upgraded codebase to use ES6 modules to make moduralization easier (and give me better intellisense).
+Upgraded codebase to use ES6 modules to make moduralisation easier (and give me better intellisense).
 
 # 1.1.0
 ### Release Date
@@ -37,7 +52,7 @@ Upgraded codebase to use ES6 modules to make moduralization easier (and give me 
 * Fix inline romanization.
 ### Features
 * Allow user to remove last jamo from an already entered Hangeul block by typing Shift+Backspace.
-* UI for the popup romanization tool is cleaner.
+* UI for the popup romanisation tool is cleaner.
 ### Notes
 This release included major structural changes that should make it easier to implement features and fix certain types of bug in future.
 
