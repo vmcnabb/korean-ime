@@ -1,9 +1,10 @@
 {
     "manifest_version": 2,
-    "name": "Korean IME",
-    "short_name": "Korean IME",
+    "name": "__MSG_extension_name__",
+    "short_name": "__MSG_extension_name__",
     "version": "1.1.7",
-    "description": "Allows one to type in Korean Hangul and includes a rudimentary romanization tool.",
+    "default_locale": "en",
+    "description": "__MSG_extension_description__",
     "icons": {
         "16": "images/icon16h.png",
         "48": "images/icon48.png",
@@ -11,7 +12,7 @@
     },
     "browser_action": {
         "default_icon": "images/icon16a.png",
-        "default_title": "Korean IME"
+        "default_title": "__MSG_extension_name__"
     },
     "author": "Vincent McNabb",
     "background": {

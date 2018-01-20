@@ -32,3 +32,11 @@ function doRomanize() {
 
 he.onentry = doRomanize;
 original.oninput = doRomanize;
+
+document.querySelectorAll("[data-message]").forEach(el => {
+    el.innerText = chrome.i18n.getMessage(el.dataset.message);
+});
+
+document.querySelectorAll("[data-placeholder-message]").forEach(el => {
+    el.dataset.placeholder = chrome.i18n.getMessage(el.dataset.placeholderMessage);
+});

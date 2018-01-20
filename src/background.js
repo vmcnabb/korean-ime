@@ -26,7 +26,7 @@ chrome.runtime.onMessage.addListener(
 
 chrome.contextMenus.create({
     type: 'normal',
-    title: '&Romanize in Popup',
+    title: chrome.i18n.getMessage("menu_romanizeInPopup"),
     contexts: ['all'],
     onclick: (event, tab) => {
         const selectionText = event.selectionText || "";
@@ -58,7 +58,7 @@ chrome.contextMenus.create({
 
 chrome.contextMenus.create({
     type: 'normal',
-    title: 'Romanize &Beside',
+    title: chrome.i18n.getMessage("menu_romanizeBeside"),
     contexts: ['editable'],
     onclick: (event, tab) => {
         const romanText = romanize(event.selectionText);
