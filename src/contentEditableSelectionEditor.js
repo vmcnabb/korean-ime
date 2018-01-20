@@ -33,6 +33,10 @@ export function ContentEditableSelectionEditor (element) {
         }
     };
 
+    this.reset = () => {
+        selected = undefined;
+    };
+
     this.insert = function(text) {
         replace(text);
         deselect();

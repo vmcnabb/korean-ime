@@ -28,6 +28,8 @@ export class InputSelectionEditor {
 
     restore () {};
 
+    reset() {};
+
     /**
      * @param {string} text 
      */
