@@ -1,5 +1,5 @@
 // Copyright © 2012-2018 Vincent McNabb
-import { romanize } from "./hangulConverter.js";
+import { romanize } from "./romanize";
 
 let tabStates = {};
 

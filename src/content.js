@@ -1,6 +1,6 @@
 ﻿// Copyright © 2012-2018 Vincent McNabb
 import { CompositionProxyFactory } from "./compositionProxyFactory"
-import { HangulEditor } from "./hangulEditor.js";
+import { HangulEditor } from "./hangulEditor";
 
 const state = {
     enabled: false

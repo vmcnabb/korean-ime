@@ -1,4 +1,4 @@
-import { hangulMaps, isHangul } from "./mappings.js";
+import { hangulMaps, isHangul } from "./mappings";
 const { initials, medials, finals, compoundVowels, consonantDigraphs } = hangulMaps;
 
 export class Block {
