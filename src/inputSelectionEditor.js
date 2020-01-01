@@ -26,8 +26,6 @@ export class InputSelectionEditor {
         this.element.selectionStart = this.element.selectionEnd;
     }
 
-    restore () {};
-
     reset() {};
 
     /**

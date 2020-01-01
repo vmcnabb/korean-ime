@@ -6,24 +6,16 @@
 // Romanization
 // Created: 9 April 2012
 
-import { hangulMaps as maps } from "./mappings.js";
-import { Block, Compositor } from "./composition.js";
+import { hangulMaps as maps, isHangul } from "./mappings.js";
+import { Compositor } from "./composition.js";
 import { SelectionEditorFactory } from "./selectionEditorFactory.js";
-
-const keyCodes = Object.freeze({
-    A: 65,
-    Z: 90,
-    Backspace: 8,
-    Shift: 16,
-    Ctrl: 17,
-    Alt: 18
-});
 
 /**
  * @param {HTMLElement} element 
  */
 export function HangulEditor (element) {
     let isActive = false;
+
     const compositor = new Compositor();
     const editor = SelectionEditorFactory.createSelectionEditor(element);
 
@@ -40,76 +32,59 @@ export function HangulEditor (element) {
     }
 
     const eventHandlers = {
-        keypress: event => {
+        keydown: (/** @type {KeyboardEvent} */ event) => {
             const code = event.code;
             const key = maps.keyboardMap[code];
 
-            // don't interfere with keyboard shortcuts
+            if (code === "Backspace" && compositor.isCompositing()) {
+                const block = compositor.removeLastJamo();
+                if (block) {
+                    editor.replace(block);
+
+                } else {
+                    editor.insert("");
+                }
+                notifyChange();
+
+                event.preventDefault();
+                event.stopPropagation();
+                return false;
+            }
+
+            // ignore modifier keys
+            if (["Shift", "Control", "Alt"].includes(event.key)) {
+                return true;
+            }
+
+            // don't interfere with keyboard shortcuts or keys we don't understand
             if (!key || event.ctrlKey) {
                 if (compositor.isCompositing()) {
                     editor.deselect();
                     compositor.reset();
                 }
+
                 return true;
             }
 
             const jamo = key.shift && event.shiftKey ? key.shift : key.normal;
-            const r = compositor.addJamo(jamo);
+            const block = compositor.addJamo(jamo);
 
-            if (r.completed) {
-                editor.insert(r.completed);
+            if (block.completed) {
+                editor.insert(block.completed);
             }
 
-            if (r.inProgress) {
-                editor.replace(r.inProgress);
+            if (block.inProgress) {
+                if (isHangul(block.inProgress)) {
+                    editor.replace(block.inProgress);
+
+                } else {
+                    editor.insert(block.inProgress);
+                }
                 notifyChange();
             }
 
             event.preventDefault();
             return false;
-        },
-        keyup: event => {
-            // hack to workaround Gmail compose from deselecting the
-            // block when it is the first character in an email.
-            editor.restore();
-        },
-        keydown: event => {
-            const keycode = event.keyCode;
-
-            if (!compositor.isCompositing()) {
-                if (event.shiftKey && keycode === keyCodes.Backspace) {
-                    const char = editor.selectPreviousCharacter();
-                    compositor.setCharacter(char);
-
-                } else {
-                    // we're not editing a block.
-                    return true;
-                }
-            }
-            
-            if (keycode >= keyCodes.A && keycode <= keyCodes.Z || keycode >= keyCodes.Shift && keycode <= keyCodes.Alt) {
-                // this key doesn't effect editing the block, or is
-                // part of editing the block.
-                return true; 
-                
-            } else if (keycode == keyCodes.Backspace) { // backspace
-                const block = compositor.removeLastJamo();
-                if (block) {
-                    editor.replace(block);
-                    notifyChange();
-                    event.preventDefault();
-                    return false;
-
-                } else {
-                    return true;
-                }
-                
-            } else {
-                // cancel the edit and allow character to be inserted
-                compositor.reset();
-                editor.deselect();
-                return true;        
-            }
         },
         blur: () => {
             compositor.reset();

@@ -23,16 +23,6 @@ export function ContentEditableSelectionEditor (element) {
         selected = undefined;
     }
 
-    this.restore = () => {
-        if (selected) {
-            // [contenteditable]
-            // fix Gmail Compose selection bug on first key
-            const selection = element.ownerDocument.getSelection();
-            selection.removeAllRanges();
-            selection.addRange(selected.range);
-        }
-    };
-
     this.reset = () => {
         selected = undefined;
     };
