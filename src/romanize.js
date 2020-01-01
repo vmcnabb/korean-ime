@@ -7,8 +7,6 @@ import { hangulMaps as maps, isHangul } from "./mappings";
  * @param {string} text 
  */
 export function romanize (text) {
-    console.log("romanize(\"" + text + "\")");
-
     let romanText = '';
     let didPreviousCharSetInitial = false;
     let isPreviousCharHangul = false;
