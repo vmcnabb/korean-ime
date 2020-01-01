@@ -1,4 +1,4 @@
-export class GoogleDocsSelectionEditor {
+export class GoogleDocsProxy {
     constructor (element) {
         this.element = element;
         this.isCompositing = false;
