@@ -3,7 +3,7 @@
  */
 export function ContentEditableSelectionEditor (element) {
     var selected;
-    const replace = this.replace = function(text) {
+    const updateComposition = this.updateComposition = function(text) {
         const selection = element.ownerDocument.getSelection();
         const range = selection.getRangeAt(0);
         
@@ -27,8 +27,8 @@ export function ContentEditableSelectionEditor (element) {
         selected = undefined;
     };
 
-    this.insert = function(text) {
-        replace(text);
+    this.endComposition = function(text) {
+        updateComposition(text);
         deselect();
     };
 

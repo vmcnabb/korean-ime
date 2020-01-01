@@ -18,7 +18,7 @@ export class GoogleDocsSelectionEditor {
         }
     }
 
-    replace (block) {
+    updateComposition (block) {
         if (!this.isCompositing) {
             this.element.dispatchEvent(new CompositionEvent("compositionstart"));
             this.isCompositing = true;
@@ -28,7 +28,7 @@ export class GoogleDocsSelectionEditor {
         this.currentBlock = block;
     }
 
-    insert (completed) {
+    endComposition (completed) {
         this.element.dispatchEvent(new CompositionEvent("compositionend", { data: completed }));
         this.currentBlock = undefined;
     }
