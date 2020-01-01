@@ -18,17 +18,17 @@ export class Block {
      * @returns {string}
      */
     toChar () {
-        const a = initials.indexOf(this.initial),
-            b = this.medial.length == 1 ?
-                    medials.indexOf(this.medial) :
-                    medials.indexOf(compoundVowels[this.medial]),
-            c = (this.final.length == 1 ?
-                    finals.indexOf(this.final) :
-                    finals.indexOf(consonantDigraphs[this.final])) + 1;
+        const initialIndex = initials.indexOf(this.initial),
+            medialIndex = this.medial.length == 1 ?
+                medials.indexOf(this.medial) :
+                medials.indexOf(compoundVowels[this.medial]),
+            finalIndex = (this.final.length == 1 ?
+                finals.indexOf(this.final) :
+                finals.indexOf(consonantDigraphs[this.final])) + 1;
 
-        return (a > -1 && b >-1) ?
+        return (initialIndex > -1 && medialIndex >-1) ?
             // Jamo to Unicode character formula: (initial)×588 + (medial)×28 + (final) + 44032
-            String.fromCharCode(a * 588 + b * 28 + c + 44032) :
+            String.fromCharCode(initialIndex * 588 + medialIndex * 28 + finalIndex + 44032) :
             (compoundVowels[this.initial] || consonantDigraphs[this.initial] || this.initial);
     }
 
@@ -36,15 +36,17 @@ export class Block {
      * @param {string} character 
      */
     static fromChar (character, separateMedialDigraph = true, separateFinalDigraph = true) {
-        let z = character.charCodeAt(0) - 44032;
+        let workingIndex = character.charCodeAt(0) - 44032;
         
-        if (z < 0) return new Block(character);
+        if (workingIndex < 0) return new Block(character);
         
-        let initialIndex = ~~(z / 588);
-        z -= initialIndex * 588;
-        let medialIndex = ~~(z / 28);
-        z -= medialIndex * 28;
-        let finalIndex = z - 1;
+        let initialIndex = ~~(workingIndex / 588);
+        
+        workingIndex -= initialIndex * 588;
+        let medialIndex = ~~(workingIndex / 28);
+        
+        workingIndex -= medialIndex * 28;
+        let finalIndex = workingIndex - 1;
         
         return new Block(
             initials[initialIndex],
