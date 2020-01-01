@@ -17,18 +17,18 @@ export class Block {
      */
     toChar () {
         const a = initials.indexOf(this.initial),
-            b = this.medial.length == 1
-                ? medials.indexOf(this.medial)
-                : medials.indexOf(compoundVowels[this.medial]),
-            c = (this.final.length == 1
-                ? finals.indexOf(this.final)
-                : finals.indexOf(consonantDigraphs[this.final])) + 1;
+            b = this.medial.length == 1 ?
+                    medials.indexOf(this.medial) :
+                    medials.indexOf(compoundVowels[this.medial]),
+            c = (this.final.length == 1 ?
+                    finals.indexOf(this.final) :
+                    finals.indexOf(consonantDigraphs[this.final])) + 1;
 
-        return (a > -1 && b >-1)
+        return (a > -1 && b >-1) ?
             // Jamo to Unicode character formula: (initial)×588 + (medial)×28 + (final) + 44032
-            ? String.fromCharCode(a * 588 + b * 28 + c + 44032)
-            : (compoundVowels[this.initial] || consonantDigraphs[this.initial] || this.initial);
-    };
+            String.fromCharCode(a * 588 + b * 28 + c + 44032) :
+            (compoundVowels[this.initial] || consonantDigraphs[this.initial] || this.initial);
+    }
 
     /**
      * @param {string} character 
@@ -57,16 +57,16 @@ export function Compositor () {
 
     this.reset = () => {
         block = new Block();
-    }
+    };
 
     /**
      * @param {string} jamo
      */
-    this.addJamo = jamo => block.medial.length === 0
-        ? addInitialJamo(jamo)
-        : block.final.length === 0
-            ? addMedialJamo(jamo)
-            : addFinalJamo(jamo);
+    this.addJamo = jamo => block.medial.length === 0 ?
+        addInitialJamo(jamo) :
+        block.final.length === 0 ?
+            addMedialJamo(jamo) :
+            addFinalJamo(jamo);
 
     this.removeLastJamo = () =>  {
         ["final", "medial", "initial"].some(key => {
@@ -165,8 +165,8 @@ export function Compositor () {
     function addFinalJamo (jamo) {
         const combined = block.final + jamo;
         const isValidFinal =
-            (!block.final && finals.indexOf(jamo) > -1)
-            || consonantDigraphs[combined];
+            (!block.final && finals.indexOf(jamo) > -1) ||
+            consonantDigraphs[combined];
 
         if (isValidFinal) {
             // C+(V|VV)+(C|CC)
@@ -191,7 +191,7 @@ export function Compositor () {
             return {
                 completed,
                 inProgress: block.toChar()
-            }
+            };
         }
     }
 }

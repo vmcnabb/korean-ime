@@ -11,9 +11,9 @@ export class InputProxy {
         const start = element.selectionStart;
         let end = element.selectionEnd;
 
-        element.value = element.value.substring(0, start)
-            + text
-            + element.value.substring(end, element.value.length);
+        element.value = element.value.substring(0, start) +
+            text +
+            element.value.substring(end, element.value.length);
         end = start + text.length;
         element.selectionStart = start;
         element.selectionEnd = end;
@@ -23,7 +23,7 @@ export class InputProxy {
         this.element.selectionStart = this.element.selectionEnd;
     }
 
-    reset() {};
+    reset() {}
 
     /**
      * @param {string} text 
@@ -31,7 +31,7 @@ export class InputProxy {
     endComposition (text) {
         this.updateComposition(text);
         this.deselect();
-    };
+    }
 
     selectPreviousCharacter () {
         // input[type=text]

@@ -104,8 +104,9 @@ export function HangulEditor (element) {
             addListener(key, eventHandlers[key])
         );
 
-        return isActive = true;
-    };
+        isActive = true;
+        return true;
+    }
 
     function deactivate ()  {
         if (!element) return false;
@@ -122,10 +123,10 @@ export function HangulEditor (element) {
 
         isActive = false;
         return true;
-    };
+    }
 
     function addListener (event, fn) {
         element.addEventListener(event, fn, true);
         listeners.push({ event, fn });
     }
-};
+}

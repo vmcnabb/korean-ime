@@ -1,5 +1,5 @@
 ﻿// Copyright © 2012-2018 Vincent McNabb
-import { CompositionProxyFactory } from "./compositionProxyFactory"
+import { CompositionProxyFactory } from "./compositionProxyFactory";
 import { HangulEditor } from "./hangulEditor";
 
 const state = {
@@ -57,9 +57,9 @@ document.addEventListener(
 );
 
 function getActiveElement (doc) {
-    return (doc.activeElement && doc.activeElement.contentDocument)
-        ? getActiveElement(doc.activeElement.contentDocument)
-        : doc.activeElement;
+    return (doc.activeElement && doc.activeElement.contentDocument) ?
+        getActiveElement(doc.activeElement.contentDocument) :
+        doc.activeElement;
 }
 
 var editableElements = {};
