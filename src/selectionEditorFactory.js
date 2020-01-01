@@ -6,13 +6,16 @@ export class SelectionEditorFactory {
     static createSelectionEditor (element) {
         if (element.selectionStart !== undefined) {
             return new InputSelectionEditor(element);
+            
+        } else if (element.isContentEditable && isGoogleDocsTextEventFrame()) {
+            return new GoogleDocsSelectionEditor(element);
 
         } else if (element.isContentEditable) {
-            if (window.frameElement && window.frameElement.classList.contains("docs-texteventtarget-iframe")) {
-                return new GoogleDocsSelectionEditor(element);
-            }
-
             return new ContentEditableSelectionEditor(element);
         }
     }
+}
+
+function isGoogleDocsTextEventFrame() {
+    return window.frameElement && window.frameElement.classList.contains("docs-texteventtarget-iframe");
 }
