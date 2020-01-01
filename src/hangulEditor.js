@@ -1,10 +1,4 @@
-﻿// Copyright © 2009-2018 Vincent McNabb
-
-// Hangul Editor
-// Created: 29 May 2009 
-
-// Romanization
-// Created: 9 April 2012
+﻿"use strict";
 
 import { hangulMaps as maps, isHangul } from "./mappings";
 import { Compositor } from "./composition";

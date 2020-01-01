@@ -1,3 +1,5 @@
+"use strict";
+
 import { InputProxy } from "./compositionProxy/inputProxy";
 import { ContentEditableProxy } from "./compositionProxy/contentEditableProxy";
 import { GoogleDocsProxy } from "./compositionProxy/googleDocsProxy";

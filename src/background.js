@@ -1,3 +1,4 @@
+"use strict";
 // Copyright © 2012-2018 Vincent McNabb
 import { romanize } from "./romanize";
 
@@ -40,10 +41,10 @@ chrome.contextMenus.create({
                 width: 600,
                 height: 400
             },
-            function (window) {
+            function (newWindow) {
                 setTimeout(() => {
                     chrome.tabs.sendRequest(
-                        window.tabs[0].id,
+                        newWindow.tabs[0].id,
                         {
                             action: 'fill',
                             original: selectionText,

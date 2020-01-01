@@ -1,3 +1,5 @@
+"use strict";
+
 export class InputProxy {
     constructor (element) {
         this.element = element;

@@ -1,4 +1,5 @@
-﻿// Copyright © 2012-2018 Vincent McNabb
+﻿"use strict";
+
 import { CompositionProxyFactory } from "./compositionProxyFactory";
 import { HangulEditor } from "./hangulEditor";
 
