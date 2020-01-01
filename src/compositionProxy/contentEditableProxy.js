@@ -2,7 +2,6 @@
  * @param {HTMLElement} element
  */
 export function ContentEditableProxy (element) {
-    var selected;
     const updateComposition = this.updateComposition = function(text) {
         const selection = element.ownerDocument.getSelection();
         const range = selection.getRangeAt(0);
@@ -11,8 +10,7 @@ export function ContentEditableProxy (element) {
         range.insertNode(document.createTextNode(text));
         selection.removeAllRanges();
         selection.addRange(range);
-        selected = { range, selection };
-    }
+    };
 
     const deselect = this.deselect = function() {
         const selection = element.ownerDocument.getSelection();
@@ -20,12 +18,9 @@ export function ContentEditableProxy (element) {
         range.collapse(false);
         selection.removeAllRanges();
         selection.addRange(range);
-        selected = undefined;
-    }
-
-    this.reset = () => {
-        selected = undefined;
     };
+
+    this.reset = () => {};
 
     this.endComposition = function(text) {
         updateComposition(text);
@@ -42,5 +37,5 @@ export function ContentEditableProxy (element) {
             return selection.focusNode.nodeValue.substr(startOffset - 1, 1);
 
         } else return false;
-    }
+    };
 }

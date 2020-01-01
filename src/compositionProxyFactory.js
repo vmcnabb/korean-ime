@@ -1,5 +1,5 @@
 import { InputProxy } from "./compositionProxy/inputProxy";
-import { ContentEditableProxy } from "./compositionProxy/contentEditableProxy"
+import { ContentEditableProxy } from "./compositionProxy/contentEditableProxy";
 import { GoogleDocsProxy } from "./compositionProxy/googleDocsProxy";
 
 export class CompositionProxyFactory {
