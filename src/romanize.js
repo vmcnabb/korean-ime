@@ -1,5 +1,5 @@
-import { Block } from "./composition.js";
-import { hangulMaps as maps, isHangul } from "./mappings.js";
+import { Block } from "./composition";
+import { hangulMaps as maps, isHangul } from "./mappings";
 
 /**
  * Return a string with the hangul converted into Roman characters, e.g.
