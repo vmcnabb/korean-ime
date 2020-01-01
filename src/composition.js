@@ -12,6 +12,9 @@ export class Block {
         return new Block(this.initial, this.medial, this.final);
     }
 
+    /**
+     * @returns {string}
+     */
     toChar () {
         const a = initials.indexOf(this.initial),
             b = this.medial.length == 1
