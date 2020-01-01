@@ -1,3 +1,5 @@
+"use strict";
+
 class Map {
     constructor (keys, values) {
         if (keys.length !== values.length) throw "Keys and values must be of equal length.";

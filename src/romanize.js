@@ -1,3 +1,5 @@
+"use strict";
+
 import { Block } from "./composition";
 import { hangulMaps as maps, isHangul } from "./mappings";
 

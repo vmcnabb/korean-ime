@@ -1,3 +1,5 @@
+"use strict";
+
 export class GoogleDocsProxy {
     constructor (element) {
         this.element = element;

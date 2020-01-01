@@ -1,3 +1,5 @@
+"use strict";
+
 import { hangulMaps, isHangul } from "./mappings";
 const { initials, medials, finals, compoundVowels, consonantDigraphs } = hangulMaps;
 
@@ -38,16 +40,16 @@ export class Block {
         
         if (z < 0) return new Block(character);
         
-        let a = ~~(z / 588);
-        z -= a * 588;
-        let b = ~~(z / 28);
-        z -= b * 28;
-        let c = z - 1;
+        let initialIndex = ~~(z / 588);
+        z -= initialIndex * 588;
+        let medialIndex = ~~(z / 28);
+        z -= medialIndex * 28;
+        let finalIndex = z - 1;
         
         return new Block(
-            initials[a],
-            (separateMedialDigraph ? compoundVowels[medials[b]] : null) || medials[b],
-            (separateFinalDigraph ? consonantDigraphs[finals[c]] : null) || finals[c]
+            initials[initialIndex],
+            (separateMedialDigraph ? compoundVowels[medials[medialIndex]] : null) || medials[medialIndex],
+            (separateFinalDigraph ? consonantDigraphs[finals[finalIndex]] : null) || finals[finalIndex]
         );
     }
 }
