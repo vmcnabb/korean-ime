@@ -1,7 +1,4 @@
 export class InputSelectionEditor {
-    /**
-     * @param {HTMLInputElement} element
-     */
     constructor (element) {
         this.element = element;
     }
