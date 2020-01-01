@@ -6,9 +6,9 @@
 // Romanization
 // Created: 9 April 2012
 
-import { hangulMaps as maps, isHangul } from "./mappings.js";
-import { Compositor } from "./composition.js";
-import { SelectionEditorFactory } from "./selectionEditorFactory.js";
+import { hangulMaps as maps, isHangul } from "./mappings";
+import { Compositor } from "./composition";
+import { CompositionProxyFactory } from "./selectionEditorFactory";
 
 /**
  * @param {HTMLElement} element 
@@ -17,7 +17,7 @@ export function HangulEditor (element) {
     let isActive = false;
 
     const compositor = new Compositor();
-    const editor = SelectionEditorFactory.createSelectionEditor(element);
+    const editor = CompositionProxyFactory.createSelectionEditor(element);
 
     this.activate = activate;
     this.deactivate = deactivate;

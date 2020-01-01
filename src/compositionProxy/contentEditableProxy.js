@@ -1,7 +1,7 @@
 /**
  * @param {HTMLElement} element
  */
-export function ContentEditableSelectionEditor (element) {
+export function ContentEditableProxy (element) {
     var selected;
     const updateComposition = this.updateComposition = function(text) {
         const selection = element.ownerDocument.getSelection();

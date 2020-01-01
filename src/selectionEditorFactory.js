@@ -1,17 +1,17 @@
-import { InputSelectionEditor } from "./inputSelectionEditor.js";
-import { ContentEditableSelectionEditor } from "./contentEditableSelectionEditor.js"
-import { GoogleDocsSelectionEditor } from "./googleDocsSelectionEditor.js";
+import { InputProxy } from "./compositionProxy/inputProxy";
+import { ContentEditableProxy } from "./compositionProxy/contentEditableProxy"
+import { GoogleDocsProxy } from "./compositionProxy/googleDocsProxy";
 
-export class SelectionEditorFactory {
+export class CompositionProxyFactory {
     static createSelectionEditor (element) {
         if (element.selectionStart !== undefined) {
-            return new InputSelectionEditor(element);
+            return new InputProxy(element);
             
         } else if (element.isContentEditable && isGoogleDocsTextEventFrame()) {
-            return new GoogleDocsSelectionEditor(element);
+            return new GoogleDocsProxy(element);
 
         } else if (element.isContentEditable) {
-            return new ContentEditableSelectionEditor(element);
+            return new ContentEditableProxy(element);
         }
     }
 }

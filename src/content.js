@@ -1,5 +1,5 @@
 ﻿// Copyright © 2012-2018 Vincent McNabb
-import { SelectionEditorFactory } from "./selectionEditorFactory.js";
+import { CompositionProxyFactory } from "./selectionEditorFactory"
 import { HangulEditor } from "./hangulEditor.js";
 
 const state = {
@@ -25,7 +25,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             let element = getActiveElement(document);
 
             if (element) {
-                const sel = SelectionEditorFactory.createSelectionEditor(element);
+                const sel = CompositionProxyFactory.createSelectionEditor(element);
                 if (sel) {
                     sel.deselect();
                     sel.insert(request.data);

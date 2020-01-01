@@ -1,4 +1,4 @@
-export class InputSelectionEditor {
+export class InputProxy {
     constructor (element) {
         this.element = element;
     }
