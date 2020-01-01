@@ -1,8 +1,8 @@
 rmdir /s /q dist
 
-call webpack src/content.js dist/content.js
-call webpack src/background.js dist/background.js
-call webpack src/popup-converter/popup-converter.js dist/popup-converter/popup-converter.js
+call webpack src/content.js --output dist/content.js
+call webpack src/background.js --output dist/background.js
+call webpack src/popup-converter/popup-converter.js --output dist/popup-converter/popup-converter.js
 
 xcopy /s src\images dist\images\
 xcopy /s src\_locales dist\_locales\
