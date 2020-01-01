@@ -8,7 +8,7 @@
 
 import { hangulMaps as maps, isHangul } from "./mappings";
 import { Compositor } from "./composition";
-import { CompositionProxyFactory } from "./selectionEditorFactory";
+import { CompositionProxyFactory } from "./compositionProxyFactory";
 
 /**
  * @param {HTMLElement} element 
