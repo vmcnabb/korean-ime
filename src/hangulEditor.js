@@ -39,10 +39,10 @@ export function HangulEditor (element) {
             if (code === "Backspace" && compositor.isCompositing()) {
                 const block = compositor.removeLastJamo();
                 if (block) {
-                    editor.replace(block);
+                    editor.updateComposition(block);
 
                 } else {
-                    editor.insert("");
+                    editor.endComposition("");
                 }
                 notifyChange();
 
@@ -70,15 +70,15 @@ export function HangulEditor (element) {
             const block = compositor.addJamo(jamo);
 
             if (block.completed) {
-                editor.insert(block.completed);
+                editor.endComposition(block.completed);
             }
 
             if (block.inProgress) {
                 if (isHangul(block.inProgress)) {
-                    editor.replace(block.inProgress);
+                    editor.updateComposition(block.inProgress);
 
                 } else {
-                    editor.insert(block.inProgress);
+                    editor.endComposition(block.inProgress);
                 }
                 notifyChange();
             }

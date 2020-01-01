@@ -9,7 +9,7 @@ export class InputSelectionEditor {
     /**
      * @param {string} text 
      */
-    replace (text) {
+    updateComposition (text) {
         const element = this.element;
         const start = element.selectionStart;
         let end = element.selectionEnd;
@@ -31,8 +31,8 @@ export class InputSelectionEditor {
     /**
      * @param {string} text 
      */
-    insert (text) {
-        this.replace(text);
+    endComposition (text) {
+        this.updateComposition(text);
         this.deselect();
     };
 
