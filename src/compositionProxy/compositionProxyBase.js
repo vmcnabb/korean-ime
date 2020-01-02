@@ -5,7 +5,8 @@ export class CompositionProxyBase {
         this.element = element;
     }
 
-    reset() {}
+    /** call when focus has blurred from where the current character is being composited */
+    blur() {}
 
     selectPreviousCharacter() {}
 }

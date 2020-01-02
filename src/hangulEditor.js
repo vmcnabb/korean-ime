@@ -86,11 +86,11 @@ export function HangulEditor (element) {
         },
         blur: () => {
             compositor.reset();
-            editor.reset();
+            editor.blur();
         },
         mousedown: () => {
             compositor.reset();
-            editor.reset();
+            editor.blur();
         }
     };
     const listeners = [];
