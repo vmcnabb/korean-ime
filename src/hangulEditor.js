@@ -93,13 +93,15 @@ export function HangulEditor (element) {
             editor.blur();
         }
     };
+
+    /** @type {{target:EventTarget,type:string,listener:EventListener}[]} */
     const listeners = [];
 
     function activate () {
         if (isActive) return false;
 
-        Object.keys(eventHandlers).forEach(key =>
-            addListener(key, eventHandlers[key])
+        Object.keys(eventHandlers).forEach(type =>
+            addListener(editor.getListenerTarget(type), type, eventHandlers[type])
         );
 
         isActive = true;
@@ -116,15 +118,15 @@ export function HangulEditor (element) {
         
         while (listeners.length) {
             let listener = listeners.pop();
-            element.removeEventListener(listener.event, listener.fn, true);
+            listener.target.removeEventListener(listener.type, listener.listener, true);
         }
 
         isActive = false;
         return true;
     }
 
-    function addListener (event, fn) {
-        element.addEventListener(event, fn, true);
-        listeners.push({ event, fn });
+    function addListener (/** @type {EventTarget} */ target, /** @type {string} */ type, /** @type {EventListener} */ listener) {
+        target.addEventListener(type, listener, true);
+        listeners.push({ target, event: type, listener });
     }
 }
