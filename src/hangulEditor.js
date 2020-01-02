@@ -61,6 +61,15 @@ export function HangulEditor (element) {
             }
 
             const jamo = key.shift && event.shiftKey ? key.shift : key.normal;
+
+            if (!isHangul(jamo)) {
+                if (compositor.isCompositing()) {
+                    editor.endComposition(compositor.getCurrent());
+                    compositor.reset();
+                }
+                return true;
+            }
+
             const block = compositor.addJamo(jamo);
 
             if (block.completed) {
@@ -68,12 +77,7 @@ export function HangulEditor (element) {
             }
 
             if (block.inProgress) {
-                if (isHangul(block.inProgress)) {
-                    editor.updateComposition(block.inProgress);
-
-                } else {
-                    editor.endComposition(block.inProgress);
-                }
+                editor.updateComposition(block.inProgress);
                 notifyChange();
             }
 
