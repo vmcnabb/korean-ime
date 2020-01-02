@@ -1,10 +1,8 @@
 "use strict";
 
-export class InputProxy {
-    constructor (element) {
-        this.element = element;
-    }
+import { CompositionProxyBase } from "./compositionProxyBase";
 
+export class InputProxy extends CompositionProxyBase {
     /**
      * @param {string} text 
      */
@@ -24,8 +22,6 @@ export class InputProxy {
     deselect () {
         this.element.selectionStart = this.element.selectionEnd;
     }
-
-    reset() {}
 
     /**
      * @param {string} text 

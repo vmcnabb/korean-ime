@@ -1,37 +1,33 @@
 "use strict";
 
-/**
- * @param {HTMLElement} element
- */
-export function ContentEditableProxy (element) {
-    const updateComposition = this.updateComposition = function(text) {
-        const selection = element.ownerDocument.getSelection();
+import { CompositionProxyBase } from "./compositionProxyBase";
+
+export class ContentEditableProxy extends CompositionProxyBase {
+    updateComposition (text) {
+        const selection = this.element.ownerDocument.getSelection();
         const range = selection.getRangeAt(0);
-        
         range.deleteContents();
         range.insertNode(document.createTextNode(text));
         selection.removeAllRanges();
         selection.addRange(range);
-    };
+    }
 
-    const deselect = this.deselect = function() {
-        const selection = element.ownerDocument.getSelection();
+    deselect () {
+        const selection = this.element.ownerDocument.getSelection();
         const range = selection.getRangeAt(0);
         range.collapse(false);
         selection.removeAllRanges();
         selection.addRange(range);
-    };
+    }
 
-    this.reset = () => {};
+    endComposition (text) {
+        this.updateComposition(text);
+        this.deselect();
+    }
 
-    this.endComposition = function(text) {
-        updateComposition(text);
-        deselect();
-    };
-
-    this.selectPreviousCharacter = function () {
+    selectPreviousCharacter () {
         // [contentEditable]
-        const selection = element.ownerDocument.getSelection();
+        const selection = this.element.ownerDocument.getSelection();
         const startOffset = selection.focusOffset;
 
         if (selection.type === "Caret" && startOffset > 0) {
@@ -39,5 +35,5 @@ export function ContentEditableProxy (element) {
             return selection.focusNode.nodeValue.substr(startOffset - 1, 1);
 
         } else return false;
-    };
+    }
 }

@@ -1,8 +1,11 @@
 "use strict";
 
-export class GoogleDocsProxy {
+import { CompositionProxyBase } from "./compositionProxyBase";
+
+export class GoogleDocsProxy extends CompositionProxyBase {
     constructor (element) {
-        this.element = element;
+        this.super(element);
+
         this.isCompositing = false;
         /** @type {string} */
         this.currentBlock = undefined;
