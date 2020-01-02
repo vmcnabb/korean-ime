@@ -66,11 +66,17 @@ export function Compositor () {
     /**
      * @param {string} jamo
      */
-    this.addJamo = jamo => block.medial.length === 0 ?
-        addInitialJamo(jamo) :
-        block.final.length === 0 ?
-            addMedialJamo(jamo) :
-            addFinalJamo(jamo);
+    this.addJamo = jamo => {
+        if (!isHangul(jamo)) {
+            throw new Error("addJamo(jamo) must be called with a valid jamo.");
+        }
+
+        return block.medial.length === 0 ?
+            addInitialJamo(jamo) :
+            block.final.length === 0 ?
+                addMedialJamo(jamo) :
+                addFinalJamo(jamo);
+    };
 
     this.removeLastJamo = () =>  {
         ["final", "medial", "initial"].some(key => {
@@ -93,6 +99,8 @@ export function Compositor () {
 
     this.isCompositing = () => block.initial.length > 0;
 
+    this.getCurrent = () => block.toChar();
+
     /**
      * Called when either nothing exists, or an initial exists
      * @param {string} jamo 
@@ -100,10 +108,7 @@ export function Compositor () {
     function addInitialJamo (jamo) {
         const combined = block.initial + jamo;
 
-        if (!isHangul(jamo)) {
-            return { completed: jamo };
-
-        } else if(compoundVowels[combined] || consonantDigraphs[combined] || !block.initial) {
+        if(compoundVowels[combined] || consonantDigraphs[combined] || !block.initial) {
             // (V)V or (C)C or C or V, or nothing
             block.initial = combined;
             return {

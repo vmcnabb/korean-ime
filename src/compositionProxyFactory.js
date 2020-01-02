@@ -8,7 +8,7 @@ export class CompositionProxyFactory {
     static createSelectionEditor (element) {
         if (element.selectionStart !== undefined) {
             return new InputProxy(element);
-            
+
         } else if (element.isContentEditable && isGoogleDocsTextEventFrame()) {
             return new GoogleDocsProxy(element);
 
