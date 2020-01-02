@@ -127,6 +127,6 @@ export function HangulEditor (element) {
 
     function addListener (/** @type {EventTarget} */ target, /** @type {string} */ type, /** @type {EventListener} */ listener) {
         target.addEventListener(type, listener, true);
-        listeners.push({ target, event: type, listener });
+        listeners.push({ target, type, listener });
     }
 }
