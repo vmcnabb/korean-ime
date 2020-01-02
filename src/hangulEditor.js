@@ -25,9 +25,29 @@ export function HangulEditor (element) {
         }
     }
 
+    let lastAlt = "";
+
     const eventHandlers = {
         keydown: (/** @type {KeyboardEvent} */ event) => {
             const code = event.code;
+
+            if (["AltRight", "AltLeft"].includes(code)) {
+                lastAlt = code;
+                return;
+            }
+
+            if (!isActive) {
+                if (event.altKey && lastAlt === "AltRight") {
+                    // insert character manually when "han/yeong" key is down so that a menu isn't triggered
+                    editor.updateComposition(event.key);
+                    editor.endComposition(event.key);
+                    event.preventDefault();
+                    return false;
+                }
+
+                return true;
+            }
+
             const key = maps.keyboardMap[code];
 
             if (code === "Backspace" && compositor.isCompositing()) {
@@ -43,11 +63,6 @@ export function HangulEditor (element) {
                 event.preventDefault();
                 event.stopPropagation();
                 return false;
-            }
-
-            // ignore modifier keys
-            if (["Shift", "Control", "Alt"].includes(event.key)) {
-                return true;
             }
 
             // don't interfere with keyboard shortcuts or keys we don't understand
@@ -67,6 +82,7 @@ export function HangulEditor (element) {
                     editor.endComposition(compositor.getCurrent());
                     compositor.reset();
                 }
+
                 return true;
             }
 
@@ -85,10 +101,14 @@ export function HangulEditor (element) {
             return false;
         },
         blur: () => {
+            if (!isActive) return;
+
             compositor.reset();
             editor.blur();
         },
         mousedown: () => {
+            if (!isActive) return;
+
             compositor.reset();
             editor.blur();
         }
@@ -96,33 +116,21 @@ export function HangulEditor (element) {
 
     /** @type {{target:EventTarget,type:string,listener:EventListener}[]} */
     const listeners = [];
+    Object.keys(eventHandlers).forEach(type =>
+        addListener(editor.getListenerTarget(type), type, eventHandlers[type])
+    );
 
     function activate () {
-        if (isActive) return false;
-
-        Object.keys(eventHandlers).forEach(type =>
-            addListener(editor.getListenerTarget(type), type, eventHandlers[type])
-        );
-
         isActive = true;
-        return true;
     }
 
     function deactivate ()  {
-        if (!element) return false;
-
         if (compositor.isCompositing()) {
             compositor.reset();
             editor.deselect();
         }
         
-        while (listeners.length) {
-            let listener = listeners.pop();
-            listener.target.removeEventListener(listener.type, listener.listener, true);
-        }
-
         isActive = false;
-        return true;
     }
 
     function addListener (/** @type {EventTarget} */ target, /** @type {string} */ type, /** @type {EventListener} */ listener) {
