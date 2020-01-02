@@ -12,8 +12,7 @@ export class GoogleDocsProxy extends CompositionProxyBase {
     }
 
     blur () {
-        this.element.dispatchEvent(new CompositionEvent("compositionend", { data: "" }));
-        this.currentBlock = undefined;
+        this.endComposition(this.currentBlock);
     }
 
     deselect () {
