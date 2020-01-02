@@ -4,7 +4,7 @@ import { CompositionProxyBase } from "./compositionProxyBase";
 
 export class GoogleDocsProxy extends CompositionProxyBase {
     constructor (element) {
-        this.super(element);
+        super(element);
 
         this.isCompositing = false;
         /** @type {string} */
@@ -35,5 +35,16 @@ export class GoogleDocsProxy extends CompositionProxyBase {
     endComposition (completed) {
         this.element.dispatchEvent(new CompositionEvent("compositionend", { data: completed }));
         this.currentBlock = undefined;
+    }
+
+    /** @returns {EventTarget} */
+    getListenerTarget(/** @type {string} */ eventType) {
+        switch (eventType) {
+            case "mousedown":
+                return window.parent.document;
+
+            default:
+                return this.element;
+        }
     }
 }

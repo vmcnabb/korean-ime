@@ -9,4 +9,9 @@ export class CompositionProxyBase {
     blur() {}
 
     selectPreviousCharacter() {}
+
+    /** @returns {EventTarget} */
+    getListenerTarget(/** @type {string} */ eventType) {
+        return this.element;
+    }
 }
