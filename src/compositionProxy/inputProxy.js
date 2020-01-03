@@ -32,7 +32,6 @@ export class InputProxy extends CompositionProxyBase {
     }
 
     selectPreviousCharacter () {
-        // input[type=text]
         const element = this.element;
         const start = element.selectionStart - 1;
         const end = start + 1;
