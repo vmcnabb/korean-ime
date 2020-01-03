@@ -26,7 +26,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             let element = getActiveElement(document);
 
             if (element) {
-                const sel = CompositionProxyFactory.createSelectionEditor(element);
+                const sel = CompositionProxyFactory.createCompositionProxy(element);
                 if (sel) {
                     sel.deselect();
                     sel.insert(request.data);
