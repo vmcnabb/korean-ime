@@ -5,7 +5,7 @@ import { ContentEditableProxy } from "./compositionProxy/contentEditableProxy";
 import { GoogleDocsProxy } from "./compositionProxy/googleDocsProxy";
 
 export class CompositionProxyFactory {
-    static createSelectionEditor (element) {
+    static createCompositionProxy (element) {
         if (element.selectionStart !== undefined) {
             return new InputProxy(element);
 

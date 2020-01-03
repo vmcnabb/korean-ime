@@ -11,7 +11,7 @@ export function HangulEditor (element) {
     let isActive = false;
 
     const compositor = new Compositor();
-    const editor = CompositionProxyFactory.createSelectionEditor(element);
+    const editor = CompositionProxyFactory.createCompositionProxy(element);
 
     this.activate = activate;
     this.deactivate = deactivate;
