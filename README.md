@@ -16,11 +16,4 @@ You can [install Korean IME extension from the Chrome Web Store](https://chrome.
 
 ## [Change Log](CHANGELOG.md)
 
-## Development Dependencies
-* Packaging script dependencies:
-  * Windows
-  * Webpack installed globally or locally (easiest through npm)
-    * npm install webpack -g
-  * 7-Zip in path
-
 It should be fairly easy to modify the script to use Grunt or to use different dependencies.

@@ -1,8 +1,11 @@
 import { series, src, dest, parallel } from "gulp";
-import browserify from "gulp-browserify";
+import browserify from "browserify";
 import babelify from "babelify";
 import del from "del";
-
+import glob from "glob";
+import source from "vinyl-source-stream";
+import eventStream from "event-stream";
+import path from "path";
 import log from "fancy-log";
 import packageJson from "./package.json";
 
@@ -38,12 +41,13 @@ function locales() {
 }
 
 function manifest() {
-    return src("src/manifest.json").pipe(dest("dist"));
+    return src("src/manifest.json")
+        .pipe(dest("dist"));
 }
 
 function js() {
     return compileJs(
-        src(["src/background.js", "src/content.js"]),
+        ["src/background.js", "src/content.js"],
         dest("dist")
     );
 }
@@ -57,19 +61,32 @@ function popupConverterFiles() {
 
 function popupConverterJs() {
     return compileJs(
-        src("src/popup-converter/popup-converter.js"),
+        "src/popup-converter/popup-converter.js",
         dest("dist/popup-converter/")
     );
 }
 
 /**
- * @param {NodeJS.ReadWriteStream} src 
+ * @param {string|string[]} globs 
  * @param {NodeJS.ReadWriteStream} dest 
  */
-function compileJs(src, dest) {
-    const browserfied = src.pipe(browserify({
-        "transform": babelify
-    }));
+function compileJs(globs, dest) {
+    globs = Array.isArray(globs) ? globs : [globs];
+
+    /** @type {string[]} */
+    const files = globs.map(g => {
+        return glob.sync(g);
+    }).flat();
+
+    const browserfied = eventStream.merge.apply(null, files.map(entry => 
+        browserify({
+                entries: entry,
+                debug: true,
+                transform: babelify
+            })
+            .bundle()
+            .pipe(source(path.basename(entry)))
+    ));
 
     return browserfied.pipe(dest);
 }
