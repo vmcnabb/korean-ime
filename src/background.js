@@ -1,5 +1,6 @@
 "use strict";
-// Copyright © 2012-2018 Vincent McNabb
+
+// Copyright © 2012-2020 Vincent McNabb
 import { romanize } from "./romanize";
 
 let tabStates = {};
