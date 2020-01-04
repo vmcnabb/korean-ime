@@ -1,0 +1,30 @@
+{
+  "name": "korean-ime",
+  "version": "2.2.0",
+  "description": "Allow people to type Hanguel in Chrome when the OS does not have a Korean IME installed.",
+  "private": true,
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "gulp"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vmcnabb/korean-ime.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/vmcnabb/korean-ime/issues"
+  },
+  "homepage": "https://github.com/vmcnabb/korean-ime#readme",
+  "devDependencies": {
+    "@babel/core": "^7.7.7",
+    "@babel/plugin-transform-modules-commonjs": "^7.7.5",
+    "@types/chrome": "0.0.91",
+    "babelify": "^10.0.0",
+    "del": "^5.1.0",
+    "esm": "^3.2.25",
+    "gulp": "^4.0.2",
+    "gulp-browserify": "^0.5.1"
+  }
+}
