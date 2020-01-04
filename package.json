@@ -1,6 +1,6 @@
 {
   "name": "korean-ime",
-  "version": "2.2.0",
+  "version": "1.2.0",
   "description": "Allow people to type Hanguel in Chrome when the OS does not have a Korean IME installed.",
   "private": true,
   "scripts": {
