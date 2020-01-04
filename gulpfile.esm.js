@@ -6,6 +6,7 @@ import glob from "glob";
 import source from "vinyl-source-stream";
 import eventStream from "event-stream";
 import path from "path";
+import replace from "gulp-replace";
 import log from "fancy-log";
 import packageJson from "./package.json";
 
@@ -42,6 +43,7 @@ function locales() {
 
 function manifest() {
     return src("src/manifest.json")
+        .pipe(replace("[package-version]", packageJson.version))
         .pipe(dest("dist"));
 }
 
