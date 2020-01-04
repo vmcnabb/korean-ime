@@ -1,6 +1,11 @@
 Download the latest release at the Chrome Web Store:
 [https://chrome.google.com/webstore/detail/korean-ime/cimmbifnciobjhchpimjekibbndgmkfk?hl=en-GB]
 
+# 1.2.0
+2020-01-04
+### Features
+* Added support for Google Docs
+
 # 1.1.7
 2018-01-20
 ### Fixes
