@@ -9,8 +9,10 @@ import path from "path";
 import replace from "gulp-replace";
 import log from "fancy-log";
 import packageJson from "./package.json";
+import terser from "gulp-terser";
+import buffer from "vinyl-buffer";
 
-exports.default = series(
+const buildTasks = series(
     clean,
     reportProjectVersion,
     popupConverterFiles,
@@ -22,6 +24,28 @@ exports.default = series(
         manifest
     )
 );
+
+exports.dev = series(
+    setDev,
+    buildTasks
+);
+
+exports.prod = series(
+    setProd,
+    buildTasks
+);
+
+let buildMode;
+
+function setDev(cb) {
+    buildMode = "dev";
+    cb();
+}
+
+function setProd(cb) {
+    buildMode = "prod";
+    cb();
+}
 
 export function clean(cb) {
     log("clean...");
@@ -80,15 +104,20 @@ function compileJs(globs, dest) {
         return glob.sync(g);
     }).flat();
 
-    const browserfied = eventStream.merge.apply(null, files.map(entry => 
+    let browserfied = eventStream.merge.apply(null, files.map(entry => 
         browserify({
                 entries: entry,
-                debug: true,
+                debug: buildMode === "dev",
                 transform: babelify
             })
             .bundle()
             .pipe(source(path.basename(entry)))
+            .pipe(buffer())
     ));
+
+    if (buildMode === "prod") {
+        browserfied = browserfied.pipe(terser());
+    }
 
     return browserfied.pipe(dest);
 }
