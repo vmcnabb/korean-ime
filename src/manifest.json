@@ -28,7 +28,7 @@
         }
     ],
     "permissions": [
-        "tabs",
+        "activeTab",
         "contextMenus"
     ],
     "offline_enabled": true
