@@ -48,6 +48,14 @@ export function HangulEditor (element) {
                 return true;
             }
 
+            if (!compositor.isCompositing() && event.shiftKey && code === "Backspace") {
+                // select previous character if it is hanguel and put it into composition mode
+                const character = editor.selectPreviousCharacter();
+                if (isHangul(character)) {
+                    compositor.setCharacter(character);
+                }
+            }
+
             const key = maps.keyboardMap[code];
 
             if (code === "Backspace" && compositor.isCompositing()) {
@@ -56,8 +64,14 @@ export function HangulEditor (element) {
                     editor.updateComposition(block);
 
                 } else {
-                    editor.endComposition("");
+                    // hack for contentEditableProxy
+                    // would prefer `editor.endComposition("")` and no `return` which works in the inputProxy.
+                    // the hack works by replacing the character with an "x" then allowing the browser
+                    // (or Google Docs) to handle the backspace which immediately removes the "x".
+                    editor.endComposition("x");
+                    return true;
                 }
+
                 notifyChange();
 
                 event.preventDefault();
