@@ -1,17 +1,23 @@
 Download the latest release at the Chrome Web Store:
 [https://chrome.google.com/webstore/detail/korean-ime/cimmbifnciobjhchpimjekibbndgmkfk?hl=en-GB]
 
-# 1.2.0
+# 2.2.0
 2020-01-04
+
+Should have been 1.2.0, but after accidentally uploading a manifest to the Chrome Webstore with 2.2.0, it was
+impossible to reduce the version number.
+
 ### Features
 * Added support for Google Docs
+### Dev
+* Now use Gulp for building
 
 # 1.1.7
 2018-01-20
 ### Fixes
 * Shift+Backspace wasn't deleting the last jamo from the preceding character
 ### Features
-* Added British English translation
+* Added British English "translation"
 * Added Korean translation
 
 # 1.1.6
