@@ -15,5 +15,3 @@ You can [install Korean IME extension from the Chrome Web Store](https://chrome.
   * Select the text to convert, right click, and choose "Romanize" from the menu.
 
 ## [Change Log](CHANGELOG.md)
-
-It should be fairly easy to modify the script to use Grunt or to use different dependencies.
