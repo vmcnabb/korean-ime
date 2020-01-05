@@ -15,3 +15,8 @@ You can [install Korean IME extension from the Chrome Web Store](https://chrome.
   * Select the text to convert, right click, and choose "Romanize" from the menu.
 
 ## [Change Log](CHANGELOG.md)
+
+## Build
+Korean IME uses Gulp to build. Just type `npm start build` or `npm start build-dev`.
+
+The output goes to /dist and can be directly loaded as an unpacked extension.
