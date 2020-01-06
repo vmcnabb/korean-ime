@@ -101,6 +101,20 @@ chrome.contextMenus.create({
     }
 });
 
+chrome.contextMenus.create({
+    type: 'normal',
+    title: chrome.i18n.getMessage("menu_onScreenKeyboard"),
+    contexts: ["browser_action"],
+    onclick: (event, tab) => {
+        chrome.windows.create({
+            url: "popupKeyboard/index.html",
+            type: "popup",
+            width: 600,
+            height: 600
+        });
+    }
+});
+
 function setState (tab, toggle) {
     var tabState = tabStates[tab.id] = tabStates[tab.id] || { enabled: false };
     

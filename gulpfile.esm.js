@@ -16,12 +16,14 @@ const buildTasks = series(
     clean,
     reportProjectVersion,
     popupConverterFiles,
+    onScreenKeyboardFiles,
     parallel(
         js,
         popupConverterJs,
         images,
         locales,
-        manifest
+        manifest,
+        onScreenKeyboardJs
     )
 );
 
@@ -88,7 +90,21 @@ function popupConverterFiles() {
 function popupConverterJs() {
     return compileJs(
         "src/popup-converter/popup-converter.js",
-        dest("dist/popup-converter/")
+        dest("dist/popup-converter")
+    );
+}
+
+function onScreenKeyboardFiles() {
+    const path = "src/popupKeyboard";
+
+    return src([`${path}/*.html`, `${path}/*.css`])
+        .pipe(dest("dist/popupKeyboard"));
+}
+
+function onScreenKeyboardJs() {
+    return compileJs(
+        "src/popupKeyboard/index.js",
+        dest("dist/popupKeyboard")
     );
 }
 
