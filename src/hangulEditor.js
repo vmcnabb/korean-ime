@@ -89,9 +89,7 @@ export function HangulEditor (element) {
                 return true;
             }
 
-            const jamo = key.shift && event.shiftKey ? key.shift : key.normal;
-
-            if (!isHangul(jamo)) {
+            if (!key.jamo) {
                 if (compositor.isCompositing()) {
                     editor.endComposition(compositor.getCurrent());
                     compositor.reset();
@@ -100,6 +98,7 @@ export function HangulEditor (element) {
                 return true;
             }
 
+            const jamo = key.jamo.shift && event.shiftKey ? key.jamo.shift : key.jamo.normal;
             const block = compositor.addJamo(jamo);
 
             if (block.completed) {
