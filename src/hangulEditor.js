@@ -16,6 +16,7 @@ export function HangulEditor (element) {
     this.activate = activate;
     this.deactivate = deactivate;
     this.isActive = () => isActive;
+    this.addJamo = addJamo;
 
     var self = this;
 
@@ -105,16 +106,8 @@ export function HangulEditor (element) {
             }
 
             const jamo = key.jamo.shift && event.shiftKey ? key.jamo.shift : key.jamo.normal;
-            const block = compositor.addJamo(jamo);
 
-            if (block.completed) {
-                editor.endComposition(block.completed);
-            }
-
-            if (block.inProgress) {
-                editor.updateComposition(block.inProgress);
-                notifyChange();
-            }
+            addJamo(jamo);
 
             event.preventDefault();
             return false;
@@ -150,6 +143,19 @@ export function HangulEditor (element) {
         }
         
         isActive = false;
+    }
+
+    function addJamo(jamo) {
+        const block = compositor.addJamo(jamo);
+
+        if (block.completed) {
+            editor.endComposition(block.completed);
+        }
+
+        if (block.inProgress) {
+            editor.updateComposition(block.inProgress);
+            notifyChange();
+        }
     }
 
     function addListener (/** @type {EventTarget} */ target, /** @type {string} */ type, /** @type {EventListener} */ listener) {
