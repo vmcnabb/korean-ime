@@ -17,7 +17,7 @@ loadSettings();
 function loadSettings () {
     chrome.storage.sync.get(items => {
         Object.keys(settings).forEach(key => {
-            if (items.hasOwnProperty[key]) {
+            if (items.hasOwnProperty(key)) {
                 settings[key] = items[key];
             }
         });
