@@ -27,8 +27,12 @@
             "run_at": "document_end"
         }
     ],
+    "web_accessible_resources": [
+        "popupKeyboard/index.html"
+    ],
     "permissions": [
-        "contextMenus"
+        "contextMenus",
+        "storage"
     ],
     "offline_enabled": true
 }

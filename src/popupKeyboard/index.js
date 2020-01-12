@@ -3,13 +3,21 @@
 import m from "../mappings/koreanKeyboardMap";
 
 const layout = [
-    ["Backquote", "Digit1", "Digit2", "Digit3", "Digit4", "Digit5", "Digit6", "Digit7", "Digit8", "Digit9", "Digit0", "Minus", "Equals", "Backspace"],
-    ["Tab", "KeyQ", "KeyW", "KeyE", "KeyR", "KeyT", "KeyY", "KeyU", "KeyI", "KeyO", "KeyP", "BracketLeft", "BracketRight", "Backslash"],
-    ["CapsLock", "KeyA", "KeyS", "KeyD", "KeyF", "KeyG", "KeyH", "KeyJ", "KeyK", "KeyL", "Semicolon", "Quote", "Enter"],
-    ["Shift", "KeyZ", "KeyX", "KeyC", "KeyV", "KeyB", "KeyN", "KeyM", "Comma", "Period", "Slash", "ShiftRight"]
+    ["KeyQ", "KeyW", "KeyE", "KeyR", "KeyT", "KeyY", "KeyU", "KeyI", "KeyO", "KeyP"],
+    ["KeyA", "KeyS", "KeyD", "KeyF", "KeyG", "KeyH", "KeyJ", "KeyK", "KeyL"],
+    ["ShiftLeft", "KeyZ", "KeyX", "KeyC", "KeyV", "KeyB", "KeyN", "KeyM"],
 ];
 
+const state = {
+    shift: false,
+    tabId: undefined,
+};
+
 setupKeyboard();
+
+chrome.tabs.getCurrent(tab => {
+    state.tabId = tab.id;
+});
 
 function setupKeyboard() {
     const keyboard = document.getElementById("keyboard");
@@ -22,6 +30,21 @@ function setupKeyboard() {
             const key = m[keyName];
 
             keyElement.className = keyName;
+
+            keyElement.addEventListener("mousedown", e => {
+                e.preventDefault();
+
+                if (key.jamo) {
+                    const jamoToAdd = state.shift && key.jamo.shift ?
+                        key.jamo.shift :key.jamo.normal;
+                    chrome.tabs.sendMessage(state.tabId, {
+                        action: "keyboard",
+                        key: jamoToAdd
+                    });
+                }
+
+                return false;
+            });
 
             const shiftLabel = document.createElement("div");
             shiftLabel.className = "shift";
