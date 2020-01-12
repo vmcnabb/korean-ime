@@ -41,36 +41,34 @@ function setupKeyboard() {
                         action: "keyboard",
                         key: jamoToAdd
                     });
+
+                } else if (key.label === "Shift") {
+                    state.shift = !state.shift;
+                    document.body.classList.toggle("shift", state.shift);
                 }
 
                 return false;
             });
 
-            const shiftLabel = document.createElement("div");
-            shiftLabel.className = "shift";
-            shiftLabel.innerText = key.shift || key.label;
-            keyElement.appendChild(shiftLabel);
-
-            if (!key.normal) {
-
-            } else if (!key.jamo) {
+            if (keyName === "ShiftLeft") {
                 const baseLabel = document.createElement("div");
-                baseLabel.className = "base";
-                baseLabel.innerText = key.normal;
+                baseLabel.className = "full";
+                baseLabel.innerText = "⇧";
                 keyElement.appendChild(baseLabel);
+            }
 
-            } else {
-                const baseJamo = document.createElement("div");
-                baseJamo.className = "base jamo";
-                baseJamo.innerText = key.jamo.normal;
-                keyElement.appendChild(baseJamo);
-
+            if (key.jamo) {
                 if (key.jamo.shift) {
                     const shiftJamo = document.createElement("div");
                     shiftJamo.className = "shift jamo";
                     shiftJamo.innerText = key.jamo.shift;
                     keyElement.appendChild(shiftJamo);
                 }
+
+                const baseJamo = document.createElement("div");
+                baseJamo.className = "base jamo";
+                baseJamo.innerText = key.jamo.normal;
+                keyElement.appendChild(baseJamo);
             }
 
             rowElement.appendChild(keyElement);
