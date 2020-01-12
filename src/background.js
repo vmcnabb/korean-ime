@@ -168,4 +168,6 @@ function setState (tab, toggle) {
             action: tabState.enabled ? 'enable' : 'disable'
         }
     );
+
+    chrome.tabs.sendMessage(tab.id, { action: settings.enableKeyboard ? "enableKeyboard" : "disableKeyboard" });
 }
