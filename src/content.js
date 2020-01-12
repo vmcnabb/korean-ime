@@ -8,7 +8,13 @@ const state = {
     keyboard: {
         isEnabled: false,
         /** @type {HTMLIFrameElement} */
-        element: undefined
+        element: undefined,
+        placement: {
+            originX: "right",
+            originY: "bottom",
+            x: 0,
+            y: 0
+        }
     },
     isTopElement: window === top
 };
@@ -63,9 +69,100 @@ function setupListener () {
             case "keyboard":
                 typeKey(request.key);
                 break;
+
+            case "moveKeyboard":
+                moveKeyboard(request.dx, request.dy);
+                break;
         }
         sendResponse(response);
     });
+}
+
+function placeKeyboard () {
+    if (state.isTopElement) {
+        // get top left origin coordinates of keyboard
+        const placement = state.keyboard.placement;
+        const width = state.keyboard.element.offsetWidth;
+        const height = state.keyboard.element.offsetHeight;
+
+        let x = placement.originX === "right" ?
+            window.innerWidth - width - placement.x :
+            placement.x;
+            
+        let y = placement.originY === "bottom" ?
+            window.innerHeight - height -placement.y :
+            placement.y;
+        
+        // try to make sure keyboard is not partially off screen
+        if (x < 0) x = 0;
+        if (y < 0) y = 0;
+
+        if (x + width > window.innerWidth) x = window.innerWidth - width;
+        if (y + height > window.innerHeight) y = window.innerHeight - height;
+
+        // find out which quandrant keyboard is in and set appropriate origin
+        const cx = ~~(x + width / 2);
+        const cy = ~~(y + height / 2);
+
+        const originX = cx > window.innerWidth / 2 ?
+            "right" :
+            "left";
+
+        const originY = cy > window.innerHeight / 2 ?
+            "bottom" :
+            "top";
+
+        // set x and y based on new origin
+        const keyboardElement = state.keyboard.element;
+        if (originX === "right") {
+            x = window.innerWidth - x - width;
+            keyboardElement.style.left = "";
+            keyboardElement.style.right = `${x}px`;
+
+        } else {
+            keyboardElement.style.left = `${x}px`;
+            keyboardElement.style.right = "";
+        }
+
+        if (originY === "bottom") {
+            y = window.innerHeight - y - height;
+            keyboardElement.style.top = "";
+            keyboardElement.style.bottom = `${y}px`;
+
+        } else {
+            keyboardElement.style.top = `${y}px`;
+            keyboardElement.style.bottom = "";
+        }
+
+        placement.x = x;
+        placement.y = y;
+        placement.originX = originX;
+        placement.originY = originY;
+
+        console.log(placement);
+    }
+}
+
+function moveKeyboard (dx, dy) {
+    if (state.isTopElement) {
+        const kb = state.keyboard;
+
+        const kx = parseInt(kb.placement.x);
+        const ky = parseInt(kb.placement.y);
+
+        if (kb.placement.originX === "right") {
+            dx = -dx;
+        }
+
+        if (kb.placement.originY === "bottom") {
+            dy = -dy;
+        }
+
+        kb.placement.x = kx + dx;
+        kb.placement.y = ky + dy;
+
+        placeKeyboard();
+    }
 }
 
 function createKeyboard () {
@@ -107,6 +204,7 @@ function hideKeyboard () {
 function showKeyboard () {
     if (state.keyboard.element) {
         state.keyboard.element.style.display = "block";
+        placeKeyboard();
     }
 }
 
