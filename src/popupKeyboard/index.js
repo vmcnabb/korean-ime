@@ -11,12 +11,54 @@ const layout = [
 const state = {
     shift: false,
     tabId: undefined,
+    mouse: {
+        down: false,
+        startX: 0,
+        startY: 0
+    }
 };
 
 setupKeyboard();
 
 chrome.tabs.getCurrent(tab => {
     state.tabId = tab.id;
+});
+
+document.addEventListener("mousedown", e => {
+    
+    const ms = state.mouse;
+
+    if (e.button === 0) {
+        ms.down = true;
+        ms.startX = e.screenX;
+        ms.startY = e.screenY;
+    }
+});
+
+document.addEventListener("mouseup", e => {
+    const ms = state.mouse;
+
+    if (e.button === 0) {
+        ms.down = false;
+    }
+});
+
+document.addEventListener("mousemove", e => {
+    const ms = state.mouse;
+
+    if ((e.buttons & 1) === 0) {
+        ms.down = false;
+    }
+
+    if (ms.down) {
+        const dx = e.screenX - ms.startX;
+        const dy = e.screenY - ms.startY;
+
+        ms.startX = e.screenX;
+        ms.startY = e.screenY;
+
+        chrome.tabs.sendMessage(state.tabId, { action: "moveKeyboard", dx, dy });
+    }
 });
 
 function setupKeyboard() {
@@ -33,6 +75,7 @@ function setupKeyboard() {
 
             keyElement.addEventListener("mousedown", e => {
                 e.preventDefault();
+                e.cancelBubble = true;
 
                 if (key.jamo) {
                     const jamoToAdd = state.shift && key.jamo.shift ?
