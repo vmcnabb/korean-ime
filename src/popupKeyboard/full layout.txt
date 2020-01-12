@@ -1,0 +1,130 @@
+const layout = [
+    ["Backquote", "Digit1", "Digit2", "Digit3", "Digit4", "Digit5", "Digit6", "Digit7", "Digit8", "Digit9", "Digit0", "Minus", "Equals", "Backspace"],
+    ["Tab", "KeyQ", "KeyW", "KeyE", "KeyR", "KeyT", "KeyY", "KeyU", "KeyI", "KeyO", "KeyP", "BracketLeft", "BracketRight", "Backslash"],
+    ["CapsLock", "KeyA", "KeyS", "KeyD", "KeyF", "KeyG", "KeyH", "KeyJ", "KeyK", "KeyL", "Semicolon", "Quote", "Enter"],
+    ["ShiftLeft", "KeyZ", "KeyX", "KeyC", "KeyV", "KeyB", "KeyN", "KeyM", "Comma", "Period", "Slash", "ShiftRight"],
+    ["ControlLeft", "MetaLeft", "AltLeft", "Space", "AltRight", "MetaRight", "ContextMenu", "ControlRight"]
+];
+
+
+:root {
+    --key-margin: 0.5vw;
+    --key-length: calc((100% - var(--key-margin) * 15) / 15);
+    --text-distance: 2px;
+}
+
+* {
+    user-select: none;
+}
+
+body {
+    font-size: 12px;
+    margin: 0;
+}
+
+#keyboard {
+    border: 1px solid black;
+    margin-left: auto;
+    margin-right: auto;
+    display: inline-block;
+    background-color: #444;
+    padding-top: var(--key-margin);
+    width: 100%;
+    position: relative;
+    box-sizing: border-box;
+}
+
+kbd {
+    font-family: Arial, Helvetica, sans-serif;
+    border: 1px solid black;
+    margin: var(--key-margin);
+    margin-top: 0;
+    display: inline-block;
+    background-color: gray;
+    color: white;
+    width: var(--key-length);
+    height: 0;
+    padding-bottom: var(--key-length);
+    position: relative;
+    box-sizing: border-box;
+    font-size: 2vw;
+}
+
+kbd+kbd {
+    margin-left: 0;
+}
+
+kbd.Tab,
+kbd.Backslash {
+    width: calc(var(--key-length) * 1.5)
+}
+kbd.Backspace {
+    width: calc(var(--key-length) * 2)
+}
+kbd.Capslock {
+    width: calc(var(--key-length) * 1.7 + var(--key-margin) / 2)
+}
+kbd.Enter {
+    width: calc(var(--key-length) * 2.3 + var(--key-margin) / 2)
+}
+kbd.ShiftLeft {
+    width: calc(var(--key-length) * 2.2 + var(--key-margin))
+}
+kbd.ShiftRight {
+    width: calc(var(--key-length) * 2.8 + var(--key-margin))
+}
+
+/** 5th Row **/
+kbd.ControlLeft {
+    width: calc(var(--key-length) * 1.5 + var(--key-margin))
+}
+
+kbd.AltRight,
+kbd.MetaLeft,
+kbd.MetaRight,
+kbd.AltLeft {
+    width: calc(var(--key-length) * 1.3)
+}
+
+kbd.Space {
+    width: calc(var(--key-length) * 5.2 + var(--key-margin) * 6)
+}
+
+kbd.ContextMenu,
+kbd.ControlRight {
+    width: calc(var(--key-length) * 1.5)
+}
+
+
+kbd.Tab,
+kbd.Backspace,
+kbd.Capslock,
+kbd.Enter,
+kbd.Shift,
+kbd.ShiftRight {
+    font-size: 1.7vw;
+}
+
+
+kbd:hover {
+    background-color: #666;
+}
+
+kbd div {
+    position: absolute;
+    left: var(--text-distance);
+}
+
+kbd .base {
+    bottom: var(--text-distance);
+}
+
+kbd .shift {
+    top: var(--text-distance);
+}
+
+kbd .jamo {
+    right: var(--text-distance);
+    font-size: 2.4vw;
+    left: initial;
+}
