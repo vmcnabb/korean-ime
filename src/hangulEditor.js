@@ -31,8 +31,14 @@ export function HangulEditor (element) {
         keydown: (/** @type {KeyboardEvent} */ event) => {
             const code = event.code;
 
+            // record which alt was down last, so we know if the "han/yeong" key is down
             if (["AltRight", "AltLeft"].includes(code)) {
                 lastAlt = code;
+                return;
+            }
+
+            // don't process modifier keys
+            if (["ShiftLeft", "ShiftRight", "CtrlLeft", "CtrlRight", "Meta"].includes(code)) {
                 return;
             }
 
