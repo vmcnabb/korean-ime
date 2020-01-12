@@ -1,6 +1,12 @@
 Download the latest release at the Chrome Web Store:
 [https://chrome.google.com/webstore/detail/korean-ime/cimmbifnciobjhchpimjekibbndgmkfk?hl=en-GB]
 
+# 2.2.1
+2020-01-12
+
+### Fixes
+* Issue 21. Holding down shift was completing the current composition.
+
 # 2.2.0
 2020-01-04
 
