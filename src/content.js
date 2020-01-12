@@ -4,46 +4,130 @@ import { CompositionProxyFactory } from "./compositionProxyFactory";
 import { HangulEditor } from "./hangulEditor";
 
 const state = {
-    enabled: false
+    isHangulMode: false,
+    keyboard: {
+        isEnabled: false,
+        /** @type {HTMLIFrameElement} */
+        element: undefined
+    },
+    isTopElement: window === top
 };
 
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    const response = { state };
+createKeyboard();
+setupListener();
 
-    switch (request.action) {
-        case 'disable':
-            disable();
-            break;
-            
-        case 'enable':
-            enable();
-            break;
-            
-        case 'state':
-            break;
-            
-        case 'insertAfter':
-            let element = getActiveElement(document);
+function setupListener () {
+    chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+        const response = { state };
 
-            if (element) {
-                const compositionProxy = CompositionProxyFactory.createCompositionProxy(element);
-                if (compositionProxy) {
-                    compositionProxy.deselect();
-                    compositionProxy.updateComposition(request.data);
-                    compositionProxy.deselect();
-                    response.wasSuccessful = true;
+        switch (request.action) {
+            case 'disable':
+                disable();
+                break;
+                
+            case 'enable':
+                enable();
+                break;
+                
+            case 'state':
+                break;
+                
+            case 'insertAfter':
+                let element = getActiveElement(document);
+
+                if (element) {
+                    const compositionProxy = CompositionProxyFactory.createCompositionProxy(element);
+                    if (compositionProxy) {
+                        compositionProxy.deselect();
+                        compositionProxy.updateComposition(request.data);
+                        compositionProxy.deselect();
+                        response.wasSuccessful = true;
+
+                    } else {
+                        response.wasSuccessful = false;
+                    }
 
                 } else {
                     response.wasSuccessful = false;
                 }
+                break;
 
-            } else {
-                response.wasSuccessful = false;
-            }
-            break;
+            case 'enableKeyboard':
+                setKeyboardEnabled(true);
+                break;
+
+            case 'disableKeyboard':
+                setKeyboardEnabled(false);
+                break;
+
+            case "keyboard":
+                typeKey(request.key);
+                break;
+        }
+        sendResponse(response);
+    });
+}
+
+function createKeyboard () {
+    if (!state.isTopElement) {
+        return;
     }
-    sendResponse(response);
-});
+
+    if (state.keyboard.element) {
+        throw "createKeyboard() must only be called once.";
+    }
+
+    const keyboard = document.createElement("iframe");
+    state.keyboard.element = keyboard;
+    
+    keyboard.src = chrome.runtime.getURL("popupKeyboard/index.html");
+    keyboard.width = "480px";
+    keyboard.height = "200px";
+    keyboard.style.position = "fixed";
+    keyboard.style.bottom = "0";
+    keyboard.style.right = "0";
+    keyboard.style.display = "none";
+
+    document.body.appendChild(keyboard);
+}
+
+function setKeyboardEnabled (isEnabled) {
+    state.keyboard.isEnabled = isEnabled;
+    updateKeyboard();
+}
+
+function hideKeyboard () {
+    if (state.keyboard.element) {
+        state.keyboard.element.style.display = "none";
+    }
+}
+
+function showKeyboard () {
+    if (state.keyboard.element) {
+        state.keyboard.element.style.display = "block";
+    }
+}
+
+function updateKeyboard () {
+    if (state.keyboard.element) {
+        if (state.keyboard.isEnabled && state.isHangulMode) {
+            showKeyboard();
+
+        } else {
+            hideKeyboard();
+
+        }
+    }
+}
+
+function typeKey (key) {
+    const activeElement = getActiveElement(document);
+    if (activeElement.hangulEditor) {
+        /** HangulEditor */
+        const he = activeElement.hangulEditor;
+        he.addJamo(key);
+    }
+}
 
 document.addEventListener(
     "keydown",
@@ -80,10 +164,12 @@ function processElement (el) {
             element: el,
             editor: he
         };
+
+        el.hangulEditor = he;
     }
 
-    if (ee.editor.isActive() != state.enabled) {
-        if (state.enabled)
+    if (ee.editor.isActive() != state.isHangulMode) {
+        if (state.isHangulMode)
             ee.editor.activate();
         else
             ee.editor.deactivate();
@@ -104,20 +190,23 @@ function refreshEditableElements (doc) {
 
 var refreshInterval;
 function enable () {
-    if(!state.enabled) {
-        state.enabled = true;
+    if(!state.isHangulMode) {
+        state.isHangulMode = true;
         refreshEditableElements(document);
         
         refreshInterval = setInterval(function() {
             refreshEditableElements(document);
         }, 400);
+
+        updateKeyboard();
     }
 }
 
 function disable () {
-    if (state.enabled) {
-        state.enabled = false;
+    if (state.isHangulMode) {
+        state.isHangulMode = false;
         clearInterval(refreshInterval);
+        updateKeyboard();
         Object.keys(editableElements).forEach(key => editableElements[key].editor.deactivate());
     }
 }
