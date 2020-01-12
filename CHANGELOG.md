@@ -1,7 +1,7 @@
 Download the latest release at the Chrome Web Store:
 [https://chrome.google.com/webstore/detail/korean-ime/cimmbifnciobjhchpimjekibbndgmkfk?hl=en-GB]
 
-# 2.2.1
+# 2.2.2
 2020-01-12
 
 ### Fixes
