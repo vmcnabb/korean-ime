@@ -210,6 +210,18 @@ export default {
         "normal": "]",
         "shift": "}"
     },
+    "Backslash": {
+        "normal": "\\",
+        "shift": "|"
+    },
+    "Semicolon": {
+        "normal": ";",
+        "shift": ":"
+    },
+    "Quote": {
+        "normal": "'",
+        "shift": '"'
+    },
     "Backquote": {
         "normal": "`",
         "shift": "~"
@@ -261,5 +273,23 @@ export default {
     "Equals": {
         "normal": "=",
         "shift": "+"
+    },
+    "Tab": {
+        "label": "Tab"
+    },
+    "Enter": {
+        "label": "Enter"
+    },
+    "CapsLock": {
+        "label": "Caps Lock"
+    },
+    "Shift": {
+        "label": "Shift"
+    },
+    "ShiftRight": {
+        "label": "Shift"
+    },
+    "Backspace": {
+        "label": "Backspace"
     }
 };
