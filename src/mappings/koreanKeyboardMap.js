@@ -283,7 +283,7 @@ export default {
     "CapsLock": {
         "label": "Caps Lock"
     },
-    "Shift": {
+    "ShiftLeft": {
         "label": "Shift"
     },
     "ShiftRight": {
@@ -291,5 +291,29 @@ export default {
     },
     "Backspace": {
         "label": "Backspace"
+    },
+    "ControlLeft" : {
+        "label": "Ctrl"
+    },
+    "MetaLeft": {
+        "label": ""
+    },
+    "AltLeft": {
+        "label": "Alt"
+    },
+    "Space": {
+        "label": ""
+    },
+    "AltRight": {
+        "label": "한/영"
+    },
+    "MetaRight": {
+        "label": ""
+    },
+    "ContextMenu": {
+        "label": ""
+    },
+    "ControlRight": {
+        "label": "Ctrl"
     }
 };
