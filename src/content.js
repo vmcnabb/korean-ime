@@ -82,11 +82,13 @@ function createKeyboard () {
     
     keyboard.src = chrome.runtime.getURL("popupKeyboard/index.html");
     keyboard.width = "480px";
-    keyboard.height = "200px";
+    keyboard.height = "153px";
     keyboard.style.position = "fixed";
     keyboard.style.bottom = "0";
     keyboard.style.right = "0";
     keyboard.style.display = "none";
+    keyboard.style.border = "none";
+    keyboard.style.zIndex = "999";
 
     document.body.appendChild(keyboard);
 }
