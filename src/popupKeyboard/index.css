@@ -1,9 +1,11 @@
 :root {
     --key-margin: 5px;
+    --key-length: calc((100% - var(--key-margin) * 15) / 15);
+    --text-distance: 2px;
 }
 
 body {
-    font-size: 14px;
+    font-size: 12px;
 }
 
 #keyboard {
@@ -12,23 +14,79 @@ body {
     margin-right: auto;
     display: inline-block;
     background-color: #444;
+    padding-top: var(--key-margin);
+    width: 100%;
+    position: relative;
 }
 
 kbd {
+    font-family: Arial, Helvetica, sans-serif;
     border: 1px solid black;
-    padding: 5px;
     margin: var(--key-margin);
+    margin-top: 0;
     display: inline-block;
-    background-color: black;
+    background-color: gray;
     color: white;
-    width: 30px;
-    height: 30px;
+    width: var(--key-length);
+    height: 0;
+    padding-bottom: var(--key-length);
+    position: relative;
+    box-sizing: border-box;
+    font-size: 2vw;
 }
 
 kbd+kbd {
     margin-left: 0;
 }
 
+kbd.Tab,
+kbd.Backslash {
+    width: calc(var(--key-length) * 1.5)
+}
+kbd.Backspace {
+    width: calc(var(--key-length) * 2)
+}
+kbd.Capslock {
+    width: calc(var(--key-length) * 1.7 + var(--key-margin) / 2)
+}
+kbd.Enter {
+    width: calc(var(--key-length) * 2.3 + var(--key-margin) / 2)
+}
+kbd.Shift {
+    width: calc(var(--key-length) * 2.2 + var(--key-margin))
+}
+kbd.ShiftRight {
+    width: calc(var(--key-length) * 2.8 + var(--key-margin))
+}
+
+kbd.Tab,
+kbd.Backspace,
+kbd.Capslock,
+kbd.Enter,
+kbd.Shift,
+kbd.ShiftRight {
+    font-size: 1.7vw;
+}
+
+
 kbd:hover {
     background-color: #666;
+}
+
+kbd div {
+    position: absolute;
+    left: var(--text-distance);
+}
+
+kbd .base {
+    bottom: var(--text-distance);
+}
+
+kbd .shift {
+    top: var(--text-distance);
+}
+
+kbd .jamo {
+    right: 0;
+    left: initial;
 }
