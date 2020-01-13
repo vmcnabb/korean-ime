@@ -80,7 +80,7 @@ function setupListener () {
 
 function placeKeyboard () {
     if (state.isTopElement) {
-        // get top left origin coordinates of keyboard
+        // get x,y coordinates of keyboard based on an origin of Top Left
         const placement = state.keyboard.placement;
         const width = state.keyboard.element.offsetWidth;
         const height = state.keyboard.element.offsetHeight;
