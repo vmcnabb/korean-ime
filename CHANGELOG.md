@@ -1,6 +1,12 @@
 Download the latest release at the Chrome Web Store:
 [https://chrome.google.com/webstore/detail/korean-ime/cimmbifnciobjhchpimjekibbndgmkfk?hl=en-GB]
 
+# 2.3.0
+[date of release snapshot]
+
+### Features
+* Added on-screen keyboard
+
 # 2.2.2
 2020-01-12
 
