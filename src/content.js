@@ -1,4 +1,4 @@
-"use strict";
+﻿"use strict";
 
 import { CompositionProxyFactory } from "./compositionProxyFactory";
 import { HangulEditor } from "./hangulEditor";
@@ -183,7 +183,7 @@ function createKeyboard () {
     keyboard.style.right = "0";
     keyboard.style.display = "none";
     keyboard.style.border = "none";
-    keyboard.style.zIndex = "999";
+    keyboard.style.zIndex = "9999";
 
     document.body.appendChild(keyboard);
 }
