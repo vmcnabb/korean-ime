@@ -1,4 +1,4 @@
-﻿"use strict";
+"use strict";
 
 import { CompositionProxyFactory } from "./compositionProxyFactory";
 import { HangulEditor } from "./hangulEditor";
@@ -138,8 +138,6 @@ function placeKeyboard () {
         placement.y = y;
         placement.originX = originX;
         placement.originY = originY;
-
-        console.log(placement);
     }
 }
 
