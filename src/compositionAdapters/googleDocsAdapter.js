@@ -1,8 +1,8 @@
 "use strict";
 
-import { CompositionProxyBase } from "./compositionProxyBase";
+import { CompositionAdapterBase } from "./compositionAdapterBase";
 
-export class GoogleDocsProxy extends CompositionProxyBase {
+export class GoogleDocsAdapter extends CompositionAdapterBase {
     constructor (element) {
         super(element);
 

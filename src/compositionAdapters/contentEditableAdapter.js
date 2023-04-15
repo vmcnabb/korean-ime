@@ -1,8 +1,8 @@
 "use strict";
 
-import { CompositionProxyBase } from "./compositionProxyBase";
+import { CompositionAdapterBase } from "./compositionAdapterBase";
 
-export class ContentEditableProxy extends CompositionProxyBase {
+export class ContentEditableAdapter extends CompositionAdapterBase {
     updateComposition (text) {
         const selection = this.element.ownerDocument.getSelection();
         const range = selection.getRangeAt(0);

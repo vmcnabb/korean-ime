@@ -1,17 +1,21 @@
 ﻿"use strict";
 
-import { hangulMaps as maps, isHangul } from "./mappings";
+import { hangulMaps as maps, isHangulCharacter } from "./mappings";
 import { Compositor } from "./composition";
-import { CompositionProxyFactory } from "./compositionProxyFactory";
+import { CompositionAdapterFactory } from "./compositionAdapterFactory";
 
 /**
  * @param {HTMLElement} element 
  */
-export function HangulEditor (element) {
+export function HangulImeController (element) {
     let isActive = false;
 
     const compositor = new Compositor();
-    const editor = CompositionProxyFactory.createCompositionProxy(element);
+    const compositionAdapter = CompositionAdapterFactory.createCompositionAdapter(element);
+
+    if (!compositionAdapter) {
+        throw "Could not create composition adapter for element";
+    }
 
     this.activate = activate;
     this.deactivate = deactivate;
@@ -46,8 +50,8 @@ export function HangulEditor (element) {
             if (!isActive) {
                 if (event.altKey && lastAlt === "AltRight") {
                     // insert character manually when "han/yeong" key is down so that a menu isn't triggered
-                    editor.updateComposition(event.key);
-                    editor.endComposition(event.key);
+                    compositionAdapter.updateComposition(event.key);
+                    compositionAdapter.endComposition(event.key);
                     event.preventDefault();
                     return false;
                 }
@@ -57,8 +61,8 @@ export function HangulEditor (element) {
 
             if (!compositor.isCompositing() && event.shiftKey && code === "Backspace") {
                 // select previous character if it is hanguel and put it into composition mode
-                const character = editor.selectPreviousCharacter();
-                if (isHangul(character)) {
+                const character = compositionAdapter.selectPreviousCharacter();
+                if (isHangulCharacter(character)) {
                     compositor.setCharacter(character);
                 }
             }
@@ -68,14 +72,14 @@ export function HangulEditor (element) {
             if (code === "Backspace" && compositor.isCompositing()) {
                 const block = compositor.removeLastJamo();
                 if (block) {
-                    editor.updateComposition(block);
+                    compositionAdapter.updateComposition(block);
 
                 } else {
                     // hack for contentEditableProxy
                     // would prefer `editor.endComposition("")` and no `return` which works in the inputProxy.
                     // the hack works by replacing the character with an "x" then allowing the browser
                     // (or Google Docs) to handle the backspace which immediately removes the "x".
-                    editor.endComposition("x");
+                    compositionAdapter.endComposition("x");
                     return true;
                 }
 
@@ -89,7 +93,7 @@ export function HangulEditor (element) {
             // don't interfere with keyboard shortcuts or keys we don't understand
             if (!key || event.ctrlKey) {
                 if (compositor.isCompositing()) {
-                    editor.deselect();
+                    compositionAdapter.deselect();
                     compositor.reset();
                 }
 
@@ -98,7 +102,7 @@ export function HangulEditor (element) {
 
             if (!key.jamo) {
                 if (compositor.isCompositing()) {
-                    editor.endComposition(compositor.getCurrent());
+                    compositionAdapter.endComposition(compositor.getCurrent());
                     compositor.reset();
                 }
 
@@ -116,20 +120,20 @@ export function HangulEditor (element) {
             if (!isActive) return;
 
             compositor.reset();
-            editor.blur();
+            compositionAdapter.blur();
         },
         mousedown: () => {
             if (!isActive) return;
 
             compositor.reset();
-            editor.blur();
+            compositionAdapter.blur();
         }
     };
 
     /** @type {{target:EventTarget,type:string,listener:EventListener}[]} */
     const listeners = [];
     Object.keys(eventHandlers).forEach(type =>
-        addListener(editor.getListenerTarget(type), type, eventHandlers[type])
+        addListener(compositionAdapter.getListenerTarget(type), type, eventHandlers[type])
     );
 
     function activate () {
@@ -139,7 +143,7 @@ export function HangulEditor (element) {
     function deactivate ()  {
         if (compositor.isCompositing()) {
             compositor.reset();
-            editor.deselect();
+            compositionAdapter.deselect();
         }
         
         isActive = false;
@@ -149,11 +153,11 @@ export function HangulEditor (element) {
         const block = compositor.addJamo(jamo);
 
         if (block.completed) {
-            editor.endComposition(block.completed);
+            compositionAdapter.endComposition(block.completed);
         }
 
         if (block.inProgress) {
-            editor.updateComposition(block.inProgress);
+            compositionAdapter.updateComposition(block.inProgress);
             notifyChange();
         }
     }

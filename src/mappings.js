@@ -31,7 +31,7 @@ class TwoWayMap {
 /**
 * @param {string} char 
 */
-export function isHangul (char) {
+export function isHangulCharacter (char) {
    if (!char) return false;
    const cc = char.charCodeAt(0);
    return (cc >= 0xAC00 && cc <= 0xD7A3) || (cc >= 0x3131 && cc <= 0x318E);

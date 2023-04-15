@@ -1,7 +1,7 @@
 ﻿"use strict";
 
-import { CompositionProxyFactory } from "./compositionProxyFactory";
-import { HangulEditor } from "./hangulEditor";
+import { CompositionAdapterFactory } from "./compositionAdapterFactory";
+import { HangulImeController } from "./hangulImeController";
 
 const state = {
     isHangulMode: false,
@@ -31,7 +31,7 @@ function setupListener() {
             let element = getActiveElement(document);
 
             if (element) {
-                const compositionProxy = CompositionProxyFactory.createCompositionProxy(element);
+                const compositionProxy = CompositionAdapterFactory.createCompositionAdapter(element);
                 if (compositionProxy) {
                     compositionProxy.deselect();
                     compositionProxy.updateComposition(request.data);
@@ -231,65 +231,72 @@ function getActiveElement(doc) {
         doc.activeElement;
 }
 
-var editableElements = {};
-var nextId = 0;
+/**
+ * @type {Map<HTMLElement, HangulImeController>}
+ */
+var imeControllers = new Map();
 
-function processElement(el) {
-    // assuming an @contenteditable, textarea, or any type of input
-    if ((el.tagName.toLowerCase() === 'input' && el.type.toLowerCase() !== 'text')) return;
+/**
+ * @param {HTMLElement} element 
+ */
+function processElement(element) {
+    let imeController = imeControllers.get(element);
 
-    var heId = el.dataset.heId = el.dataset.heId || nextId++;
-    var ee = editableElements[heId];
-
-    if (!ee) {
-        var he = new HangulEditor(el);
-        ee = editableElements[heId] = {
-            element: el,
-            editor: he
-        };
-
-        el.hangulEditor = he;
+    if (!imeController) {
+        imeController = new HangulImeController(element);
+        imeControllers.set(element, imeController);
     }
 
-    if (ee.editor.isActive() != state.isHangulMode) {
-        if (state.isHangulMode)
-            ee.editor.activate();
-        else
-            ee.editor.deactivate();
+    if (imeController.isActive() != state.isHangulMode) {
+        if (state.isHangulMode) {
+            imeController.activate();
+        } else {
+            imeController.deactivate();
+        }
     }
 }
 
 function refreshEditableElements(doc) {
-    if (!doc) return false;
+    if (!doc) {
+        return false;
+    }
 
-    [].slice
+    Array.prototype.slice
         .call(
-            doc.querySelectorAll("[contenteditable],input,textarea")
+            doc.querySelectorAll("[contenteditable],input[type=text],textarea")
         )
         .forEach(processElement);
 
     return true;
 }
 
-var refreshInterval;
+let refreshInterval;
 function enable() {
-    if (!state.isHangulMode) {
-        state.isHangulMode = true;
-        refreshEditableElements(document);
-
-        refreshInterval = setInterval(function () {
-            refreshEditableElements(document);
-        }, 400);
-
-        updateKeyboard();
+    if (state.isHangulMode) {
+        return;
     }
+
+    state.isHangulMode = true;
+
+    // probably not necessary but just in case
+    clearInterval(refreshInterval);
+    refreshEditableElements(document);
+
+    refreshInterval = setInterval(function () {
+        refreshEditableElements(document);
+    }, 400);
+
+    updateKeyboard();
 }
 
 function disable() {
-    if (state.isHangulMode) {
-        state.isHangulMode = false;
-        clearInterval(refreshInterval);
-        updateKeyboard();
-        Object.keys(editableElements).forEach(key => editableElements[key].editor.deactivate());
+    if (!state.isHangulMode) {
+        return;
     }
+
+    state.isHangulMode = false;
+    clearInterval(refreshInterval);
+    updateKeyboard();
+
+    imeControllers.values.forEach(imeController => imeController.deactivate());
 }
