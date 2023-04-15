@@ -1,7 +1,10 @@
 "use strict";
 
 export class CompositionAdapterBase {
-    constructor (/** @type {HTMLElement} */ element) {
+    /**
+     * @param {HTMLElement} element 
+     */
+    constructor (element) {
         this.element = element;
     }
 
