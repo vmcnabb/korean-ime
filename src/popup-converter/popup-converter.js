@@ -3,7 +3,7 @@
 import { HangulEditor } from "../hangulEditor";
 import { romanize } from "../romanize";
 
-chrome.extension.onRequest.addListener((request, sender, callback) => {
+chrome.runtime.onMessage.addListener((request, sender, callback) => {
     const response = { success: true };
 
     switch(request.action) {

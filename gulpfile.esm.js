@@ -18,7 +18,8 @@ const buildTasks = series(
     popupConverterFiles,
     onScreenKeyboardFiles,
     parallel(
-        js,
+        serviceWorker,
+        contentScript,
         popupConverterJs,
         images,
         locales,
@@ -37,6 +38,8 @@ exports.prod = series(
     buildTasks
 );
 
+exports.clean = clean;
+
 let buildMode;
 
 function setDev(cb) {
@@ -49,7 +52,7 @@ function setProd(cb) {
     cb();
 }
 
-export function clean(cb) {
+export function clean() {
     log("clean...");
     return del("dist");
 }
@@ -73,10 +76,18 @@ function manifest() {
         .pipe(dest("dist"));
 }
 
-function js() {
+function contentScript() {
     return compileJs(
-        ["src/background.js", "src/content.js"],
+        ["src/content.js"],
         dest("dist")
+    );
+}
+
+function serviceWorker() {
+    return compileJs(
+        ["src/serviceWorker/index.js"],
+        dest("dist"),
+        "serviceWorker.js"
     );
 }
 
@@ -110,9 +121,10 @@ function onScreenKeyboardJs() {
 
 /**
  * @param {string|string[]} globs 
- * @param {NodeJS.ReadWriteStream} dest 
+ * @param {NodeJS.ReadWriteStream} dest destination directory
+ * @param {string} [rename] new name for the output file
  */
-function compileJs(globs, dest) {
+function compileJs(globs, dest, rename = null) {
     globs = Array.isArray(globs) ? globs : [globs];
 
     /** @type {string[]} */
@@ -120,14 +132,14 @@ function compileJs(globs, dest) {
         return glob.sync(g);
     }).flat();
 
-    let browserfied = eventStream.merge.apply(null, files.map(entry => 
+    let browserfied = eventStream.merge.apply(null, files.map(entry =>
         browserify({
-                entries: entry,
-                debug: buildMode === "dev",
-                transform: babelify
-            })
+            entries: entry,
+            debug: buildMode === "dev",
+            transform: babelify
+        })
             .bundle()
-            .pipe(source(path.basename(entry)))
+            .pipe(source(rename || path.basename(entry)))
             .pipe(buffer())
     ));
 

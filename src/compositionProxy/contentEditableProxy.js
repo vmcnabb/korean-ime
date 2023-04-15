@@ -25,15 +25,20 @@ export class ContentEditableProxy extends CompositionProxyBase {
         this.deselect();
     }
 
-    selectPreviousCharacter () {
-        // [contentEditable]
+    selectPreviousCharacter() {
         const selection = this.element.ownerDocument.getSelection();
         const startOffset = selection.focusOffset;
 
-        if (selection.type === "Caret" && startOffset > 0) {
-            selection.getRangeAt(0).setStart(selection.focusNode, startOffset - 1);
-            return selection.focusNode.nodeValue.substr(startOffset - 1, 1);
+        const isCaret = selection.type === "Caret";
+        const isNotAtBeginning = startOffset > 0;
+        const hasRange = selection.rangeCount > 0;
 
-        } else return false;
+        if (!isCaret || !isNotAtBeginning || !hasRange) {
+            return false;
+        }
+
+        const range = selection.getRangeAt(0);
+        range.setStart(selection.focusNode, startOffset - 1);
+        return selection.focusNode.nodeValue.substring(startOffset - 1, startOffset);
     }
 }
