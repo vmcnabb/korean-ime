@@ -22,63 +22,48 @@ const state = {
 createKeyboard();
 setupListener();
 
-function setupListener () {
-    chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-        const response = { state };
+function setupListener() {
+    const actions = {
+        disable: disable,
+        enable: enable,
+        state: () => { },
+        insertAfter: (request, response) => {
+            let element = getActiveElement(document);
 
-        switch (request.action) {
-            case 'disable':
-                disable();
-                break;
-                
-            case 'enable':
-                enable();
-                break;
-                
-            case 'state':
-                break;
-                
-            case 'insertAfter':
-                let element = getActiveElement(document);
-
-                if (element) {
-                    const compositionProxy = CompositionProxyFactory.createCompositionProxy(element);
-                    if (compositionProxy) {
-                        compositionProxy.deselect();
-                        compositionProxy.updateComposition(request.data);
-                        compositionProxy.deselect();
-                        response.wasSuccessful = true;
-
-                    } else {
-                        response.wasSuccessful = false;
-                    }
-
+            if (element) {
+                const compositionProxy = CompositionProxyFactory.createCompositionProxy(element);
+                if (compositionProxy) {
+                    compositionProxy.deselect();
+                    compositionProxy.updateComposition(request.data);
+                    compositionProxy.deselect();
+                    response.wasSuccessful = true;
                 } else {
                     response.wasSuccessful = false;
                 }
-                break;
+            } else {
+                response.wasSuccessful = false;
+            }
+        },
+        enableKeyboard: () => setKeyboardEnabled(true),
+        disableKeyboard: () => setKeyboardEnabled(false),
+        keyboard: (request) => typeKey(request.key),
+        moveKeyboard: (request) => moveKeyboard(request.dx, request.dy),
+    };
 
-            case 'enableKeyboard':
-                setKeyboardEnabled(true);
-                break;
+    chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+        const response = { state };
 
-            case 'disableKeyboard':
-                setKeyboardEnabled(false);
-                break;
-
-            case "keyboard":
-                typeKey(request.key);
-                break;
-
-            case "moveKeyboard":
-                moveKeyboard(request.dx, request.dy);
-                break;
+        const action = actions[request.action];
+        if (action) {
+            action(request, response);
         }
+
         sendResponse(response);
     });
 }
 
-function placeKeyboard () {
+
+function placeKeyboard() {
     if (state.isTopElement) {
         // get x,y coordinates of keyboard based on an origin of Top Left
         const placement = state.keyboard.placement;
@@ -88,11 +73,11 @@ function placeKeyboard () {
         let x = placement.originX === "right" ?
             window.innerWidth - width - placement.x :
             placement.x;
-            
+
         let y = placement.originY === "bottom" ?
-            window.innerHeight - height -placement.y :
+            window.innerHeight - height - placement.y :
             placement.y;
-        
+
         // try to make sure keyboard is not partially off screen
         if (x < 0) x = 0;
         if (y < 0) y = 0;
@@ -141,7 +126,7 @@ function placeKeyboard () {
     }
 }
 
-function moveKeyboard (dx, dy) {
+function moveKeyboard(dx, dy) {
     if (state.isTopElement) {
         const kb = state.keyboard;
 
@@ -163,7 +148,7 @@ function moveKeyboard (dx, dy) {
     }
 }
 
-function createKeyboard () {
+function createKeyboard() {
     if (!state.isTopElement) {
         return;
     }
@@ -174,10 +159,10 @@ function createKeyboard () {
 
     const keyboard = document.createElement("iframe");
     state.keyboard.element = keyboard;
-    
+
     keyboard.src = chrome.runtime.getURL("popupKeyboard/index.html");
     keyboard.width = "480px";
-    keyboard.height = "153px";
+    keyboard.height = "203px";
     keyboard.style.position = "fixed";
     keyboard.style.bottom = "0";
     keyboard.style.right = "0";
@@ -188,27 +173,27 @@ function createKeyboard () {
     document.body.appendChild(keyboard);
 }
 
-function setKeyboardEnabled (isEnabled) {
+function setKeyboardEnabled(isEnabled) {
     state.keyboard.isEnabled = isEnabled;
     updateKeyboard();
 }
 
-function hideKeyboard () {
+function hideKeyboard() {
     if (state.keyboard.element) {
         state.keyboard.element.style.display = "none";
     }
 }
 
-function showKeyboard () {
+function showKeyboard() {
     if (state.keyboard.element) {
         state.keyboard.element.style.display = "block";
         placeKeyboard();
     }
 }
 
-function updateKeyboard () {
+function updateKeyboard() {
     if (state.keyboard.element) {
-        if (state.keyboard.isEnabled && state.isHangulMode) {
+        if (state.keyboard.isEnabled) {
             showKeyboard();
 
         } else {
@@ -218,7 +203,7 @@ function updateKeyboard () {
     }
 }
 
-function typeKey (key) {
+function typeKey(key) {
     const activeElement = getActiveElement(document);
     if (activeElement.hangulEditor) {
         /** HangulEditor */
@@ -240,7 +225,7 @@ document.addEventListener(
     true
 );
 
-function getActiveElement (doc) {
+function getActiveElement(doc) {
     return (doc.activeElement && doc.activeElement.contentDocument) ?
         getActiveElement(doc.activeElement.contentDocument) :
         doc.activeElement;
@@ -249,13 +234,13 @@ function getActiveElement (doc) {
 var editableElements = {};
 var nextId = 0;
 
-function processElement (el) {
+function processElement(el) {
     // assuming an @contenteditable, textarea, or any type of input
     if ((el.tagName.toLowerCase() === 'input' && el.type.toLowerCase() !== 'text')) return;
-    
+
     var heId = el.dataset.heId = el.dataset.heId || nextId++;
     var ee = editableElements[heId];
-    
+
     if (!ee) {
         var he = new HangulEditor(el);
         ee = editableElements[heId] = {
@@ -274,25 +259,25 @@ function processElement (el) {
     }
 }
 
-function refreshEditableElements (doc) {
+function refreshEditableElements(doc) {
     if (!doc) return false;
 
     [].slice
-    .call(
-        doc.querySelectorAll("[contenteditable],input,textarea")
-    )
-    .forEach(processElement);
-    
+        .call(
+            doc.querySelectorAll("[contenteditable],input,textarea")
+        )
+        .forEach(processElement);
+
     return true;
 }
 
 var refreshInterval;
-function enable () {
-    if(!state.isHangulMode) {
+function enable() {
+    if (!state.isHangulMode) {
         state.isHangulMode = true;
         refreshEditableElements(document);
-        
-        refreshInterval = setInterval(function() {
+
+        refreshInterval = setInterval(function () {
             refreshEditableElements(document);
         }, 400);
 
@@ -300,7 +285,7 @@ function enable () {
     }
 }
 
-function disable () {
+function disable() {
     if (state.isHangulMode) {
         state.isHangulMode = false;
         clearInterval(refreshInterval);

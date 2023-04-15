@@ -1,5 +1,5 @@
 {
-    "manifest_version": 2,
+    "manifest_version": 3,
     "name": "__MSG_extension_name__",
     "short_name": "__MSG_extension_short_name__",
     "version": "[package-version]",
@@ -10,13 +10,13 @@
         "48": "images/icon48.png",
         "128": "images/icon128.png"
     },
-    "browser_action": {
+    "action": {
         "default_icon": "images/icon16a.png",
         "default_title": "__MSG_extension_name__"
     },
     "author": "Vincent McNabb",
     "background": {
-        "scripts": [ "background.js" ]
+        "service_worker": "serviceWorker.js"
     },
     "content_scripts": [
         {
@@ -28,7 +28,10 @@
         }
     ],
     "web_accessible_resources": [
-        "popupKeyboard/index.html"
+        {
+            "matches": [ "*://*/*" ],
+            "resources": [ "popupKeyboard/index.html" ]
+        }
     ],
     "permissions": [
         "contextMenus",

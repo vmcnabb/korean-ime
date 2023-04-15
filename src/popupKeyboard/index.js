@@ -1,11 +1,12 @@
 "use strict";
 
-import m from "../mappings/koreanKeyboardMap";
+import m from "./koreanKeyboardMap";
 
 const layout = [
     ["KeyQ", "KeyW", "KeyE", "KeyR", "KeyT", "KeyY", "KeyU", "KeyI", "KeyO", "KeyP"],
     ["KeyA", "KeyS", "KeyD", "KeyF", "KeyG", "KeyH", "KeyJ", "KeyK", "KeyL"],
-    ["ShiftLeft", "KeyZ", "KeyX", "KeyC", "KeyV", "KeyB", "KeyN", "KeyM"],
+    ["ShiftLeft", "KeyZ", "KeyX", "KeyC", "KeyV", "KeyB", "KeyN", "KeyM", "Comma", "Period", "Slash"],
+    ["Space", "AltRight"]
 ];
 
 const state = {
@@ -25,7 +26,6 @@ chrome.tabs.getCurrent(tab => {
 });
 
 document.addEventListener("mousedown", e => {
-    
     const ms = state.mouse;
 
     if (e.button === 0) {
@@ -75,11 +75,12 @@ function setupKeyboard() {
 
             keyElement.addEventListener("mousedown", e => {
                 e.preventDefault();
-                e.cancelBubble = true;
 
                 if (key.jamo) {
                     const jamoToAdd = state.shift && key.jamo.shift ?
-                        key.jamo.shift :key.jamo.normal;
+                        key.jamo.shift :
+                        key.jamo.normal;
+
                     chrome.tabs.sendMessage(state.tabId, {
                         action: "keyboard",
                         key: jamoToAdd
@@ -93,13 +94,6 @@ function setupKeyboard() {
                 return false;
             });
 
-            if (keyName === "ShiftLeft") {
-                const baseLabel = document.createElement("div");
-                baseLabel.className = "full";
-                baseLabel.innerText = "⇧";
-                keyElement.appendChild(baseLabel);
-            }
-
             if (key.jamo) {
                 if (key.jamo.shift) {
                     const shiftJamo = document.createElement("div");
@@ -109,9 +103,21 @@ function setupKeyboard() {
                 }
 
                 const baseJamo = document.createElement("div");
-                baseJamo.className = "base jamo";
+                baseJamo.className = key.jamo.shift ? "base jamo" : "full jamo";
                 baseJamo.innerText = key.jamo.normal;
                 keyElement.appendChild(baseJamo);
+
+            } else if (keyName === "ShiftLeft") {
+                const baseLabel = document.createElement("div");
+                baseLabel.className = "huge";
+                baseLabel.innerText = "⇧";
+                keyElement.appendChild(baseLabel);
+
+            } else if (key.label) {
+                const baseLabel = document.createElement("div");
+                baseLabel.className = "full";
+                baseLabel.innerText = key.label;
+                keyElement.appendChild(baseLabel);
             }
 
             rowElement.appendChild(keyElement);

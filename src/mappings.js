@@ -1,6 +1,6 @@
 "use strict";
 
-import koreanKeyboardMap from "./mappings/koreanKeyboardMap";
+import koreanKeyboardMap from "./popupKeyboard/koreanKeyboardMap";
 
 class Map {
     constructor (keys, values) {
