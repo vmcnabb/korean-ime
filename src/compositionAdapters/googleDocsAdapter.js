@@ -7,7 +7,7 @@ export class GoogleDocsAdapter extends CompositionAdapterBase {
         super(element);
 
         this.isCompositing = false;
-        /** @type {string} */
+        /** @type {string | undefined} */
         this.currentBlock = undefined;
     }
 
@@ -16,10 +16,12 @@ export class GoogleDocsAdapter extends CompositionAdapterBase {
     }
 
     deselect () {
-        if (this.currentBlock) {
-            this.element.dispatchEvent(new CompositionEvent("compositionend", { data: this.currentBlock }));
-            this.currentBlock = undefined;
+        if (!this.currentBlock) {
+            return;
         }
+
+        this.element.dispatchEvent(new CompositionEvent("compositionend", { data: this.currentBlock }));
+        this.currentBlock = undefined;
     }
 
     updateComposition (block) {
@@ -32,8 +34,8 @@ export class GoogleDocsAdapter extends CompositionAdapterBase {
         this.currentBlock = block;
     }
 
-    endComposition (completed) {
-        this.element.dispatchEvent(new CompositionEvent("compositionend", { data: completed }));
+    endComposition (block) {
+        this.element.dispatchEvent(new CompositionEvent("compositionend", { data: block }));
         this.currentBlock = undefined;
     }
 

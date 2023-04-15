@@ -60,7 +60,7 @@ export function HangulImeController (element) {
             }
 
             if (!compositor.isCompositing() && event.shiftKey && code === "Backspace") {
-                // select previous character if it is hanguel and put it into composition mode
+                // select previous character if it is Hangul and put it into composition mode
                 const character = compositionAdapter.selectPreviousCharacter();
                 if (isHangulCharacter(character)) {
                     compositor.setCharacter(character);
@@ -117,13 +117,18 @@ export function HangulImeController (element) {
             return false;
         },
         blur: () => {
-            if (!isActive) return;
+            if (!isActive) {
+                return;
+            }
 
             compositor.reset();
             compositionAdapter.blur();
         },
         mousedown: () => {
-            if (!isActive) return;
+            if (!isActive)
+            {
+                 return;
+            }
 
             compositor.reset();
             compositionAdapter.blur();

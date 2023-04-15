@@ -214,12 +214,12 @@ function typeKey(key) {
 
 document.addEventListener(
     "keydown",
-    ev => {
-        if (ev.code === "AltRight" && !ev.repeat) {
+    e => {
+        if (e.code === "AltRight" && !e.repeat) {
             chrome.runtime.sendMessage(
                 { action: "toggle" }
             );
-            ev.preventDefault();
+            e.preventDefault();
         }
     },
     true
@@ -256,7 +256,7 @@ function processElement(element) {
     }
 }
 
-function refreshEditableElements(doc) {
+function refreshTextInputElements(doc) {
     if (!doc) {
         return false;
     }
@@ -280,10 +280,10 @@ function enable() {
 
     // probably not necessary but just in case
     clearInterval(refreshInterval);
-    refreshEditableElements(document);
+    refreshTextInputElements(document);
 
     refreshInterval = setInterval(function () {
-        refreshEditableElements(document);
+        refreshTextInputElements(document);
     }, 400);
 
     updateKeyboard();
