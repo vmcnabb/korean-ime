@@ -1,6 +1,6 @@
 "use strict";
 
-import { hangulMaps, isHangul } from "./mappings";
+import { hangulMaps, isHangulCharacter } from "./mappings";
 const { initials, medials, finals, compoundVowels, consonantDigraphs } = hangulMaps;
 
 export class Block {
@@ -67,7 +67,7 @@ export function Compositor () {
      * @param {string} jamo
      */
     this.addJamo = jamo => {
-        if (!isHangul(jamo)) {
+        if (!isHangulCharacter(jamo)) {
             throw new Error("addJamo(jamo) must be called with a valid jamo.");
         }
 

@@ -1,7 +1,7 @@
 "use strict";
 
 import { Block } from "./composition";
-import { hangulMaps as maps, isHangul } from "./mappings";
+import { hangulMaps as maps, isHangulCharacter } from "./mappings";
 
 /**
  * Return a string with the hangul converted into Roman characters, e.g.
@@ -20,7 +20,7 @@ export function romanize (text) {
         const nextChar = text[i + 1] || "";
         nextBlock = Block.fromChar(nextChar, false);
 
-        if (!isHangul(thisChar)) {
+        if (!isHangulCharacter(thisChar)) {
             didPreviousCharSetInitial = false;
             isPreviousCharHangul = false;
             romanText += thisChar;
@@ -57,7 +57,7 @@ export function romanize (text) {
         const thisFinal = block.final.substr(-1);
         const special = maps.hangulFinalInitialRoman[thisFinal + nextBlock.initial];
 
-        if (isHangul(nextChar) && special !== undefined) {
+        if (isHangulCharacter(nextChar) && special !== undefined) {
             romanText += special;
             didPreviousCharSetInitial = true;
 

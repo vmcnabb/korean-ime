@@ -1,8 +1,8 @@
 "use strict";
 
-import { CompositionProxyBase } from "./compositionProxyBase";
+import { CompositionAdapterBase } from "./compositionAdapterBase";
 
-export class InputProxy extends CompositionProxyBase {
+export class InputAdapter extends CompositionAdapterBase {
     /**
      * @param {string} text 
      */

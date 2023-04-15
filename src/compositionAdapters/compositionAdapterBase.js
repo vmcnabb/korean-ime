@@ -1,6 +1,6 @@
 "use strict";
 
-export class CompositionProxyBase {
+export class CompositionAdapterBase {
     constructor (/** @type {HTMLElement} */ element) {
         this.element = element;
     }

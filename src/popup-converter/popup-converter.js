@@ -1,6 +1,6 @@
 "use strict";
 
-import { HangulEditor } from "../hangulEditor";
+import { HangulImeController } from "../hangulImeController";
 import { romanize } from "../romanize";
 
 chrome.runtime.onMessage.addListener((request, sender, callback) => {
@@ -23,7 +23,7 @@ chrome.runtime.onMessage.addListener((request, sender, callback) => {
 
 const original = document.getElementById('original'),
     roman = document.getElementById('romanized'),
-    he = new HangulEditor(original);
+    he = new HangulImeController(original);
 
 he.activate();
 
