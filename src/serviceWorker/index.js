@@ -22,7 +22,10 @@ const settings = {
     enableKeyboard: false
 };
 
-setupMenus();
+chrome.runtime.onInstalled.addListener(() => {
+    setupMenus();
+});
+
 loadSettings();
 
 function loadSettings() {
@@ -62,11 +65,6 @@ function updateSettings() {
     });
 }
 
-chrome.tabs.onUpdated.addListener((tabid, changeInfo, tab) => {
-    setState(tab);
-    chrome.action.enable(tabid);
-});
-
 // icon is clicked
 chrome.action.onClicked.addListener(tab => {
     setState(tab, true);
@@ -74,6 +72,8 @@ chrome.action.onClicked.addListener(tab => {
 
 chrome.runtime.onMessage.addListener(
     function (request, sender, sendResponse) {
+        console.debug("onMessage", request, sender);
+
         switch (request.action) {
             case "toggle":
                 setState(sender.tab, true);

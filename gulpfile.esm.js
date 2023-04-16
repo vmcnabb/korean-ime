@@ -1,53 +1,46 @@
 import { series, src, dest, parallel } from "gulp";
-import browserify from "browserify";
-import babelify from "babelify";
 import del from "del";
-import glob from "glob";
-import source from "vinyl-source-stream";
-import eventStream from "event-stream";
-import path from "path";
 import replace from "gulp-replace";
 import log from "fancy-log";
 import packageJson from "./package.json";
-import terser from "gulp-terser";
-import buffer from "vinyl-buffer";
+import { compileAndBundleJavascript } from "./compileAndBundleJavascript";
 
 const buildTasks = series(
     clean,
     reportProjectVersion,
-    popupConverterFiles,
-    onScreenKeyboardFiles,
     parallel(
-        serviceWorker,
-        contentScript,
-        popupConverterJs,
-        images,
-        locales,
-        manifest,
-        onScreenKeyboardJs
+        buildServiceWorker,
+        buildContentScript,
+        buildPopupConverter,
+        buildOnScreenKeyboard,
+        copyPopupConverterFiles,
+        copyOnScreenKeyboardFiles,
+        copyImages,
+        copyLocales,
+        processManifest,
     )
 );
 
 exports.dev = series(
-    setDev,
+    setBuildModeToDev,
     buildTasks
 );
 
 exports.prod = series(
-    setProd,
+    setBuildModeToProd,
     buildTasks
 );
 
 exports.clean = clean;
 
-let buildMode;
+export let buildMode;
 
-function setDev(cb) {
+function setBuildModeToDev(cb) {
     buildMode = "dev";
     cb();
 }
 
-function setProd(cb) {
+function setBuildModeToProd(cb) {
     buildMode = "prod";
     cb();
 }
@@ -62,90 +55,60 @@ function reportProjectVersion(cb) {
     cb();
 }
 
-function images() {
+function copyImages() {
     return src("src/images/*").pipe(dest("dist/images"));
 }
 
-function locales() {
+function copyLocales() {
     return src("src/_locales/**").pipe(dest("dist/_locales"));
 }
 
-function manifest() {
+function processManifest() {
     return src("src/manifest.json")
         .pipe(replace("[package-version]", packageJson.version))
         .pipe(dest("dist"));
 }
 
-function contentScript() {
-    return compileJs(
-        ["src/content.js"],
-        dest("dist")
+function buildContentScript() {
+    return compileAndBundleJavascript(
+        ["src/contentScript/index.js"],
+        dest("dist"),
+        "contentScript.js"
     );
 }
 
-function serviceWorker() {
-    return compileJs(
+function buildServiceWorker() {
+    return compileAndBundleJavascript(
         ["src/serviceWorker/index.js"],
         dest("dist"),
         "serviceWorker.js"
     );
 }
 
-function popupConverterFiles() {
-    const path = "src/popup-converter";
+function copyPopupConverterFiles() {
+    const pcPath = "src/popup-converter";
 
-    return src([`${path}/*.html`, `${path}/*.css`])
+    return src([`${pcPath}/*.html`, `${pcPath}/*.css`])
         .pipe(dest("dist/popup-converter"));
 }
 
-function popupConverterJs() {
-    return compileJs(
+function buildPopupConverter() {
+    return compileAndBundleJavascript(
         "src/popup-converter/popup-converter.js",
         dest("dist/popup-converter")
     );
 }
 
-function onScreenKeyboardFiles() {
-    const path = "src/popupKeyboard";
+function copyOnScreenKeyboardFiles() {
+    const oskPath = "src/popupKeyboard";
 
-    return src([`${path}/*.html`, `${path}/*.css`])
+    return src([`${oskPath}/*.html`, `${oskPath}/*.css`])
         .pipe(dest("dist/popupKeyboard"));
 }
 
-function onScreenKeyboardJs() {
-    return compileJs(
+function buildOnScreenKeyboard() {
+    return compileAndBundleJavascript(
         "src/popupKeyboard/index.js",
         dest("dist/popupKeyboard")
     );
-}
-
-/**
- * @param {string|string[]} globs 
- * @param {NodeJS.ReadWriteStream} dest destination directory
- * @param {string} [rename] new name for the output file
- */
-function compileJs(globs, dest, rename = null) {
-    globs = Array.isArray(globs) ? globs : [globs];
-
-    /** @type {string[]} */
-    const files = globs.map(g => {
-        return glob.sync(g);
-    }).flat();
-
-    let browserfied = eventStream.merge.apply(null, files.map(entry =>
-        browserify({
-            entries: entry,
-            debug: buildMode === "dev",
-            transform: babelify
-        })
-            .bundle()
-            .pipe(source(rename || path.basename(entry)))
-            .pipe(buffer())
-    ));
-
-    if (buildMode === "prod") {
-        browserfied = browserfied.pipe(terser());
-    }
-
-    return browserfied.pipe(dest);
 }

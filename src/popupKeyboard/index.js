@@ -1,6 +1,6 @@
 "use strict";
 
-import m from "./koreanKeyboardMap";
+import keyboardMap from "./koreanKeyboardMap";
 
 const layout = [
     ["KeyQ", "KeyW", "KeyE", "KeyR", "KeyT", "KeyY", "KeyU", "KeyI", "KeyO", "KeyP"],
@@ -25,7 +25,22 @@ chrome.tabs.getCurrent(tab => {
     state.tabId = tab.id;
 });
 
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.action === "enable") {
+        document.body.classList.add("hanMode");
+        document.body.classList.remove("yongMode");
+    }
+    if (message.action === "disable") {
+        document.body.classList.remove("hanMode");
+        document.body.classList.add("yongMode");
+    }
+});
+
 document.addEventListener("mousedown", e => {
+    if (e.target.tagName === "KBD") {
+        return false;
+    }
+
     const ms = state.mouse;
 
     if (e.button === 0) {
@@ -33,6 +48,11 @@ document.addEventListener("mousedown", e => {
         ms.startX = e.screenX;
         ms.startY = e.screenY;
     }
+});
+
+document.addEventListener("focusin", e => {
+    console.debug("focusin", e);
+    e.preventDefault();
 });
 
 document.addEventListener("mouseup", e => {
@@ -61,6 +81,7 @@ document.addEventListener("mousemove", e => {
     }
 });
 
+
 function setupKeyboard() {
     const keyboard = document.getElementById("keyboard");
     layout.forEach(row => {
@@ -69,7 +90,7 @@ function setupKeyboard() {
 
         row.forEach(keyName => {
             const keyElement = document.createElement("kbd");
-            const key = m[keyName];
+            const key = keyboardMap[keyName];
 
             keyElement.className = keyName;
 
@@ -89,6 +110,11 @@ function setupKeyboard() {
                 } else if (key.label === "Shift") {
                     state.shift = !state.shift;
                     document.body.classList.toggle("shift", state.shift);
+
+                } else if (keyName === "AltRight") {
+                    chrome.runtime.sendMessage({
+                        action: "toggle"
+                    });
                 }
 
                 return false;
@@ -112,6 +138,19 @@ function setupKeyboard() {
                 baseLabel.className = "huge";
                 baseLabel.innerText = "⇧";
                 keyElement.appendChild(baseLabel);
+
+            } else if (keyName === "AltRight") {
+                const hanLabel = document.createElement("div");
+                const yongLabel = document.createElement("div");
+
+                hanLabel.className = "hanMode";
+                yongLabel.className = "yongMode";
+
+                hanLabel.innerText = "한";
+                yongLabel.innerText = "영";
+
+                keyElement.appendChild(hanLabel);
+                keyElement.appendChild(yongLabel);
 
             } else if (key.label) {
                 const baseLabel = document.createElement("div");
