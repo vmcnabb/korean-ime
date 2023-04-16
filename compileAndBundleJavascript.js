@@ -8,6 +8,7 @@ import replace from "gulp-replace";
 import terser from "gulp-terser";
 import buffer from "vinyl-buffer";
 import { buildMode } from "./gulpfile.esm";
+import tsify from "tsify";
 
 /**
  * Compiles a list of JS files into a single file for the browser.
@@ -32,6 +33,7 @@ export function compileAndBundleJavascript(globs, dest, rename = null) {
             debug: buildMode === "dev",
             transform: babelify
         })
+            .plugin(tsify, { noImplicitAny: true })
             .bundle()
             .pipe(source(rename || path.basename(entry)))
             .pipe(buffer())

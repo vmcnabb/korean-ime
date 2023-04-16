@@ -1,6 +1,4 @@
-"use strict";
-
-import { Block } from "./composition";
+import { Block } from "./composition/composition";
 import { hangulMaps as maps, isHangulCharacter } from "./mappings";
 
 /**
@@ -8,7 +6,7 @@ import { hangulMaps as maps, isHangulCharacter } from "./mappings";
  * "hello 강" => "hello gang"
  * @param {string} text 
  */
-export function romanize (text) {
+export function romanize (text: string) {
     let romanText = '';
     let didPreviousCharSetInitial = false;
     let isPreviousCharHangul = false;

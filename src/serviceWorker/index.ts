@@ -16,7 +16,13 @@ const menus = {
     }
 }
 
-const tabStates = {};
+type TabState = {
+    enabled: boolean;
+    romanize: boolean;
+    romanizeBeside: boolean;
+};
+
+const tabStates: {[x: number]: TabState} = {};
 
 const settings = {
     enableKeyboard: false
@@ -32,8 +38,11 @@ function loadSettings() {
     console.debug("loadSettings", settings);
     chrome.storage.sync.get(items => {
         Object.keys(settings).forEach(key => {
+            // hack for now
+            const k = key as keyof typeof settings;
+
             if (items.hasOwnProperty(key)) {
-                settings[key] = items[key];
+                settings[k] = items[key];
             }
         });
 
@@ -44,7 +53,7 @@ function loadSettings() {
 function saveSettings() {
     console.debug("saveSettings", settings);
     return new Promise(resolve => {
-        chrome.storage.sync.set(settings, () => resolve());
+        chrome.storage.sync.set(settings, () => resolve(undefined));
     });
 }
 
@@ -54,6 +63,10 @@ function updateSettings() {
 
     chrome.tabs.query({}, tabs => {
         tabs.forEach(tab => {
+            if (!tab.id) {
+                return;
+            }
+
             chrome.tabs
                 .sendMessage(tab.id, {
                     action: settings.enableKeyboard ? "enableKeyboard" : "disableKeyboard"
@@ -76,6 +89,9 @@ chrome.runtime.onMessage.addListener(
 
         switch (request.action) {
             case "toggle":
+                if (!sender.tab) {
+                    break;
+                }
                 setState(sender.tab, true);
                 sendResponse({ status: "accepted" });
                 break;
@@ -108,7 +124,7 @@ function setupMenus() {
         contexts: ['all']
     });
 
-    function romanizeInPopup(event, tab) {
+    function romanizeInPopup(event: chrome.contextMenus.OnClickData) {
         const selectionText = event.selectionText || "";
         const romanText = romanize(selectionText);
 
@@ -122,6 +138,8 @@ function setupMenus() {
             },
             function (newWindow) {
                 setTimeout(() => {
+                    if (!newWindow?.tabs || !newWindow.tabs[0].id) return;
+
                     chrome.tabs.sendMessage(
                         newWindow.tabs[0].id,
                         {
@@ -135,7 +153,9 @@ function setupMenus() {
         );
     }
 
-    function romanizeBeside(event, tab) {
+    function romanizeBeside(event: chrome.contextMenus.OnClickData, tab: chrome.tabs.Tab | undefined) {
+        if (!tab || !tab.id || !event.selectionText) return;
+
         const romanText = romanize(event.selectionText);
 
         if (event.editable) {
@@ -159,6 +179,8 @@ function setupMenus() {
                 },
                 function (window) {
                     setTimeout(() => {
+                        if (!window?.tabs || !window.tabs[0].id) return;
+
                         chrome.tabs.sendMessage(
                             window.tabs[0].id,
                             {
@@ -173,7 +195,7 @@ function setupMenus() {
         }
     }
 
-    function onScreenKeyboard(event, tab) {
+    function onScreenKeyboard() {
         settings.enableKeyboard = !settings.enableKeyboard;
         updateSettings();
         saveSettings();
@@ -182,20 +204,24 @@ function setupMenus() {
     chrome.contextMenus.onClicked.addListener((event, tab) => {
         switch (event.menuItemId) {
             case menus.romanizeInPopup.id:
-                romanizeInPopup(event, tab);
+                romanizeInPopup(event);
                 break;
             case menus.romanizeBeside.id:
                 romanizeBeside(event, tab);
                 break;
             case menus.onScreenKeyboard.id:
-                onScreenKeyboard(event, tab);
+                onScreenKeyboard();
                 break;
         }
     });
 }
 
-function setState(tab, toggle) {
+function setState(tab: chrome.tabs.Tab, toggle: boolean) {
     console.debug("setState", tab, toggle);
+
+    // todo: don't pretend that we're a central background script
+
+    if (!tab.id) return;
 
     var tabState = tabStates[tab.id] = tabStates[tab.id] || { enabled: false };
 

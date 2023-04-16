@@ -1,14 +1,18 @@
 "use strict";
 
-import { CompositionAdapterBase } from "./compositionAdapterBase";
+import { CompositionAdapter } from "./compositionAdapter";
 
-export class GoogleDocsAdapter extends CompositionAdapterBase {
-    constructor (element) {
+export class GoogleDocsAdapter extends CompositionAdapter {
+    private isCompositing: boolean = false;
+    private currentBlock: string | undefined;
+
+    constructor (element: HTMLElement) {
         super(element);
+    }
 
-        this.isCompositing = false;
-        /** @type {string | undefined} */
-        this.currentBlock = undefined;
+    selectPreviousCharacter(): string | undefined {
+        // TODO: Implement
+        return undefined;
     }
 
     blur () {
@@ -24,7 +28,7 @@ export class GoogleDocsAdapter extends CompositionAdapterBase {
         this.currentBlock = undefined;
     }
 
-    updateComposition (block) {
+    updateComposition (block: string | undefined) {
         if (!this.isCompositing) {
             this.element.dispatchEvent(new CompositionEvent("compositionstart"));
             this.isCompositing = true;
@@ -34,13 +38,13 @@ export class GoogleDocsAdapter extends CompositionAdapterBase {
         this.currentBlock = block;
     }
 
-    endComposition (block) {
+    endComposition (block: string | undefined) {
         this.element.dispatchEvent(new CompositionEvent("compositionend", { data: block }));
         this.currentBlock = undefined;
     }
 
     /** @returns {EventTarget} */
-    getListenerTarget(/** @type {string} */ eventType) {
+    getListenerTarget(eventType : string) : EventTarget {
         switch (eventType) {
             case "mousedown":
                 return window.parent.document;

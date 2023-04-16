@@ -9,7 +9,18 @@ const layout = [
     ["Space", "AltRight"]
 ];
 
-const state = {
+type State = {
+    shift: boolean;
+    tabId: number | undefined;
+    mouse: {
+        down: boolean;
+        startX: number;
+        startY: number;
+    };
+};
+
+
+const state: State = {
     shift: false,
     tabId: undefined,
     mouse: {
@@ -22,10 +33,10 @@ const state = {
 setupKeyboard();
 
 chrome.tabs.getCurrent(tab => {
-    state.tabId = tab.id;
+    state.tabId = tab?.id;
 });
 
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((message, _sender, _sendResponse) => {
     if (message.action === "enable") {
         document.body.classList.add("hanMode");
         document.body.classList.remove("yongMode");
@@ -37,6 +48,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 });
 
 document.addEventListener("mousedown", e => {
+    if (!(e.target instanceof HTMLElement)) {
+        return false;
+    }
+
     if (e.target.tagName === "KBD") {
         return false;
     }
@@ -48,6 +63,8 @@ document.addEventListener("mousedown", e => {
         ms.startX = e.screenX;
         ms.startY = e.screenY;
     }
+
+    return false;
 });
 
 document.addEventListener("focusin", e => {
@@ -64,6 +81,10 @@ document.addEventListener("mouseup", e => {
 });
 
 document.addEventListener("mousemove", e => {
+    if (!state.tabId) {
+        return false;
+    }
+
     const ms = state.mouse;
 
     if ((e.buttons & 1) === 0) {
@@ -79,35 +100,41 @@ document.addEventListener("mousemove", e => {
 
         chrome.tabs.sendMessage(state.tabId, { action: "moveKeyboard", dx, dy });
     }
+
+    return false;
 });
 
 
 function setupKeyboard() {
-    const keyboard = document.getElementById("keyboard");
+    const keyboard = document.getElementById("keyboard") as HTMLDivElement;
     layout.forEach(row => {
         const rowElement = document.createElement("div");
         rowElement.className = "row";
 
         row.forEach(keyName => {
             const keyElement = document.createElement("kbd");
-            const key = keyboardMap[keyName];
+            const key = keyboardMap[keyName as keyof typeof keyboardMap];
 
             keyElement.className = keyName;
 
             keyElement.addEventListener("mousedown", e => {
                 e.preventDefault();
 
-                if (key.jamo) {
-                    const jamoToAdd = state.shift && key.jamo.shift ?
+                if ("jamo" in key && key.jamo) {
+                    const jamoToAdd = state.shift && "shift" in key.jamo && key.jamo.shift ?
                         key.jamo.shift :
                         key.jamo.normal;
+
+                    if (!state.tabId) {
+                        return;
+                    }
 
                     chrome.tabs.sendMessage(state.tabId, {
                         action: "keyboard",
                         key: jamoToAdd
                     });
 
-                } else if (key.label === "Shift") {
+                } else if ("label" in key && key.label === "Shift") {
                     state.shift = !state.shift;
                     document.body.classList.toggle("shift", state.shift);
 
@@ -120,8 +147,8 @@ function setupKeyboard() {
                 return false;
             });
 
-            if (key.jamo) {
-                if (key.jamo.shift) {
+            if ("jamo" in key && key.jamo) {
+                if ("shift" in key.jamo && key.jamo.shift) {
                     const shiftJamo = document.createElement("div");
                     shiftJamo.className = "shift jamo";
                     shiftJamo.innerText = key.jamo.shift;
@@ -129,7 +156,10 @@ function setupKeyboard() {
                 }
 
                 const baseJamo = document.createElement("div");
-                baseJamo.className = key.jamo.shift ? "base jamo" : "full jamo";
+                baseJamo.className = "shift" in key.jamo && key.jamo.shift
+                    ? "base jamo"
+                    : "full jamo";
+
                 baseJamo.innerText = key.jamo.normal;
                 keyElement.appendChild(baseJamo);
 
@@ -152,7 +182,7 @@ function setupKeyboard() {
                 keyElement.appendChild(hanLabel);
                 keyElement.appendChild(yongLabel);
 
-            } else if (key.label) {
+            } else if ("label" in key && key.label) {
                 const baseLabel = document.createElement("div");
                 baseLabel.className = "full";
                 baseLabel.innerText = key.label;
