@@ -1,10 +1,12 @@
 "use strict";
 
-import { HangulImeController } from "../hangulImeController";
+import { HangulImeController } from "../composition/hangulImeController";
 import { romanize } from "../romanize";
 
-chrome.runtime.onMessage.addListener((request, sender, callback) => {
-    const response = { success: true };
+type MessageResponse = { success: boolean; error?: string; };
+
+chrome.runtime.onMessage.addListener((request, _sender, callback) => {
+    const response: MessageResponse = { success: true };
 
     switch(request.action) {
         case 'fill':
@@ -21,8 +23,8 @@ chrome.runtime.onMessage.addListener((request, sender, callback) => {
     callback(response);
 });
 
-const original = document.getElementById('original'),
-    roman = document.getElementById('romanized'),
+const original = document.getElementById('original') as HTMLDivElement,
+    roman = document.getElementById('romanized') as HTMLDivElement,
     he = new HangulImeController(original);
 
 he.activate();
@@ -31,13 +33,15 @@ function doRomanize() {
     roman.innerText = romanize(original.innerText);
 }
 
-he.onentry = doRomanize;
+he.onEntry(() => doRomanize());
 original.oninput = doRomanize;
 
 document.querySelectorAll("[data-message]").forEach(el => {
-    el.innerText = chrome.i18n.getMessage(el.dataset.message);
+    const element = el as HTMLElement;
+    element.innerText = chrome.i18n.getMessage(element.dataset.message as string);
 });
 
 document.querySelectorAll("[data-placeholder-message]").forEach(el => {
-    el.dataset.placeholder = chrome.i18n.getMessage(el.dataset.placeholderMessage);
+    const element = el as HTMLElement;
+    element.dataset.placeholder = chrome.i18n.getMessage(element.dataset.placeholderMessage as string);
 });

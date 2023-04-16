@@ -1,4 +1,4 @@
-Download the latest release at the Chrome Web Store:
+Install the latest release from the Chrome Web Store:
 [https://chrome.google.com/webstore/detail/korean-ime/cimmbifnciobjhchpimjekibbndgmkfk?hl=en-GB]
 
 # 2.3.0
@@ -9,6 +9,7 @@ Download the latest release at the Chrome Web Store:
 
 ### Internal
 * Updated manifest to v3
+* Migrated project to TypeScript
 
 # 2.2.2
 2020-01-12

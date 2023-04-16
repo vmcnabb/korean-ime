@@ -1,15 +1,25 @@
 "use strict";
 
-import { CompositionAdapterBase } from "./compositionAdapterBase";
+import { CompositionAdapter } from "./compositionAdapter";
 
-export class InputAdapter extends CompositionAdapterBase {
-    /**
-     * @param {string} text 
-     */
-    updateComposition (text) {
+export class InputAdapter extends CompositionAdapter {
+    constructor (protected element: HTMLInputElement) {
+        super(element);
+    }
+
+    blur(): void {
+        // do nothing
+    }
+
+    updateComposition (text: string) {
         const element = this.element;
         const start = element.selectionStart;
-        let end = element.selectionEnd;
+
+        if (start == null) {
+            return;
+        }
+
+        let end = element.selectionEnd || 0;
 
         element.value = element.value.substring(0, start) +
             text +
@@ -26,20 +36,22 @@ export class InputAdapter extends CompositionAdapterBase {
     /**
      * @param {string} text 
      */
-    endComposition (text) {
+    endComposition (text: string) {
         this.updateComposition(text);
         this.deselect();
     }
 
     selectPreviousCharacter () {
         const element = this.element;
-        const start = element.selectionStart - 1;
+        const start = element.selectionStart || 0 - 1;
         const end = start + 1;
 
-        if (start >= 0) {
-            element.selectionStart = start;
-            element.selectionEnd = end;
-            return element.value.substr(start, 1);
+        if (start < 0) {
+            return;
         }
+
+        element.selectionStart = start;
+        element.selectionEnd = end;
+        return element.value.substring(start, end);
     }
 }

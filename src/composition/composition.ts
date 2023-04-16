@@ -1,30 +1,23 @@
 "use strict";
 
-import { hangulMaps, isHangulCharacter } from "./mappings";
+import { hangulMaps, isHangulCharacter } from "../mappings";
 const { initials, medials, finals, compoundVowels, consonantDigraphs } = hangulMaps;
 
 export class Block {
-    constructor (initial = "", medial = "", final = "") {
-        this.initial = initial;
-        this.medial = medial;
-        this.final = final;
-    }
+    constructor (public initial = "", public medial = "", public final = "") {}
 
     clone () {
         return new Block(this.initial, this.medial, this.final);
     }
 
-    /**
-     * @returns {string}
-     */
-    toChar () {
+    toChar(): string {
         const initialIndex = initials.indexOf(this.initial),
             medialIndex = this.medial.length == 1 ?
                 medials.indexOf(this.medial) :
-                medials.indexOf(compoundVowels[this.medial]),
+                medials.indexOf(compoundVowels[this.medial] as string),
             finalIndex = (this.final.length == 1 ?
                 finals.indexOf(this.final) :
-                finals.indexOf(consonantDigraphs[this.final])) + 1;
+                finals.indexOf(consonantDigraphs[this.final] as string)) + 1;
 
         return (initialIndex > -1 && medialIndex >-1) ?
             // Jamo to Unicode character formula: (initial)×588 + (medial)×28 + (final) + 44032
@@ -32,14 +25,13 @@ export class Block {
             (compoundVowels[this.initial] || consonantDigraphs[this.initial] || this.initial);
     }
 
-    /**
-     * @param {string} character 
-     */
-    static fromChar (character, separateMedialDigraph = true, separateFinalDigraph = true) {
+    static fromChar (character: string, separateMedialDigraph = true, separateFinalDigraph = true) {
         let workingIndex = character.charCodeAt(0) - 44032;
         
-        if (workingIndex < 0) return new Block(character);
-        
+        if (workingIndex < 0) {
+            return new Block(character);
+        }
+
         let initialIndex = ~~(workingIndex / 588);
         
         workingIndex -= initialIndex * 588;
@@ -56,56 +48,67 @@ export class Block {
     }
 }
 
-export function Compositor () {
-    var block = new Block();
+type CompositingResult = {
+    inProgress: string;
+    completed?: string;
+};
 
-    this.reset = () => {
-        block = new Block();
+export class Compositor {
+    constructor (private block = new Block()) {}
+
+    reset () {
+        this.block = new Block();
     };
 
-    /**
-     * @param {string} jamo
-     */
-    this.addJamo = jamo => {
+    addJamo (jamo: string): CompositingResult {
         if (!isHangulCharacter(jamo)) {
             throw new Error("addJamo(jamo) must be called with a valid jamo.");
         }
 
-        return block.medial.length === 0 ?
-            addInitialJamo(jamo) :
-            block.final.length === 0 ?
-                addMedialJamo(jamo) :
-                addFinalJamo(jamo);
-    };
-
-    this.removeLastJamo = () =>  {
-        ["final", "medial", "initial"].some(key => {
-            const value = block[key];
-            if (value.length > 0) {
-                block[key] = value.substr(0, value.length - 1);
-                return true;
-            }
-        });
-
-        return block.toChar();
+        return this.block.medial.length === 0 ?
+            this.addInitialJamo(jamo) :
+            this.block.final.length === 0 ?
+                this.addMedialJamo(jamo) :
+                this.addFinalJamo(jamo);
     };
 
     /**
-     * @param {string} char
+     * @returns the Hangul character with the last jamo removed
      */
-    this.setCharacter = char => {
-        block = Block.fromChar(char);
+    removeLastJamo (): string {
+        ["final", "medial", "initial"].some(k => {
+            const key = k as "final" | "medial" | "initial";
+
+            const value = this.block[key];
+
+            if (value.length === 0) {
+                return false;
+            }
+
+            this.block[key] = value.substring(0, value.length - 1);
+            return true;
+        });
+
+        return this.block.toChar();
     };
 
-    this.isCompositing = () => block.initial.length > 0;
+    setCharacter (char: string) {
+        this.block = Block.fromChar(char);
+    };
 
-    this.getCurrent = () => block.toChar();
+    isCompositing () {
+        return this.block.initial.length > 0;
+    }
+
+    getCurrent () {
+        return this.block.toChar();
+    }
 
     /**
      * Called when either nothing exists, or an initial exists
-     * @param {string} jamo 
      */
-    function addInitialJamo (jamo) {
+    private addInitialJamo (jamo: string): CompositingResult {
+        const block = this.block;
         const combined = block.initial + jamo;
 
         if(compoundVowels[combined] || consonantDigraphs[combined] || !block.initial) {
@@ -114,20 +117,20 @@ export function Compositor () {
             return {
                 inProgress: block.toChar()
             };
-        
+
         } else if(initials.indexOf(block.initial) > -1 && medials.indexOf(jamo) > -1) {
             // (C)+V
-            return addMedialJamo(jamo);
-                
+            return this.addMedialJamo(jamo);
+
         } else if(consonantDigraphs[block.initial] && medials.indexOf(jamo) > -1) {
             // (C)C+V
             const completed = block.initial[0];
             block.initial = block.initial[1];
             return {
                 completed,
-                inProgress: addMedialJamo(jamo).inProgress
+                inProgress: this.addMedialJamo(jamo).inProgress
             };
-                
+
         } else {
             // (CC|C)C or (VV|V)[VC]
             const completed = block.toChar();
@@ -141,9 +144,9 @@ export function Compositor () {
 
     /**
      * called when a valid initial already exists
-     * @param {string} jamo 
      */
-    function addMedialJamo (jamo) {
+    private addMedialJamo (jamo: string): CompositingResult {
+        const block = this.block;
         const combined = block.medial + jamo;
         const isMedial = (medials.indexOf(jamo) > -1);    
         
@@ -155,7 +158,7 @@ export function Compositor () {
         } else if (isMedial) {
             // (C+V)+V or (C+VV)+V
             const completed = block.toChar();
-            block = new Block(jamo);
+            this.block = new Block(jamo);
             return {
                 completed,
                 inProgress: jamo
@@ -163,15 +166,15 @@ export function Compositor () {
 
         } else {
             // (C+V)+C or (C+VV)+C
-            return addFinalJamo(jamo);
+            return this.addFinalJamo(jamo);
         }
     }
 
     /**
      * called when valid initial & medial exists, i.e. (C+V) or (C+VV)
-     * @param {*} jamo 
      */
-    function addFinalJamo (jamo) {
+    private addFinalJamo (jamo: string): CompositingResult {
+        const block = this.block;
         const combined = block.final + jamo;
         const isValidFinal =
             (!block.final && finals.indexOf(jamo) > -1) ||
@@ -188,7 +191,7 @@ export function Compositor () {
             const lastConsonant = block.final[length - 1];
             block.final = block.final.substr(0, length - 1);
             const completed = block.toChar();
-            block = new Block(lastConsonant, jamo);
+            this.block = new Block(lastConsonant, jamo);
             return {
                 completed,
                 inProgress: block.toChar()
@@ -196,7 +199,7 @@ export function Compositor () {
 
         } else {
             const completed = block.toChar();
-            block = new Block(jamo);
+            this.block = new Block(jamo);
             return {
                 completed,
                 inProgress: block.toChar()

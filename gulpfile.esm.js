@@ -71,7 +71,7 @@ function processManifest() {
 
 function buildContentScript() {
     return compileAndBundleJavascript(
-        ["src/contentScript/index.js"],
+        ["src/contentScript/index.ts"],
         dest("dist"),
         "contentScript.js"
     );
@@ -79,7 +79,7 @@ function buildContentScript() {
 
 function buildServiceWorker() {
     return compileAndBundleJavascript(
-        ["src/serviceWorker/index.js"],
+        ["src/serviceWorker/index.ts"],
         dest("dist"),
         "serviceWorker.js"
     );
@@ -94,8 +94,9 @@ function copyPopupConverterFiles() {
 
 function buildPopupConverter() {
     return compileAndBundleJavascript(
-        "src/popup-converter/popup-converter.js",
-        dest("dist/popup-converter")
+        "src/popup-converter/popup-converter.ts",
+        dest("dist/popup-converter"),
+        "popup-converter.js"
     );
 }
 
@@ -108,7 +109,8 @@ function copyOnScreenKeyboardFiles() {
 
 function buildOnScreenKeyboard() {
     return compileAndBundleJavascript(
-        "src/popupKeyboard/index.js",
-        dest("dist/popupKeyboard")
+        "src/popupKeyboard/index.ts",
+        dest("dist/popupKeyboard"),
+        "index.js"
     );
 }

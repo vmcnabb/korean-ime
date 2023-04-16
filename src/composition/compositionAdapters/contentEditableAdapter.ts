@@ -1,10 +1,19 @@
 "use strict";
 
-import { CompositionAdapterBase } from "./compositionAdapterBase";
+import { CompositionAdapter } from "./compositionAdapter";
 
-export class ContentEditableAdapter extends CompositionAdapterBase {
-    updateComposition (text) {
+export class ContentEditableAdapter extends CompositionAdapter {
+    blur(): void {
+        // Do nothing
+    }
+
+    updateComposition (text: string) {
         const selection = this.element.ownerDocument.getSelection();
+
+        if (!selection || selection.rangeCount === 0) {
+            return; 
+        }
+
         const range = selection.getRangeAt(0);
         range.deleteContents();
         range.insertNode(document.createTextNode(text));
@@ -14,27 +23,36 @@ export class ContentEditableAdapter extends CompositionAdapterBase {
 
     deselect () {
         const selection = this.element.ownerDocument.getSelection();
+
+        if (!selection || selection.rangeCount === 0) {
+            return; 
+        }
+
         const range = selection.getRangeAt(0);
         range.collapse(false);
         selection.removeAllRanges();
         selection.addRange(range);
     }
 
-    endComposition (text) {
+    endComposition (text: string) {
         this.updateComposition(text);
         this.deselect();
     }
 
     selectPreviousCharacter() {
         const selection = this.element.ownerDocument.getSelection();
+        if (!selection) {
+            return undefined;
+        }
+
         const startOffset = selection.focusOffset;
 
         const isCaret = selection.type === "Caret";
         const isNotAtBeginning = startOffset > 0;
         const hasRange = selection.rangeCount > 0;
 
-        if (!isCaret || !isNotAtBeginning || !hasRange) {
-            return false;
+        if (!isCaret || !isNotAtBeginning || !hasRange || !selection.focusNode?.nodeValue) {
+            return undefined;
         }
 
         const range = selection.getRangeAt(0);

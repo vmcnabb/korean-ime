@@ -1,21 +1,29 @@
-"use strict";
-
 import koreanKeyboardMap from "./popupKeyboard/koreanKeyboardMap";
 
-class Map {
-    constructor (keys, values) {
-        if (keys.length !== values.length) throw "Keys and values must be of equal length.";
+class StringMap {
+    [key: string]: string | undefined;
+
+    constructor (keys: string | string[], values: string[]) {
+        if (keys.length !== values.length) {
+            throw "Keys and values must be of equal length.";
+        }
 
         for (let i = 0; i < keys.length; i++) {
-            if (this.hasOwnProperty(keys[i])) throw "Cannot have duplicate key:" + keys[i];
+            if (this.hasOwnProperty(keys[i])) {
+                throw "Cannot have duplicate key:" + keys[i];
+            }
             this[keys[i]] = values[i];
         }
     }
 }
 
 class TwoWayMap {
-    constructor (left, right) {
-        if (left.length !== right.length) throw "Arrays must be of equal length.";
+    [key: string]: string | undefined;
+
+    constructor (left: string[], right: string) {
+        if (left.length !== right.length) {
+            throw "Arrays must be of equal length.";
+        }
 
         for (let i = 0; i < left.length; i++) {
             if (this.hasOwnProperty(left[i]) || this.hasOwnProperty(right[i])) {
@@ -31,7 +39,7 @@ class TwoWayMap {
 /**
 * @param {string} char 
 */
-export function isHangulCharacter (char) {
+export function isHangulCharacter (char: string | undefined): char is string {
    if (!char) return false;
    const cc = char.charCodeAt(0);
    return (cc >= 0xAC00 && cc <= 0xD7A3) || (cc >= 0x3131 && cc <= 0x318E);
@@ -45,25 +53,25 @@ export const hangulMaps = Object.freeze({
     medials: "ㅏㅐㅑㅒㅓㅔㅕㅖㅗㅘㅙㅚㅛㅜㅝㅞㅟㅠㅡㅢㅣ",
     finals: "ㄱㄲㄳㄴㄵㄶㄷㄹㄺㄻㄼㄽㄾㄿㅀㅁㅂㅄㅅㅆㅇㅈㅊㅋㅌㅍㅎ",
     keyboardMap: koreanKeyboardMap,
-    hangulVowelsRoman: new Map(
+    hangulVowelsRoman: new StringMap(
         "ㅏㅐㅑㅒㅓㅔㅕㅖㅗㅘㅙㅚㅛㅜㅝㅞㅟㅠㅡㅢㅣ",
         [   "a", "ae", "ya", "yae", "eo", "e", "yeo", "ye", "o", "wa", "wae",
             "oe", "yo", "u", "wo", "we", "wi", "yu", "eu", "ui", "i"
         ]
     ),
-    hangulIntialsRoman: new Map(
+    hangulIntialsRoman: new StringMap(
         "ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ",
         [   "g", "kk", "n", "d", "tt", "r", "m", "b", "pp", "s", "ss",
             nDash, "j", "jj", "ch", "k", "t", "p", "h"
         ]
     ),
-    hangulFinalsRoman: new Map(
+    hangulFinalsRoman: new StringMap(
         "ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ",
         [   "k", "k", "n", "t", nDash, "l", "m", "p", nDash, "t", "t", "ng", "t",
             nDash, "t", "k", "t", "p", "h"
         ]
     ),
-    hangulFinalInitialRoman: new Map(
+    hangulFinalInitialRoman: new StringMap(
         [   "ㄱㅇ", "ㄱㄴ", "ㄱㄹ", "ㄱㅁ", "ㄱㅋ",
             "ㄴㅇ", "ㄴㄱ", "ㄴㄹ",
             "ㄷㅇ", "ㄷㄴ", "ㄷㄹ", "ㄷㅌ", "ㄷㅎ",
