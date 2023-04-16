@@ -7,6 +7,9 @@ Download the latest release at the Chrome Web Store:
 ### Features
 * Added on-screen keyboard
 
+### Internal
+* Updated manifest to v3
+
 # 2.2.2
 2020-01-12
 

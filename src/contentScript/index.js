@@ -1,7 +1,7 @@
 ﻿"use strict";
 
-import { CompositionAdapterFactory } from "./compositionAdapterFactory";
-import { HangulImeController } from "./hangulImeController";
+import { CompositionAdapterFactory } from "../compositionAdapterFactory";
+import { HangulImeController } from "../hangulImeController";
 
 const state = {
     isHangulMode: false,
@@ -26,16 +26,17 @@ function setupListener() {
     const actions = {
         disable: disable,
         enable: enable,
+        toggleMode: toggleMode,
         state: () => { },
         insertAfter: (request, response) => {
             let element = getActiveElement(document);
 
             if (element) {
-                const compositionProxy = CompositionAdapterFactory.createCompositionAdapter(element);
-                if (compositionProxy) {
-                    compositionProxy.deselect();
-                    compositionProxy.updateComposition(request.data);
-                    compositionProxy.deselect();
+                const compositionAdapter = CompositionAdapterFactory.createCompositionAdapter(element);
+                if (compositionAdapter) {
+                    compositionAdapter.deselect();
+                    compositionAdapter.updateComposition(request.data);
+                    compositionAdapter.deselect();
                     response.wasSuccessful = true;
                 } else {
                     response.wasSuccessful = false;
@@ -51,6 +52,8 @@ function setupListener() {
     };
 
     chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+        console.debug("content.js: received message", request);
+
         const response = { state };
 
         const action = actions[request.action];
@@ -62,68 +65,69 @@ function setupListener() {
     });
 }
 
-
 function placeKeyboard() {
-    if (state.isTopElement) {
-        // get x,y coordinates of keyboard based on an origin of Top Left
-        const placement = state.keyboard.placement;
-        const width = state.keyboard.element.offsetWidth;
-        const height = state.keyboard.element.offsetHeight;
-
-        let x = placement.originX === "right" ?
-            window.innerWidth - width - placement.x :
-            placement.x;
-
-        let y = placement.originY === "bottom" ?
-            window.innerHeight - height - placement.y :
-            placement.y;
-
-        // try to make sure keyboard is not partially off screen
-        if (x < 0) x = 0;
-        if (y < 0) y = 0;
-
-        if (x + width > window.innerWidth) x = window.innerWidth - width;
-        if (y + height > window.innerHeight) y = window.innerHeight - height;
-
-        // find out which quandrant keyboard is in and set appropriate origin
-        const cx = ~~(x + width / 2);
-        const cy = ~~(y + height / 2);
-
-        const originX = cx > window.innerWidth / 2 ?
-            "right" :
-            "left";
-
-        const originY = cy > window.innerHeight / 2 ?
-            "bottom" :
-            "top";
-
-        // set x and y based on new origin
-        const keyboardElement = state.keyboard.element;
-        if (originX === "right") {
-            x = window.innerWidth - x - width;
-            keyboardElement.style.left = "";
-            keyboardElement.style.right = `${x}px`;
-
-        } else {
-            keyboardElement.style.left = `${x}px`;
-            keyboardElement.style.right = "";
-        }
-
-        if (originY === "bottom") {
-            y = window.innerHeight - y - height;
-            keyboardElement.style.top = "";
-            keyboardElement.style.bottom = `${y}px`;
-
-        } else {
-            keyboardElement.style.top = `${y}px`;
-            keyboardElement.style.bottom = "";
-        }
-
-        placement.x = x;
-        placement.y = y;
-        placement.originX = originX;
-        placement.originY = originY;
+    if (!state.isTopElement) {
+        return;
     }
+
+    // get x,y coordinates of keyboard based on an origin of Top Left
+    const placement = state.keyboard.placement;
+    const width = state.keyboard.element.offsetWidth;
+    const height = state.keyboard.element.offsetHeight;
+
+    let x = placement.originX === "right" ?
+        window.innerWidth - width - placement.x :
+        placement.x;
+
+    let y = placement.originY === "bottom" ?
+        window.innerHeight - height - placement.y :
+        placement.y;
+
+    // try to make sure keyboard is not partially off screen
+    if (x < 0) x = 0;
+    if (y < 0) y = 0;
+
+    if (x + width > window.innerWidth) x = window.innerWidth - width;
+    if (y + height > window.innerHeight) y = window.innerHeight - height;
+
+    // find out which quadrant keyboard is in and set appropriate origin
+    const cx = ~~(x + width / 2);
+    const cy = ~~(y + height / 2);
+
+    const originX = cx > window.innerWidth / 2 ?
+        "right" :
+        "left";
+
+    const originY = cy > window.innerHeight / 2 ?
+        "bottom" :
+        "top";
+
+    // set x and y based on new origin
+    const keyboardElement = state.keyboard.element;
+    if (originX === "right") {
+        x = window.innerWidth - x - width;
+        keyboardElement.style.left = "";
+        keyboardElement.style.right = `${x}px`;
+
+    } else {
+        keyboardElement.style.left = `${x}px`;
+        keyboardElement.style.right = "";
+    }
+
+    if (originY === "bottom") {
+        y = window.innerHeight - y - height;
+        keyboardElement.style.top = "";
+        keyboardElement.style.bottom = `${y}px`;
+
+    } else {
+        keyboardElement.style.top = `${y}px`;
+        keyboardElement.style.bottom = "";
+    }
+
+    placement.x = x;
+    placement.y = y;
+    placement.originX = originX;
+    placement.originY = originY;
 }
 
 function moveKeyboard(dx, dy) {
@@ -205,11 +209,13 @@ function updateKeyboard() {
 
 function typeKey(key) {
     const activeElement = getActiveElement(document);
-    if (activeElement.hangulEditor) {
-        /** HangulEditor */
-        const he = activeElement.hangulEditor;
-        he.addJamo(key);
+    const imeController = imeControllers.get(activeElement);
+
+    if (!imeController) {
+        return;
     }
+
+    imeController.addJamo(key);
 }
 
 document.addEventListener(
@@ -270,6 +276,15 @@ function refreshTextInputElements(doc) {
     return true;
 }
 
+function toggleMode() {
+    if (state.isHangulMode) {
+        chrome.runtime.sendMessage({ action: "disable" });
+
+    } else {
+        chrome.runtime.sendMessage({ action: "enable" });
+    }
+}
+
 let refreshInterval;
 function enable() {
     if (state.isHangulMode) {
@@ -298,5 +313,7 @@ function disable() {
     clearInterval(refreshInterval);
     updateKeyboard();
 
-    imeControllers.values.forEach(imeController => imeController.deactivate());
+    for (const imeController of imeControllers.values()) {
+        imeController.deactivate();
+    }
 }
