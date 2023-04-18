@@ -3,7 +3,7 @@ import del from "del";
 import replace from "gulp-replace";
 import log from "fancy-log";
 import packageJson from "./package.json";
-import { compileAndBundleJavascript } from "./compileAndBundleJavascript";
+import { compileAndBundleJavascript } from "./compile-and-bundle-javascript";
 const sass = require('gulp-sass')(require('sass'));
 
 const buildTasks = series(
@@ -69,7 +69,7 @@ function processManifest() {
 
 function buildContentScript() {
     return compileAndBundleJavascript(
-        ["src/contentScript/index.ts"],
+        ["src/content-script/index.ts"],
         dest("dist"),
         "contentScript.js"
     );
@@ -83,7 +83,7 @@ function buildStyles() {
 
 function buildServiceWorker() {
     return compileAndBundleJavascript(
-        ["src/serviceWorker/index.ts"],
+        ["src/service-worker/index.ts"],
         dest("dist"),
         "serviceWorker.js"
     );
@@ -101,20 +101,5 @@ function buildPopupConverter() {
         "src/popup-converter/popup-converter.ts",
         dest("dist/popup-converter"),
         "popup-converter.js"
-    );
-}
-
-function copyOnScreenKeyboardFiles() {
-    const oskPath = "src/popupKeyboard";
-
-    return src([`${oskPath}/*.html`, `${oskPath}/*.css`])
-        .pipe(dest("dist/popupKeyboard"));
-}
-
-function buildOnScreenKeyboard() {
-    return compileAndBundleJavascript(
-        "src/popupKeyboard/index.ts",
-        dest("dist/popupKeyboard"),
-        "index.js"
     );
 }

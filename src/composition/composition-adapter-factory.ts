@@ -1,10 +1,10 @@
 "use strict";
 
-import { InputAdapter } from "./compositionAdapters/inputAdapter";
-import { ContentEditableAdapter } from "./compositionAdapters/contentEditableAdapter";
-import { GoogleDocsAdapter } from "./compositionAdapters/googleDocsAdapter";
-import { CompositionAdapter } from "./compositionAdapters/compositionAdapter";
-import { CreateProxy } from "../devHelpers/loggingProxy";
+import { InputAdapter } from "./composition-adapters/input-adapter";
+import { ContentEditableAdapter } from "./composition-adapters/content-editable-adapter";
+import { GoogleDocsAdapter } from "./composition-adapters/google-docs-adapter";
+import { CompositionAdapter } from "./composition-adapters/composition-adapter";
+import { CreateProxy } from "../dev-helpers/logging-proxy";
 
 export class CompositionAdapterFactory {
     static createCompositionAdapter (element: HTMLElement) : CompositionAdapter | undefined {

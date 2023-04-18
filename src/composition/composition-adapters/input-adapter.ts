@@ -1,6 +1,6 @@
 "use strict";
 
-import { CompositionAdapter } from "./compositionAdapter";
+import { CompositionAdapter } from "./composition-adapter";
 
 export class InputAdapter extends CompositionAdapter {
     constructor (protected element: HTMLInputElement) {

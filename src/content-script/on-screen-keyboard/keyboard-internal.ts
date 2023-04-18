@@ -1,6 +1,6 @@
-import { KeyboardState } from "./KeyboardState";
-import { KeyCode } from "./koreanKeyboardMap";
-import { renderKeyboard } from "./renderKeyboard";
+import { KeyboardState } from "./keyboard-state";
+import { KeyCode } from "./korean-keyboard-map";
+import { renderKeyboard } from "./render-keyboard";
 
 const state: KeyboardState = {
     shift: false,
