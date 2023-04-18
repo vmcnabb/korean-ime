@@ -1,4 +1,4 @@
-import { CompositionAdapter } from "./compositionAdapter";
+import { CompositionAdapter } from "./composition-adapter";
 
 export class ContentEditableAdapter extends CompositionAdapter {
     blur() {

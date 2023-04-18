@@ -1,6 +1,6 @@
 import { isHangulCharacter } from "../../mappings";
 import { ContentScriptState } from "..";
-import { InitializeKeyboard } from "./keyboardInternal";
+import { InitializeKeyboard } from "./keyboard-internal";
 
 export class OnScreenKeyboardController {
     constructor(private state: ContentScriptState) {

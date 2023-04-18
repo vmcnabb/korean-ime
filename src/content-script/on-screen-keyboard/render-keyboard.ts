@@ -1,5 +1,5 @@
-import { KeyboardState } from "./KeyboardState";
-import { KeyCode, KeyRecord, keyMap } from "./koreanKeyboardMap";
+import { KeyboardState } from "./keyboard-state";
+import { KeyCode, KeyRecord, keyMap } from "./korean-keyboard-map";
 
 const layout: KeyCode[][] = [
     [KeyCode.Backquote, KeyCode.Digit1, KeyCode.Digit2, KeyCode.Digit3, KeyCode.Digit4, KeyCode.Digit5, KeyCode.Digit6, KeyCode.Digit7, KeyCode.Digit8, KeyCode.Digit9, KeyCode.Digit0, KeyCode.Minus, KeyCode.Equals, KeyCode.Backspace],

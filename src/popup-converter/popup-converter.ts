@@ -1,6 +1,6 @@
 "use strict";
 
-import { HangulImeController } from "../composition/hangulImeController";
+import { HangulImeController } from "../composition/hangul-ime-controller";
 import { romanize } from "../romanize";
 
 type MessageResponse = { success: boolean; error?: string; };

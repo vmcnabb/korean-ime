@@ -47,3 +47,4 @@ export function compileAndBundleJavascript(globs, dest, rename = null) {
 
     return browserfied.pipe(dest);
 }
+

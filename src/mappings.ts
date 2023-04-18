@@ -1,4 +1,4 @@
-import { keyMap } from "./contentScript/onScreenKeyboard/koreanKeyboardMap";
+import { keyMap } from "./content-script/on-screen-keyboard/korean-keyboard-map";
 
 class StringMap {
     [key: string]: string | undefined;

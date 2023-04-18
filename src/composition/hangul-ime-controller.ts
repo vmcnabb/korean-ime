@@ -1,8 +1,8 @@
-﻿import { isModifierKey, KeyCode } from "../contentScript/onScreenKeyboard/koreanKeyboardMap";
+﻿import { isModifierKey, KeyCode } from "../content-script/on-screen-keyboard/korean-keyboard-map";
 import { hangulMaps as maps, isHangulCharacter } from "../mappings";
 import { Compositor } from "./composition";
-import { CompositionAdapterFactory } from "./compositionAdapterFactory";
-import { CompositionAdapter } from "./compositionAdapters/compositionAdapter";
+import { CompositionAdapterFactory } from "./composition-adapter-factory";
+import { CompositionAdapter } from "./composition-adapters/composition-adapter";
 
 /**
  * @param {HTMLElement} element 

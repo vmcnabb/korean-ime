@@ -1,7 +1,7 @@
 ﻿import { IsKimeMessage, KimeMessage } from "../messaging";
-import { CompositionAdapterFactory } from "../composition/compositionAdapterFactory";
-import { OnScreenKeyboardController } from "./onScreenKeyboard/onScreenKeyboardController";
-import { HangulImeController } from "../composition/hangulImeController";
+import { CompositionAdapterFactory } from "../composition/composition-adapter-factory";
+import { OnScreenKeyboardController } from "./on-screen-keyboard/on-screen-keyboard-controller";
+import { HangulImeController } from "../composition/hangul-ime-controller";
 
 type KeyboardPlacement = {
     originX: "left" | "right";
