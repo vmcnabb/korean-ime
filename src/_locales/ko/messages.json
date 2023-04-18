@@ -28,5 +28,11 @@
     },
     "romanize_popup_romanizedTextTextboxHint": {
         "message": "위에 입력하신 한글이 여기에 로마자로 나타납니다"
+    },
+    "keyboard_key_altRight_tooltip": {
+        "message": "영어와 한글 사이를 전환"
+    },
+    "keyboard_key_controlRight_tooltip": {
+        "message": "선택한 한글을 한자로 변환하십시오"
     }
 }

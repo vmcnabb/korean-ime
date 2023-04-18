@@ -4,20 +4,25 @@ import { InputAdapter } from "./compositionAdapters/inputAdapter";
 import { ContentEditableAdapter } from "./compositionAdapters/contentEditableAdapter";
 import { GoogleDocsAdapter } from "./compositionAdapters/googleDocsAdapter";
 import { CompositionAdapter } from "./compositionAdapters/compositionAdapter";
+import { CreateProxy } from "../devHelpers/loggingProxy";
 
 export class CompositionAdapterFactory {
     static createCompositionAdapter (element: HTMLElement) : CompositionAdapter | undefined {
-        if (canBeTreatedAsInputElement(element)) {
-            return new InputAdapter(element);
+        const adapter = (function () {
+            if (canBeTreatedAsInputElement(element)) {
+                return new InputAdapter(element);
 
-        } else if (isGoogleDocsElement(element)) {
-            return new GoogleDocsAdapter(element);
+            } else if (isGoogleDocsElement(element)) {
+                return new GoogleDocsAdapter(element);
 
-        } else if (element.isContentEditable) {
-            return new ContentEditableAdapter(element);
-        }
+            } else if (element.isContentEditable) {
+                return new ContentEditableAdapter(element);
+            }
 
-        return undefined;
+            return undefined;
+        })();
+
+        return adapter ? CreateProxy(adapter) : undefined;
     }
 }
 

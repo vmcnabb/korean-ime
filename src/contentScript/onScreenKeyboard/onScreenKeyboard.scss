@@ -1,0 +1,182 @@
+#kb-73ce1520-9c19-48ad-bf12-f7ec206ab11f {
+    --key-margin: 5px;
+    --text-distance: 3px;
+    --keys-per-row: 10;    
+    --key-length: calc((100% - var(--key-margin) * 11) / 10);
+
+    --background-color: #444;
+    --border-color: #000;
+
+    --key-color: #fff;
+    --key-background-color: #000;
+    --key-mode-inactive-color: #808080;
+    --key-hover-background-color: #202020;
+    --key-active-background-color: #404040;
+
+    --key-mode-active-font-size: 1.15em;
+    --key-mode-inactive-font-size: 0.85em;
+
+    &, * {
+        user-select: none;
+    }
+
+    & {
+        border: 1px solid var(--border-color);
+        margin-left: auto;
+        margin-right: auto;
+        display: block;
+        background-color: var(--background-color);
+        padding-top: var(--key-margin);
+        width: 100%;
+        position: relative;
+        box-sizing: border-box;
+    }
+
+    div.row {
+        display: flex;
+        justify-content: center;
+    }
+
+    kbd {
+        font-family: Arial, Helvetica, sans-serif;
+        border: 1px solid var(--border-color);
+        margin: var(--key-margin);
+        margin-top: 0;
+        display: inline-block;
+        background-color: var(--key-background-color);
+        color: var(--key-color);
+
+        /* Set the desired width of the key. The key will be squashed if there are too many keys to fit as it is
+           contained in a flexbox (the row) */
+        width: var(--key-length);
+
+        /* Set the height equal to the width of the element. This is possible because --key-length is calculated
+           based on the width of the container. This value will be the same for all keys as it is calculated on
+           desired standard width, not the actual width of a key. */
+        height: 0;
+        padding-bottom: var(--key-length);
+
+        position: relative;
+        box-sizing: border-box;
+
+        &:hover {
+            background-color: var(--key-hover-background-color);
+        }
+
+        &.active,
+        &:active {
+            background-color: var(--key-active-background-color);
+        }
+
+        &+kbd {
+            margin-left: 0;
+        }
+
+        div {
+            position: absolute;
+            left: var(--text-distance);
+        }
+    
+        .full {
+            /* center text vertically */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            top: var(--text-distance);
+        }
+
+        .full,
+        .base {
+            bottom: var(--text-distance);
+        }
+    
+        .shift {
+            top: var(--text-distance);
+        }
+    
+        .full,
+        .shift,
+        .base {
+            left: 0;
+            width: 100%;
+            text-align: center;
+        }
+
+        &.AltRight {
+            width: calc(var(--key-length) * 1.3);
+        }
+    }
+
+    &:not(.shift) {
+        kbd.ShiftLeft,
+        kbd.ShiftRight {
+            color: var(--key-mode-inactive-color);
+            font-size: var(--key-mode-inactive-font-size);
+        }
+
+        kbd .shift {
+            color: var(--key-mode-inactive-color);
+        }
+    }
+    
+    &.shift {
+        kbd .base {
+            display: none;
+        }
+
+        kbd .shift {
+            bottom: var(--text-distance);
+            top: initial;
+        }
+
+        kbd.ShiftLeft,
+        kbd.ShiftRight {
+            font-size: var(--key-mode-active-font-size);
+        }
+    }
+
+    kbd.Space {
+        width: calc(var(--key-length) * 5 + var(--key-margin) * 4);
+    }
+
+    /* line dividing 한 and 영 on han/yong key (AltRight). */
+    kbd.AltRight::before {
+        content: "";
+        position: absolute;
+        width: 1px;
+        height: 80%;
+        background-color: var(--key-mode-inactive-color);
+        transform: rotate(30deg);
+        top: 10%;
+        right: 50%;
+    }
+
+    kbd.AltRight .hanMode {
+        position: absolute;
+        top: var(--text-distance);
+    }
+    kbd.AltRight .yongMode {
+        position: absolute;
+        bottom: var(--text-distance);
+        right: var(--text-distance);
+        left: initial;
+    }
+    
+    &.hanMode .yongMode,
+    &.yongMode .hanMode {
+        font-size: var(--key-mode-inactive-font-size);
+        color: var(--key-mode-inactive-color);
+    }
+
+    &.hanMode kbd {
+        .yong {
+            display: none;
+        }
+    }
+
+    &.yongMode kbd {
+        .jamo {
+            display: none;
+        }
+    }
+}

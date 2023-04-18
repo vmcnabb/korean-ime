@@ -1,6 +1,6 @@
-﻿import { IsKimeMessage, KimeMessage, KimeResponse } from "../messaging";
+﻿import { IsKimeMessage, KimeMessage } from "../messaging";
 import { CompositionAdapterFactory } from "../composition/compositionAdapterFactory";
-import { KeyboardMessage, OnScreenKeyboardController } from "./onScreenKeyboardController";
+import { OnScreenKeyboardController } from "./onScreenKeyboard/onScreenKeyboardController";
 import { HangulImeController } from "../composition/hangulImeController";
 
 type KeyboardPlacement = {
@@ -14,7 +14,7 @@ export interface ContentScriptState {
     isHangulMode: boolean;
     keyboard: {
         isEnabled: boolean;
-        element?: HTMLIFrameElement;
+        element?: HTMLDivElement;
         placement: KeyboardPlacement;
     };
     isTopElement: boolean;
@@ -47,29 +47,27 @@ function setupListener() {
     const actions = {
         disable: disable,
         enable: enable,
-        insertAfter: (message: KimeMessage, response: KimeResponse) => {
-            let element = getActiveElement(document);
+        insertAfter: (message: KimeMessage) => {
+            const element = getActiveElement(document);
 
-            if (element) {
-                const compositionAdapter = CompositionAdapterFactory.createCompositionAdapter(element);
-                if (compositionAdapter) {
-                    compositionAdapter.deselect();
-                    compositionAdapter.updateComposition(message.data);
-                    compositionAdapter.deselect();
-                    response.wasSuccessful = true;
-                } else {
-                    response.wasSuccessful = false;
-                }
-            } else {
-                response.wasSuccessful = false;
+            if (!element) {
+                return;
             }
+
+            const compositionAdapter = CompositionAdapterFactory.createCompositionAdapter(element);
+
+            if (!compositionAdapter) {
+                return;
+            }
+
+            compositionAdapter.deselect();
+            compositionAdapter.updateComposition(message.data);
+            compositionAdapter.deselect();
         },
     };
 
-    chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+    chrome.runtime.onMessage.addListener(message => {
         console.debug("content.js: received message", message);
-
-        const response: KimeResponse = { state };
 
         if (!IsKimeMessage(message)) {
             return;
@@ -77,14 +75,12 @@ function setupListener() {
 
         if (actionHasKeyFor<typeof actions>(message.action, actions)) {
             const action = actions[message.action];
-            action(message, response);
+            action(message);
 
         } else if (actionHasKeyFor<typeof keyboardController.MessageHandlers>(message.action, keyboardController.MessageHandlers)) {
             const action = keyboardController.MessageHandlers[message.action];
-            action(message as KeyboardMessage);
+            action();
         }
-
-        sendResponse(response);
     });
 }
 
@@ -109,12 +105,19 @@ document.addEventListener(
 );
 
 function getActiveElement(doc: Document): HTMLElement | null {
-    const d = doc as any;
-    const element = d.activeElement && d.activeElement.contentDocument
-        ? getActiveElement(d.activeElement.contentDocument)
+    const isActiveElementInChildDocument = doc.activeElement
+        && isObjectOrIframe(doc.activeElement)
+        && doc.activeElement.contentDocument;
+
+    const element = isActiveElementInChildDocument
+        ? getActiveElement(doc.activeElement.contentDocument)
         : doc.activeElement;
 
     return element instanceof HTMLElement ? element : null;
+}
+
+function isObjectOrIframe(element: Element): element is HTMLObjectElement | HTMLIFrameElement {
+    return element instanceof HTMLObjectElement || element instanceof HTMLIFrameElement;
 }
 
 function processElement(element: HTMLElement) {
@@ -143,8 +146,8 @@ function refreshTextInputElements(doc: Document) {
     const inputSelector = `input:not(${nonTextInputTypes.map(t => `[type=${t}]`).join(",")})`;
     const textInputElementsSelector = `[contenteditable=true],textarea,${inputSelector}`;
 
-    const elements = doc.querySelectorAll(textInputElementsSelector) as NodeListOf<HTMLElement>;
-    for (let element of elements) {
+    const elements = doc.querySelectorAll<HTMLElement>(textInputElementsSelector);
+    for (const element of elements) {
         processElement(element);
     }
 
@@ -180,5 +183,7 @@ function disable() {
     clearInterval(refreshInterval);
     keyboardController.updateKeyboard();
 
-    [...imeControllers.values()].forEach(imeController => imeController.deactivate());
+    for (const [_, controller] of imeControllers) {
+        controller.deactivate();
+    }
 }

@@ -1,4 +1,4 @@
-import koreanKeyboardMap from "./popupKeyboard/koreanKeyboardMap";
+import { keyMap } from "./contentScript/onScreenKeyboard/koreanKeyboardMap";
 
 class StringMap {
     [key: string]: string | undefined;
@@ -39,7 +39,7 @@ class TwoWayMap {
 /**
 * @param {string} char 
 */
-export function isHangulCharacter (char: string | undefined): char is string {
+export function isHangulCharacter (char: string | undefined) {
    if (!char) return false;
    const cc = char.charCodeAt(0);
    return (cc >= 0xAC00 && cc <= 0xD7A3) || (cc >= 0x3131 && cc <= 0x318E);
@@ -52,7 +52,7 @@ export const hangulMaps = Object.freeze({
     initials: "ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ",
     medials: "ㅏㅐㅑㅒㅓㅔㅕㅖㅗㅘㅙㅚㅛㅜㅝㅞㅟㅠㅡㅢㅣ",
     finals: "ㄱㄲㄳㄴㄵㄶㄷㄹㄺㄻㄼㄽㄾㄿㅀㅁㅂㅄㅅㅆㅇㅈㅊㅋㅌㅍㅎ",
-    keyboardMap: koreanKeyboardMap,
+    keyboardMap: keyMap,
     hangulVowelsRoman: new StringMap(
         "ㅏㅐㅑㅒㅓㅔㅕㅖㅗㅘㅙㅚㅛㅜㅝㅞㅟㅠㅡㅢㅣ",
         [   "a", "ae", "ya", "yae", "eo", "e", "yeo", "ye", "o", "wa", "wae",

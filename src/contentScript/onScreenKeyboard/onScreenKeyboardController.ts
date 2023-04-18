@@ -1,12 +1,6 @@
-import { KimeMessage } from "@/messaging";
-import { ContentScriptState } from ".";
-
-export type KeyboardMessage = KimeMessage & {
-    data: string;
-    dx: number;
-    dy: number;
-    key: string;
-}
+import { isHangulCharacter } from "../../mappings";
+import { ContentScriptState } from "..";
+import { InitializeKeyboard } from "./keyboardInternal";
 
 export class OnScreenKeyboardController {
     constructor(private state: ContentScriptState) {
@@ -16,38 +10,38 @@ export class OnScreenKeyboardController {
     public MessageHandlers = {
         enableKeyboard: () => this.setKeyboardEnabled(true),
         disableKeyboard: () => this.setKeyboardEnabled(false),
-        keyboard: (message: KeyboardMessage) => this.typeKey(message.key),
-        moveKeyboard: (message: KeyboardMessage) => this.moveKeyboard(message.dx, message.dy),
     }
 
     private setKeyboardEnabled(isEnabled: boolean) {
         this.state.keyboard.isEnabled = isEnabled;
         this.updateKeyboard();
     }
-    
+
     private moveKeyboard(dx: number, dy: number) {
-        if (this.state.isTopElement) {
-            const kb = this.state.keyboard;
-    
-            const kx = ~~kb.placement.x;
-            const ky = ~~kb.placement.y;
-    
-            if (kb.placement.originX === "right") {
-                dx = -dx;
-            }
-    
-            if (kb.placement.originY === "bottom") {
-                dy = -dy;
-            }
-    
-            kb.placement.x = kx + dx;
-            kb.placement.y = ky + dy;
-    
-            this.placeKeyboard();
+        if (!this.state.isTopElement) {
+            return;
         }
+
+        const kb = this.state.keyboard;
+
+        const kx = ~~kb.placement.x;
+        const ky = ~~kb.placement.y;
+
+        if (kb.placement.originX === "right") {
+            dx = -dx;
+        }
+
+        if (kb.placement.originY === "bottom") {
+            dy = -dy;
+        }
+
+        kb.placement.x = kx + dx;
+        kb.placement.y = ky + dy;
+    
+        this.placeKeyboard();
     }
 
-    private typeKey(key: string) {
+    private typeKey(char: string) {
         const activeElement = this.state.getActiveElement(document);
         if (!activeElement) {
             return;
@@ -59,31 +53,47 @@ export class OnScreenKeyboardController {
             return;
         }
     
-        imeController.addJamo(key);
-    }
+        if (isHangulCharacter(char)) {
+            imeController.addJamo(char);
 
-    public updateKeyboard() {
-        if (this.state.keyboard.element) {
-            if (this.state.keyboard.isEnabled) {
-                this.showKeyboard();
-    
+        } else {
+            // if char is a backspace call handleBackspace
+            if (char === "\b") {
+                imeController.handleBackspace();
             } else {
-                this.hideKeyboard();
+                imeController.addCharacter(char);
             }
         }
     }
 
-    private hideKeyboard() {
-        if (this.state.keyboard.element) {
-            this.state.keyboard.element.style.display = "none";
+    public updateKeyboard() {
+        if (!this.state.keyboard.element) {
+            return;
         }
+
+        if (this.state.keyboard.isEnabled) {
+            this.showKeyboard();
+
+        } else {
+            this.hideKeyboard();
+        }
+    }
+
+    private hideKeyboard() {
+        if (!this.state.keyboard.element) {
+            return;
+        }
+        
+        this.state.keyboard.element.style.display = "none";
     }
     
     private showKeyboard() {
-        if (this.state.keyboard.element) {
-            this.state.keyboard.element.style.display = "block";
-            this.placeKeyboard();
+        if (!this.state.keyboard.element) {
+            return;
         }
+
+        this.state.keyboard.element.style.display = "block";
+        this.placeKeyboard();
     }
     
     private placeKeyboard() {
@@ -164,19 +174,29 @@ export class OnScreenKeyboardController {
             throw "createKeyboard() must only be called once.";
         }
 
-        const keyboard = document.createElement("iframe");
+        const keyboard = document.createElement("div");
         state.keyboard.element = keyboard;
 
-        keyboard.src = chrome.runtime.getURL("popupKeyboard/index.html");
-        keyboard.width = "480px";
-        keyboard.height = "203px";
+        keyboard.id = "kb-73ce1520-9c19-48ad-bf12-f7ec206ab11f";
+
+        keyboard.style.width = "480px";
         keyboard.style.position = "fixed";
         keyboard.style.bottom = "0";
         keyboard.style.right = "0";
         keyboard.style.display = "none";
         keyboard.style.border = "none";
-        keyboard.style.zIndex = "9999";
-    
-        document.body.appendChild(keyboard);
+        keyboard.style.zIndex = "2147483647"; // max int
+
+        // insert the keyboard as the first child of the BODY tag
+        const body = document.getElementsByTagName("body")[0];
+        body.insertBefore(keyboard, body.firstChild);
+
+        // load keyboard CSS
+        const css = document.createElement("link");
+        css.rel = "stylesheet";
+        css.href = chrome.runtime.getURL("contentScript/onScreenKeyboard/onScreenKeyboard.css");
+        document.head.appendChild(css);
+
+        InitializeKeyboard(keyboard, this.typeKey.bind(this), this.moveKeyboard.bind(this));
     }
 }
