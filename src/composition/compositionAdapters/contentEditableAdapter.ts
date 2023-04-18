@@ -1,9 +1,7 @@
-"use strict";
-
 import { CompositionAdapter } from "./compositionAdapter";
 
 export class ContentEditableAdapter extends CompositionAdapter {
-    blur(): void {
+    blur() {
         // Do nothing
     }
 
@@ -58,5 +56,9 @@ export class ContentEditableAdapter extends CompositionAdapter {
         const range = selection.getRangeAt(0);
         range.setStart(selection.focusNode, startOffset - 1);
         return selection.focusNode.nodeValue.substring(startOffset - 1, startOffset);
+    }
+
+    handleBackspace(): void {
+        // todo: implement
     }
 }

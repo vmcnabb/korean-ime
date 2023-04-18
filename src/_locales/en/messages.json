@@ -34,5 +34,11 @@
     },
     "romanize_popup_romanizedTextTextboxHint": {
         "message": "The romanized version will appear here"
+    },
+    "keyboard_key_altRight_tooltip": {
+        "message": "Switch between Yong (English) and Hangul"
+    },
+    "keyboard_key_controlRight_tooltip": {
+        "message": "Convert the selected Hangul to Hanja"
     }
 }

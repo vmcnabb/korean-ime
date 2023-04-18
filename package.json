@@ -34,10 +34,14 @@
     "gulp": "^4.0.2",
     "gulp-multi-thread-task": "^2.1.0",
     "gulp-replace": "^1.1.4",
+    "gulp-sass": "^5.1.0",
     "gulp-terser": "^1.4.1",
     "tsify": "^5.0.4",
     "typescript": "^5.0.4",
     "vinyl-buffer": "^1.0.1",
     "vinyl-source-stream": "^2.0.0"
+  },
+  "dependencies": {
+    "sass": "^1.62.0"
   }
 }

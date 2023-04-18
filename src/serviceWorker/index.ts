@@ -18,8 +18,6 @@ const menus = {
 
 type TabState = {
     enabled: boolean;
-    romanize: boolean;
-    romanizeBeside: boolean;
 };
 
 const tabStates: {[x: number]: TabState} = {};
@@ -80,7 +78,7 @@ function updateSettings() {
 
 // icon is clicked
 chrome.action.onClicked.addListener(tab => {
-    setState(tab, true);
+    toggleActive(tab, true);
 });
 
 chrome.runtime.onMessage.addListener(
@@ -92,7 +90,7 @@ chrome.runtime.onMessage.addListener(
                 if (!sender.tab) {
                     break;
                 }
-                setState(sender.tab, true);
+                toggleActive(sender.tab, true);
                 sendResponse({ status: "accepted" });
                 break;
         }
@@ -195,7 +193,7 @@ function setupMenus() {
         }
     }
 
-    function onScreenKeyboard() {
+    function toggleOnScreenKeyboard() {
         settings.enableKeyboard = !settings.enableKeyboard;
         updateSettings();
         saveSettings();
@@ -210,16 +208,14 @@ function setupMenus() {
                 romanizeBeside(event, tab);
                 break;
             case menus.onScreenKeyboard.id:
-                onScreenKeyboard();
+                toggleOnScreenKeyboard();
                 break;
         }
     });
 }
 
-function setState(tab: chrome.tabs.Tab, toggle: boolean) {
+function toggleActive(tab: chrome.tabs.Tab, toggle: boolean) {
     console.debug("setState", tab, toggle);
-
-    // todo: don't pretend that we're a central background script
 
     if (!tab.id) return;
 

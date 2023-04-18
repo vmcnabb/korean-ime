@@ -15,6 +15,10 @@ export class GoogleDocsAdapter extends CompositionAdapter {
         return undefined;
     }
 
+    handleBackspace(): void {
+        // TODO: implement
+    }
+
     blur () {
         this.endComposition(this.currentBlock);
     }

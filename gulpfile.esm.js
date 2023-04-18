@@ -4,21 +4,19 @@ import replace from "gulp-replace";
 import log from "fancy-log";
 import packageJson from "./package.json";
 import { compileAndBundleJavascript } from "./compileAndBundleJavascript";
+const sass = require('gulp-sass')(require('sass'));
 
 const buildTasks = series(
     clean,
     reportProjectVersion,
-    parallel(
-        buildServiceWorker,
-        buildContentScript,
-        buildPopupConverter,
-        buildOnScreenKeyboard,
-        copyPopupConverterFiles,
-        copyOnScreenKeyboardFiles,
-        copyImages,
-        copyLocales,
-        processManifest,
-    )
+    buildServiceWorker,
+    buildContentScript,
+    buildStyles,
+    buildPopupConverter,
+    copyPopupConverterFiles,
+    copyImages,
+    copyLocales,
+    processManifest,
 );
 
 exports.dev = series(
@@ -75,6 +73,12 @@ function buildContentScript() {
         dest("dist"),
         "contentScript.js"
     );
+}
+
+function buildStyles() {
+    return src("src/**/*.scss")
+        .pipe(sass().on("error", sass.logError))
+        .pipe(dest("dist"));
 }
 
 function buildServiceWorker() {

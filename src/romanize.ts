@@ -52,7 +52,7 @@ export function romanize (text: string) {
             romanText += maps.hangulIntialsRoman[block.final[0]];
         }
 
-        const thisFinal = block.final.substr(-1);
+        const thisFinal = block.final.slice(-1);
         const special = maps.hangulFinalInitialRoman[thisFinal + nextBlock.initial];
 
         if (isHangulCharacter(nextChar) && special !== undefined) {

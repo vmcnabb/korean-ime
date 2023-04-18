@@ -1,4 +1,5 @@
-﻿import { hangulMaps as maps, isHangulCharacter } from "../mappings";
+﻿import { isModifierKey, KeyCode } from "../contentScript/onScreenKeyboard/koreanKeyboardMap";
+import { hangulMaps as maps, isHangulCharacter } from "../mappings";
 import { Compositor } from "./composition";
 import { CompositionAdapterFactory } from "./compositionAdapterFactory";
 import { CompositionAdapter } from "./compositionAdapters/compositionAdapter";
@@ -14,12 +15,12 @@ export class HangulImeController {
     private changeListeners: (() => void)[] = [];
     private eventListeners: { target: EventTarget, type: string, listener: EventListener }[] = [];
 
-    private lastAlt = "";
+    private lastAlt = KeyCode.AltLeft;
 
     constructor(element: HTMLElement) {
         const compositionAdapter = CompositionAdapterFactory.createCompositionAdapter(element);
         if (!compositionAdapter) {
-            throw "Could not create composition adapter for element";
+            throw new Error("Could not create composition adapter for element");
         }
 
         this.compositionAdapter = compositionAdapter;
@@ -39,6 +40,7 @@ export class HangulImeController {
         return this._isActive;
     };
 
+    // todo: find out why we are notifying a change and for who
     notifyChange() {
         this.changeListeners.forEach(listener => {
             try {
@@ -56,21 +58,21 @@ export class HangulImeController {
 
     private eventHandlers = {
         keydown: (event: KeyboardEvent) => {
-            const code = event.code as keyof typeof maps.keyboardMap;
+            const code = event.code as KeyCode;
 
             // record which alt was down last, so we know if the "han/yeong" key is down
-            if (["AltRight", "AltLeft"].includes(code)) {
+            if ([KeyCode.AltRight, KeyCode.AltLeft].includes(code)) {
                 this.lastAlt = code;
                 return;
             }
 
             // don't process modifier keys
-            if (["ShiftLeft", "ShiftRight", "CtrlLeft", "CtrlRight", "Meta"].includes(code)) {
+            if (isModifierKey(code)) {
                 return;
             }
 
             if (!this._isActive) {
-                if (event.altKey && this.lastAlt === "AltRight") {
+                if (event.altKey && this.lastAlt === KeyCode.AltRight) {
                     // insert character manually when "han/yeong" key is down so that a menu isn't triggered
                     this.compositionAdapter.updateComposition(event.key);
                     this.compositionAdapter.endComposition(event.key);
@@ -81,17 +83,17 @@ export class HangulImeController {
                 return true;
             }
 
-            if (!this.compositor.isCompositing() && event.shiftKey && code === "Backspace") {
+            if (!this.compositor.isCompositing() && event.shiftKey && code === KeyCode.Backspace) {
                 // select previous character if it is Hangul and put it into composition mode
                 const character = this.compositionAdapter.selectPreviousCharacter();
-                if (isHangulCharacter(character)) {
+                if (isHangulCharacter(character) && character) {
                     this.compositor.setCharacter(character);
                 }
             }
 
-            const key = maps.keyboardMap[code as keyof typeof maps.keyboardMap];
+            const key = maps.keyboardMap[code];
 
-            if (code === "Backspace" && this.compositor.isCompositing()) {
+            if (code === KeyCode.Backspace && this.compositor.isCompositing()) {
                 const block = this.compositor.removeLastJamo();
                 if (block) {
                     this.compositionAdapter.updateComposition(block);
@@ -122,7 +124,7 @@ export class HangulImeController {
                 return true;
             }
 
-            if (!("jamo" in key)) {
+            if (!key.jamo) {
                 if (this.compositor.isCompositing()) {
                     this.compositionAdapter.endComposition(this.compositor.getCurrent());
                     this.compositor.reset();
@@ -131,7 +133,7 @@ export class HangulImeController {
                 return true;
             }
 
-            const jamo = "shift" in key.jamo && event.shiftKey
+            const jamo = event.shiftKey && key.jamo.shift
                 ? key.jamo.shift
                 : key.jamo.normal;
 
@@ -170,6 +172,37 @@ export class HangulImeController {
         }
         
         this._isActive = false;
+    }
+
+    /**
+     * Add a non-Hangul character to the composition adapter.
+     * This will end any current composition.
+     * @param char 
+     */
+    addCharacter(char: string) {
+        if (this.compositor.isCompositing()) {
+            this.compositionAdapter.endComposition(this.compositor.getCurrent());
+            this.compositor.reset();
+        }
+
+        this.compositionAdapter.updateComposition(char);
+        this.compositionAdapter.endComposition(char);
+    }
+
+    handleBackspace() { 
+        if (this.compositor.isCompositing()) {
+            const block = this.compositor.removeLastJamo();
+            if (block) {
+                this.compositionAdapter.updateComposition(block);
+            } else {
+                this.compositionAdapter.endComposition("");
+            }
+
+            this.notifyChange();
+
+        } else {
+            this.compositionAdapter.handleBackspace();
+        }
     }
 
     addJamo(jamo: string) {

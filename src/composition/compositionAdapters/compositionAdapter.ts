@@ -11,5 +11,6 @@ export abstract class CompositionAdapter {
     abstract deselect(): void;
     abstract endComposition(text: string): void;
     abstract selectPreviousCharacter(): string | undefined;
+    abstract handleBackspace(): void;
     abstract updateComposition(text: string): void;
 }

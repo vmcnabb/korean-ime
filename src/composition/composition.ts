@@ -189,12 +189,12 @@ export class Compositor {
             // if this is a vowel, take last consonant and create new character
             const length = block.final.length;
             const lastConsonant = block.final[length - 1];
-            block.final = block.final.substr(0, length - 1);
+            block.final = block.final.substring(0, length - 1);
             const completed = block.toChar();
             this.block = new Block(lastConsonant, jamo);
             return {
                 completed,
-                inProgress: block.toChar()
+                inProgress: this.block.toChar()
             };
 
         } else {
@@ -202,7 +202,7 @@ export class Compositor {
             this.block = new Block(jamo);
             return {
                 completed,
-                inProgress: block.toChar()
+                inProgress: this.block.toChar()
             };
         }
     }
