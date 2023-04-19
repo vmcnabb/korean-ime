@@ -41,9 +41,9 @@ const state: ContentScriptState = {
 };
 
 const keyboardController = new OnScreenKeyboardController(state);
-setupListener();
+setupMessageListener();
 
-function setupListener() {
+function setupMessageListener() {
     const actions = {
         disable: disable,
         enable: enable,
@@ -137,6 +137,11 @@ function processElement(element: HTMLElement) {
     }
 }
 
+/**
+ * Check for any new text input elements and attach an IME controller to them.
+ * @param doc 
+ * @returns 
+ */
 function refreshTextInputElements(doc: Document) {
     if (!doc) {
         return false;
@@ -154,7 +159,7 @@ function refreshTextInputElements(doc: Document) {
     return true;
 }
 
-let refreshInterval: number;
+let refreshTextInputElementsInterval: number;
 
 function enable() {
     if (state.isHangulMode) {
@@ -164,14 +169,14 @@ function enable() {
     state.isHangulMode = true;
 
     // probably not necessary but just in case
-    window.clearInterval(refreshInterval);
+    window.clearInterval(refreshTextInputElementsInterval);
     refreshTextInputElements(document);
 
-    refreshInterval = window.setInterval(function () {
+    refreshTextInputElementsInterval = window.setInterval(function () {
         refreshTextInputElements(document);
     }, 400);
 
-    keyboardController.updateKeyboard();
+    keyboardController.updateKeyboardVisibility();
 }
 
 function disable() {
@@ -180,10 +185,10 @@ function disable() {
     }
 
     state.isHangulMode = false;
-    clearInterval(refreshInterval);
-    keyboardController.updateKeyboard();
+    clearInterval(refreshTextInputElementsInterval);
+    keyboardController.updateKeyboardVisibility();
 
-    for (const [_, controller] of imeControllers) {
+    for (const controller of imeControllers.values()) {
         controller.deactivate();
     }
 }

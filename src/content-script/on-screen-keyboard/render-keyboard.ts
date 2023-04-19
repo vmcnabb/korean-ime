@@ -1,4 +1,4 @@
-import { KeyboardState } from "./keyboard-state";
+import { KeyboardState } from "./keyboard-state.t";
 import { KeyCode, KeyRecord, keyMap } from "./korean-keyboard-map";
 
 const layout: KeyCode[][] = [
