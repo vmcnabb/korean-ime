@@ -14,7 +14,7 @@ export class OnScreenKeyboardController {
 
     private setKeyboardEnabled(isEnabled: boolean) {
         this.state.keyboard.isEnabled = isEnabled;
-        this.updateKeyboard();
+        this.updateKeyboardVisibility();
     }
 
     private moveKeyboard(dx: number, dy: number) {
@@ -66,7 +66,7 @@ export class OnScreenKeyboardController {
         }
     }
 
-    public updateKeyboard() {
+    public updateKeyboardVisibility() {
         if (!this.state.keyboard.element) {
             return;
         }

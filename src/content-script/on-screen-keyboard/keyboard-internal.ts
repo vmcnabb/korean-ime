@@ -1,8 +1,8 @@
-import { KeyboardState } from "./keyboard-state";
+import { KeyboardState } from "./keyboard-state.t";
 import { KeyCode } from "./korean-keyboard-map";
 import { renderKeyboard } from "./render-keyboard";
 
-const state: KeyboardState = {
+const keyboardInternalState: KeyboardState = {
     shift: false,
     mouse: {
         down: false,
@@ -22,26 +22,26 @@ export function InitializeKeyboard(
     keyPressCb: (key: string) => void,
     moveKeyboardCb: (dx: number, dy: number) => void,
 ): void {
-    if (state.isInitialized) {
+    if (keyboardInternalState.isInitialized) {
         throw new Error("Keyboard is already initialized");
     }
 
-    state.keyboard.element = keyboard;
-    state.keyboard.move = moveKeyboardCb;
-    state.keyboard.sendCharacter = keyPressCb;
+    keyboardInternalState.keyboard.element = keyboard;
+    keyboardInternalState.keyboard.move = moveKeyboardCb;
+    keyboardInternalState.keyboard.sendCharacter = keyPressCb;
 
-    renderKeyboard(state);
+    renderKeyboard(keyboardInternalState);
 
     chrome.runtime.onMessage.addListener((message, _sender, _sendResponse) => {
         if (message.action === "enable") {
             keyboard.classList.add("hanMode");
             keyboard.classList.remove("yongMode");
-            state.isHanMode = true;
+            keyboardInternalState.isHanMode = true;
         }
         if (message.action === "disable") {
             keyboard.classList.remove("hanMode");
             keyboard.classList.add("yongMode");
-            state.isHanMode = false;
+            keyboardInternalState.isHanMode = false;
         }
     });
 
@@ -53,12 +53,12 @@ export function InitializeKeyboard(
         }
 
         if (e.target === keyboard || e.target.classList.contains("row")) {
-            state.mouse.down = true;
-            state.mouse.startX = e.screenX;
-            state.mouse.startY = e.screenY;
+            keyboardInternalState.mouse.down = true;
+            keyboardInternalState.mouse.startX = e.screenX;
+            keyboardInternalState.mouse.startY = e.screenY;
 
-            state.keyboard.x = keyboard.clientLeft;
-            state.keyboard.y = keyboard.clientTop;
+            keyboardInternalState.keyboard.x = keyboard.clientLeft;
+            keyboardInternalState.keyboard.y = keyboard.clientTop;
         }
 
         return false;
@@ -66,21 +66,21 @@ export function InitializeKeyboard(
 
     document.addEventListener("mouseup", function dragMouseUpListener (e) {
         if (e.button === 0) {
-            state.mouse.down = false;
+            keyboardInternalState.mouse.down = false;
         }
     });
 
     document.addEventListener("mousemove", function dragMouseMoveListener (e) {
         if ((e.buttons & 1) === 0) {
-            state.mouse.down = false;
+            keyboardInternalState.mouse.down = false;
         }
 
-        if (state.mouse.down) {
-            const dx = e.screenX - state.mouse.startX;
-            const dy = e.screenY - state.mouse.startY;
+        if (keyboardInternalState.mouse.down) {
+            const dx = e.screenX - keyboardInternalState.mouse.startX;
+            const dy = e.screenY - keyboardInternalState.mouse.startY;
 
-            state.mouse.startX = e.screenX;
-            state.mouse.startY = e.screenY;
+            keyboardInternalState.mouse.startX = e.screenX;
+            keyboardInternalState.mouse.startY = e.screenY;
 
             moveKeyboardCb(dx, dy);
         }
@@ -123,11 +123,11 @@ export function InitializeKeyboard(
     // update shift state based on the shift key in the keyboard event.
     function updateShiftState(e: KeyboardEvent) {
         if (e.shiftKey) {
-            state.shift = true;
+            keyboardInternalState.shift = true;
             keyboard.classList.add("shift");
 
         } else {
-            state.shift = false;
+            keyboardInternalState.shift = false;
             keyboard.classList.remove("shift");
         }
     }
