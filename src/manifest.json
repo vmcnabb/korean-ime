@@ -32,7 +32,7 @@
             "matches": [ "*://*/*" ],
             "resources": [
                 "popupKeyboard/index.html",
-                "contentScript/onScreenKeyboard/onScreenKeyboard.css"
+                "content-script/on-screen-keyboard/on-screen-keyboard.css"
             ]
         }
     ],
