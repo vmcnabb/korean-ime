@@ -1,112 +1,86 @@
-import { isHangulCharacter } from "../../mappings";
-import { ContentScriptState } from "..";
-import { InitializeKeyboard } from "./keyboard-internal";
+import { TextEntryMode } from "../text-entry-mode.t";
+import { KeyCode, KeyRecord, keyMap } from "./korean-keyboard-map";
+import { KeyboardLayout, defaultLayout } from "./layouts";
+
+type OnKeyClickedCallback = (key: string, keyCode: KeyCode) => void;
 
 export class OnScreenKeyboardController {
-    constructor(private state: ContentScriptState) {
-        this.createKeyboard();
+    private _keyboardElement: HTMLDivElement;
+    private _keyboardPlacement = {
+        originX: "right" as "right" | "left",
+        originY: "bottom" as "bottom" | "top",
+        x: 0,
+        y: 0,
+    };
+    private _keyboardMovement = {
+        mouse: {
+            down: false,
+            startX: 0,
+            startY: 0
+        }
+    };
+
+    private _mode = TextEntryMode.English;
+    private _isShift = false;
+
+    constructor(private onKeyClickedCallback: OnKeyClickedCallback) {
+        this._keyboardElement = this.createKeyboard();
     }
 
-    public MessageHandlers = {
-        enableKeyboard: () => this.setKeyboardEnabled(true),
-        disableKeyboard: () => this.setKeyboardEnabled(false),
+    public messageHandlers = {
+        enableKeyboard: () => this.showKeyboard(),
+        disableKeyboard: () => this.hideKeyboard(),
     }
 
-    private setKeyboardEnabled(isEnabled: boolean) {
-        this.state.keyboard.isEnabled = isEnabled;
-        this.updateKeyboardVisibility();
+    public setMode(mode: TextEntryMode) {
+        console.debug("OnScreenKeyboardController.setMode", mode);
+
+        this._mode = mode;
+        const isHanMode = mode === TextEntryMode.Hangul;
+
+        this._keyboardElement.classList.toggle("hanMode", isHanMode);
+        this._keyboardElement.classList.toggle("yongMode", !isHanMode);
+    }
+
+    public setShift(shift: boolean) {
+        this._isShift = shift;
+        this._keyboardElement.classList.toggle("shift", shift);
     }
 
     private moveKeyboard(dx: number, dy: number) {
-        if (!this.state.isTopElement) {
-            return;
-        }
+        const placement = this._keyboardPlacement;
 
-        const kb = this.state.keyboard;
+        const kx = ~~placement.x;
+        const ky = ~~placement.y;
 
-        const kx = ~~kb.placement.x;
-        const ky = ~~kb.placement.y;
-
-        if (kb.placement.originX === "right") {
+        if (placement.originX === "right") {
             dx = -dx;
         }
 
-        if (kb.placement.originY === "bottom") {
+        if (placement.originY === "bottom") {
             dy = -dy;
         }
 
-        kb.placement.x = kx + dx;
-        kb.placement.y = ky + dy;
+        placement.x = kx + dx;
+        placement.y = ky + dy;
     
         this.placeKeyboard();
     }
 
-    private typeKey(char: string) {
-        const activeElement = this.state.getActiveElement(document);
-        if (!activeElement) {
-            return;
-        }
-
-        const imeController = this.state.imeControllers.get(activeElement);
-    
-        if (!imeController) {
-            return;
-        }
-    
-        if (isHangulCharacter(char)) {
-            imeController.addJamo(char);
-
-        } else {
-            // if char is a backspace call handleBackspace
-            if (char === "\b") {
-                imeController.handleBackspace();
-            } else {
-                imeController.addCharacter(char);
-            }
-        }
-    }
-
-    public updateKeyboardVisibility() {
-        if (!this.state.keyboard.element) {
-            return;
-        }
-
-        if (this.state.keyboard.isEnabled) {
-            this.showKeyboard();
-
-        } else {
-            this.hideKeyboard();
-        }
-    }
-
     private hideKeyboard() {
-        if (!this.state.keyboard.element) {
-            return;
-        }
-        
-        this.state.keyboard.element.style.display = "none";
+        this._keyboardElement.style.display = "none";
     }
     
     private showKeyboard() {
-        if (!this.state.keyboard.element) {
-            return;
-        }
-
-        this.state.keyboard.element.style.display = "block";
+        this._keyboardElement.style.display = "block";
         this.placeKeyboard();
     }
     
     private placeKeyboard() {
-        const state = this.state;
-
-        if (!state.isTopElement || !state.keyboard.element) {
-            return;
-        }
-    
         // get x,y coordinates of keyboard based on an origin of Top Left
-        const placement = state.keyboard.placement;
-        const width = state.keyboard.element.offsetWidth;
-        const height = state.keyboard.element.offsetHeight;
+        const placement = this._keyboardPlacement;
+        const width = this._keyboardElement.offsetWidth;
+        const height = this._keyboardElement.offsetHeight;
     
         let x = placement.originX === "right" ?
             window.innerWidth - width - placement.x :
@@ -136,7 +110,7 @@ export class OnScreenKeyboardController {
             "top";
     
         // set x and y based on new origin
-        const keyboardElement = state.keyboard.element;
+        const keyboardElement = this._keyboardElement;
         if (originX === "right") {
             x = window.innerWidth - x - width;
             keyboardElement.style.left = "";
@@ -164,39 +138,242 @@ export class OnScreenKeyboardController {
     }
 
     private createKeyboard() {
-        const state = this.state;
+        const keyboardElement = document.createElement("div");
 
-        if (!state.isTopElement) {
-            return;
-        }
+        keyboardElement.id = "kb-73ce1520-9c19-48ad-bf12-f7ec206ab11f";
 
-        if (state.keyboard.element) {
-            throw "createKeyboard() must only be called once.";
-        }
-
-        const keyboard = document.createElement("div");
-        state.keyboard.element = keyboard;
-
-        keyboard.id = "kb-73ce1520-9c19-48ad-bf12-f7ec206ab11f";
-
-        keyboard.style.width = "480px";
-        keyboard.style.position = "fixed";
-        keyboard.style.bottom = "0";
-        keyboard.style.right = "0";
-        keyboard.style.display = "none";
-        keyboard.style.border = "none";
-        keyboard.style.zIndex = "2147483647"; // max int
+        keyboardElement.style.width = "480px";
+        keyboardElement.style.position = "fixed";
+        keyboardElement.style.bottom = "0";
+        keyboardElement.style.right = "0";
+        keyboardElement.style.display = "none";
+        keyboardElement.style.border = "none";
+        keyboardElement.style.zIndex = "2147483647"; // max int
 
         // insert the keyboard as the first child of the BODY tag
         const body = document.getElementsByTagName("body")[0];
-        body.insertBefore(keyboard, body.firstChild);
+        body.insertBefore(keyboardElement, body.firstChild);
 
         // load keyboard CSS
         const css = document.createElement("link");
         css.rel = "stylesheet";
-        css.href = chrome.runtime.getURL("contentScript/onScreenKeyboard/onScreenKeyboard.css");
+        css.href = chrome.runtime.getURL("content-script/on-screen-keyboard/on-screen-keyboard.css");
         document.head.appendChild(css);
 
-        InitializeKeyboard(keyboard, this.typeKey.bind(this), this.moveKeyboard.bind(this));
+        this.renderKeyboard(keyboardElement, defaultLayout);
+        const self = this;
+
+        keyboardElement.addEventListener("mousedown", function (e) {
+            e.preventDefault();
+    
+            if (e.button !== 0 || !(e.target instanceof HTMLElement)) {
+                return false;
+            }
+    
+            if (e.target === keyboardElement || e.target.classList.contains("row")) {
+                self._keyboardMovement.mouse.down = true;
+                self._keyboardMovement.mouse.startX = e.screenX;
+                self._keyboardMovement.mouse.startY = e.screenY;
+            }
+
+            return false;
+        });
+    
+        document.addEventListener("mouseup", function dragMouseUpListener (e) {
+            if (e.button === 0) {
+                self._keyboardMovement.mouse.down = false;
+            }
+        });
+    
+        document.addEventListener("mousemove", function dragMouseMoveListener (e) {
+            if ((e.buttons & 1) === 0) {
+                self._keyboardMovement.mouse.down = false;
+            }
+    
+            if (self._keyboardMovement.mouse.down) {
+                const dx = e.screenX - self._keyboardMovement.mouse.startX;
+                const dy = e.screenY - self._keyboardMovement.mouse.startY;
+    
+                self._keyboardMovement.mouse.startX = e.screenX;
+                self._keyboardMovement.mouse.startY = e.screenY;
+    
+                self.moveKeyboard(dx, dy);
+            }
+    
+            return false;
+        });
+    
+        // listen for keydown and make the key on the keyboard active
+        document.addEventListener("keydown", function (e) {
+            const keyCode = e.code as KeyCode;
+    
+            const keyElement = keyboardElement.querySelector(`.${keyCode}`) as HTMLDivElement;
+    
+            if (keyElement) {
+                keyElement.classList.add("active");
+            }
+    
+            updateShiftState(e);
+        });
+    
+        // listen for keyup and make the key on the keyboard inactive
+        document.addEventListener("keyup", function (e) {
+            const keyCode = e.code as KeyCode;
+    
+            const keyElement = keyboardElement.querySelector(`.${keyCode}`) as HTMLDivElement;
+    
+            if (keyElement) {
+                keyElement.classList.remove("active");
+            }
+    
+            updateShiftState(e);
+        });
+    
+        // listen for blur event and remove all active keys
+        window.addEventListener("blur", function () {
+            const activeKeys = keyboardElement.querySelectorAll(".active");
+            activeKeys.forEach(key => key.classList.remove("active"));
+        });
+    
+        // update shift state based on the shift key in the keyboard event.
+        function updateShiftState(e: KeyboardEvent) {
+            self.setShift(e.shiftKey);
+        }
+
+        return keyboardElement;
+    }
+
+    private handleMouseDown(
+        e: MouseEvent,
+        key: KeyRecord,
+        keyCode: KeyCode,
+    ) {
+        e.preventDefault();
+
+        const isHanMode = this._mode === TextEntryMode.Hangul;
+        const isShift = this._isShift;
+    
+        if (key.jamo && isHanMode) {
+            const jamoToAdd = isShift && key.jamo.shift ?
+                key.jamo.shift :
+                key.jamo.normal;
+    
+            this.onKeyClickedCallback(jamoToAdd, keyCode);
+    
+        } else if (key.normal && (!isHanMode || !key.jamo)) {
+            const keyToSend = isShift && key.shift ?
+                key.shift :
+                key.normal;
+    
+                this.onKeyClickedCallback(keyToSend, keyCode);
+    
+        } else if (key.label === "Shift") {
+            this.setShift(!isShift);
+
+        } else if (keyCode === KeyCode.AltRight) {
+            chrome.runtime.sendMessage({
+                action: "toggle"
+            });
+    
+        } else if (keyCode === KeyCode.Space) {
+            this.onKeyClickedCallback(" ", keyCode);
+    
+        } else if (keyCode === KeyCode.Backspace) {
+            this.onKeyClickedCallback("\b", keyCode);
+        }
+    
+        return false;
+    }
+    
+    private createLabelElement(className: string, text: string): HTMLElement {
+        const label = document.createElement("div");
+        label.className = className;
+        label.innerText = text;
+        return label;
+    }
+    
+    private renderNormalKeyLabels(keyElement: HTMLElement, key: KeyRecord): void {
+        if (!key.normal) return;
+    
+        const yongClass = key.jamo ? " yong" : "";
+        const baseLabel = this.createLabelElement(`base${yongClass}`, key.normal);
+        keyElement.appendChild(baseLabel);
+    
+        if (key.shift) {
+            const shiftLabel = this.createLabelElement(`shift${yongClass}`, key.shift);
+            keyElement.appendChild(shiftLabel);
+        }
+    }
+    
+    private renderJamoKeyLabels(keyElement: HTMLElement, key: KeyRecord): void {
+        if (!key.jamo) return;
+    
+        if (key.jamo.shift) {
+            const shiftJamo = this.createLabelElement("shift jamo", key.jamo.shift);
+            keyElement.appendChild(shiftJamo);
+        }
+    
+        const baseJamoClassName = "shift" in key.jamo && key.jamo.shift ? "base jamo" : "full jamo";
+        const baseJamo = this.createLabelElement(baseJamoClassName, key.jamo.normal);
+        keyElement.appendChild(baseJamo);
+    }
+    
+    private renderSpecialKeyLabels(keyElement: HTMLElement, key: KeyRecord, keyCode: KeyCode): void {
+        if (keyCode === KeyCode.ShiftLeft) {
+            const label = this.createLabelElement("full", "⇧");
+            keyElement.appendChild(label);
+    
+        } else if (keyCode === KeyCode.AltRight) {
+            const hanLabel = this.createLabelElement("hanMode", "한");
+            const yongLabel = this.createLabelElement("yongMode", "영");
+            keyElement.appendChild(hanLabel);
+            keyElement.appendChild(yongLabel);
+    
+        } else if (key.label) {
+            const label = this.createLabelElement("full", key.label);
+            keyElement.appendChild(label);
+    
+            if (key.koreanLabel) {
+                const koreanLabel = this.createLabelElement("full jamo", key.koreanLabel);
+                keyElement.appendChild(koreanLabel);
+                label.classList.add("yong");
+            }
+        }
+    }
+    
+    private renderKey(
+        rowElement: HTMLDivElement,
+        keyCode: KeyCode,
+    ) {
+        const keyElement = document.createElement("kbd");
+        const key = keyMap[keyCode];
+    
+        keyElement.className = keyCode;
+        keyElement.addEventListener("mousedown", e => this.handleMouseDown(e, key, keyCode));
+    
+        this.renderNormalKeyLabels(keyElement, key);
+        this.renderJamoKeyLabels(keyElement, key);
+        this.renderSpecialKeyLabels(keyElement, key, keyCode);
+    
+        if (key.tooltipResourceKey) {
+            keyElement.title = chrome.i18n.getMessage(key.tooltipResourceKey);
+        }
+    
+        rowElement.appendChild(keyElement);
+    }
+    
+    /**
+     * Creates keys and handlers then adds them to the keyboard
+     * @param keyboard the keyboard element to be rendered
+     */
+     private renderKeyboard(keyboardELement: HTMLDivElement, layout: KeyboardLayout): void {
+        layout.forEach(row => {
+            const rowElement = document.createElement("div");
+            rowElement.className = "row";
+
+            row.forEach(keyCode => this.renderKey(rowElement, keyCode));
+
+            keyboardELement.appendChild(rowElement);
+        });
     }
 }

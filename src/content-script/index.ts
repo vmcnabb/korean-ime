@@ -1,69 +1,33 @@
-﻿import { IsKimeMessage, KimeMessage } from "../messaging";
-import { CompositionAdapterFactory } from "../composition/composition-adapter-factory";
+﻿import { IsKimeMessage } from "../messaging";
 import { OnScreenKeyboardController } from "./on-screen-keyboard/on-screen-keyboard-controller";
-import { HangulImeController } from "../composition/hangul-ime-controller";
+import { KeyCode } from "./on-screen-keyboard/korean-keyboard-map";
+import { TextInputManager } from "./text-input-manager";
+import { TextEntryMode } from "./text-entry-mode.t";
 
-type KeyboardPlacement = {
-    originX: "left" | "right";
-    originY: "top" | "bottom";
-    x: number;
-    y: number;
-};
+let textEntryMode = TextEntryMode.English;
+const isTopWindow = window === top;
 
-export interface ContentScriptState {
-    isHangulMode: boolean;
-    keyboard: {
-        isEnabled: boolean;
-        element?: HTMLDivElement;
-        placement: KeyboardPlacement;
-    };
-    isTopElement: boolean;
-    getActiveElement: (doc: Document) => HTMLElement | null;
-    imeControllers: Map<HTMLElement, HangulImeController>;
-}
+const textInputManager = new TextInputManager();
+const keyboardController = isTopWindow
+    ? new OnScreenKeyboardController(onEnterChar)
+    : undefined;
 
-const imeControllers = new Map<HTMLElement, HangulImeController>();
-const state: ContentScriptState = {
-    isHangulMode: false,
-    keyboard: {
-        isEnabled: false,
-        element: undefined,
-        placement: {
-            originX: "right",
-            originY: "bottom",
-            x: 0,
-            y: 0,
-        },
-    },
-    isTopElement: window === top,
-    getActiveElement: getActiveElement,
-    imeControllers: imeControllers,
-};
-
-const keyboardController = new OnScreenKeyboardController(state);
 setupMessageListener();
+setupDocumentListeners();
+
+console.debug("Started content script");
+console.debug("Is top window?", isTopWindow);
+console.debug("CKEDITOR", (top as any)["CKEDITOR_VERSION"]);
+
+
+function onEnterChar(char: string) {
+    textInputManager.enterCharacter(char);
+}
 
 function setupMessageListener() {
     const actions = {
-        disable: disable,
-        enable: enable,
-        insertAfter: (message: KimeMessage) => {
-            const element = getActiveElement(document);
-
-            if (!element) {
-                return;
-            }
-
-            const compositionAdapter = CompositionAdapterFactory.createCompositionAdapter(element);
-
-            if (!compositionAdapter) {
-                return;
-            }
-
-            compositionAdapter.deselect();
-            compositionAdapter.updateComposition(message.data);
-            compositionAdapter.deselect();
-        },
+        disable: () => setTextEntryMode(TextEntryMode.English),
+        enable: () => setTextEntryMode(TextEntryMode.Hangul),
     };
 
     chrome.runtime.onMessage.addListener(message => {
@@ -73,13 +37,17 @@ function setupMessageListener() {
             return;
         }
 
-        if (actionHasKeyFor<typeof actions>(message.action, actions)) {
+        if (actionHasKeyFor(message.action, actions)) {
             const action = actions[message.action];
-            action(message);
-
-        } else if (actionHasKeyFor<typeof keyboardController.MessageHandlers>(message.action, keyboardController.MessageHandlers)) {
-            const action = keyboardController.MessageHandlers[message.action];
             action();
+
+        } else if (keyboardController && actionHasKeyFor(message.action, keyboardController.messageHandlers)) {
+            const action = keyboardController.messageHandlers[message.action];
+            action();
+
+        } else if (actionHasKeyFor(message.action, textInputManager.messageHandlers)) {
+            const action = textInputManager.messageHandlers[message.action];
+            action(message);
         }
     });
 }
@@ -89,106 +57,31 @@ function actionHasKeyFor<TObject extends object>(
     object: TObject
   ): action is keyof TObject & string {
     return action in object;
-  }
-
-document.addEventListener(
-    "keydown",
-    e => {
-        if (e.code === "AltRight" && !e.repeat) {
-            chrome.runtime.sendMessage(
-                { action: "toggle" }
-            );
-            e.preventDefault();
-        }
-    },
-    true
-);
-
-function getActiveElement(doc: Document): HTMLElement | null {
-    const isActiveElementInChildDocument = doc.activeElement
-        && isObjectOrIframe(doc.activeElement)
-        && doc.activeElement.contentDocument;
-
-    const element = isActiveElementInChildDocument
-        ? getActiveElement(doc.activeElement.contentDocument)
-        : doc.activeElement;
-
-    return element instanceof HTMLElement ? element : null;
 }
 
-function isObjectOrIframe(element: Element): element is HTMLObjectElement | HTMLIFrameElement {
-    return element instanceof HTMLObjectElement || element instanceof HTMLIFrameElement;
+function setupDocumentListeners() {
+    // send message to background script to toggle between hangul and english mode
+    document.addEventListener(
+        "keydown",
+        e => {
+            if (e.code === KeyCode.AltRight && !e.repeat) {
+                chrome.runtime.sendMessage(
+                    { action: "toggle" }
+                );
+                e.preventDefault();
+            }
+        },
+        true
+    );
 }
 
-function processElement(element: HTMLElement) {
-    let imeController = imeControllers.get(element);
-
-    if (!imeController) {
-        imeController = new HangulImeController(element);
-        imeControllers.set(element, imeController);
-    }
-
-    if (imeController.isActive() != state.isHangulMode) {
-        if (state.isHangulMode) {
-            imeController.activate();
-        } else {
-            imeController.deactivate();
-        }
-    }
-}
-
-/**
- * Check for any new text input elements and attach an IME controller to them.
- * @param doc 
- * @returns 
- */
-function refreshTextInputElements(doc: Document) {
-    if (!doc) {
-        return false;
-    }
-
-    const nonTextInputTypes = ["button", "checkbox", "file", "hidden", "image", "radio", "range", "submit"];
-    const inputSelector = `input:not(${nonTextInputTypes.map(t => `[type=${t}]`).join(",")})`;
-    const textInputElementsSelector = `[contenteditable=true],textarea,${inputSelector}`;
-
-    const elements = doc.querySelectorAll<HTMLElement>(textInputElementsSelector);
-    for (const element of elements) {
-        processElement(element);
-    }
-
-    return true;
-}
-
-let refreshTextInputElementsInterval: number;
-
-function enable() {
-    if (state.isHangulMode) {
+function setTextEntryMode(mode: TextEntryMode) {
+    if (mode == textEntryMode) {
         return;
     }
 
-    state.isHangulMode = true;
+    textEntryMode = mode;
 
-    // probably not necessary but just in case
-    window.clearInterval(refreshTextInputElementsInterval);
-    refreshTextInputElements(document);
-
-    refreshTextInputElementsInterval = window.setInterval(function () {
-        refreshTextInputElements(document);
-    }, 400);
-
-    keyboardController.updateKeyboardVisibility();
-}
-
-function disable() {
-    if (!state.isHangulMode) {
-        return;
-    }
-
-    state.isHangulMode = false;
-    clearInterval(refreshTextInputElementsInterval);
-    keyboardController.updateKeyboardVisibility();
-
-    for (const controller of imeControllers.values()) {
-        controller.deactivate();
-    }
+    textInputManager.setMode(mode);
+    keyboardController?.setMode(mode);
 }
