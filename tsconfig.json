@@ -25,12 +25,7 @@
         "sourceMap": true,
         "forceConsistentCasingInFileNames": true,
         "outDir": "obj",
-        "baseUrl": ".",
-        "paths": {
-            "@/*": [
-                "src/*"
-            ]
-        }
+        "baseUrl": "."
     },
     "include": [
         "src/**/*"
