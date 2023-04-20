@@ -29,9 +29,8 @@
     ],
     "web_accessible_resources": [
         {
-            "matches": [ "*://*/*" ],
+            "matches": [ "<all_urls>" ],
             "resources": [
-                "popupKeyboard/index.html",
                 "content-script/on-screen-keyboard/on-screen-keyboard.css"
             ]
         }
