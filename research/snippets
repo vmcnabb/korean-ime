@@ -1,0 +1,9 @@
+
+// watch events on CKEditor demo: https://ckeditor.com/ckeditor-5/demo/feature-rich/
+
+inputEvents.forEach(event => {
+    ed.addEventListener(event, e => {
+        console.log(`watched: ${event}`, e);
+    })
+});
+

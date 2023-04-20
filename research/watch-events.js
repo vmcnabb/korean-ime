@@ -15,14 +15,32 @@ function afterLoad() {
         "keypress",
         "compositionstart",
         "compositionupdate",
-        "compositionend"
+        "compositionend",
+        "selectionchange",
+        "selectstart"
     ];
 
+    let lastInnerText = "";
+
     // add event listeners to input div
-    inputEvents.forEach(event => {
-        inputDiv.addEventListener(event, e => {
-            console.log(event);
-            console.log(e);
+    inputEvents.forEach(eventKey => {
+        inputDiv.addEventListener(eventKey, e => {
+            let innerText = inputDiv.innerText;
+            if (innerText !== lastInnerText) {
+                lastInnerText = innerText;
+                console.log("innerText: ", innerText);
+            }
+
+            if (e.type === "selectionchange") {
+                const selection = document.getSelection();
+                console.log("selection: ", selection);
+                if (selection.rangeCount > 0) {
+                    const range = selection.getRangeAt(0);
+                    console.log("range: ", range);
+                }
+            }
+
+            console.log(eventKey, e);
         })
     });
 }
