@@ -24,7 +24,7 @@ function afterLoad() {
 
     // add event listeners to input div
     inputEvents.forEach(eventKey => {
-        inputDiv.addEventListener(eventKey, e => {
+        document.addEventListener(eventKey, e => {
             let innerText = inputDiv.innerText;
             if (innerText !== lastInnerText) {
                 lastInnerText = innerText;
