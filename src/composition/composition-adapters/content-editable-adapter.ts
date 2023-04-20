@@ -5,7 +5,11 @@ export class ContentEditableAdapter extends CompositionAdapter {
         // Do nothing
     }
 
-    updateComposition (text: string) {
+    beginComposition(text: string): void {
+        this.updateComposition(text);
+    }
+
+    updateComposition(text: string) {
         const selection = this.element.ownerDocument.getSelection();
 
         if (!selection || selection.rangeCount === 0) {
@@ -19,7 +23,12 @@ export class ContentEditableAdapter extends CompositionAdapter {
         selection.addRange(range);
     }
 
-    deselect () {
+    endComposition(text: string) {
+        this.updateComposition(text);
+        this.deselect();
+    }
+
+    deselect() {
         const selection = this.element.ownerDocument.getSelection();
 
         if (!selection || selection.rangeCount === 0) {
@@ -30,11 +39,6 @@ export class ContentEditableAdapter extends CompositionAdapter {
         range.collapse(false);
         selection.removeAllRanges();
         selection.addRange(range);
-    }
-
-    endComposition (text: string) {
-        this.updateComposition(text);
-        this.deselect();
     }
 
     selectPreviousCharacter() {

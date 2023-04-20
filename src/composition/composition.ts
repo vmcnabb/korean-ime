@@ -3,6 +3,11 @@
 import { hangulMaps, isHangulCharacter } from "../mappings";
 const { initials, medials, finals, compoundVowels, consonantDigraphs } = hangulMaps;
 
+type CompositingResult =
+  | { initial: string; inProgress?: never; completed?: string }
+  | { initial?: string; inProgress: string; completed?: never }
+  | { initial?: never; inProgress?: never; completed: string };
+
 export class Block {
     constructor (public initial = "", public medial = "", public final = "") {}
 
@@ -47,11 +52,6 @@ export class Block {
         );
     }
 }
-
-type CompositingResult = {
-    inProgress: string;
-    completed?: string;
-};
 
 export class Compositor {
     constructor (private block = new Block()) {}
@@ -115,7 +115,7 @@ export class Compositor {
             // (V)V or (C)C or C or V, or nothing
             block.initial = combined;
             return {
-                inProgress: block.toChar()
+                initial: block.toChar()
             };
 
         } else if(initials.indexOf(block.initial) > -1 && medials.indexOf(jamo) > -1) {
@@ -128,7 +128,7 @@ export class Compositor {
             block.initial = block.initial[1];
             return {
                 completed,
-                inProgress: this.addMedialJamo(jamo).inProgress
+                initial: this.addMedialJamo(jamo).inProgress
             };
 
         } else {
@@ -137,7 +137,7 @@ export class Compositor {
             block.initial = jamo;
             return {
                 completed,
-                inProgress: jamo
+                initial: jamo
             };
         }
     }
@@ -161,7 +161,7 @@ export class Compositor {
             this.block = new Block(jamo);
             return {
                 completed,
-                inProgress: jamo
+                initial: jamo
             };
 
         } else {
@@ -194,7 +194,7 @@ export class Compositor {
             this.block = new Block(lastConsonant, jamo);
             return {
                 completed,
-                inProgress: this.block.toChar()
+                initial: this.block.toChar()
             };
 
         } else {
@@ -202,7 +202,7 @@ export class Compositor {
             this.block = new Block(jamo);
             return {
                 completed,
-                inProgress: this.block.toChar()
+                initial: this.block.toChar()
             };
         }
     }

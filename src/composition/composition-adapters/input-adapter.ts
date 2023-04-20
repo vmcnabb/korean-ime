@@ -11,7 +11,11 @@ export class InputAdapter extends CompositionAdapter {
         // do nothing
     }
 
-    updateComposition (text: string) {
+    beginComposition(text: string): void {
+        this.updateComposition(text);
+    }
+
+    updateComposition(text: string) {
         const element = this.element;
         const start = element.selectionStart;
 
@@ -29,19 +33,19 @@ export class InputAdapter extends CompositionAdapter {
         element.selectionEnd = end;
     }
 
-    deselect () {
-        this.element.selectionStart = this.element.selectionEnd;
-    }
-
     /**
      * @param {string} text
      */
-    endComposition (text: string) {
+    endComposition(text: string) {
         this.updateComposition(text);
         this.deselect();
     }
 
-    selectPreviousCharacter () {
+    deselect() {
+        this.element.selectionStart = this.element.selectionEnd;
+    }
+
+    selectPreviousCharacter() {
         const element = this.element;
         const start = (element.selectionStart || 0) - 1;
         const end = start + 1;
@@ -57,7 +61,7 @@ export class InputAdapter extends CompositionAdapter {
         return returnVal;
     }
 
-    handleBackspace () {
+    handleBackspace() {
         const element = this.element;
 
         if (element.selectionStart == null || element.selectionEnd == null) {

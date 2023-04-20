@@ -1,3 +1,5 @@
+import { KeyCode } from "../../content-script/on-screen-keyboard/korean-keyboard-map";
+
 export abstract class CompositionAdapter {
     constructor (protected element: HTMLElement) {}
 
@@ -9,8 +11,10 @@ export abstract class CompositionAdapter {
     }
 
     abstract deselect(): void;
-    abstract endComposition(text: string): void;
     abstract selectPreviousCharacter(): string | undefined;
     abstract handleBackspace(): void;
-    abstract updateComposition(text: string): void;
+
+    abstract beginComposition(data: string, keyCode: KeyCode): void;
+    abstract updateComposition(data: string, keyCode: KeyCode): void;
+    abstract endComposition(data: string): void;
 }

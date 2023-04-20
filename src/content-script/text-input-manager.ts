@@ -13,19 +13,20 @@ export class TextInputManager {
     public messageHandlers = {
         insertAfter: (message: KimeMessage) => {
             const element = this.getActiveElement(document);
-        
+
             if (!element) {
                 return;
             }
-        
+
             const compositionAdapter = CompositionAdapterFactory.createCompositionAdapter(element);
-        
+
             if (!compositionAdapter) {
                 return;
             }
-        
+
+            // todo: probably should implement an insertAfter method in the composition adapter
             compositionAdapter.deselect();
-            compositionAdapter.updateComposition(message.data);
+            compositionAdapter.updateComposition(message.data, KeyCode.KeyK); // KeyK is arbitrary
             compositionAdapter.deselect();
         },
     }
@@ -64,9 +65,9 @@ export class TextInputManager {
         if (!imeController) {
             return;
         }
-    
+
         if (isHangulCharacter(char)) {
-            imeController.addJamo(char);
+            imeController.addJamo(char, keyCode);
 
         } else {
             if (char === "\b") {
@@ -97,12 +98,12 @@ export class TextInputManager {
 
     private processElement(element: HTMLElement) {
         let imeController = this.imeControllers.get(element);
-    
+
         if (!imeController) {
             imeController = new HangulImeController(element);
             this.imeControllers.set(element, imeController);
         }
-    
+
         const isHangulMode = this.textEntryMode === TextEntryMode.Hangul;
         if (imeController.isActive() != isHangulMode) {
             if (isHangulMode) {
@@ -115,15 +116,27 @@ export class TextInputManager {
 
     private getActiveElement(document: Document): HTMLElement | null {
         const isActiveElementInChildDocument = document.activeElement
-           && this.isObjectOrIframe(document.activeElement)
-           && document.activeElement.contentDocument;
-   
-       const element = isActiveElementInChildDocument
-           ? this.getActiveElement(document.activeElement.contentDocument)
-           : document.activeElement;
-   
-       return element instanceof HTMLElement ? element : null;
-   }
+            && this.isObjectOrIframe(document.activeElement)
+            && document.activeElement.contentDocument;
+
+        let element = null as Element | null;
+        
+        if (isActiveElementInChildDocument) {
+            try {
+                element = this.getActiveElement(document.activeElement.contentDocument);
+            } catch (e) {
+                if (e instanceof DOMException && e.name === 'SecurityError') {
+                    // The document is from a different origin
+                    return null;
+                }
+            }
+
+        } else {
+            element = document.activeElement;
+        }
+
+        return element instanceof HTMLElement ? element : null;
+    }
 
     private isObjectOrIframe(element: Element): element is HTMLObjectElement | HTMLIFrameElement {
         return element instanceof HTMLObjectElement || element instanceof HTMLIFrameElement;

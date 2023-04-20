@@ -15,13 +15,8 @@ const keyboardController = isTopWindow
 setupMessageListener();
 setupDocumentListeners();
 
-console.debug("Started content script");
-console.debug("Is top window?", isTopWindow);
-console.debug("CKEDITOR", (top as any)["CKEDITOR_VERSION"]);
-
-
-function onEnterChar(char: string) {
-    textInputManager.enterCharacter(char);
+function onEnterChar(char: string, keyCode: KeyCode) {
+    textInputManager.enterCharacter(char, keyCode);
 }
 
 function setupMessageListener() {
