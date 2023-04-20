@@ -4,12 +4,14 @@ import { KeyCode } from "../../content-script/on-screen-keyboard/korean-keyboard
 import { CompositionAdapter } from "./composition-adapter";
 import { setAsKimeEvent } from "../../messaging/dom-events";
 
+type DispatchableEvent = KeyboardEvent | CompositionEvent | InputEvent | (() => void);
+
 /**
- * Handles IME composition (and selection) for Google Docs.
- * Partially implements the W3C IME API: https://wicg.github.io/input-method-javaScript/
+ * Handles IME composition (and selection) for the CKEditor
+ * .
  * @param {HTMLElement} element
  */
-export class GoogleDocsAdapter extends CompositionAdapter {
+export class CKEditorAdapter extends CompositionAdapter {
     private isCompositing: boolean = false;
     private currentBlock: string = "";
 
@@ -54,7 +56,7 @@ export class GoogleDocsAdapter extends CompositionAdapter {
             throw new Error("Cannot begin composition when already compositing");
         }
 
-        const eventsToDispatch = [
+        const eventsToDispatch: DispatchableEvent[] = [
             new KeyboardEvent("keydown", {
                 key: "Process",
                 code: keyCode,
@@ -72,6 +74,14 @@ export class GoogleDocsAdapter extends CompositionAdapter {
                 data: data,
                 view: window
             }),
+            () => {
+                // replace the current selection with the new data
+                const selection = window.getSelection();
+                if (selection) {
+                    selection.deleteFromDocument();
+                    selection.getRangeAt(0).insertNode(document.createTextNode(data));
+                }
+            },
             new InputEvent("input", {
                 data: data,
                 isComposing: true,
@@ -84,10 +94,7 @@ export class GoogleDocsAdapter extends CompositionAdapter {
             }),
         ];
 
-        eventsToDispatch.forEach(event => {
-            setAsKimeEvent(event);
-            this.element.dispatchEvent(event);
-        });
+        this.dispatchEvents(eventsToDispatch);
 
         this.isCompositing = true;
     }
@@ -98,6 +105,7 @@ export class GoogleDocsAdapter extends CompositionAdapter {
         - keydown
         - beforeinput
         - compositionupdate
+        - (text is updated by the browser at this point)
         - input
         - keyup
     */
@@ -106,7 +114,7 @@ export class GoogleDocsAdapter extends CompositionAdapter {
             throw new Error("Cannot update composition when not compositing");
         }
 
-        const eventsToDispatch = [
+        const eventsToDispatch: DispatchableEvent[] = [
             new KeyboardEvent("keydown", {
                 key: "Process",
                 code: keyCode,
@@ -122,6 +130,14 @@ export class GoogleDocsAdapter extends CompositionAdapter {
                 data: data,
                 view: window
             }),
+            () => {
+                // replace the current selection with the new data
+                const selection = window.getSelection();
+                if (selection) {
+                    selection.deleteFromDocument();
+                    selection.getRangeAt(0).insertNode(document.createTextNode(data));
+                }
+            },
             new InputEvent("input", {
                 data: data,
                 isComposing: true,
@@ -135,11 +151,7 @@ export class GoogleDocsAdapter extends CompositionAdapter {
             })
         ];
 
-        eventsToDispatch.forEach(event => {
-            setAsKimeEvent(event);
-            this.element.dispatchEvent(event);
-        });
-
+        this.dispatchEvents(eventsToDispatch);
         this.currentBlock = data;
     }
 
@@ -160,10 +172,21 @@ export class GoogleDocsAdapter extends CompositionAdapter {
     getListenerTarget(eventType: string): EventTarget {
         switch (eventType) {
             case "mousedown":
-                return window.document;
+                return document;
 
             default:
                 return this.element;
         }
+    }
+
+    private dispatchEvents(events: DispatchableEvent[]) {
+        events.forEach(event => {
+            if (event instanceof Event) {
+                setAsKimeEvent(event);
+                this.element.dispatchEvent(event);
+            } else {
+                event();
+            }
+        });
     }
 }
