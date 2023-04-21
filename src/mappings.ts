@@ -1,16 +1,14 @@
-import { keyMap } from "./content-script/on-screen-keyboard/korean-keyboard-map";
-
 class StringMap {
     [key: string]: string | undefined;
 
     constructor (keys: string | string[], values: string[]) {
         if (keys.length !== values.length) {
-            throw "Keys and values must be of equal length.";
+            throw new Error("Keys and values must be of equal length.");
         }
 
         for (let i = 0; i < keys.length; i++) {
             if (this.hasOwnProperty(keys[i])) {
-                throw "Cannot have duplicate key:" + keys[i];
+                throw new Error("Cannot have duplicate key: " + keys[i]);
             }
             this[keys[i]] = values[i];
         }
@@ -22,12 +20,12 @@ class TwoWayMap {
 
     constructor (left: string[], right: string) {
         if (left.length !== right.length) {
-            throw "Arrays must be of equal length.";
+            throw new Error("Arrays must be of equal length.");
         }
 
         for (let i = 0; i < left.length; i++) {
             if (this.hasOwnProperty(left[i]) || this.hasOwnProperty(right[i])) {
-                throw "left and right cannot share or repeat any values.";
+                throw new Error("left and right cannot share or repeat any values.");
             }
 
             this[left[i]] = right[i];
@@ -40,9 +38,11 @@ class TwoWayMap {
 * @param {string} char 
 */
 export function isHangulCharacter (char: string | undefined) {
-   if (!char) return false;
-   const cc = char.charCodeAt(0);
-   return (cc >= 0xAC00 && cc <= 0xD7A3) || (cc >= 0x3131 && cc <= 0x318E);
+    if (!char) {
+        return false;
+    }
+    const cc = char.charCodeAt(0);
+    return (cc >= 0xAC00 && cc <= 0xD7A3) || (cc >= 0x3131 && cc <= 0x318E);
 }
 
 
@@ -52,7 +52,6 @@ export const hangulMaps = Object.freeze({
     initials: "ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ",
     medials: "ㅏㅐㅑㅒㅓㅔㅕㅖㅗㅘㅙㅚㅛㅜㅝㅞㅟㅠㅡㅢㅣ",
     finals: "ㄱㄲㄳㄴㄵㄶㄷㄹㄺㄻㄼㄽㄾㄿㅀㅁㅂㅄㅅㅆㅇㅈㅊㅋㅌㅍㅎ",
-    keyboardMap: keyMap,
     hangulVowelsRoman: new StringMap(
         "ㅏㅐㅑㅒㅓㅔㅕㅖㅗㅘㅙㅚㅛㅜㅝㅞㅟㅠㅡㅢㅣ",
         [   "a", "ae", "ya", "yae", "eo", "e", "yeo", "ye", "o", "wa", "wae",

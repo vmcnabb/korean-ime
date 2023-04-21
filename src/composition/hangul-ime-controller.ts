@@ -1,7 +1,7 @@
 ﻿import { isKimeEvent } from "../messaging/dom-events";
-import { isModifierKey, KeyCode } from "../content-script/on-screen-keyboard/korean-keyboard-map";
-import { hangulMaps as maps, isHangulCharacter } from "../mappings";
-import { Compositor } from "./composition";
+import { isModifierKey, KeyCode, keyMap } from "../content-script/on-screen-keyboard/korean-keyboard-map";
+import { isHangulCharacter } from "../mappings";
+import { HangulCompositor } from "./hangul-compositor";
 import { CompositionAdapterFactory } from "./composition-adapter-factory";
 import { CompositionAdapter } from "./composition-adapters/composition-adapter";
 
@@ -10,7 +10,7 @@ import { CompositionAdapter } from "./composition-adapters/composition-adapter";
  */
 export class HangulImeController {
     private _isActive = false;
-    private compositor = new Compositor();
+    private compositor = new HangulCompositor();
     private compositionAdapter: CompositionAdapter;
 
     private changeListeners: (() => void)[] = [];
@@ -100,7 +100,7 @@ export class HangulImeController {
                 }
             }
 
-            const key = maps.keyboardMap[code];
+            const key = keyMap[code];
 
             if (code === KeyCode.Backspace && this.compositor.isCompositing()) {
                 const block = this.compositor.removeLastJamo();
