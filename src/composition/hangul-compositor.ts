@@ -1,6 +1,6 @@
-"use strict";
-
 import { hangulMaps, isHangulCharacter } from "../mappings";
+import { HangulBlock } from "./hangul-block";
+
 const { initials, medials, finals, compoundVowels, consonantDigraphs } = hangulMaps;
 
 type CompositingResult =
@@ -8,56 +8,11 @@ type CompositingResult =
   | { initial?: string; inProgress: string; completed?: never }
   | { initial?: never; inProgress?: never; completed: string };
 
-export class Block {
-    constructor (public initial = "", public medial = "", public final = "") {}
-
-    clone () {
-        return new Block(this.initial, this.medial, this.final);
-    }
-
-    toChar(): string {
-        const initialIndex = initials.indexOf(this.initial),
-            medialIndex = this.medial.length == 1 ?
-                medials.indexOf(this.medial) :
-                medials.indexOf(compoundVowels[this.medial] as string),
-            finalIndex = (this.final.length == 1 ?
-                finals.indexOf(this.final) :
-                finals.indexOf(consonantDigraphs[this.final] as string)) + 1;
-
-        return (initialIndex > -1 && medialIndex >-1) ?
-            // Jamo to Unicode character formula: (initial)×588 + (medial)×28 + (final) + 44032
-            String.fromCharCode(initialIndex * 588 + medialIndex * 28 + finalIndex + 44032) :
-            (compoundVowels[this.initial] || consonantDigraphs[this.initial] || this.initial);
-    }
-
-    static fromChar (character: string, separateMedialDigraph = true, separateFinalDigraph = true) {
-        let workingIndex = character.charCodeAt(0) - 44032;
-        
-        if (workingIndex < 0) {
-            return new Block(character);
-        }
-
-        let initialIndex = ~~(workingIndex / 588);
-        
-        workingIndex -= initialIndex * 588;
-        let medialIndex = ~~(workingIndex / 28);
-        
-        workingIndex -= medialIndex * 28;
-        let finalIndex = workingIndex - 1;
-        
-        return new Block(
-            initials[initialIndex],
-            (separateMedialDigraph ? compoundVowels[medials[medialIndex]] : null) || medials[medialIndex],
-            (separateFinalDigraph ? consonantDigraphs[finals[finalIndex]] : null) || finals[finalIndex]
-        );
-    }
-}
-
-export class Compositor {
-    constructor (private block = new Block()) {}
+export class HangulCompositor {
+    constructor (private block = new HangulBlock()) {}
 
     reset () {
-        this.block = new Block();
+        this.block = new HangulBlock();
     };
 
     addJamo (jamo: string): CompositingResult {
@@ -93,7 +48,7 @@ export class Compositor {
     };
 
     setCharacter (char: string) {
-        this.block = Block.fromChar(char);
+        this.block = HangulBlock.fromChar(char);
     };
 
     isCompositing () {
@@ -158,7 +113,7 @@ export class Compositor {
         } else if (isMedial) {
             // (C+V)+V or (C+VV)+V
             const completed = block.toChar();
-            this.block = new Block(jamo);
+            this.block = new HangulBlock(jamo);
             return {
                 completed,
                 initial: jamo
@@ -191,7 +146,7 @@ export class Compositor {
             const lastConsonant = block.final[length - 1];
             block.final = block.final.substring(0, length - 1);
             const completed = block.toChar();
-            this.block = new Block(lastConsonant, jamo);
+            this.block = new HangulBlock(lastConsonant, jamo);
             return {
                 completed,
                 initial: this.block.toChar()
@@ -199,7 +154,7 @@ export class Compositor {
 
         } else {
             const completed = block.toChar();
-            this.block = new Block(jamo);
+            this.block = new HangulBlock(jamo);
             return {
                 completed,
                 initial: this.block.toChar()

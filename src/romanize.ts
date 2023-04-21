@@ -1,4 +1,4 @@
-import { Block } from "./composition/composition";
+import { HangulBlock } from "./composition/hangul-block";
 import { hangulMaps as maps, isHangulCharacter } from "./mappings";
 
 /**
@@ -10,13 +10,13 @@ export function romanize (text: string) {
     let romanText = '';
     let didPreviousCharSetInitial = false;
     let isPreviousCharHangul = false;
-    let nextBlock = Block.fromChar(text[0] || "", false);
+    let nextBlock = HangulBlock.fromChar(text[0] || "", false);
 
     for (let i = 0; i < text.length; i++) {
         const block = nextBlock;
         const thisChar = text[i];
         const nextChar = text[i + 1] || "";
-        nextBlock = Block.fromChar(nextChar, false);
+        nextBlock = HangulBlock.fromChar(nextChar, false);
 
         if (!isHangulCharacter(thisChar)) {
             didPreviousCharSetInitial = false;
