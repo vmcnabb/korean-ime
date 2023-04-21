@@ -1,22 +1,33 @@
 "use strict";
 
 import { KeyCode } from "../../content-script/on-screen-keyboard/korean-keyboard-map";
-import { CompositionAdapter } from "./composition-adapter";
-import { setAsKimeEvent } from "../../messaging/dom-events";
-
-type DispatchableEvent = KeyboardEvent | CompositionEvent | InputEvent | (() => void);
+import { CompositionAdapter, DispatchableEvent } from "./composition-adapter";
+import { Take } from "../../types";
 
 /**
- * Handles IME composition (and selection) for the CKEditor
- * .
+ * Handles IME composition for Word for the Web.
+ * Also works well with contentEditable elements in general as well as CKEditor.
+ * It causes "interesting" behaviour in Google Docs.
  * @param {HTMLElement} element
  */
 export class WordForTheWebAdapter extends CompositionAdapter {
     private isCompositing: boolean = false;
-    private currentBlock: string = "";
+    private _currentBlock: string = "";
+    private characterBox?: HTMLElement = undefined;
 
     constructor(element: HTMLElement) {
         super(element);
+    }
+
+    get currentBlock(): string {
+        return this._currentBlock;
+    }
+
+    set currentBlock(value: string) {
+        this._currentBlock = value;
+        if (this.characterBox) {
+            this.characterBox.innerText = value;
+        }
     }
 
     selectPreviousCharacter(): string | undefined {
@@ -108,6 +119,7 @@ export class WordForTheWebAdapter extends CompositionAdapter {
         ];
 
         this.dispatchEvents(eventsToDispatch);
+        this.createCompositingBox();
 
         this.currentBlock = data;
         this.isCompositing = true;
@@ -203,8 +215,41 @@ export class WordForTheWebAdapter extends CompositionAdapter {
             range.collapse(false);
         }
 
+        this.removeCompositingBox();
         this.currentBlock = "";
         this.isCompositing = false;
+    }
+
+    inputCharacter(data: string, keyCode: string): void {
+        if (this.isCompositing) {
+            throw new Error("Cannot input character when compositing");
+        }
+
+        console.debug("Inputting character, not using keyCode: ", keyCode);
+
+        const eventsToDispatch: DispatchableEvent[] = [
+            new InputEvent("beforeinput", {
+                data: data,
+                inputType: "insertText",
+                bubbles: true,
+            }),
+            () => {
+                // insert the character
+                const selection = window.getSelection();
+                if (selection) {
+                    const range = selection.getRangeAt(0);
+                    range.insertNode(document.createTextNode(data));
+                    range.collapse(false);
+                }
+            },
+            new InputEvent("input", {
+                data: data,
+                inputType: "insertText",
+                bubbles: true,
+            }),
+        ];
+
+        this.dispatchEvents(eventsToDispatch);
     }
 
     /** @returns {EventTarget} */
@@ -218,14 +263,71 @@ export class WordForTheWebAdapter extends CompositionAdapter {
         }
     }
 
-    private dispatchEvents(events: DispatchableEvent[]) {
-        events.forEach(event => {
-            if (event instanceof Event) {
-                setAsKimeEvent(event);
-                this.element.dispatchEvent(event);
-            } else {
-                event();
-            }
-        });
+    /**
+     * Creates a box that is positioned at the current caret position. This box is used to indicate that the character
+     * shown is being composed.
+     */
+    private createCompositingBox() {
+        if (this.characterBox) {
+            this.removeCompositingBox();
+        }
+
+        const selection = window.getSelection();
+
+        if (!selection || selection.rangeCount === 0) {
+            console.error("no selection!")
+            return;
+        }
+
+        // find x/y coordinates of caret
+        const range = selection.getRangeAt(0);
+
+        // Create a temporary span element at the caret position to measure the height/width of the
+        // a Hangul character as well as the x/y coordinates of the caret.
+        const span = document.createElement('span');
+        span.textContent = "아"; // same height/width as all Hangul characters
+        range.insertNode(span);
+        const characterRect = span.getBoundingClientRect();
+
+        const x = characterRect.left + window.pageXOffset - characterRect.width;
+        const y = characterRect.top + window.pageYOffset;
+
+        span.parentNode!.removeChild(span);
+
+        const selectionStyle = Take(
+            window.getComputedStyle(selection.anchorNode as Element),
+            "fontFamily", "fontSize", "fontWeight", "fontStyle", "lineHeight", "letterSpacing", "textAlign",
+            "textTransform", "textIndent", "textShadow", "direction", "writingMode", "unicodeBidi", "textOrientation",
+            "fontVariant", "fontFeatureSettings", "fontKerning", "fontStretch", "fontSynthesis",
+            "fontVariantAlternates", "fontVariantCaps", "fontVariantEastAsian", "fontVariantLigatures",
+            "fontVariantNumeric", "fontVariantPosition", "fontVariationSettings", "fontOpticalSizing", "fontPalette",
+            "fontSizeAdjust", "font"
+        );
+
+        const style: Partial<CSSStyleDeclaration> = {
+            position: "absolute",
+            top: `${y}px`,
+            left: `${x}px`,
+            width: `${characterRect.width}px`,
+            height: `${characterRect.height}px`,
+            backgroundColor: "transparent",
+            zIndex: "2147483647",
+            border: "1px dotted #48F",
+            ...selectionStyle,
+        }
+
+        const characterBox = Object.assign(document.createElement("div"), { style });
+
+        document.body.appendChild(characterBox);
+
+        this.characterBox = characterBox;
+        console.log("line drawn: ", characterBox);
+    }
+
+    private removeCompositingBox() {
+        if (this.characterBox) {
+            this.characterBox.remove();
+            this.characterBox = undefined;
+        }
     }
 }

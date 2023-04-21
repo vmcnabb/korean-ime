@@ -41,6 +41,24 @@ export class InputAdapter extends CompositionAdapter {
         this.deselect();
     }
 
+    inputCharacter(data: string): void {
+        const element = this.element;
+        const start = element.selectionStart;
+
+        if (start == null) {
+            return;
+        }
+
+        let end = element.selectionEnd || 0;
+
+        element.value = element.value.substring(0, start) +
+            data +
+            element.value.substring(end, element.value.length);
+        end = start + data.length;
+        element.selectionStart = end;
+        element.selectionEnd = end;
+    }
+
     deselect() {
         this.element.selectionStart = this.element.selectionEnd;
     }

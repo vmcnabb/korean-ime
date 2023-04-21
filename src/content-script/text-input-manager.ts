@@ -105,7 +105,7 @@ export class TextInputManager {
         }
 
         const isHangulMode = this.textEntryMode === TextEntryMode.Hangul;
-        if (imeController.isActive() != isHangulMode) {
+        if (imeController.isActive != isHangulMode) {
             if (isHangulMode) {
                 imeController.activate();
             } else {
