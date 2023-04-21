@@ -37,12 +37,30 @@ export class HangulImeController {
         });
     }
 
-    isActive () {
+    get isActive () {
         return this._isActive;
     };
 
-    // todo: find out why we are notifying a change and for who
-    notifyChange() {
+    onEntry(listener: () => void) {
+        this.changeListeners.push(listener);
+    }
+
+    activate () {
+        this._isActive = true;
+    }
+
+    deactivate ()  {
+        if (this.compositor.isCompositing()) {
+            // Ending the composition with the current value is the correct thing to do with Korean.
+            // If we implement other languages, we may need to change this.
+            this.compositionAdapter.endComposition(this.compositor.getCurrent());
+            this.compositor.reset();
+        }
+        
+        this._isActive = false;
+    }
+
+    private notifyOnEntry() {
         this.changeListeners.forEach(listener => {
             try {
                 listener()
@@ -51,10 +69,6 @@ export class HangulImeController {
                 console.error(e);
             }
         });
-    }
-
-    onEntry(listener: () => void) {
-        this.changeListeners.push(listener);
     }
 
     private eventHandlers = {
@@ -117,7 +131,7 @@ export class HangulImeController {
                     return;
                 }
 
-                this.notifyChange();
+                this.notifyOnEntry();
 
                 event.preventDefault();
                 event.stopPropagation();
@@ -173,19 +187,6 @@ export class HangulImeController {
         }
     };
 
-    activate () {
-        this._isActive = true;
-    }
-
-    deactivate ()  {
-        if (this.compositor.isCompositing()) {
-            this.compositor.reset();
-            this.compositionAdapter.deselect();
-        }
-        
-        this._isActive = false;
-    }
-
     /**
      * Add a non-Hangul character to the composition adapter.
      * This will end any current composition.
@@ -197,9 +198,7 @@ export class HangulImeController {
             this.compositor.reset();
         }
 
-        this.compositionAdapter.beginComposition(char, keyCode);
-        this.compositionAdapter.updateComposition(char, keyCode);
-        this.compositionAdapter.endComposition(char);
+        this.compositionAdapter.inputCharacter(char, keyCode);
     }
 
     handleBackspace() { 
@@ -211,7 +210,7 @@ export class HangulImeController {
                 this.compositionAdapter.endComposition("");
             }
 
-            this.notifyChange();
+            this.notifyOnEntry();
 
         } else {
             this.compositionAdapter.handleBackspace();
@@ -233,7 +232,7 @@ export class HangulImeController {
             this.compositionAdapter.updateComposition(compositionProgress.inProgress, keyCode);
         }
 
-        this.notifyChange();
+        this.notifyOnEntry();
     }
 
     private addListener (target: EventTarget, type: string, listener: EventListener) {

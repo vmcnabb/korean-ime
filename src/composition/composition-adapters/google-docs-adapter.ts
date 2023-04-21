@@ -143,9 +143,9 @@ export class GoogleDocsAdapter extends CompositionAdapter {
         this.currentBlock = data;
     }
 
-    /*
-        When using Microsoft IME in Korean, the composition can be ended in various ways. For our purposes,
-        it doesn't matter how it is ended, so just the compositionend event is fired.
+    /**
+        When using Microsoft IME in Korean, the composition can be ended in various ways. Google Docs doesn't
+        care how it is ended, so just the compositionend event is fired.
      */
     endComposition(data: string) {
         this.element.dispatchEvent(new CompositionEvent("compositionend", {
@@ -154,6 +154,32 @@ export class GoogleDocsAdapter extends CompositionAdapter {
         }));
         this.currentBlock = "";
         this.isCompositing = false;
+    }
+
+    inputCharacter(data: string): void {
+        // simulate typing a character
+        const eventsToDispatch = [
+            new KeyboardEvent("keydown", {
+                key: data,
+                code: data,
+                view: window
+            }),
+            new InputEvent("beforeinput", {
+                data: data,
+                inputType: "insertText"
+            }),
+            new InputEvent("input", {
+                data: data,
+                inputType: "insertText"
+            }),
+            new KeyboardEvent("keyup", {
+                key: data,
+                code: data,
+                view: window
+            })
+        ];
+
+        this.dispatchEvents(eventsToDispatch);
     }
 
     /** @returns {EventTarget} */
