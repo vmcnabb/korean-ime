@@ -344,8 +344,14 @@ export class WordForTheWebAdapter extends CompositionAdapter {
         const characterRect = span.getBoundingClientRect();
         span.parentNode!.removeChild(span);
 
-        const left = characterRect.left - characterRect.width;
-        const top = characterRect.top;
+        // Take the current scroll position into account
+        const scrollTop = window.scrollY;
+        const scrollLeft = window.scrollX;
+
+        const left = characterRect.left
+            - characterRect.width // we created the compositing box after already rendering the character
+            + scrollLeft;
+        const top = characterRect.top + scrollTop;
 
         const selectionStyle = Take(
             window.getComputedStyle(selection.anchorNode as Element),
