@@ -25,13 +25,19 @@ type TypeKeyMessage = {
 export type TextInputMessage = InsertTextAfterSelectionMessage | TypeKeyMessage;
 
 export function isTextInputMessage(message: any): message is TextInputMessage {
-    return message?.type === "textInputMessage" && message?.action in TextInputMessageActions;
+    return message
+        && message.type === "textInputMessage"
+        && Object.values(TextInputMessageActions).includes(message.action);
 }
 
 export function isInsertTextAfterSelectionMessage(message: any): message is InsertTextAfterSelectionMessage {
-    return message?.type === "textInputMessage" && message?.action === TextInputMessageActions.InsertTextAfterSelection;
+    return message
+        && message.type === "textInputMessage"
+        && message.action === TextInputMessageActions.InsertTextAfterSelection;
 }
 
 export function isTypeKeyMessage(message: any): message is TypeKeyMessage {
-    return message?.type === "textInputMessage" && message?.action === TextInputMessageActions.TypeKey;
+    return message 
+        && message.type === "textInputMessage"
+        && message.action === TextInputMessageActions.TypeKey;
 }

@@ -41,8 +41,9 @@ export function isTabStateMessage(message: any): message is TabStateMessage {
 }
 
 export function isContentScriptRequest(message: any): message is ContentScriptMessage {
-    return message?.type === "contentScriptRequest"
-        && message?.action in ContentScriptRequestAction;
+    return message
+        && message.type === "contentScriptRequest"
+        && Object.values(ContentScriptRequestAction).includes(message.action);
 }
 
 export function isSendKeyMessage(message: any): message is SendKeyMessage {
