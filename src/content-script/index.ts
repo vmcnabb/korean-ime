@@ -1,68 +1,64 @@
-﻿import { IsKimeMessage } from "../messaging";
-import { OnScreenKeyboardController } from "./on-screen-keyboard/on-screen-keyboard-controller";
+﻿import { OnScreenKeyboardController } from "./on-screen-keyboard/on-screen-keyboard-controller";
 import { KeyCode } from "./on-screen-keyboard/korean-keyboard-map";
 import { TextInputManager } from "./text-input-manager";
-import { TextEntryMode } from "./text-entry-mode.t";
+import { KoreanKeyboardMode } from "../extension-state/korean-keyboard-mode";
+import { ContentScriptMessage, ContentScriptRequestAction, TabStateMessage, isTabStateMessage } from "../messaging";
+import { isTextInputMessage } from "./text-input-manager/message-definitions";
 
-let textEntryMode = TextEntryMode.English;
+let textEntryMode = KoreanKeyboardMode.English;
 const isTopWindow = window === top;
 
 const textInputManager = new TextInputManager();
 const keyboardController = isTopWindow
-    ? new OnScreenKeyboardController(onEnterChar)
+    ? new OnScreenKeyboardController()
     : undefined;
 
 setupMessageListener();
-setupDocumentListeners();
+setupHanYongKeyListener();
+requestState();
 
-function onEnterChar(char: string, keyCode: KeyCode) {
-    textInputManager.enterCharacter(char, keyCode);
+function requestState() {
+    chrome.runtime.sendMessage<ContentScriptMessage>({
+        type: "contentScriptRequest",
+        action: ContentScriptRequestAction.RefreshState,
+    });
 }
 
 function setupMessageListener() {
-    const actions = {
-        disable: () => setTextEntryMode(TextEntryMode.English),
-        enable: () => setTextEntryMode(TextEntryMode.Hangul),
-    };
-
     chrome.runtime.onMessage.addListener(message => {
         console.debug("content.js: received message", message);
 
-        if (!IsKimeMessage(message)) {
-            return;
+        if (isTabStateMessage(message)) {
+            handleTabStateMessage(message);
         }
 
-        if (actionHasKeyFor(message.action, actions)) {
-            const action = actions[message.action];
-            action();
-
-        } else if (keyboardController && actionHasKeyFor(message.action, keyboardController.messageHandlers)) {
-            const action = keyboardController.messageHandlers[message.action];
-            action();
-
-        } else if (actionHasKeyFor(message.action, textInputManager.messageHandlers)) {
-            const action = textInputManager.messageHandlers[message.action];
-            action(message);
+        if (isTextInputMessage(message)) {
+            textInputManager.handleMessage(message);
         }
     });
 }
 
-function actionHasKeyFor<TObject extends object>(
-    action: string,
-    object: TObject
-  ): action is keyof TObject & string {
-    return action in object;
+function handleTabStateMessage(message: TabStateMessage) {
+    if (message.data.koreanKeyboardMode !== textEntryMode) {
+        setTextEntryMode(message.data.koreanKeyboardMode);
+    }
+
+    if (message.data.isOnScreenKeyboardEnabled) {
+        keyboardController?.showKeyboard();
+    } else {
+        keyboardController?.hideKeyboard();
+    }
 }
 
-function setupDocumentListeners() {
-    // send message to background script to toggle between hangul and english mode
+function setupHanYongKeyListener() {
     document.addEventListener(
         "keydown",
         e => {
             if (e.code === KeyCode.AltRight && !e.repeat) {
-                chrome.runtime.sendMessage(
-                    { action: "toggle" }
-                );
+                chrome.runtime.sendMessage<ContentScriptMessage>({
+                    type: "contentScriptRequest",
+                    action: ContentScriptRequestAction.ToggleHanYongMode,
+                });
                 e.preventDefault();
             }
         },
@@ -70,7 +66,7 @@ function setupDocumentListeners() {
     );
 }
 
-function setTextEntryMode(mode: TextEntryMode) {
+function setTextEntryMode(mode: KoreanKeyboardMode) {
     if (mode == textEntryMode) {
         return;
     }

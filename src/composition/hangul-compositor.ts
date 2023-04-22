@@ -8,6 +8,9 @@ type CompositingResult =
   | { initial?: string; inProgress: string; completed?: never }
   | { initial?: never; inProgress?: never; completed: string };
 
+  /**
+   * Composes Hangul characters from jamo.
+   */
 export class HangulCompositor {
     constructor (private block = new HangulBlock()) {}
 

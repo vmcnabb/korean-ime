@@ -1,8 +1,7 @@
-import { TextEntryMode } from "../text-entry-mode.t";
+import { ContentScriptMessage, ContentScriptRequestAction } from "../../messaging";
+import { KoreanKeyboardMode } from "../../extension-state/korean-keyboard-mode";
 import { KeyCode, KeyRecord, keyMap } from "./korean-keyboard-map";
 import { KeyboardLayout, defaultLayout } from "./layouts";
-
-type OnKeyClickedCallback = (key: string, keyCode: KeyCode) => void;
 
 export class OnScreenKeyboardController {
     private _keyboardElement: HTMLDivElement;
@@ -20,23 +19,18 @@ export class OnScreenKeyboardController {
         }
     };
 
-    private _mode = TextEntryMode.English;
+    private _mode = KoreanKeyboardMode.English;
     private _isShift = false;
 
-    constructor(private onKeyClickedCallback: OnKeyClickedCallback) {
+    constructor() {
         this._keyboardElement = this.createKeyboard();
     }
 
-    public messageHandlers = {
-        enableKeyboard: () => this.showKeyboard(),
-        disableKeyboard: () => this.hideKeyboard(),
-    }
-
-    public setMode(mode: TextEntryMode) {
+    public setMode(mode: KoreanKeyboardMode) {
         console.debug("OnScreenKeyboardController.setMode", mode);
 
         this._mode = mode;
-        const isHanMode = mode === TextEntryMode.Hangul;
+        const isHanMode = mode === KoreanKeyboardMode.Hangul;
 
         this._keyboardElement.classList.toggle("hanMode", isHanMode);
         this._keyboardElement.classList.toggle("yongMode", !isHanMode);
@@ -67,11 +61,11 @@ export class OnScreenKeyboardController {
         this.placeKeyboard();
     }
 
-    private hideKeyboard() {
+    hideKeyboard() {
         this._keyboardElement.style.display = "none";
     }
     
-    private showKeyboard() {
+    showKeyboard() {
         this._keyboardElement.style.display = "block";
         this.placeKeyboard();
     }
@@ -250,7 +244,7 @@ export class OnScreenKeyboardController {
     ) {
         e.preventDefault();
 
-        const isHanMode = this._mode === TextEntryMode.Hangul;
+        const isHanMode = this._mode === KoreanKeyboardMode.Hangul;
         const isShift = this._isShift;
     
         if (key.jamo && isHanMode) {
@@ -258,33 +252,47 @@ export class OnScreenKeyboardController {
                 key.jamo.shift :
                 key.jamo.normal;
     
-            this.onKeyClickedCallback(jamoToAdd, keyCode);
+            this.sendKey(jamoToAdd, keyCode);
     
         } else if (key.normal && (!isHanMode || !key.jamo)) {
             const keyToSend = isShift && key.shift ?
                 key.shift :
                 key.normal;
     
-                this.onKeyClickedCallback(keyToSend, keyCode);
+                this.sendKey(keyToSend, keyCode);
     
         } else if (key.label === "Shift") {
             this.setShift(!isShift);
 
         } else if (keyCode === KeyCode.AltRight) {
-            chrome.runtime.sendMessage({
-                action: "toggle"
+            chrome.runtime.sendMessage<ContentScriptMessage>({
+                type: "contentScriptRequest",
+                action: ContentScriptRequestAction.ToggleHanYongMode
             });
     
         } else if (keyCode === KeyCode.Space) {
-            this.onKeyClickedCallback(" ", keyCode);
+            this.sendKey(" ", keyCode);
     
         } else if (keyCode === KeyCode.Backspace) {
-            this.onKeyClickedCallback("\b", keyCode);
+            this.sendKey("\b", keyCode);
         }
     
         return false;
     }
-    
+
+    private sendKey(key: string, keyCode: KeyCode) {
+        console.debug(`Sending key: ${key} (${keyCode})`);
+
+        chrome.runtime.sendMessage<ContentScriptMessage>({
+            type: "contentScriptRequest",
+            action: ContentScriptRequestAction.SendKey,
+            data: {
+                key,
+                keyCode,
+            }
+        });
+    }
+
     private createLabelElement(className: string, text: string): HTMLElement {
         const label = document.createElement("div");
         label.className = className;

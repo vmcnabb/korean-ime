@@ -1,5 +1,11 @@
 
-export function CreateProxy<T extends object>(target: T) {
+/**
+ * Creates a proxy withe the same interface as the target object, but logs all calls to the console.
+ * Does nothing in production.
+ * @param target 
+ * @returns 
+ */
+export function createLoggingProxy<T extends object>(target: T) {
     if (process.env.NODE_ENV === 'production') {
         return target;
     }

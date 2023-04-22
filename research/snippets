@@ -1,6 +1,20 @@
 
 // watch events on CKEditor demo: https://ckeditor.com/ckeditor-5/demo/feature-rich/
 
+const ed = document.querySelector(".ck-editor__editable");
+const inputEvents = [
+    "input",
+    "change",
+    "beforeinput",
+    "drop",
+    "keydown",
+    "keyup",
+    "keypress",
+    "compositionstart",
+    "compositionupdate",
+    "compositionend"
+];
+
 inputEvents.forEach(event => {
     ed.addEventListener(event, e => {
         console.log(`watched: ${event}`, e);

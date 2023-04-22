@@ -1,6 +1,6 @@
 import { KeyCode } from "../../content-script/on-screen-keyboard/korean-keyboard-map";
 import { CompositionAdapter, DispatchableEvent } from "./composition-adapter";
-import { Take } from "../../types";
+import { Take } from "../../typescript-typing";
 
 /**
  * Handles IME composition for Word for the Web.

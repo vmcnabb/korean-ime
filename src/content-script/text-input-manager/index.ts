@@ -1,17 +1,22 @@
-import { KimeMessage } from "../messaging";
-import { HangulImeController } from "../composition/hangul-ime-controller";
-import { TextEntryMode } from "./text-entry-mode.t";
-import { CompositionAdapterFactory } from "../composition/composition-adapter-factory";
-import { isHangulCharacter } from "../mappings";
-import { KeyCode } from "./on-screen-keyboard/korean-keyboard-map";
+import { ActionHandlers } from "../../messaging";
+import { HangulImeController } from "../../composition/hangul-ime-controller";
+import { KoreanKeyboardMode } from "../../extension-state/korean-keyboard-mode";
+import { CompositionAdapterFactory } from "../../composition/composition-adapter-factory";
+import { isHangulCharacter } from "../../mappings";
+import { KeyCode } from "../on-screen-keyboard/korean-keyboard-map";
+import { TextInputMessage, TextInputMessageActions, isInsertTextAfterSelectionMessage, isTypeKeyMessage } from "./message-definitions";
 
 export class TextInputManager {
     private imeControllers = new Map<HTMLElement, HangulImeController>();
-    private textEntryMode: TextEntryMode = TextEntryMode.English;
+    private textEntryMode: KoreanKeyboardMode = KoreanKeyboardMode.English;
     private refreshTextInputElementsInterval: number | undefined;
 
-    public messageHandlers = {
-        insertAfter: (message: KimeMessage) => {
+    private messageHandlers: ActionHandlers<TextInputMessage, TextInputMessageActions> = {
+        [TextInputMessageActions.InsertTextAfterSelection]: (message: TextInputMessage) => {
+            if (!isInsertTextAfterSelectionMessage(message)) {
+                return;
+            }
+
             const element = this.getActiveElement(document);
 
             if (!element) {
@@ -24,14 +29,26 @@ export class TextInputManager {
                 return;
             }
 
-            // todo: probably should implement an insertAfter method in the composition adapter
+            // todo: implement an insertAfter method in the composition adapter
             compositionAdapter.deselect();
             compositionAdapter.updateComposition(message.data, KeyCode.KeyK); // KeyK is arbitrary
             compositionAdapter.deselect();
         },
+        [TextInputMessageActions.TypeKey]: (message: TextInputMessage) => {
+            if (!isTypeKeyMessage(message)) {
+                return;
+            }
+
+            this.enterCharacter(message.data.key, message.data.keyCode);
+        }
     }
 
-    public setMode(mode: TextEntryMode) {
+    public handleMessage(message: TextInputMessage) {
+        const handler = this.messageHandlers[message.action];
+        handler(message);
+    }
+
+    public setMode(mode: KoreanKeyboardMode) {
         this.textEntryMode = mode;
 
         const self = this;
@@ -41,7 +58,7 @@ export class TextInputManager {
             this.refreshTextInputElementsInterval = undefined;
         }
 
-        if (this.textEntryMode == TextEntryMode.Hangul) {
+        if (this.textEntryMode == KoreanKeyboardMode.Hangul) {
             this.refreshTextInputElements();
             this.refreshTextInputElementsInterval = window.setInterval(function () {
                 self.refreshTextInputElements();
@@ -54,7 +71,7 @@ export class TextInputManager {
         }
     }
 
-    public enterCharacter(char: string, keyCode: KeyCode) {
+    private enterCharacter(char: string, keyCode: KeyCode) {
         const activeElement = this.getActiveElement(document);
         if (!activeElement) {
             return;
@@ -104,7 +121,7 @@ export class TextInputManager {
             this.imeControllers.set(element, imeController);
         }
 
-        const isHangulMode = this.textEntryMode === TextEntryMode.Hangul;
+        const isHangulMode = this.textEntryMode === KoreanKeyboardMode.Hangul;
         if (imeController.isActive != isHangulMode) {
             if (isHangulMode) {
                 imeController.activate();

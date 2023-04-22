@@ -1,5 +1,3 @@
-"use strict";
-
 import { CompositionAdapter } from "./composition-adapter";
 
 export class InputAdapter extends CompositionAdapter {

@@ -1,4 +1,4 @@
-import { KeyCode } from "src/content-script/on-screen-keyboard/korean-keyboard-map";
+import { KeyCode } from "../../content-script/on-screen-keyboard/korean-keyboard-map";
 import { WordForTheWebAdapter } from "./word-for-the-web-adapter";
 
 export class CkEditorAdapater extends WordForTheWebAdapter {
