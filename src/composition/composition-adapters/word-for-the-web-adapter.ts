@@ -38,7 +38,40 @@ export class WordForTheWebAdapter extends CompositionAdapter {
     }
 
     handleBackspace(): void {
-        // TODO: implement
+        // fire events for backspace being pressed
+        const eventsToDispatch: DispatchableEvent[] = [
+            new KeyboardEvent("keydown", {
+                key: "Backspace",
+                code: "Backspace",
+                view: window,
+                bubbles: true,
+            }),
+            new InputEvent("beforeinput", {
+                inputType: "deleteContentBackward",
+                bubbles: true,
+            }),
+            () => {
+                // delete the previous character
+                const selection = window.getSelection();
+                if (selection) {
+                    const range = selection.getRangeAt(0);
+                    range.setStart(range.startContainer, range.startOffset - 1);
+                    range.deleteContents();
+                }
+            },
+            new InputEvent("input", {
+                inputType: "deleteContentBackward",
+                bubbles: true,
+            }),
+            new KeyboardEvent("keyup", {
+                key: "Backspace",
+                code: "Backspace",
+                view: window,
+                bubbles: true,
+            }),
+        ];
+
+        this.dispatchEvents(eventsToDispatch);
     }
 
     blur() {
