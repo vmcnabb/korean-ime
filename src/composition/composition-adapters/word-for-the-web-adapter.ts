@@ -37,12 +37,12 @@ export class WordForTheWebAdapter extends CompositionAdapter {
         return undefined;
     }
 
-    handleBackspace(): void {
+    deleteContentBackward(): void {
         // fire events for backspace being pressed
         const eventsToDispatch: DispatchableEvent[] = [
             new KeyboardEvent("keydown", {
                 key: "Backspace",
-                code: "Backspace",
+                code: KeyCode.Backspace,
                 view: window,
                 bubbles: true,
             }),
@@ -65,7 +65,7 @@ export class WordForTheWebAdapter extends CompositionAdapter {
             }),
             new KeyboardEvent("keyup", {
                 key: "Backspace",
-                code: "Backspace",
+                code: KeyCode.Backspace,
                 view: window,
                 bubbles: true,
             }),

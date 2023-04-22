@@ -218,7 +218,7 @@ export class HangulImeController {
             this.notifyOnEntry();
 
         } else {
-            this.compositionAdapter.handleBackspace();
+            this.compositionAdapter.deleteContentBackward();
         }
     }
 

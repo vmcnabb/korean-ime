@@ -15,11 +15,20 @@ export abstract class CompositionAdapter {
 
     abstract deselect(): void;
     abstract selectPreviousCharacter(): string | undefined;
-    abstract handleBackspace(): void;
+
+    /**
+     * When there is a selection, delete it.
+     * Otherwise, delete the character preceding the cursor when there is no selection.
+     * Typically will delete to the left unless the element has a different text direction.
+     * 
+     * Both of these situations are typically handled by emulating a backspace keypress.
+     */
+    abstract deleteContentBackward(): void;
 
     /**
      * Inputs a character without triggering composition. Used for punctuation, numbers, and
-     * other characters that are not part of the Korean alphabet.
+     * other characters that are not part of the Korean alphabet. Typically this is done by
+     * simulating a keypress series of events.
      * 
      * The caller should ensure that composition is not in progress before calling this method.
      * @param data the character to input
@@ -65,7 +74,7 @@ export abstract class CompositionAdapter {
 
     /**
      * Dispatches a list of events and functions. Sets all events as Kime events unless
-     * the events are dispatched from a function.
+     * the events are dispatched from a function included in the list.
      * @param events 
      */
     protected dispatchEvents(events: DispatchableEvent[]) {
