@@ -1,5 +1,3 @@
-"use strict";
-
 import { KeyCode } from "../../content-script/on-screen-keyboard/korean-keyboard-map";
 import { CompositionAdapter } from "./composition-adapter";
 import { setAsKimeEvent } from "../../messaging/dom-events";

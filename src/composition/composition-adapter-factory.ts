@@ -1,7 +1,7 @@
 import { InputAdapter } from "./composition-adapters/input-adapter";
 import { GoogleDocsAdapter } from "./composition-adapters/google-docs-adapter";
 import { CompositionAdapter } from "./composition-adapters/composition-adapter";
-import { CreateProxy } from "../dev-helpers/logging-proxy";
+import { createLoggingProxy } from "../dev-helpers/logging-proxy";
 import { WordForTheWebAdapter } from "./composition-adapters/word-for-the-web-adapter";
 import { CkEditorAdapater } from "./composition-adapters/ck-editor-adapter";
 
@@ -25,7 +25,7 @@ export class CompositionAdapterFactory {
         })();
 
         console.debug("Creating composition adapter", adapter);
-        return adapter ? CreateProxy(adapter) : undefined;
+        return adapter ? createLoggingProxy(adapter) : undefined;
     }
 }
 

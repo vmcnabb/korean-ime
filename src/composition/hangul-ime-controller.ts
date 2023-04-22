@@ -6,6 +6,7 @@ import { CompositionAdapterFactory } from "./composition-adapter-factory";
 import { CompositionAdapter } from "./composition-adapters/composition-adapter";
 
 /**
+ * Controls the Hangul IME for a given element.
  * @param {HTMLElement} element 
  */
 export class HangulImeController {
