@@ -3,6 +3,7 @@ import { GoogleDocsAdapter } from "./composition-adapters/google-docs-adapter";
 import { CompositionAdapter } from "./composition-adapters/composition-adapter";
 import { CreateProxy } from "../dev-helpers/logging-proxy";
 import { WordForTheWebAdapter } from "./composition-adapters/word-for-the-web-adapter";
+import { CkEditorAdapater } from "./composition-adapters/ck-editor-adapter";
 
 export class CompositionAdapterFactory {
     static createCompositionAdapter (element: HTMLElement) : CompositionAdapter | undefined {
@@ -12,6 +13,9 @@ export class CompositionAdapterFactory {
 
             } else if (isGoogleDocsElement(element)) {
                 return new GoogleDocsAdapter(element);
+
+            } else if (isCkEditorElement(element)) {
+                return new CkEditorAdapater(element);
 
             } else if (element.isContentEditable) {
                 return new WordForTheWebAdapter(element);
@@ -35,4 +39,9 @@ function isGoogleDocsElement(element: HTMLElement) {
     return element.isContentEditable &&
         window.frameElement &&
         window.frameElement.classList.contains("docs-texteventtarget-iframe");
+}
+
+function isCkEditorElement(element: HTMLElement) {
+    return element.isContentEditable &&
+        element.classList.contains("ck-editor__editable");
 }

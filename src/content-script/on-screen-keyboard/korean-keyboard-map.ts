@@ -84,6 +84,12 @@ export function isModifierKey(code: KeyCode): boolean {
     ].includes(code);
 }
 
+export function isAltKey(code: KeyCode): code is KeyCode.AltLeft | KeyCode.AltRight {
+    return [
+        KeyCode.AltLeft, KeyCode.AltRight
+    ].includes(code);
+}
+
 export const keyMap: Record<KeyCode, KeyRecord> = {
     [KeyCode.KeyQ]: {
         normal: "q",

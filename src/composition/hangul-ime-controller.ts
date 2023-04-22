@@ -1,5 +1,5 @@
 ﻿import { isKimeEvent } from "../messaging/dom-events";
-import { isModifierKey, KeyCode, keyMap } from "../content-script/on-screen-keyboard/korean-keyboard-map";
+import { isAltKey, isModifierKey, KeyCode, keyMap } from "../content-script/on-screen-keyboard/korean-keyboard-map";
 import { isHangulCharacter } from "../mappings";
 import { HangulCompositor } from "./hangul-compositor";
 import { CompositionAdapterFactory } from "./composition-adapter-factory";
@@ -16,7 +16,7 @@ export class HangulImeController {
     private changeListeners: (() => void)[] = [];
     private eventListeners: { target: EventTarget, type: string, listener: EventListener }[] = [];
 
-    private lastAlt = KeyCode.AltLeft;
+    private lastAlt?: KeyCode.AltLeft | KeyCode.AltRight = undefined;
 
     constructor(element: HTMLElement) {
         const compositionAdapter = CompositionAdapterFactory.createCompositionAdapter(element);
@@ -80,7 +80,7 @@ export class HangulImeController {
             const code = event.code as KeyCode;
 
             // record which alt was down last, so we know if the "han/yeong" key is down
-            if ([KeyCode.AltRight, KeyCode.AltLeft].includes(code)) {
+            if (isAltKey(code)) {
                 this.lastAlt = code;
                 return;
             }
@@ -93,9 +93,7 @@ export class HangulImeController {
             if (!this._isActive) {
                 if (event.altKey && this.lastAlt === KeyCode.AltRight) {
                     // insert character manually when "han/yeong" key is down so that a menu isn't triggered
-                    this.compositionAdapter.beginComposition(event.key, code);
-                    this.compositionAdapter.updateComposition(event.key, code);
-                    this.compositionAdapter.endComposition(event.key);
+                    this.compositionAdapter.inputCharacter(event.key, code);
 
                     event.preventDefault();
                     event.stopPropagation();
@@ -150,19 +148,25 @@ export class HangulImeController {
             }
 
             if (!key.jamo) {
-                if (this.compositor.isCompositing()) {
-                    this.compositionAdapter.endComposition(this.compositor.getCurrent());
-                    this.compositor.reset();
+                if (!this.compositor.isCompositing()) {
+                    return;
                 }
 
-                return;
+                this.compositionAdapter.endComposition(this.compositor.getCurrent());
+                this.compositor.reset();
+
+                // CKEditor throws errors and the character is not inputed unless we add this timeout.
+                window.setTimeout(() => {
+                    this.compositionAdapter.inputCharacter(event.key, code);
+                }, 0);
+
+            } else {
+                const jamo = event.shiftKey && key.jamo.shift
+                    ? key.jamo.shift
+                    : key.jamo.normal;
+
+                this.addJamo(jamo, code);
             }
-
-            const jamo = event.shiftKey && key.jamo.shift
-                ? key.jamo.shift
-                : key.jamo.normal;
-
-            this.addJamo(jamo, code);
 
             event.preventDefault();
             event.stopImmediatePropagation();

@@ -1,5 +1,3 @@
-"use strict";
-
 import { KeyCode } from "../../content-script/on-screen-keyboard/korean-keyboard-map";
 import { CompositionAdapter, DispatchableEvent } from "./composition-adapter";
 import { Take } from "../../types";
@@ -13,7 +11,11 @@ import { Take } from "../../types";
 export class WordForTheWebAdapter extends CompositionAdapter {
     private isCompositing: boolean = false;
     private _currentBlock: string = "";
-    private characterBox?: HTMLElement = undefined;
+
+    /** 
+     * Used to display or underline the current composition.
+     */
+    private compositingBox?: HTMLElement = undefined;
 
     constructor(element: HTMLElement) {
         super(element);
@@ -25,8 +27,8 @@ export class WordForTheWebAdapter extends CompositionAdapter {
 
     set currentBlock(value: string) {
         this._currentBlock = value;
-        if (this.characterBox) {
-            this.characterBox.innerText = value;
+        if (this.compositingBox) {
+            this.compositingBox.innerText = value;
         }
     }
 
@@ -225,13 +227,24 @@ export class WordForTheWebAdapter extends CompositionAdapter {
             throw new Error("Cannot input character when compositing");
         }
 
-        console.debug("Inputting character, not using keyCode: ", keyCode);
-
+        // simulate the events that would be fired when typing a character
         const eventsToDispatch: DispatchableEvent[] = [
+            new KeyboardEvent("keydown", {
+                key: data,
+                code: keyCode,
+                view: window,
+                bubbles: true,
+            }),
+            new KeyboardEvent("keypress", {
+                key: data,
+                code: keyCode,
+                bubbles: true,
+                view: window
+            }),
             new InputEvent("beforeinput", {
                 data: data,
-                inputType: "insertText",
                 bubbles: true,
+                inputType: "insertText",
             }),
             () => {
                 // insert the character
@@ -244,9 +257,15 @@ export class WordForTheWebAdapter extends CompositionAdapter {
             },
             new InputEvent("input", {
                 data: data,
-                inputType: "insertText",
                 bubbles: true,
+                inputType: "insertText"
             }),
+            new KeyboardEvent("keyup", {
+                key: data,
+                code: keyCode,
+                bubbles: true,
+                view: window
+            })
         ];
 
         this.dispatchEvents(eventsToDispatch);
@@ -268,7 +287,7 @@ export class WordForTheWebAdapter extends CompositionAdapter {
      * shown is being composed.
      */
     private createCompositingBox() {
-        if (this.characterBox) {
+        if (this.compositingBox) {
             this.removeCompositingBox();
         }
 
@@ -283,20 +302,21 @@ export class WordForTheWebAdapter extends CompositionAdapter {
         const range = selection.getRangeAt(0);
 
         // Create a temporary span element at the caret position to measure the height/width of the
-        // a Hangul character as well as the x/y coordinates of the caret.
+        // selection of a Hangul character as well as the x/y coordinates of the caret.
         const span = document.createElement('span');
         span.textContent = "아"; // same height/width as all Hangul characters
+        span.style.display = "inline-block";
         range.insertNode(span);
+
         const characterRect = span.getBoundingClientRect();
-
-        const x = characterRect.left + window.pageXOffset - characterRect.width;
-        const y = characterRect.top + window.pageYOffset;
-
         span.parentNode!.removeChild(span);
+
+        const left = characterRect.left - characterRect.width;
+        const top = characterRect.top;
 
         const selectionStyle = Take(
             window.getComputedStyle(selection.anchorNode as Element),
-            "fontFamily", "fontSize", "fontWeight", "fontStyle", "lineHeight", "letterSpacing", "textAlign",
+            "fontFamily", "fontSize", "fontWeight", "fontStyle", "letterSpacing", "textAlign",
             "textTransform", "textIndent", "textShadow", "direction", "writingMode", "unicodeBidi", "textOrientation",
             "fontVariant", "fontFeatureSettings", "fontKerning", "fontStretch", "fontSynthesis",
             "fontVariantAlternates", "fontVariantCaps", "fontVariantEastAsian", "fontVariantLigatures",
@@ -304,30 +324,36 @@ export class WordForTheWebAdapter extends CompositionAdapter {
             "fontSizeAdjust", "font"
         );
 
+        const borderLeftWidth = 1;
+        const borderTopWidth = 1;
+
         const style: Partial<CSSStyleDeclaration> = {
             position: "absolute",
-            top: `${y}px`,
-            left: `${x}px`,
+            top: `${top - borderTopWidth}px`,
+            left: `${left - borderLeftWidth}px`,
             width: `${characterRect.width}px`,
             height: `${characterRect.height}px`,
-            backgroundColor: "transparent",
+            backgroundColor: "#CDF",
             zIndex: "2147483647",
-            border: "1px dotted #48F",
+            borderLeft: `${borderLeftWidth}px solid #48F`,
+            borderTop: `${borderTopWidth}px solid #48F`,
+            borderRight: "1px solid #48F",
+            borderBottom: "1px solid #48F",
             ...selectionStyle,
         }
 
-        const characterBox = Object.assign(document.createElement("div"), { style });
+        const characterBox = document.createElement("div");
+        Object.assign(characterBox.style, style);
 
         document.body.appendChild(characterBox);
 
-        this.characterBox = characterBox;
-        console.log("line drawn: ", characterBox);
+        this.compositingBox = characterBox;
     }
 
     private removeCompositingBox() {
-        if (this.characterBox) {
-            this.characterBox.remove();
-            this.characterBox = undefined;
+        if (this.compositingBox) {
+            this.compositingBox.remove();
+            this.compositingBox = undefined;
         }
     }
 }
