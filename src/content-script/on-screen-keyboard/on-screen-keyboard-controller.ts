@@ -159,9 +159,10 @@ export class OnScreenKeyboardController {
 
         keyboardElement.addEventListener("mousedown", function (e) {
             e.preventDefault();
+            e.stopPropagation();
     
             if (e.button !== 0 || !(e.target instanceof HTMLElement)) {
-                return false;
+                return;
             }
     
             if (e.target === keyboardElement || e.target.classList.contains("row")) {
@@ -170,7 +171,7 @@ export class OnScreenKeyboardController {
                 self._keyboardMovement.mouse.startY = e.screenY;
             }
 
-            return false;
+            return;
         });
     
         document.addEventListener("mouseup", function dragMouseUpListener (e) {
@@ -243,6 +244,7 @@ export class OnScreenKeyboardController {
         keyCode: KeyCode,
     ) {
         e.preventDefault();
+        e.stopPropagation();
 
         const isHanMode = this._mode === KoreanKeyboardMode.Hangul;
         const isShift = this._isShift;

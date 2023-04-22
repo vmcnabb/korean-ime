@@ -241,7 +241,8 @@ export class HangulImeController {
     }
 
     private addListener (target: EventTarget, type: string, listener: EventListener) {
-        target.addEventListener(type, listener, true);
+        // todo - figure out whether we need to use capture or not
+        target.addEventListener(type, listener);
         this.eventListeners.push({ target, type, listener });
     }
 }
