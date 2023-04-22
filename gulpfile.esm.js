@@ -3,7 +3,7 @@ import del from "del";
 import replace from "gulp-replace";
 import log from "fancy-log";
 import packageJson from "./package.json";
-import { compileAndBundleJavascript } from "./compile-and-bundle-javascript";
+import { compileAndBundleTypescript } from "./compile-and-bundle-typescript";
 const sass = require('gulp-sass')(require('sass'));
 
 const buildTasks = series(
@@ -34,12 +34,12 @@ exports.clean = clean;
 export let buildMode;
 
 function setBuildModeToDev(cb) {
-    buildMode = "dev";
+    buildMode = "development";
     cb();
 }
 
 function setBuildModeToProd(cb) {
-    buildMode = "prod";
+    buildMode = "production";
     cb();
 }
 
@@ -68,7 +68,7 @@ function processManifest() {
 }
 
 function buildContentScript() {
-    return compileAndBundleJavascript(
+    return compileAndBundleTypescript(
         ["src/content-script/index.ts"],
         dest("dist"),
         "contentScript.js"
@@ -82,7 +82,7 @@ function buildStyles() {
 }
 
 function buildServiceWorker() {
-    return compileAndBundleJavascript(
+    return compileAndBundleTypescript(
         ["src/service-worker/index.ts"],
         dest("dist"),
         "serviceWorker.js"
@@ -97,7 +97,7 @@ function copyPopupConverterFiles() {
 }
 
 function buildPopupConverter() {
-    return compileAndBundleJavascript(
+    return compileAndBundleTypescript(
         "src/popup-converter/popup-converter.ts",
         dest("dist/popup-converter"),
         "popup-converter.js"

@@ -9,15 +9,16 @@ import terser from "gulp-terser";
 import buffer from "vinyl-buffer";
 import { buildMode } from "./gulpfile.esm";
 import tsify from "tsify";
+const envify = require('envify/custom')
 
 /**
- * Compiles a list of JS files into a single file for the browser.
+ * Compiles TS files into a single file for the browser.
  *
  * @param {string|string[]} globs
  * @param {NodeJS.ReadWriteStream} dest destination directory
  * @param {string} [rename] new name for the output file
  */
-export function compileAndBundleJavascript(globs, dest, rename = null) {
+export function compileAndBundleTypescript(globs, dest, rename = null) {
     globs = [].concat(globs);
 
     /** @type {string[]} */
@@ -30,16 +31,17 @@ export function compileAndBundleJavascript(globs, dest, rename = null) {
         null,
         files.map(entry => browserify({
             entries: entry,
-            debug: buildMode === "dev",
+            debug: buildMode === "development",
             transform: babelify
         })
             .plugin(tsify, { noImplicitAny: true })
+            .transform(envify({ NODE_ENV: buildMode }))
             .bundle()
             .pipe(source(rename || path.basename(entry)))
             .pipe(buffer())
         ));
 
-    if (buildMode === "prod") {
+    if (buildMode === "production") {
         browserfied = browserfied
             .pipe(terser())
             .pipe(replace(/console\.debug\((.*?)\);/g, ""));
