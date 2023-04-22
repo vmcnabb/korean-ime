@@ -1,4 +1,3 @@
-import { KoreanKeyboardMode } from "../extension-state/korean-keyboard-mode";
 import { StateManager } from "./state-manager";
 
 export function setupActionListener() {
@@ -7,15 +6,6 @@ export function setupActionListener() {
             return;
         }
 
-        toggleImeActive(tab.id);
-    });
-}
-
-function toggleImeActive(tabId: number) {
-    const isHangulMode = StateManager.instance.toggleHanYongMode(tabId) === KoreanKeyboardMode.Hangul;
-
-    chrome.action.setIcon({
-        tabId: tabId,
-        path: isHangulMode ? 'images/icon16h.png' : 'images/icon16a.png'
+        StateManager.instance.toggleHanYongMode(tab.id);
     });
 }

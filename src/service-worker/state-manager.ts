@@ -23,7 +23,7 @@ export class StateManager {
         return StateManager._instance;
     }
 
-    public toggleHanYongMode(tabId: number): KoreanKeyboardMode {
+    public toggleHanYongMode(tabId: number): void {
         let newMode: KoreanKeyboardMode = KoreanKeyboardMode.Hangul;
 
         this.setTabState(tabId, tabState => {
@@ -44,7 +44,12 @@ export class StateManager {
             };
         });
 
-        return newMode;
+        const isHangulMode = newMode === KoreanKeyboardMode.Hangul;
+        chrome.action.setIcon({
+            tabId: tabId,
+            path: isHangulMode ? 'images/icon16h.png' : 'images/icon16a.png'
+        });
+    
     }
 
     public toggleOnScreenKeyboard(tabId: number): boolean {
