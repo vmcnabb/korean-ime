@@ -77,7 +77,7 @@ export class InputAdapter extends CompositionAdapter {
         return returnVal;
     }
 
-    handleBackspace() {
+    deleteContentBackward() {
         const element = this.element;
 
         if (element.selectionStart == null || element.selectionEnd == null) {

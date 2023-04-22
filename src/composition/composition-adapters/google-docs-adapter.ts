@@ -20,8 +20,31 @@ export class GoogleDocsAdapter extends CompositionAdapter {
         return undefined;
     }
 
-    handleBackspace(): void {
-        // TODO: implement
+    deleteContentBackward(): void {
+        if (this.isCompositing) {
+            throw new Error("Cannot delete character backward when compositing");
+        }
+
+        const eventsToDispatch = [
+            new KeyboardEvent("keydown", {
+                key: "Backspace",
+                code: KeyCode.Backspace,
+                view: window
+            }),
+            new InputEvent("beforeinput", {
+                inputType: "deleteContentBackward"
+            }),
+            new InputEvent("input", {
+                inputType: "deleteContentBackward"
+            }),
+            new KeyboardEvent("keyup", {
+                key: "Backspace",
+                code: KeyCode.Backspace,
+                view: window
+            })
+        ];
+
+        this.dispatchEvents(eventsToDispatch);
     }
 
     blur() {
