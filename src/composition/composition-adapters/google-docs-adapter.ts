@@ -156,12 +156,17 @@ export class GoogleDocsAdapter extends CompositionAdapter {
         this.isCompositing = false;
     }
 
-    inputCharacter(data: string): void {
+    inputCharacter(data: string, keyCode: KeyCode): void {
         // simulate typing a character
         const eventsToDispatch = [
             new KeyboardEvent("keydown", {
                 key: data,
-                code: data,
+                code: keyCode,
+                view: window
+            }),
+            new KeyboardEvent("keypress", {
+                key: data,
+                code: keyCode,
                 view: window
             }),
             new InputEvent("beforeinput", {
@@ -174,7 +179,7 @@ export class GoogleDocsAdapter extends CompositionAdapter {
             }),
             new KeyboardEvent("keyup", {
                 key: data,
-                code: data,
+                code: keyCode,
                 view: window
             })
         ];
