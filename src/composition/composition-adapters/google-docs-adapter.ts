@@ -16,7 +16,7 @@ export class GoogleDocsAdapter extends CompositionAdapter {
     }
 
     selectPreviousCharacter(): string | undefined {
-        // TODO: Implement
+        // without using the Google Docs API, we can't read any text from the document
         return undefined;
     }
 
@@ -51,13 +51,14 @@ export class GoogleDocsAdapter extends CompositionAdapter {
         this.endComposition(this.currentBlock);
     }
 
-    deselect() {
-        if (!this.currentBlock) {
-            return;
+    collapseSelection(toStart?: boolean) {
+        if (this.isCompositing) {
+            throw new Error("Cannot collapse selection when compositing");
         }
 
-        this.element.dispatchEvent(new CompositionEvent("compositionend", { data: this.currentBlock }));
-        this.currentBlock = "";
+        this.guardSelection().getRangeAt(0).collapse(toStart);
+
+        // todo: see if this actually does anything
     }
 
     /*

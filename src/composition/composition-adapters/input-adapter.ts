@@ -36,7 +36,7 @@ export class InputAdapter extends CompositionAdapter {
      */
     endComposition(text: string) {
         this.updateComposition(text);
-        this.deselect();
+        this.collapseSelection();
     }
 
     inputCharacter(data: string): void {
@@ -57,8 +57,13 @@ export class InputAdapter extends CompositionAdapter {
         element.selectionEnd = end;
     }
 
-    deselect() {
-        this.element.selectionStart = this.element.selectionEnd;
+    collapseSelection(toStart?: boolean) {
+        if (toStart) {
+            this.element.selectionEnd = this.element.selectionStart;
+
+        } else {
+            this.element.selectionStart = this.element.selectionEnd;
+        }
     }
 
     selectPreviousCharacter() {

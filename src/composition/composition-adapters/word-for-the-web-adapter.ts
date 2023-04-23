@@ -1,11 +1,12 @@
 import { KeyCode } from "../../content-script/on-screen-keyboard/korean-keyboard-map";
 import { CompositionAdapter, DispatchableEvent } from "./composition-adapter";
-import { Take } from "../../typescript-typing/index";
 
 /**
  * Handles IME composition for Word for the Web.
  * Also works well with contentEditable elements in general as well as CKEditor.
- * It causes "interesting" behaviour in Google Docs.
+ * 
+ * It causes "interesting" behaviour in Google Docs. This suggests we are not quite
+ * implementing our text entry exactly the same as the browser does - which is our goal.
  * @param {HTMLElement} element
  */
 export class WordForTheWebAdapter extends CompositionAdapter {
@@ -81,12 +82,14 @@ export class WordForTheWebAdapter extends CompositionAdapter {
         }
     }
 
-    deselect() {
-        if (!this.isCompositing) {
-            return;
+    collapseSelection(toStart?: boolean) {
+        if (this.isCompositing) {
+            throw new Error("Cannot collapse selection when compositing");
         }
 
-        this.endComposition(this.currentBlock);
+        const range = this.guardSelection().getRangeAt(0);
+
+        range.collapse(toStart);
     }
 
     /*

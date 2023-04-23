@@ -13,7 +13,40 @@ export abstract class CompositionAdapter {
         return this.element;
     }
 
-    abstract deselect(): void;
+    /**
+     * Collapse selection to the end of the selection unless `toStart` is true.
+     * @param toStart if true, collapse the selection to the start, otherwise collapse to the end
+     */
+    abstract collapseSelection(toStart?: boolean): void;
+
+    /**
+     * Throws if there is no selection or the selection exceeds the bounds of this.element.
+     * @returns the current selection
+     */
+    protected guardSelection(): Selection {
+        const selection = window.getSelection();
+
+        // throw if selection doesn't contain our element
+        if (!selection || !this.element.contains(selection.anchorNode) || !this.element.contains(selection.focusNode)) {
+            throw new Error("Selection does not include element");
+        }
+
+        // throw if this is a multi-range selection
+        if (selection.rangeCount !== 1) {
+            throw new Error("Selection contains multiple ranges");
+        }
+
+        // throw if selection contains elements outside of `this.element`
+        const range = selection.getRangeAt(0);
+        const startNode = range.startContainer;
+        const endNode = range.endContainer;
+        if (!this.element.contains(startNode) || !this.element.contains(endNode)) {
+            throw new Error("Selection contains nodes outside of element");
+        }
+
+        return selection;
+    }
+
     abstract selectPreviousCharacter(): string | undefined;
 
     /**
