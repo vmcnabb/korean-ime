@@ -30,9 +30,10 @@ export class TextInputManager {
             }
 
             // todo: implement an insertAfter method in the composition adapter
-            compositionAdapter.deselect();
+            compositionAdapter.collapseSelection();
+            compositionAdapter.beginComposition(message.data, KeyCode.KeyK); // KeyK is arbitrary
             compositionAdapter.updateComposition(message.data, KeyCode.KeyK); // KeyK is arbitrary
-            compositionAdapter.deselect();
+            compositionAdapter.endComposition(message.data);
         },
         [TextInputMessageActions.TypeKey]: (message: TextInputMessage) => {
             if (!isTypeKeyMessage(message)) {
