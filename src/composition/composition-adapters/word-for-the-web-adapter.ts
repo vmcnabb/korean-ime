@@ -345,6 +345,7 @@ export class WordForTheWebAdapter extends CompositionAdapter {
         range.insertNode(span);
 
         const characterRect = span.getBoundingClientRect();
+        const selectionStyle = this.getAssignableStyles(span);
         span.parentNode!.removeChild(span);
 
         // Take the current scroll position into account
@@ -356,14 +357,11 @@ export class WordForTheWebAdapter extends CompositionAdapter {
             + scrollLeft;
         const top = characterRect.top + scrollTop;
 
-        const selectionStyle = this.getAssignableStyles(selection.anchorNode as Element);
-
         const borderLeftWidth = 1;
         const borderTopWidth = 1;
 
-        const style: Record<CSSStringKey, string> = {
+        const style: Partial<CSSStyleDeclaration> = {
             ...selectionStyle,
-            padding: "0",
             display: "inline-block",
             position: "absolute",
             top: `${top - borderTopWidth}px`,
@@ -386,17 +384,44 @@ export class WordForTheWebAdapter extends CompositionAdapter {
         this.compositingBox = characterBox;
     }
 
-    private getAssignableStyles(sourceElement: Element): Record<CSSStringKey, string> {
+    private getAssignableStyles(sourceElement: Element): Partial<CSSStyleDeclaration> {
         const computedStyles = window.getComputedStyle(sourceElement);
 
         const styles: Record<CSSStringKey, string> = {} as any;
 
+        // get the default styles for an element at document root
+        const testElement = document.createElement("div");
+        testElement.innerText = "test";
+        document.body.appendChild(testElement);
+        const defaultStyles = window.getComputedStyle(testElement);
+
         for (let i = 0; i < computedStyles.length; i++) {
             const styleName = computedStyles[i] as CSSStringKey
+            if (shouldExclude(styleName, computedStyles, defaultStyles)) {
+                continue;
+            }
             styles[styleName] = computedStyles.getPropertyValue(styleName);
         }
 
+        testElement.remove();
+
         return styles;
+
+        function shouldExclude(styleName: string, computedStyles: CSSStyleDeclaration, defaultStyles: CSSStyleDeclaration) {
+            const excludeStartWith = [
+                "background", "border", "outline", "position", "display", "visibility"
+            ];
+
+            if (excludeStartWith.some(prefix => styleName.startsWith(prefix))) {
+                return true;
+            }
+
+            if (computedStyles.getPropertyValue(styleName) === defaultStyles.getPropertyValue(styleName)) {
+                return true;
+            }
+
+            return false;
+        }
     }
 
     private removeCompositingBox() {
