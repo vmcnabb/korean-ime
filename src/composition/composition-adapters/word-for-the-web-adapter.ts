@@ -353,20 +353,15 @@ export class WordForTheWebAdapter extends CompositionAdapter {
             + scrollLeft;
         const top = characterRect.top + scrollTop;
 
-        const selectionStyle = Take(
-            window.getComputedStyle(selection.anchorNode as Element),
-            "fontFamily", "fontSize", "fontWeight", "fontStyle", "letterSpacing", "textAlign",
-            "textTransform", "textIndent", "textShadow", "direction", "writingMode", "unicodeBidi", "textOrientation",
-            "fontVariant", "fontFeatureSettings", "fontKerning", "fontStretch", "fontSynthesis",
-            "fontVariantAlternates", "fontVariantCaps", "fontVariantEastAsian", "fontVariantLigatures",
-            "fontVariantNumeric", "fontVariantPosition", "fontVariationSettings", "fontOpticalSizing", "fontPalette",
-            "fontSizeAdjust", "font"
-        );
+        const selectionStyle = this.getAssignableStyles(selection.anchorNode as Element);
 
         const borderLeftWidth = 1;
         const borderTopWidth = 1;
 
-        const style: Partial<CSSStyleDeclaration> = {
+        const style: Record<CSSStringKey, string> = {
+            ...selectionStyle,
+            padding: "0",
+            display: "inline-block",
             position: "absolute",
             top: `${top - borderTopWidth}px`,
             left: `${left - borderLeftWidth}px`,
@@ -378,7 +373,6 @@ export class WordForTheWebAdapter extends CompositionAdapter {
             borderTop: `${borderTopWidth}px solid #48F`,
             borderRight: "1px solid #48F",
             borderBottom: "1px solid #48F",
-            ...selectionStyle,
         }
 
         const characterBox = document.createElement("div");
@@ -389,6 +383,19 @@ export class WordForTheWebAdapter extends CompositionAdapter {
         this.compositingBox = characterBox;
     }
 
+    private getAssignableStyles(sourceElement: Element): Record<CSSStringKey, string> {
+        const computedStyles = window.getComputedStyle(sourceElement);
+
+        const styles: Record<CSSStringKey, string> = {} as any;
+
+        for (let i = 0; i < computedStyles.length; i++) {
+            const styleName = computedStyles[i] as CSSStringKey
+            styles[styleName] = computedStyles.getPropertyValue(styleName);
+        }
+
+        return styles;
+    }
+
     private removeCompositingBox() {
         if (this.compositingBox) {
             this.compositingBox.remove();
@@ -396,3 +403,9 @@ export class WordForTheWebAdapter extends CompositionAdapter {
         }
     }
 }
+
+type StringStyleKeys<T> = {
+    [K in keyof T]: T[K] extends string ? K : never;
+}[keyof T];
+
+type CSSStringKey = Extract<StringStyleKeys<CSSStyleDeclaration>, string>;
