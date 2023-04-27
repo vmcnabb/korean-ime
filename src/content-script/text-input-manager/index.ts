@@ -5,11 +5,15 @@ import { CompositionAdapterFactory } from "../../composition/composition-adapter
 import { isHangulCharacter } from "../../mappings";
 import { KeyCode } from "../on-screen-keyboard/korean-keyboard-map";
 import { TextInputMessage, TextInputMessageActions, isInsertTextAfterSelectionMessage, isTypeKeyMessage } from "./message-definitions";
+import { SupportedCompositionFeatures } from "src/composition/composition-adapters/composition-adapter";
+
+const nonTextInputTypes = ["button", "checkbox", "file", "hidden", "image", "radio", "range", "submit", "password"];
+const inputSelector = `input:not(${nonTextInputTypes.map(t => `[type=${t}]`).join(",")})`;
+const textInputElementsSelector = `[contenteditable=true],textarea,${inputSelector}`;
 
 export class TextInputManager {
     private imeControllers = new Map<HTMLElement, HangulImeController>();
     private textEntryMode: KoreanKeyboardMode = KoreanKeyboardMode.English;
-    private refreshTextInputElementsInterval: number | undefined;
 
     private messageHandlers: ActionHandlers<TextInputMessage, TextInputMessageActions> = {
         [TextInputMessageActions.InsertTextAfterSelection]: (message: TextInputMessage) => {
@@ -52,24 +56,21 @@ export class TextInputManager {
     public setMode(mode: KoreanKeyboardMode) {
         this.textEntryMode = mode;
 
-        const self = this;
-
-        if (this.refreshTextInputElementsInterval) {
-            window.clearInterval(this.refreshTextInputElementsInterval);
-            this.refreshTextInputElementsInterval = undefined;
-        }
-
-        if (this.textEntryMode == KoreanKeyboardMode.Hangul) {
-            this.refreshTextInputElements();
-            this.refreshTextInputElementsInterval = window.setInterval(function () {
-                self.refreshTextInputElements();
-            }, 400);
-
-        } else {
-            for (const controller of this.imeControllers.values()) {
+        for (const controller of this.imeControllers.values()) {
+            if (this.textEntryMode == KoreanKeyboardMode.Hangul) {
+                controller.activate();
+            } else {
                 controller.deactivate();
             }
         }
+    }
+
+    public setActiveElement(element: HTMLElement): SupportedCompositionFeatures | undefined {
+        // check if element matches the selector `textInputElementsSelector`
+        if (element.matches(textInputElementsSelector)) {
+            return this.processElement(element);
+        }
+        return;
     }
 
     private enterCharacter(char: string, keyCode: KeyCode) {
@@ -88,30 +89,12 @@ export class TextInputManager {
             imeController.addJamo(char, keyCode);
 
         } else {
-            if (char === "\b") {
+            if (KeyCode.Backspace === keyCode) {
                 imeController.handleBackspace();
             } else {
                 imeController.addCharacter(char, keyCode);
             }
         }
-    }
-
-    /**
-     * Check for any new text input elements and attach an IME controller to them.
-     * @param doc 
-     * @returns 
-     */
-    private refreshTextInputElements() {
-        const nonTextInputTypes = ["button", "checkbox", "file", "hidden", "image", "radio", "range", "submit"];
-        const inputSelector = `input:not(${nonTextInputTypes.map(t => `[type=${t}]`).join(",")})`;
-        const textInputElementsSelector = `[contenteditable=true],textarea,${inputSelector}`;
-
-        const elements = document.querySelectorAll<HTMLElement>(textInputElementsSelector);
-        for (const element of elements) {
-            this.processElement(element);
-        }
-
-        return true;
     }
 
     private processElement(element: HTMLElement) {
@@ -130,6 +113,8 @@ export class TextInputManager {
                 imeController.deactivate();
             }
         }
+
+        return imeController.getCompositionFeatures();
     }
 
     private getActiveElement(document: Document): HTMLElement | null {
@@ -153,7 +138,12 @@ export class TextInputManager {
             element = document.activeElement;
         }
 
-        return element instanceof HTMLElement ? element : null;
+        if (element instanceof HTMLElement) {
+            this.processElement(element);
+            return element;
+        }
+
+        return null;
     }
 
     private isObjectOrIframe(element: Element): element is HTMLObjectElement | HTMLIFrameElement {

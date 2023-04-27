@@ -80,7 +80,8 @@ export function isModifierKey(code: KeyCode): boolean {
     return [
         KeyCode.ShiftLeft, KeyCode.ShiftRight,
         KeyCode.ControlLeft, KeyCode.ControlRight,
-        KeyCode.MetaLeft, KeyCode.MetaRight
+        KeyCode.MetaLeft, KeyCode.MetaRight,
+        KeyCode.AltLeft, KeyCode.AltRight,
     ].includes(code);
 }
 

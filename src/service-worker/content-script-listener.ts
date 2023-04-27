@@ -1,4 +1,4 @@
-import { ContentScriptMessage, ContentScriptRequestAction } from "../messaging";
+import { ContentScriptMessage, ContentScriptRequestAction } from "../messaging/content-script-request-messages";
 import { StateManager } from "./state-manager";
 import { KeyCode } from "../content-script/on-screen-keyboard/korean-keyboard-map";
 import { TextInputMessage, TextInputMessageActions } from "../content-script/text-input-manager/message-definitions";
@@ -24,6 +24,8 @@ export class ContentScriptListener {
             throw new Error("ContentScriptListener is already listening");
         }
 
+        this.isListening = true;
+
         // listen for ContentScriptRequest messages and handle them
         chrome.runtime.onMessage.addListener((message: ContentScriptMessage, sender) => {
             console.debug("ContentScriptListener received message: ", message);
@@ -44,8 +46,21 @@ export class ContentScriptListener {
                 case ContentScriptRequestAction.RefreshState:
                     StateManager.instance.sendStateToTab(sender.tab.id);
                     break;
+
+                case ContentScriptRequestAction.UpdateCompositionFeatures:
+                    this.forwardMessageToTab(sender.tab.id, message);
+                    break;
             }
         });
+
+        // listen for active tab changes and send the state to the new tab
+        chrome.tabs.onActivated.addListener(activeInfo => {
+            StateManager.instance.sendStateToTab(activeInfo.tabId);
+        });
+    }
+
+    private forwardMessageToTab(tabId: number, message: ContentScriptMessage) {
+        chrome.tabs.sendMessage(tabId, message);
     }
 
     private sendKey(tabId: number, data: {key: string, keyCode: KeyCode}) {

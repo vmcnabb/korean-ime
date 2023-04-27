@@ -2,8 +2,9 @@
 import { KeyCode } from "./on-screen-keyboard/korean-keyboard-map";
 import { TextInputManager } from "./text-input-manager";
 import { KoreanKeyboardMode } from "../extension-state/korean-keyboard-mode";
-import { ContentScriptMessage, ContentScriptRequestAction, TabStateMessage, isTabStateMessage } from "../messaging";
+import { TabStateMessage, isTabStateMessage } from "../messaging";
 import { isTextInputMessage } from "./text-input-manager/message-definitions";
+import { ContentScriptMessage, ContentScriptRequestAction, isContentScriptRequest } from "../messaging/content-script-request-messages";
 
 let textEntryMode = KoreanKeyboardMode.English;
 const isTopWindow = window === top;
@@ -14,7 +15,7 @@ const keyboardController = isTopWindow
     : undefined;
 
 setupMessageListener();
-setupHanYongKeyListener();
+setupDocumentListeners();
 requestState();
 
 function requestState() {
@@ -35,6 +36,17 @@ function setupMessageListener() {
         if (isTextInputMessage(message)) {
             textInputManager.handleMessage(message);
         }
+
+        if (isContentScriptRequest(message)) {
+            switch (message.action) {
+                case ContentScriptRequestAction.UpdateCompositionFeatures:
+                    keyboardController?.setCompositionFeatures(message.data);
+                    break;
+
+                case ContentScriptRequestAction.NoActiveElement:
+                    keyboardController
+            }
+        }
     });
 }
 
@@ -50,7 +62,7 @@ function handleTabStateMessage(message: TabStateMessage) {
     }
 }
 
-function setupHanYongKeyListener() {
+function setupDocumentListeners() {
     document.addEventListener(
         "keydown",
         e => {
@@ -61,6 +73,30 @@ function setupHanYongKeyListener() {
                 });
                 e.preventDefault();
             }
+        },
+        true
+    );
+
+    // whenever a new element receives focus, notify text input manager
+    document.addEventListener(
+        "focus",
+        e => {
+            const element = e.target as HTMLElement;
+            const compositionFeatures = textInputManager.setActiveElement(element);
+
+            if (!compositionFeatures) {
+                chrome.runtime.sendMessage<ContentScriptMessage>({
+                    type: "contentScriptRequest",
+                    action: ContentScriptRequestAction.NoActiveElement
+                });
+                return;
+            }
+
+            chrome.runtime.sendMessage<ContentScriptMessage>({
+                type: "contentScriptRequest",
+                action: ContentScriptRequestAction.UpdateCompositionFeatures,
+                data: compositionFeatures,
+            });
         },
         true
     );

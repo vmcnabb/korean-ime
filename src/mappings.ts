@@ -37,7 +37,7 @@ class TwoWayMap {
 /**
 * @param {string} char 
 */
-export function isHangulCharacter (char: string | undefined) {
+export function isHangulCharacter (char: string) {
     if (!char) {
         return false;
     }
