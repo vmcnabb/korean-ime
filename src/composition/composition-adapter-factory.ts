@@ -4,6 +4,7 @@ import { CompositionAdapter } from "./composition-adapters/composition-adapter";
 import { createLoggingProxy } from "../dev-helpers/logging-proxy";
 import { WordForTheWebAdapter } from "./composition-adapters/word-for-the-web-adapter";
 import { CkEditorAdapater } from "./composition-adapters/ck-editor-adapter";
+import { ContentEditableAdapter } from "./composition-adapters/content-editable-adapter";
 
 export class CompositionAdapterFactory {
     static createCompositionAdapter (element: HTMLElement) : CompositionAdapter | undefined {
@@ -17,8 +18,11 @@ export class CompositionAdapterFactory {
             } else if (isCkEditorElement(element)) {
                 return new CkEditorAdapater(element);
 
-            } else if (element.isContentEditable) {
+            } else if (isWordForTheWebElement(element)) {
                 return new WordForTheWebAdapter(element);
+
+            } else if (element.isContentEditable) {
+                return new ContentEditableAdapter(element);
             }
 
             return undefined;
@@ -44,4 +48,9 @@ function isGoogleDocsElement(element: HTMLElement) {
 function isCkEditorElement(element: HTMLElement) {
     return element.isContentEditable &&
         element.classList.contains("ck-editor__editable");
+}
+
+function isWordForTheWebElement(element: HTMLElement) {
+    return element.isContentEditable &&
+        element.id === "WACViewPanel_EditingElement";
 }

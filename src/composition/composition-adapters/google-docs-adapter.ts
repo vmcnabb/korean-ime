@@ -1,6 +1,6 @@
 import { KeyCode } from "../../content-script/on-screen-keyboard/korean-keyboard-map";
-import { CompositionAdapter } from "./composition-adapter";
-import { setAsKimeEvent } from "../../messaging/dom-events";
+import { CompositionAdapter, DispatchableAction } from "./composition-adapter";
+import { methodNotSupported } from "../../decorators/method-not-supported";
 
 /**
  * Handles IME composition (and selection) for Google Docs.
@@ -15,49 +15,28 @@ export class GoogleDocsAdapter extends CompositionAdapter {
         super(element);
     }
 
-    selectPreviousCharacter(): string | undefined {
-        // without using the Google Docs API, we can't read any text from the document
-        return undefined;
-    }
+    @methodNotSupported
+    getPreviousCharacter(): string | undefined { return; }
 
-    deleteContentBackward(): void {
+    deleteContentBackwards(): void {
         if (this.isCompositing) {
             throw new Error("Cannot delete character backward when compositing");
         }
 
-        const eventsToDispatch = [
-            new KeyboardEvent("keydown", {
-                key: "Backspace",
-                code: KeyCode.Backspace,
-                view: window
-            }),
-            new InputEvent("beforeinput", {
-                inputType: "deleteContentBackward"
-            }),
-            new InputEvent("input", {
-                inputType: "deleteContentBackward"
-            }),
-            new KeyboardEvent("keyup", {
-                key: "Backspace",
-                code: KeyCode.Backspace,
-                view: window
-            })
-        ];
-
-        this.dispatchEvents(eventsToDispatch);
+        super._deleteContentBackwards(() => {});
     }
 
     blur() {
         this.endComposition(this.currentBlock);
     }
 
+    @methodNotSupported
     collapseSelection(toStart?: boolean) {
         if (this.isCompositing) {
             throw new Error("Cannot collapse selection when compositing");
         }
 
         this.guardSelection().getRangeAt(0).collapse(toStart);
-
         // todo: see if this actually does anything
     }
 
@@ -76,7 +55,7 @@ export class GoogleDocsAdapter extends CompositionAdapter {
             throw new Error("Cannot begin composition when already compositing");
         }
 
-        const eventsToDispatch = [
+        const actions: DispatchableAction[] = [
             new KeyboardEvent("keydown", {
                 key: "Process",
                 code: keyCode,
@@ -106,11 +85,7 @@ export class GoogleDocsAdapter extends CompositionAdapter {
             }),
         ];
 
-        eventsToDispatch.forEach(event => {
-            setAsKimeEvent(event);
-            this.element.dispatchEvent(event);
-        });
-
+        super.dispatchActions(actions);
         this.isCompositing = true;
     }
 
@@ -128,7 +103,7 @@ export class GoogleDocsAdapter extends CompositionAdapter {
             throw new Error("Cannot update composition when not compositing");
         }
 
-        const eventsToDispatch = [
+        const actions: DispatchableAction[] = [
             new KeyboardEvent("keydown", {
                 key: "Process",
                 code: keyCode,
@@ -157,11 +132,7 @@ export class GoogleDocsAdapter extends CompositionAdapter {
             })
         ];
 
-        eventsToDispatch.forEach(event => {
-            setAsKimeEvent(event);
-            this.element.dispatchEvent(event);
-        });
-
+        super.dispatchActions(actions);
         this.currentBlock = data;
     }
 
@@ -179,34 +150,7 @@ export class GoogleDocsAdapter extends CompositionAdapter {
     }
 
     inputCharacter(data: string, keyCode: KeyCode): void {
-        // simulate typing a character
-        const eventsToDispatch = [
-            new KeyboardEvent("keydown", {
-                key: data,
-                code: keyCode,
-                view: window
-            }),
-            new KeyboardEvent("keypress", {
-                key: data,
-                code: keyCode,
-                view: window
-            }),
-            new InputEvent("beforeinput", {
-                data: data,
-                inputType: "insertText"
-            }),
-            new InputEvent("input", {
-                data: data,
-                inputType: "insertText"
-            }),
-            new KeyboardEvent("keyup", {
-                key: data,
-                code: keyCode,
-                view: window
-            })
-        ];
-
-        this.dispatchEvents(eventsToDispatch);
+        super._inputCharacter(data, keyCode, () => {});
     }
 
     /** @returns {EventTarget} */

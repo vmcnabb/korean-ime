@@ -1,10 +1,21 @@
+import { isMethodSupported } from "../../decorators/method-not-supported";
 import { KeyCode } from "../../content-script/on-screen-keyboard/korean-keyboard-map";
 import { setAsKimeEvent } from "../../messaging/dom-events";
 
-export type DispatchableEvent = KeyboardEvent | CompositionEvent | InputEvent | (() => void);
+type DispatchableEvent = KeyboardEvent | CompositionEvent | InputEvent;
+
+type MethodKeys<T extends object> = keyof T & {
+    [K in keyof T]: T[K] extends (...args: any[]) => any ? K : never;
+}[keyof T];
+
+type KeysToFilter = "supportsMethods" | "getSupportedMethods";
+type FilteredKeys<T extends object> = Exclude<MethodKeys<T>, KeysToFilter>;
+
+export type SupportedCompositionFeatures =  Record<FilteredKeys<CompositionAdapter>, boolean>
+export type DispatchableAction = DispatchableEvent | (() => void);
 
 export abstract class CompositionAdapter {
-    constructor (protected element: HTMLElement) {}
+    constructor(protected element: HTMLElement) { }
 
     /** Is called when focus has blurred from where the current character is being composited */
     abstract blur(): void;
@@ -47,16 +58,42 @@ export abstract class CompositionAdapter {
         return selection;
     }
 
-    abstract selectPreviousCharacter(): string | undefined;
+    /**
+     * Returns the character immediately prior to the caret. If selection is not collapsed, returns undefined.
+     */
+    abstract getPreviousCharacter(): string | undefined;
 
     /**
-     * When there is a selection, delete it.
-     * Otherwise, delete the character preceding the cursor when there is no selection.
-     * Typically will delete to the left unless the element has a different text direction.
-     * 
-     * Both of these situations are typically handled by emulating a backspace keypress.
+     * Delete selection if exists, otherwise delete the character immediately before the caret.
      */
-    abstract deleteContentBackward(): void;
+    abstract deleteContentBackwards(): void;
+    protected _deleteContentBackwards(deleteFn: () => void) {
+        const eventsToDispatch: DispatchableAction[] = [
+            new KeyboardEvent("keydown", {
+                key: "Backspace",
+                code: KeyCode.Backspace,
+                view: window,
+                bubbles: true,
+            }),
+            new InputEvent("beforeinput", {
+                inputType: "deleteContentBackward",
+                bubbles: true,
+            }),
+            deleteFn,
+            new InputEvent("input", {
+                inputType: "deleteContentBackward",
+                bubbles: true,
+            }),
+            new KeyboardEvent("keyup", {
+                key: "Backspace",
+                code: KeyCode.Backspace,
+                view: window,
+                bubbles: true,
+            }),
+        ];
+
+        this.dispatchActions(eventsToDispatch);
+    }
 
     /**
      * Inputs a character without triggering composition. Used for punctuation, numbers, and
@@ -67,6 +104,43 @@ export abstract class CompositionAdapter {
      * @param data the character to input
      */
     abstract inputCharacter(data: string, keyCode: KeyCode): void;
+    protected _inputCharacter(data: string, keyCode: KeyCode, inputCharacterFn: () => void) {
+        // simulate the events that would be fired when typing a character
+        const eventsToDispatch: DispatchableAction[] = [
+            new KeyboardEvent("keydown", {
+                key: data,
+                code: keyCode,
+                view: window,
+                bubbles: true,
+            }),
+            new KeyboardEvent("keypress", {
+                key: data,
+                code: keyCode,
+                bubbles: true,
+                view: window
+            }),
+            new InputEvent("beforeinput", {
+                data: data,
+                bubbles: true,
+                inputType: "insertText",
+            }),
+            inputCharacterFn,
+            new InputEvent("input", {
+                data: data,
+                bubbles: true,
+                inputType: "insertText"
+            }),
+            new KeyboardEvent("keyup", {
+                key: data,
+                code: keyCode,
+                bubbles: true,
+                view: window
+            })
+        ];
+
+        this.dispatchActions(eventsToDispatch);
+    }
+
 
     abstract beginComposition(data: string, keyCode: KeyCode): void;
     abstract updateComposition(data: string, keyCode: KeyCode): void;
@@ -108,17 +182,55 @@ export abstract class CompositionAdapter {
     /**
      * Dispatches a list of events and functions. Sets all events as Kime events unless
      * the events are dispatched from a function included in the list.
-     * @param events 
+     * @param actions 
      */
-    protected dispatchEvents(events: DispatchableEvent[]) {
-        events.forEach(event => {
-            if (event instanceof Event) {
-                setAsKimeEvent(event);
-                this.element.dispatchEvent(event);
+    protected dispatchActions(actions: DispatchableAction[]) {
+        actions.forEach(action => {
+            if (isDispatchableEvent(action)) {
+                setAsKimeEvent(action);
+                this.element.dispatchEvent(action);
+
+            } else if (isDispatchableFunction(action)) {
+                action();
+
             } else {
-                event();
+                throw new Error("Unknown action type");
             }
         });
     }
 
+    /**
+     * Takes in an method from the controller object e.g. `compositionAdapter.getListenerTarget` as a parameter 
+     * and returns true if this adapter supports that action.
+     * 
+     * Methods are considered supported by default unless they are decorated with `@methodNotSupported`.
+     * @param method 
+     */
+    supportsMethods(...name: FilteredKeys<CompositionAdapter>[]): boolean {
+        return name.every(n => isMethodSupported(this, n));
+    }
+
+    getSupportedMethods(): SupportedCompositionFeatures {
+        const prototype = Object.getPrototypeOf(this);
+
+        const methodNames = Object
+            .getOwnPropertyNames(prototype)
+            .map(n => n as keyof CompositionAdapter)
+            .filter(n => this[n] instanceof Function)
+            .map(n => n as MethodKeys<CompositionAdapter>);
+
+        const record = {} as Record<MethodKeys<CompositionAdapter>, boolean>;
+        for (const name of methodNames) {
+            record[name] = isMethodSupported(this, name);
+        }
+        return record;
+    }
+}
+
+function isDispatchableFunction(action: DispatchableAction): action is () => void {
+    return typeof action === "function";
+}
+
+function isDispatchableEvent(action: DispatchableAction): action is DispatchableEvent {
+    return action instanceof Event;
 }

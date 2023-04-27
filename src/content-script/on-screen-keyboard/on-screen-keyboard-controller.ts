@@ -1,7 +1,8 @@
-import { ContentScriptMessage, ContentScriptRequestAction } from "../../messaging";
+import { ContentScriptMessage, ContentScriptRequestAction } from "../../messaging/content-script-request-messages";
 import { KoreanKeyboardMode } from "../../extension-state/korean-keyboard-mode";
 import { KeyCode, KeyRecord, keyMap } from "./korean-keyboard-map";
 import { KeyboardLayout, defaultLayout } from "./layouts";
+import { SupportedCompositionFeatures } from "../../composition/composition-adapters/composition-adapter";
 
 export class OnScreenKeyboardController {
     private _keyboardElement: HTMLDivElement;
@@ -21,9 +22,12 @@ export class OnScreenKeyboardController {
 
     private _mode = KoreanKeyboardMode.English;
     private _isShift = false;
+    private _compositionFeatures: SupportedCompositionFeatures | undefined;
+    private _keyElements = new Map<KeyCode, HTMLElement>();
 
     constructor() {
         this._keyboardElement = this.createKeyboard();
+        this.setMode(this._mode);
     }
 
     public setMode(mode: KoreanKeyboardMode) {
@@ -39,6 +43,19 @@ export class OnScreenKeyboardController {
     public setShift(shift: boolean) {
         this._isShift = shift;
         this._keyboardElement.classList.toggle("shift", shift);
+    }
+
+    public setCompositionFeatures(features: SupportedCompositionFeatures) {
+        this._compositionFeatures = features;
+        this.updateKeyVisibility();
+    }
+
+    private updateKeyVisibility() {
+        if (this._compositionFeatures) {
+            this._keyElements
+                .get(KeyCode.Backspace)
+                ?.classList.toggle("disabled", !this._compositionFeatures.deleteContentBackwards);
+        }
     }
 
     private moveKeyboard(dx: number, dy: number) {
@@ -238,13 +255,25 @@ export class OnScreenKeyboardController {
         return keyboardElement;
     }
 
-    private handleMouseDown(
+    /**
+     * Handles mouse down events for KBD elements, i.e. keys on the keyboard.
+     * @param e 
+     * @param key 
+     * @param keyCode 
+     */
+    private handleKbdMouseDown(
         e: MouseEvent,
         key: KeyRecord,
         keyCode: KeyCode,
     ) {
         e.preventDefault();
         e.stopPropagation();
+        e.stopImmediatePropagation();
+
+        const target = e.target as HTMLElement;
+        if (target.closest("kbd")!.classList.contains("disabled")) {
+            return;
+        }
 
         const isHanMode = this._mode === KoreanKeyboardMode.Hangul;
         const isShift = this._isShift;
@@ -276,10 +305,8 @@ export class OnScreenKeyboardController {
             this.sendKey(" ", keyCode);
     
         } else if (keyCode === KeyCode.Backspace) {
-            this.sendKey("\b", keyCode);
+            this.sendKey("Backspace", keyCode);
         }
-    
-        return false;
     }
 
     private sendKey(key: string, keyCode: KeyCode) {
@@ -359,8 +386,8 @@ export class OnScreenKeyboardController {
         const key = keyMap[keyCode];
     
         keyElement.className = keyCode;
-        keyElement.addEventListener("mousedown", e => this.handleMouseDown(e, key, keyCode));
-    
+        keyElement.addEventListener("mousedown", e => this.handleKbdMouseDown(e, key, keyCode));
+
         this.renderNormalKeyLabels(keyElement, key);
         this.renderJamoKeyLabels(keyElement, key);
         this.renderSpecialKeyLabels(keyElement, key, keyCode);
@@ -370,6 +397,8 @@ export class OnScreenKeyboardController {
         }
     
         rowElement.appendChild(keyElement);
+
+        return keyElement;
     }
     
     /**
@@ -377,11 +406,16 @@ export class OnScreenKeyboardController {
      * @param keyboard the keyboard element to be rendered
      */
      private renderKeyboard(keyboardELement: HTMLDivElement, layout: KeyboardLayout): void {
+        this._keyElements.clear();
+
         layout.forEach(row => {
             const rowElement = document.createElement("div");
             rowElement.className = "row";
 
-            row.forEach(keyCode => this.renderKey(rowElement, keyCode));
+            for (const keyCode of row) {
+                const keyElement = this.renderKey(rowElement, keyCode);
+                this._keyElements.set(keyCode, keyElement);
+            }
 
             keyboardELement.appendChild(rowElement);
         });
