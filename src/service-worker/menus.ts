@@ -29,8 +29,7 @@ export function setupMenuListener() {
                 break;
 
             case menus.onScreenKeyboard.id:
-                const isKeyboardEnabled = StateManager.instance.toggleOnScreenKeyboard(tab.id);
-                chrome.contextMenus.update(menus.onScreenKeyboard.id, { checked: isKeyboardEnabled });
+                StateManager.instance.toggleOnScreenKeyboard(tab.id);
                 break;
         }
     });
