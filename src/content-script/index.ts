@@ -2,9 +2,9 @@
 import { KeyCode } from "./on-screen-keyboard/korean-keyboard-map";
 import { TextInputManager } from "./text-input-manager";
 import { KoreanKeyboardMode } from "../extension-state/korean-keyboard-mode";
-import { TabStateMessage, isTabStateMessage } from "../messaging";
-import { isTextInputMessage } from "./text-input-manager/message-definitions";
-import { ContentScriptMessage, ContentScriptRequestAction, isContentScriptRequest } from "../messaging/content-script-request-messages";
+import { ContentScriptRequestAction, ContentScriptRequestMessage } from "../messaging/content-to-service-messages";
+import { ContentScriptBroadcastActions, ContentScriptBroadcastMessage, isContentScriptBroadcastMessage } from "../messaging/content-to-content-messages";
+import { ServiceScriptMessage, ServiceScriptMessageActions, isServiceScriptMessage } from "../messaging/service-to-content-messages";
 
 let textEntryMode = KoreanKeyboardMode.English;
 const isTopWindow = window === top;
@@ -19,7 +19,7 @@ setupDocumentListeners();
 requestState();
 
 function requestState() {
-    chrome.runtime.sendMessage<ContentScriptMessage>({
+    chrome.runtime.sendMessage<ContentScriptRequestMessage>({
         type: "contentScriptRequest",
         action: ContentScriptRequestAction.RefreshState,
     });
@@ -29,28 +29,27 @@ function setupMessageListener() {
     chrome.runtime.onMessage.addListener(message => {
         console.debug("content.js: received message", message);
 
-        if (isTabStateMessage(message)) {
-            handleTabStateMessage(message);
-        }
-
-        if (isTextInputMessage(message)) {
-            textInputManager.handleMessage(message);
-        }
-
-        if (isContentScriptRequest(message)) {
+        if (isServiceScriptMessage(message)) {
             switch (message.action) {
-                case ContentScriptRequestAction.UpdateCompositionFeatures:
+                case ServiceScriptMessageActions.UpdateState:
+                    handleTabStateMessage(message);
+                    break;
+            }
+        }
+
+        textInputManager.handleMessage(message);
+
+        if (isContentScriptBroadcastMessage(message)) {
+            switch (message.action) {
+                case ContentScriptBroadcastActions.UpdateCompositionFeatures:
                     keyboardController?.setCompositionFeatures(message.data);
                     break;
-
-                case ContentScriptRequestAction.NoActiveElement:
-                    keyboardController
             }
         }
     });
 }
 
-function handleTabStateMessage(message: TabStateMessage) {
+function handleTabStateMessage(message: ServiceScriptMessage.TabStateMessage) {
     if (message.data.koreanKeyboardMode !== textEntryMode) {
         setTextEntryMode(message.data.koreanKeyboardMode);
     }
@@ -67,7 +66,7 @@ function setupDocumentListeners() {
         "keydown",
         e => {
             if (e.code === KeyCode.AltRight && !e.repeat) {
-                chrome.runtime.sendMessage<ContentScriptMessage>({
+                chrome.runtime.sendMessage<ContentScriptRequestMessage>({
                     type: "contentScriptRequest",
                     action: ContentScriptRequestAction.ToggleHanYongMode,
                 });
@@ -85,16 +84,13 @@ function setupDocumentListeners() {
             const compositionFeatures = textInputManager.setActiveElement(element);
 
             if (!compositionFeatures) {
-                chrome.runtime.sendMessage<ContentScriptMessage>({
-                    type: "contentScriptRequest",
-                    action: ContentScriptRequestAction.NoActiveElement
-                });
+                // todo: notify everyone that there is no active element
                 return;
             }
 
-            chrome.runtime.sendMessage<ContentScriptMessage>({
-                type: "contentScriptRequest",
-                action: ContentScriptRequestAction.UpdateCompositionFeatures,
+            chrome.runtime.sendMessage<ContentScriptBroadcastMessage>({
+                type: "broadcast",
+                action: ContentScriptBroadcastActions.UpdateCompositionFeatures,
                 data: compositionFeatures,
             });
         },

@@ -6,10 +6,13 @@ Install the latest release from the Chrome Web Store:
 
 ### Features
 * Added on-screen keyboard
+* Added support for Word for the Web
+* Added support for CKEditor
 
 ### Internal
 * Updated manifest to v3
 * Migrated project to TypeScript
+* Switched to Parcel for builds
 
 # 2.2.2
 2020-01-12

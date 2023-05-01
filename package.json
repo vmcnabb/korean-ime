@@ -4,11 +4,15 @@
   "description": "Allow people to type Hanguel in Chrome when the OS does not have a Korean IME installed.",
   "private": true,
   "source": "src/manifest.json",
+  "ts-node": {
+    "project": "./tsconfig.json"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "cross-env NODE_ENV=production parcel build",
+    "build": "npm run check && cross-env NODE_ENV=production parcel build",
     "start": "cross-env NODE_ENV=development parcel watch src/manifest.json --host localhost --config @parcel/config-webextension",
-    "build-dev": "cross-env NODE_ENV=development parcel build --no-optimize"
+    "build-dev": "cross-env NODE_ENV=development parcel build --no-optimize",
+    "check": "tsc --noEmit"
   },
   "repository": {
     "type": "git",
