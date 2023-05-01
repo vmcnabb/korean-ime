@@ -2,6 +2,7 @@ import { isMethodSupported } from "../../decorators/method-not-supported";
 import { KeyCode } from "../../content-script/on-screen-keyboard/korean-keyboard-map";
 import { setAsKimeEvent } from "../../messaging/dom-events";
 import { trace } from "../../decorators/trace";
+import { DummyAdapter } from "./dummy-adapter";
 
 type DispatchableEvent = KeyboardEvent | CompositionEvent | InputEvent;
 
@@ -213,11 +214,12 @@ export abstract class CompositionAdapter {
     }
 
     getSupportedMethods(): SupportedCompositionFeatures {
-        const prototype = Object.getPrototypeOf(this);
+        const prototype = DummyAdapter.prototype;
 
         const methodNames = Object
             .getOwnPropertyNames(prototype)
             .map(n => n as keyof CompositionAdapter)
+            .filter(n => n as string !== "constructor")
             .filter(n => this[n] instanceof Function)
             .map(n => n as MethodKeys<CompositionAdapter>);
 
