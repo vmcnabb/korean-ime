@@ -1,6 +1,7 @@
 import { isMethodSupported } from "../../decorators/method-not-supported";
 import { KeyCode } from "../../content-script/on-screen-keyboard/korean-keyboard-map";
 import { setAsKimeEvent } from "../../messaging/dom-events";
+import { trace } from "../../decorators/trace";
 
 type DispatchableEvent = KeyboardEvent | CompositionEvent | InputEvent;
 
@@ -11,9 +12,10 @@ type MethodKeys<T extends object> = keyof T & {
 type KeysToFilter = "supportsMethods" | "getSupportedMethods";
 type FilteredKeys<T extends object> = Exclude<MethodKeys<T>, KeysToFilter>;
 
-export type SupportedCompositionFeatures =  Record<FilteredKeys<CompositionAdapter>, boolean>
+export type SupportedCompositionFeatures = Record<FilteredKeys<CompositionAdapter>, boolean>
 export type DispatchableAction = DispatchableEvent | (() => void);
 
+@trace
 export abstract class CompositionAdapter {
     constructor(protected element: HTMLElement) { }
 
