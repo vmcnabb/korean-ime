@@ -1,6 +1,7 @@
 import { ServiceScriptMessage, ServiceScriptMessageActions } from "../messaging/service-to-content-messages";
 import { PopulatePopupConverterMessage } from "../popup-converter/popup-converter-message";
 import { romanize } from "../romanize";
+import popupConverter from "../popup-converter/popup-converter.html";
 
 export function romanizeInPopup(event: chrome.contextMenus.OnClickData) {
     const selectionText = event.selectionText || "";
@@ -9,7 +10,7 @@ export function romanizeInPopup(event: chrome.contextMenus.OnClickData) {
     // put text into popup window
     chrome.windows.create(
         {
-            url: 'popup-converter/popup-converter.html',
+            url: popupConverter,
             type: 'popup',
             width: 600,
             height: 400
