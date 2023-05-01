@@ -1,6 +1,8 @@
 import { TabState } from "../extension-state/tab-state";
 import { KoreanKeyboardMode } from "../extension-state/korean-keyboard-mode";
 import { TabStateMessage } from "../messaging";
+import icon16h from '../images/icon16h.png';
+import icon16a from '../images/icon16a.png';
 
 /**
  * Manages extension state for all tabs
@@ -47,9 +49,8 @@ export class StateManager {
         const isHangulMode = newMode === KoreanKeyboardMode.Hangul;
         chrome.action.setIcon({
             tabId: tabId,
-            path: isHangulMode ? 'images/icon16h.png' : 'images/icon16a.png'
+            path: isHangulMode ? icon16h : icon16a
         });
-    
     }
 
     public toggleOnScreenKeyboard(tabId: number): boolean {

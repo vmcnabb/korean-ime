@@ -3,12 +3,12 @@
   "version": "2.3.0",
   "description": "Allow people to type Hanguel in Chrome when the OS does not have a Korean IME installed.",
   "private": true,
+  "source": "src/manifest.json",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "gulp prod",
-    "build-dev": "gulp dev",
-    "parcel-build": "parcel build src/manifest.json",
-    "clean": "gulp clean"
+    "build": "cross-env NODE_ENV=production parcel build",
+    "start": "cross-env NODE_ENV=development parcel watch src/manifest.json --host localhost --config @parcel/config-webextension",
+    "build-dev": "cross-env NODE_ENV=development parcel build --no-optimize"
   },
   "repository": {
     "type": "git",
@@ -21,29 +21,17 @@
   },
   "homepage": "https://github.com/vmcnabb/korean-ime#readme",
   "devDependencies": {
-    "@babel/core": "^7.21.4",
-    "@babel/plugin-transform-modules-commonjs": "^7.21.2",
-    "@babel/preset-env": "^7.21.4",
-    "@babel/preset-typescript": "^7.21.4",
+    "@parcel/config-webextension": "^2.8.3",
+    "@parcel/transformer-sass": "^2.8.3",
     "@types/chrome": "0.0.231",
-    "babelify": "^10.0.0",
-    "browserify": "^16.5.2",
-    "del": "^5.1.0",
-    "esm": "^3.2.25",
-    "event-stream": "^4.0.1",
-    "gulp": "^4.0.2",
-    "gulp-multi-thread-task": "^2.1.0",
-    "gulp-replace": "^1.1.4",
-    "gulp-sass": "^5.1.0",
-    "gulp-terser": "^1.4.1",
-    "loose-envify": "^1.4.0",
-    "reflect-metadata": "^0.1.13",
-    "tsify": "^5.0.4",
-    "typescript": "^5.0.4",
-    "vinyl-buffer": "^1.0.1",
-    "vinyl-source-stream": "^2.0.0"
+    "@types/node": "^18.16.3",
+    "cross-env": "^7.0.3",
+    "parcel": "^2.8.3",
+    "process": "^0.11.10",
+    "sass": "^1.62.0",
+    "typescript": "^5.0.4"
   },
   "dependencies": {
-    "sass": "^1.62.0"
+    "reflect-metadata": "^0.1.13"
   }
 }

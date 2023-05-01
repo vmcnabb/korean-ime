@@ -2,7 +2,7 @@
     "manifest_version": 3,
     "name": "__MSG_extension_name__",
     "short_name": "__MSG_extension_short_name__",
-    "version": "[package-version]",
+    "version": "2.3.0",
     "default_locale": "en",
     "description": "__MSG_extension_description__",
     "icons": {
@@ -16,25 +16,19 @@
     },
     "author": "Vincent McNabb",
     "background": {
-        "service_worker": "serviceWorker.js"
+        "service_worker": "service-worker/index.ts",
+        "type": "module"
     },
     "content_scripts": [
         {
             "matches": [ "<all_urls>" ],
             "match_about_blank": true,
             "all_frames": true,
-            "js": [ "contentScript.js" ],
+            "js": [ "content-script/index.ts" ],
             "run_at": "document_idle"
         }
     ],
-    "web_accessible_resources": [
-        {
-            "matches": [ "<all_urls>" ],
-            "resources": [
-                "content-script/on-screen-keyboard/on-screen-keyboard.css"
-            ]
-        }
-    ],
+    "web_accessible_resources": [],
     "permissions": [
         "contextMenus",
         "storage"

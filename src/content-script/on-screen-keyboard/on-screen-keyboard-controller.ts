@@ -3,6 +3,7 @@ import { KoreanKeyboardMode } from "../../extension-state/korean-keyboard-mode";
 import { KeyCode, KeyRecord, keyMap } from "./korean-keyboard-map";
 import { KeyboardLayout, defaultLayout } from "./layouts";
 import { SupportedCompositionFeatures } from "../../composition/composition-adapters/composition-adapter";
+import './on-screen-keyboard.scss';
 
 export class OnScreenKeyboardController {
     private _keyboardElement: HTMLDivElement;
@@ -164,12 +165,6 @@ export class OnScreenKeyboardController {
         // insert the keyboard as the first child of the BODY tag
         const body = document.getElementsByTagName("body")[0];
         body.insertBefore(keyboardElement, body.firstChild);
-
-        // load keyboard CSS
-        const css = document.createElement("link");
-        css.rel = "stylesheet";
-        css.href = chrome.runtime.getURL("content-script/on-screen-keyboard/on-screen-keyboard.css");
-        document.head.appendChild(css);
 
         this.renderKeyboard(keyboardElement, defaultLayout);
         const self = this;
