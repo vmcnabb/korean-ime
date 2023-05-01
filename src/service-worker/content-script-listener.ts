@@ -1,7 +1,6 @@
-import { ContentScriptMessage, ContentScriptRequestAction } from "../messaging/content-script-request-messages";
+import { ContentScriptRequestMessage, ContentScriptRequestAction } from "../messaging/content-to-service-messages";
 import { StateManager } from "./state-manager";
-import { KeyCode } from "../content-script/on-screen-keyboard/korean-keyboard-map";
-import { TextInputMessage, TextInputMessageActions } from "../content-script/text-input-manager/message-definitions";
+import { ContentScriptBroadcastMessage, isContentScriptBroadcastMessage } from "../messaging/content-to-content-messages";
 
 /**
  * This class is responsible for listening to messages from the content script.
@@ -27,10 +26,15 @@ export class ContentScriptListener {
         this.isListening = true;
 
         // listen for ContentScriptRequest messages and handle them
-        chrome.runtime.onMessage.addListener((message: ContentScriptMessage, sender) => {
+        chrome.runtime.onMessage.addListener((message: ContentScriptRequestMessage | ContentScriptBroadcastMessage, sender) => {
             console.debug("ContentScriptListener received message: ", message);
 
             if (!sender.tab?.id) {
+                return;
+            }
+
+            if (isContentScriptBroadcastMessage(message)) {
+                this.forwardMessageToTab(sender.tab.id, message);
                 return;
             }
 
@@ -39,16 +43,8 @@ export class ContentScriptListener {
                     StateManager.instance.toggleHanYongMode(sender.tab.id);
                     break;
 
-                case ContentScriptRequestAction.SendKey:
-                    this.sendKey(sender.tab.id, message.data);
-                    break;
-
                 case ContentScriptRequestAction.RefreshState:
                     StateManager.instance.sendStateToTab(sender.tab.id);
-                    break;
-
-                case ContentScriptRequestAction.UpdateCompositionFeatures:
-                    this.forwardMessageToTab(sender.tab.id, message);
                     break;
             }
         });
@@ -56,18 +52,11 @@ export class ContentScriptListener {
         // listen for active tab changes and send the state to the new tab
         chrome.tabs.onActivated.addListener(activeInfo => {
             StateManager.instance.sendStateToTab(activeInfo.tabId);
+            StateManager.instance.updatePresentation(activeInfo.tabId);
         });
     }
 
-    private forwardMessageToTab(tabId: number, message: ContentScriptMessage) {
+    private forwardMessageToTab(tabId: number, message: ContentScriptBroadcastMessage) {
         chrome.tabs.sendMessage(tabId, message);
-    }
-
-    private sendKey(tabId: number, data: {key: string, keyCode: KeyCode}) {
-        chrome.tabs.sendMessage<TextInputMessage>(tabId, {
-            type: "textInputMessage",
-            action: TextInputMessageActions.TypeKey,
-            data
-        });
     }
 }

@@ -1,4 +1,4 @@
-import { TextInputMessage, TextInputMessageActions } from "../content-script/text-input-manager/message-definitions";
+import { ServiceScriptMessage, ServiceScriptMessageActions } from "../messaging/service-to-content-messages";
 import { PopulatePopupConverterMessage } from "../popup-converter/popup-converter-message";
 import { romanize } from "../romanize";
 
@@ -42,17 +42,17 @@ export function romanizeBeside(event: chrome.contextMenus.OnClickData, tab: chro
         return;
     }
 
-    if (event.editable) {
+    if (!event.editable) {
         return romanizeInPopup(event);
     }
 
     const romanText = romanize(event.selectionText);
 
-    chrome.tabs.sendMessage<TextInputMessage>(
+    chrome.tabs.sendMessage<ServiceScriptMessage>(
         tab.id,
         {
-            type: 'textInputMessage',
-            action: TextInputMessageActions.InsertTextAfterSelection,
+            type: "serviceScriptMessage",
+            action: ServiceScriptMessageActions.InsertTextAfterSelection,
             data: romanText
         }
     );

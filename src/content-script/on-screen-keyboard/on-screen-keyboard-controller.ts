@@ -1,9 +1,10 @@
-import { ContentScriptMessage, ContentScriptRequestAction } from "../../messaging/content-script-request-messages";
 import { KoreanKeyboardMode } from "../../extension-state/korean-keyboard-mode";
 import { KeyCode, KeyRecord, keyMap } from "./korean-keyboard-map";
 import { KeyboardLayout, defaultLayout } from "./layouts";
 import { SupportedCompositionFeatures } from "../../composition/composition-adapters/composition-adapter";
-import './on-screen-keyboard.scss';
+import "./on-screen-keyboard.scss";
+import { ContentScriptRequestAction, ContentScriptRequestMessage } from "../../messaging/content-to-service-messages";
+import { ContentScriptBroadcastActions, ContentScriptBroadcastMessage } from "../../messaging/content-to-content-messages";
 
 export class OnScreenKeyboardController {
     private _keyboardElement: HTMLDivElement;
@@ -291,7 +292,7 @@ export class OnScreenKeyboardController {
             this.setShift(!isShift);
 
         } else if (keyCode === KeyCode.AltRight) {
-            chrome.runtime.sendMessage<ContentScriptMessage>({
+            chrome.runtime.sendMessage<ContentScriptRequestMessage>({
                 type: "contentScriptRequest",
                 action: ContentScriptRequestAction.ToggleHanYongMode
             });
@@ -307,9 +308,9 @@ export class OnScreenKeyboardController {
     private sendKey(key: string, keyCode: KeyCode) {
         console.debug(`Sending key: ${key} (${keyCode})`);
 
-        chrome.runtime.sendMessage<ContentScriptMessage>({
-            type: "contentScriptRequest",
-            action: ContentScriptRequestAction.SendKey,
+        chrome.runtime.sendMessage<ContentScriptBroadcastMessage>({
+            type: "broadcast",
+            action: ContentScriptBroadcastActions.SendKey,
             data: {
                 key,
                 keyCode,

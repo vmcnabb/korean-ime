@@ -1,11 +1,11 @@
-import { ActionHandlers } from "../../messaging";
 import { HangulImeController } from "../../composition/hangul-ime-controller";
 import { KoreanKeyboardMode } from "../../extension-state/korean-keyboard-mode";
 import { CompositionAdapterFactory } from "../../composition/composition-adapter-factory";
 import { isHangulCharacter } from "../../mappings";
 import { KeyCode } from "../on-screen-keyboard/korean-keyboard-map";
-import { TextInputMessage, TextInputMessageActions, isInsertTextAfterSelectionMessage, isTypeKeyMessage } from "./message-definitions";
-import { SupportedCompositionFeatures } from "src/composition/composition-adapters/composition-adapter";
+import { SupportedCompositionFeatures } from "../../composition/composition-adapters/composition-adapter";
+import { ContentScriptBroadcastActions, ContentScriptBroadcastMessage, isContentScriptBroadcastMessage } from "../../messaging/content-to-content-messages";
+import { ServiceScriptMessage, ServiceScriptMessageActions, isServiceScriptMessage } from "../../messaging/service-to-content-messages";
 
 const nonTextInputTypes = ["button", "checkbox", "file", "hidden", "image", "radio", "range", "submit", "password"];
 const inputSelector = `input:not(${nonTextInputTypes.map(t => `[type=${t}]`).join(",")})`;
@@ -15,42 +15,13 @@ export class TextInputManager {
     private imeControllers = new Map<HTMLElement, HangulImeController>();
     private textEntryMode: KoreanKeyboardMode = KoreanKeyboardMode.English;
 
-    private messageHandlers: ActionHandlers<TextInputMessage, TextInputMessageActions> = {
-        [TextInputMessageActions.InsertTextAfterSelection]: (message: TextInputMessage) => {
-            if (!isInsertTextAfterSelectionMessage(message)) {
-                return;
-            }
+    public handleMessage(message: ContentScriptBroadcastMessage | ServiceScriptMessage) {
+        if (isContentScriptBroadcastMessage(message)) {
+            this.handleBroadcast(message);
 
-            const element = this.getActiveElement(document);
-
-            if (!element) {
-                return;
-            }
-
-            const compositionAdapter = CompositionAdapterFactory.createCompositionAdapter(element);
-
-            if (!compositionAdapter) {
-                return;
-            }
-
-            // todo: implement an insertAfter method in the composition adapter
-            compositionAdapter.collapseSelection();
-            compositionAdapter.beginComposition(message.data, KeyCode.KeyK); // KeyK is arbitrary
-            compositionAdapter.updateComposition(message.data, KeyCode.KeyK); // KeyK is arbitrary
-            compositionAdapter.endComposition(message.data);
-        },
-        [TextInputMessageActions.TypeKey]: (message: TextInputMessage) => {
-            if (!isTypeKeyMessage(message)) {
-                return;
-            }
-
-            this.enterCharacter(message.data.key, message.data.keyCode);
+        } else if (isServiceScriptMessage(message)) {
+            this.handleServiceScriptRequest(message);
         }
-    }
-
-    public handleMessage(message: TextInputMessage) {
-        const handler = this.messageHandlers[message.action];
-        handler(message);
     }
 
     public setMode(mode: KoreanKeyboardMode) {
@@ -71,6 +42,38 @@ export class TextInputManager {
             return this.processElement(element);
         }
         return;
+    }
+
+    private handleBroadcast(message: ContentScriptBroadcastMessage) {
+        switch (message.action) {
+            case ContentScriptBroadcastActions.SendKey:
+                this.enterCharacter(message.data.key, message.data.keyCode);
+                break;
+        }
+    }
+
+    private handleServiceScriptRequest(message: ServiceScriptMessage) {
+        switch (message.action) {
+            case ServiceScriptMessageActions.InsertTextAfterSelection:
+                const element = this.getActiveElement(document);
+
+                if (!element) {
+                    return;
+                }
+
+                const compositionAdapter = CompositionAdapterFactory.createCompositionAdapter(element);
+
+                if (!compositionAdapter) {
+                    return;
+                }
+
+                // todo: implement an insertAfter method in the composition adapter
+                compositionAdapter.collapseSelection();
+                compositionAdapter.beginComposition(message.data, KeyCode.KeyK); // KeyK is arbitrary
+                compositionAdapter.updateComposition(message.data, KeyCode.KeyK); // KeyK is arbitrary
+                compositionAdapter.endComposition(message.data);
+                break;
+        }
     }
 
     private enterCharacter(char: string, keyCode: KeyCode) {
@@ -123,7 +126,7 @@ export class TextInputManager {
             && document.activeElement.contentDocument;
 
         let element = null as Element | null;
-        
+
         if (isActiveElementInChildDocument) {
             try {
                 element = this.getActiveElement(document.activeElement.contentDocument);

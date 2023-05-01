@@ -1,7 +1,7 @@
 import { romanizeBeside, romanizeInPopup } from "./romanize-menu-actions";
 import { StateManager } from "./state-manager";
 
-const menus = {
+export const menus = Object.freeze({
     "onScreenKeyboard": {
         id: "menu_onScreenKeyboard"
     },
@@ -11,7 +11,7 @@ const menus = {
     "romanizeBeside": {
         id: "menu_romanizeBeside"
     }
-}
+});
 
 export function setupMenuListener() {
     chrome.contextMenus.onClicked.addListener((event, tab) => {

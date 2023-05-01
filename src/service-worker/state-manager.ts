@@ -1,8 +1,9 @@
 import { TabState } from "../extension-state/tab-state";
 import { KoreanKeyboardMode } from "../extension-state/korean-keyboard-mode";
-import { TabStateMessage } from "../messaging";
 import icon16h from '../images/icon16h.png';
 import icon16a from '../images/icon16a.png';
+import { ServiceScriptMessage, ServiceScriptMessageActions } from "../messaging/service-to-content-messages";
+import { menus } from "./menus";
 
 /**
  * Manages extension state for all tabs
@@ -11,8 +12,8 @@ export class StateManager {
     private static _instance: StateManager;
     private tabStates = new Map<number, TabState>();
 
-    private constructor () {
-        // ensure we are only called from the service worker
+    private constructor() {
+        // ensure we are only referenced from the service worker
         if (!chrome.runtime.onMessage) {
             throw new Error("StateManager can only be used from the service worker");
         }
@@ -45,12 +46,23 @@ export class StateManager {
                 koreanKeyboardMode: newMode,
             };
         });
+    }
 
-        const isHangulMode = newMode === KoreanKeyboardMode.Hangul;
+    updatePresentation(tabId: number) {
+        const tabState = this.getTabState(tabId);
+
+        const isHangulMode = tabState.koreanKeyboardMode === KoreanKeyboardMode.Hangul;
         chrome.action.setIcon({
             tabId: tabId,
             path: isHangulMode ? icon16h : icon16a
         });
+
+        // update on-screen-keyboard menu item to checked or not
+        chrome.contextMenus.update(
+            menus.onScreenKeyboard.id,
+            {
+                checked: tabState.isOnScreenKeyboardEnabled
+            });
     }
 
     public toggleOnScreenKeyboard(tabId: number): boolean {
@@ -60,6 +72,7 @@ export class StateManager {
             isOnScreenKeyboardEnabled: !tabState.isOnScreenKeyboardEnabled,
         };
         this.setTabState(tabId, () => newTabState);
+
         return newTabState.isOnScreenKeyboardEnabled;
     }
 
@@ -75,13 +88,14 @@ export class StateManager {
         this.tabStates.set(tabId, newTabState);
 
         this.sendStateToTab(tabId);
+        this.updatePresentation(tabId);
     }
 
     public sendStateToTab(tabId: number) {
         const tabState = this.getTabState(tabId);
-        chrome.tabs.sendMessage<TabStateMessage>(tabId, {
-            type: "tabState",
-            action: "update",
+        chrome.tabs.sendMessage<ServiceScriptMessage>(tabId, {
+            type: "serviceScriptMessage",
+            action: ServiceScriptMessageActions.UpdateState,
             data: tabState,
         });
     }
@@ -104,6 +118,6 @@ export class StateManager {
     }
 
     private cloneTabState(tabState: TabState): TabState {
-        return {...tabState};
+        return { ...tabState };
     }
 }
