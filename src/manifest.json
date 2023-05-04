@@ -15,6 +15,10 @@
         "default_title": "__MSG_extension_name__"
     },
     "author": "Vincent McNabb",
+    "options_ui": {
+        "page": "options/index.html",
+        "open_in_tab": true
+    },
     "background": {
         "service_worker": "service-worker/index.ts",
         "type": "module"

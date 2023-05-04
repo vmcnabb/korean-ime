@@ -10,13 +10,14 @@ You can [install Korean IME extension from the Chrome Web Store](https://chrome.
 ## Features
 * Type in Hangul using the Korean keyboard layout.
   * Click the extension icon, or tap the right-hand Alt key to toggle between Hangul and Latin.
-  * You can remove the last jamo from an existing character by positioning the caret just after the character and typing Shift+Backspace.
+  * You can re-enter composition from an existing character by positioning the caret just after the character and typing Shift+Backspace.
 * Convert Hangul text into its Latin equivalent.
   * Select the text to convert, right click, and choose "Romanize" from the menu.
+* On-screen keyboard with Latin and Hangul characters
 
 ## [Change Log](CHANGELOG.md)
 
 ## Build
-Korean IME uses Gulp to build. Just type `npm start build` or `npm start build-dev`.
+Korean IME uses Parcel to build. Just type `npm start build` or `npm start build-dev`.
 
 The output goes to /dist and can be directly loaded as an unpacked extension.
