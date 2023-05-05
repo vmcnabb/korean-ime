@@ -2,15 +2,14 @@
 export const pointless = 7;
 
 export const composited = {
-    ...section("Pig", "Cow", "Chicken")
+    ...section("Pig"),
+    ...section("Dog")
 }
 
-
-
-function section<T extends string>(...name: T[]): {
+function section<T extends string>(name: T): {
     [key in T]: { [x: string] : any}
 } {
     const result = {} as any;
-    name.forEach(n => result[n] = {});
+    result[name] = {};
     return result;
 }

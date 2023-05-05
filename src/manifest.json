@@ -16,7 +16,7 @@
     },
     "author": "Vincent McNabb",
     "options_ui": {
-        "page": "options/index.html",
+        "page": "options-app/index.html",
         "open_in_tab": true
     },
     "background": {

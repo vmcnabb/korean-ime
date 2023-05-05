@@ -1,8 +1,12 @@
 <script setup lang="ts">
 import SectionComponent from './templates/sectionComponent.vue';
-import { OptionsSection, availableOptions } from './options';
+import { OptionsSection } from '../options/option-types';
 
-const sections = availableOptions.options as ({[key: string]: OptionsSection});
+const props = defineProps<{
+  rootSection: OptionsSection
+}>();
+
+const sections = props.rootSection.options as ({[key: string]: OptionsSection});
 </script>
 
 <template>

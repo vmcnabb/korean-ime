@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { SelectOption } from "../options";
+import { SelectOption } from "../../options/option-types";
 import { onMounted, ref, watch } from "vue";
 
 const props = defineProps<{

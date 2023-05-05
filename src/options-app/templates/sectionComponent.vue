@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { isSection, isSelectOption, OptionsSection } from "../options";
+import { isSection, isSelectOption, OptionsSection } from "../../options/option-types";
 import SectionComponent from "./sectionComponent.vue";
 import SelectComponent from "./selectComponent.vue"
 

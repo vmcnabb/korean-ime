@@ -1,62 +1,27 @@
-export enum PersistOptions {
-    AlwaysOff = 0,
-    AlwaysOn = 1,
-    KeepLastState = 2,
-}
 
-const defaultSettings = {
-    onScreenKeyboard: {
-        persist: PersistOptions.AlwaysOff,
-        lastState: false,
-    },
-    hanYongToggle: {
-        persist: PersistOptions.AlwaysOff,
-        lastState: false,
-    }
-};
-
-export type Settings = typeof defaultSettings;
-
-export class OptionsManager {
+export class OptionsManager<TSettings extends {[key: string]: any}> {
     private hasLoadedSettings = false;
-    private settings: Settings = JSON.parse(JSON.stringify(defaultSettings));
+    private settings: TSettings;
 
-    async restoreOptions(): Promise<Settings> {
+    constructor(defaultSettings: TSettings) {
+        this.settings = JSON.parse(JSON.stringify(defaultSettings))
+    }
+
+    async restoreOptions(): Promise<TSettings> {
         if (this.hasLoadedSettings) {
             return this.settings;
         }
 
-        return new Promise<typeof defaultSettings>(resolve => {
-            chrome.storage.sync.get(defaultSettings, (items: Partial<Settings>) => {
-                objectKeys(this.settings).forEach(key => {
-                    const storedValue = items[key];
-                    if (storedValue === undefined) {
-                        return;
-                    }
+        this.settings = await chrome.storage.sync.get(this.settings) as TSettings;
 
-                    if (typeof storedValue !== typeof defaultSettings[key]) {
-                        return;
-                    }
+        // todo: check behaviour of chrome.storage.sync.get(defaultValues);
+        // do we need to do any manual copying?
 
-                    (this.settings[key] as any) = storedValue;
-                });
-
-                this.hasLoadedSettings = true;
-                resolve(this.settings);
-            });
-        });
+        return this.settings;
     }
 
-    async saveSettings(settings: typeof defaultSettings) {
-        this.settings = settings;
-        return new Promise<void>(resolve => {
-            chrome.storage.sync.set(this.settings, () => resolve());
-        });
+    async saveSettings(settings: TSettings) {
+        this.settings = JSON.parse(JSON.stringify(settings));
+        await chrome.storage.sync.set(this.settings);
     }
-}
-
-function objectKeys<T extends object>(obj: T): (keyof T)[] {
-    return Object
-        .keys(obj)
-        .filter(key => obj.hasOwnProperty(key)) as (keyof T)[];
 }
