@@ -1,7 +1,7 @@
 {
   "name": "korean-ime",
   "version": "2.3.0",
-  "description": "Allow people to type Hanguel in Chrome when the OS does not have a Korean IME installed.",
+  "description": "Allow people to type Hangul in Chrome when the OS does not have a Korean IME installed.",
   "private": true,
   "source": "src/manifest.json",
   "ts-node": {
@@ -29,12 +29,12 @@
     "@parcel/config-webextension": "^2.8.3",
     "@parcel/transformer-sass": "^2.8.3",
     "@parcel/transformer-vue": "^2.8.3",
-    "@types/chrome": "0.0.231",
+    "@types/chrome": "^0.0.235",
     "@types/node": "^18.16.3",
     "cross-env": "^7.0.3",
     "parcel": "^2.8.3",
     "process": "^0.11.10",
-    "sass": "^1.62.0",
+    "sass": "^1.62.1",
     "typescript": "^5.0.4",
     "vue": "^3.2.47"
   },
