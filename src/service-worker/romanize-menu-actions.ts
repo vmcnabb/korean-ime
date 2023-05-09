@@ -1,4 +1,4 @@
-import { ServiceScriptMessage, ServiceScriptMessageActions } from "../messaging/service-to-content-messages";
+import { ServiceScriptMessage, ServiceScriptMessageAction } from "../messaging/service-to-content-messages";
 import { PopulatePopupConverterMessage } from "./popup-converter/popup-converter-message";
 import { romanize } from "../romanize";
 import popupConverter from "./popup-converter/popup-converter.html";
@@ -53,7 +53,7 @@ export function romanizeBeside(event: chrome.contextMenus.OnClickData, tab: chro
         tab.id,
         {
             type: "serviceScriptMessage",
-            action: ServiceScriptMessageActions.InsertTextAfterSelection,
+            action: ServiceScriptMessageAction.InsertTextAfterSelection,
             data: romanText
         }
     );

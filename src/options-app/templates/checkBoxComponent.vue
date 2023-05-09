@@ -1,19 +1,17 @@
 <script setup lang="ts">
-import { EnumLike } from "../../types/enums";
-import { SelectOption } from "../../settings/option-types";
+import { CheckboxOption } from "../../settings/option-types";
 import { computed } from "vue";
 
 const props = defineProps<{
-  option: SelectOption<EnumLike>,
+  option: CheckboxOption,
   path: string | number
 }>();
 
 const path = String(props.path);
-const names = props.option.names;
 
 const model = computed({
   get: () => props.option.value,
-  set: (newValue: string | number) => {
+  set: (newValue) => {
     props.option.value = newValue;
   }
 });
@@ -21,11 +19,11 @@ const model = computed({
 </script>
 
 <template>
-    <div class="option">
-        <label :for="path">{{ option.title }}</label>
-        <select :id="path" v-model="model">
-            <option v-for="v in option.values" :value="v">{{ names[v] }}</option>
-        </select>
+    <div class="checkbox option">
+        <label :for="path">
+            <input type="checkbox" :id="path" v-model="model">
+            {{ option.title }}
+        </label>
         <p v-if="option.description !== undefined">{{ option.description }}</p>
     </div>
 </template>

@@ -4,8 +4,8 @@ import { CompositionAdapterFactory } from "../../composition/composition-adapter
 import { isHangulCharacter } from "../../mappings";
 import { KeyCode } from "../on-screen-keyboard/korean-keyboard-map";
 import { SupportedCompositionFeatures } from "../../composition/composition-adapters/composition-adapter";
-import { ContentScriptBroadcastActions, ContentScriptBroadcastMessage, isContentScriptBroadcastMessage } from "../../messaging/content-to-content-messages";
-import { ServiceScriptMessage, ServiceScriptMessageActions, isServiceScriptMessage } from "../../messaging/service-to-content-messages";
+import { ContentScriptBroadcastAction, ContentScriptBroadcastMessage, isContentScriptBroadcastMessage } from "../../messaging/content-to-content-messages";
+import { ServiceScriptMessage, ServiceScriptMessageAction, isServiceScriptMessage } from "../../messaging/service-to-content-messages";
 
 const nonTextInputTypes = ["button", "checkbox", "file", "hidden", "image", "radio", "range", "submit", "password"];
 const inputSelector = `input:not(${nonTextInputTypes.map(t => `[type=${t}]`).join(",")})`;
@@ -46,7 +46,7 @@ export class TextInputManager {
 
     private handleBroadcast(message: ContentScriptBroadcastMessage) {
         switch (message.action) {
-            case ContentScriptBroadcastActions.SendKey:
+            case ContentScriptBroadcastAction.SendKey:
                 this.enterCharacter(message.data.key, message.data.keyCode);
                 break;
         }
@@ -54,7 +54,7 @@ export class TextInputManager {
 
     private handleServiceScriptRequest(message: ServiceScriptMessage) {
         switch (message.action) {
-            case ServiceScriptMessageActions.InsertTextAfterSelection:
+            case ServiceScriptMessageAction.InsertTextAfterSelection:
                 const element = this.getActiveElement(document);
 
                 if (!element) {

@@ -1,6 +1,6 @@
 import { TabState } from "../extension-state/tab-state";
 
-export enum ServiceScriptMessageActions {
+export enum ServiceScriptMessageAction {
     InsertTextAfterSelection = "insertTextAfterSelection",
     UpdateState = "updateState"
 }
@@ -8,20 +8,21 @@ export enum ServiceScriptMessageActions {
 export namespace ServiceScriptMessage {
     export type TabStateMessage = {
         type: "serviceScriptMessage",
-        action: ServiceScriptMessageActions.UpdateState,
+        action: ServiceScriptMessageAction.UpdateState,
         data: TabState
     }
 
     export type InsertTextAfterSelectionMessage = {
         type: "serviceScriptMessage"
-        action: ServiceScriptMessageActions.InsertTextAfterSelection,
+        action: ServiceScriptMessageAction.InsertTextAfterSelection,
         data: string
     }
 }
+
 export type ServiceScriptMessage = ServiceScriptMessage.TabStateMessage | ServiceScriptMessage.InsertTextAfterSelectionMessage;
 
 export function isServiceScriptMessage(message: any): message is ServiceScriptMessage {
     return message
         && message.type === "serviceScriptMessage"
-        && Object.values(ServiceScriptMessageActions).includes(message.action);
+        && Object.values(ServiceScriptMessageAction).includes(message.action);
 }

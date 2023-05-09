@@ -4,7 +4,7 @@ import { KeyboardLayout, defaultLayout } from "./layouts";
 import { SupportedCompositionFeatures } from "../../composition/composition-adapters/composition-adapter";
 import "./on-screen-keyboard.scss";
 import { ContentScriptRequestAction, ContentScriptRequestMessage } from "../../messaging/content-to-service-messages";
-import { ContentScriptBroadcastActions, ContentScriptBroadcastMessage } from "../../messaging/content-to-content-messages";
+import { ContentScriptBroadcastAction, ContentScriptBroadcastMessage } from "../../messaging/content-to-content-messages";
 
 export class OnScreenKeyboardController {
     private _keyboardElement: HTMLDivElement;
@@ -310,7 +310,7 @@ export class OnScreenKeyboardController {
 
         chrome.runtime.sendMessage<ContentScriptBroadcastMessage>({
             type: "broadcast",
-            action: ContentScriptBroadcastActions.SendKey,
+            action: ContentScriptBroadcastAction.SendKey,
             data: {
                 key,
                 keyCode,

@@ -2,7 +2,7 @@ import { TabState } from "../extension-state/tab-state";
 import { KoreanKeyboardMode } from "../extension-state/korean-keyboard-mode";
 import icon16h from '../images/icon16h.png';
 import icon16a from '../images/icon16a.png';
-import { ServiceScriptMessage, ServiceScriptMessageActions } from "../messaging/service-to-content-messages";
+import { ServiceScriptMessage, ServiceScriptMessageAction } from "../messaging/service-to-content-messages";
 import { menus } from "./menus";
 
 /**
@@ -95,7 +95,7 @@ export class StateManager {
         const tabState = this.getTabState(tabId);
         chrome.tabs.sendMessage<ServiceScriptMessage>(tabId, {
             type: "serviceScriptMessage",
-            action: ServiceScriptMessageActions.UpdateState,
+            action: ServiceScriptMessageAction.UpdateState,
             data: tabState,
         });
     }

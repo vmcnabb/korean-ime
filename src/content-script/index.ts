@@ -3,8 +3,8 @@ import { KeyCode } from "./on-screen-keyboard/korean-keyboard-map";
 import { TextInputManager } from "./text-input-manager";
 import { KoreanKeyboardMode } from "../extension-state/korean-keyboard-mode";
 import { ContentScriptRequestAction, ContentScriptRequestMessage } from "../messaging/content-to-service-messages";
-import { ContentScriptBroadcastActions, ContentScriptBroadcastMessage, isContentScriptBroadcastMessage } from "../messaging/content-to-content-messages";
-import { ServiceScriptMessage, ServiceScriptMessageActions, isServiceScriptMessage } from "../messaging/service-to-content-messages";
+import { ContentScriptBroadcastAction, ContentScriptBroadcastMessage, isContentScriptBroadcastMessage } from "../messaging/content-to-content-messages";
+import { ServiceScriptMessage, ServiceScriptMessageAction, isServiceScriptMessage } from "../messaging/service-to-content-messages";
 
 let textEntryMode = KoreanKeyboardMode.English;
 const isTopWindow = window === top;
@@ -31,7 +31,7 @@ function setupMessageListener() {
 
         if (isServiceScriptMessage(message)) {
             switch (message.action) {
-                case ServiceScriptMessageActions.UpdateState:
+                case ServiceScriptMessageAction.UpdateState:
                     handleTabStateMessage(message);
                     break;
             }
@@ -41,7 +41,7 @@ function setupMessageListener() {
 
         if (isContentScriptBroadcastMessage(message)) {
             switch (message.action) {
-                case ContentScriptBroadcastActions.UpdateCompositionFeatures:
+                case ContentScriptBroadcastAction.UpdateCompositionFeatures:
                     keyboardController?.setCompositionFeatures(message.data);
                     break;
             }
@@ -90,7 +90,7 @@ function setupDocumentListeners() {
 
             chrome.runtime.sendMessage<ContentScriptBroadcastMessage>({
                 type: "broadcast",
-                action: ContentScriptBroadcastActions.UpdateCompositionFeatures,
+                action: ContentScriptBroadcastAction.UpdateCompositionFeatures,
                 data: compositionFeatures,
             });
         },

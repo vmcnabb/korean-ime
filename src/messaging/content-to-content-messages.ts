@@ -2,7 +2,7 @@ import { SupportedCompositionFeatures } from "src/composition/composition-adapte
 import { KeyCode } from "src/content-script/on-screen-keyboard/korean-keyboard-map";
 
 /** intended for broadcasts to all content script on the current tab */
-export enum ContentScriptBroadcastActions {
+export enum ContentScriptBroadcastAction {
     UpdateCompositionFeatures = "updateCompositionFeatures",
     SendKey = "sendKey",
 }
@@ -13,13 +13,13 @@ export enum ContentScriptBroadcastActions {
  */
 type UpdateCompositionFeaturesMessage = {
     type: "broadcast",
-    action: ContentScriptBroadcastActions.UpdateCompositionFeatures,
+    action: ContentScriptBroadcastAction.UpdateCompositionFeatures,
     data: SupportedCompositionFeatures
 }
 
 type SendKeyMessage = {
     type: "broadcast",
-    action: ContentScriptBroadcastActions.SendKey,
+    action: ContentScriptBroadcastAction.SendKey,
     data: {
         key: string,
         keyCode: KeyCode
@@ -30,5 +30,5 @@ export type ContentScriptBroadcastMessage = UpdateCompositionFeaturesMessage | S
 
 export function isContentScriptBroadcastMessage(message: any): message is ContentScriptBroadcastMessage {
     return message?.type === "broadcast"
-        && Object.values(ContentScriptBroadcastActions).includes(message.action);
+        && Object.values(ContentScriptBroadcastAction).includes(message.action);
 }
