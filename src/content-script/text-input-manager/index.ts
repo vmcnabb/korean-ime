@@ -4,21 +4,42 @@ import { CompositionAdapterFactory } from "../../composition/composition-adapter
 import { isHangulCharacter } from "../../mappings";
 import { KeyCode } from "../on-screen-keyboard/korean-keyboard-map";
 import { SupportedCompositionFeatures } from "../../composition/composition-adapters/composition-adapter";
-import { ContentScriptBroadcastAction, ContentScriptBroadcastMessage, isContentScriptBroadcastMessage } from "../../messaging/content-to-content-messages";
-import { ServiceScriptMessage, ServiceScriptMessageAction, isServiceScriptMessage } from "../../messaging/service-to-content-messages";
+import {
+    ContentScriptBroadcastAction,
+    ContentScriptBroadcastMessage,
+    isContentScriptBroadcastMessage,
+} from "../../messaging/content-to-content-messages";
+import {
+    ServiceScriptMessage,
+    ServiceScriptMessageAction,
+    isServiceScriptMessage,
+} from "../../messaging/service-to-content-messages";
 
-const nonTextInputTypes = ["button", "checkbox", "file", "hidden", "image", "radio", "range", "submit", "password"];
-const inputSelector = `input:not(${nonTextInputTypes.map(t => `[type=${t}]`).join(",")})`;
+const nonTextInputTypes = [
+    "button",
+    "checkbox",
+    "file",
+    "hidden",
+    "image",
+    "radio",
+    "range",
+    "submit",
+    "password",
+];
+const inputSelector = `input:not(${nonTextInputTypes
+    .map((t) => `[type=${t}]`)
+    .join(",")})`;
 const textInputElementsSelector = `[contenteditable=true],textarea,${inputSelector}`;
 
 export class TextInputManager {
     private imeControllers = new Map<HTMLElement, HangulImeController>();
     private textEntryMode: KoreanKeyboardMode = KoreanKeyboardMode.English;
 
-    public handleMessage(message: ContentScriptBroadcastMessage | ServiceScriptMessage) {
+    public handleMessage(
+        message: ContentScriptBroadcastMessage | ServiceScriptMessage
+    ) {
         if (isContentScriptBroadcastMessage(message)) {
             this.handleBroadcast(message);
-
         } else if (isServiceScriptMessage(message)) {
             this.handleServiceScriptRequest(message);
         }
@@ -36,7 +57,9 @@ export class TextInputManager {
         }
     }
 
-    public setActiveElement(element: HTMLElement): SupportedCompositionFeatures | undefined {
+    public setActiveElement(
+        element: HTMLElement
+    ): SupportedCompositionFeatures | undefined {
         // check if element matches the selector `textInputElementsSelector`
         if (element.matches(textInputElementsSelector)) {
             return this.processElement(element);
@@ -61,7 +84,8 @@ export class TextInputManager {
                     return;
                 }
 
-                const compositionAdapter = CompositionAdapterFactory.createCompositionAdapter(element);
+                const compositionAdapter =
+                    CompositionAdapterFactory.createCompositionAdapter(element);
 
                 if (!compositionAdapter) {
                     return;
@@ -70,7 +94,10 @@ export class TextInputManager {
                 // todo: implement an insertAfter method in the composition adapter
                 compositionAdapter.collapseSelection();
                 compositionAdapter.beginComposition(message.data, KeyCode.KeyK); // KeyK is arbitrary
-                compositionAdapter.updateComposition(message.data, KeyCode.KeyK); // KeyK is arbitrary
+                compositionAdapter.updateComposition(
+                    message.data,
+                    KeyCode.KeyK
+                ); // KeyK is arbitrary
                 compositionAdapter.endComposition(message.data);
                 break;
         }
@@ -90,7 +117,6 @@ export class TextInputManager {
 
         if (isHangulCharacter(char)) {
             imeController.addJamo(char, keyCode);
-
         } else {
             if (KeyCode.Backspace === keyCode) {
                 imeController.handleBackspace();
@@ -121,22 +147,24 @@ export class TextInputManager {
     }
 
     private getActiveElement(document: Document): HTMLElement | null {
-        const isActiveElementInChildDocument = document.activeElement
-            && this.isObjectOrIframe(document.activeElement)
-            && document.activeElement.contentDocument;
+        const isActiveElementInChildDocument =
+            document.activeElement &&
+            this.isObjectOrIframe(document.activeElement) &&
+            document.activeElement.contentDocument;
 
         let element = null as Element | null;
 
         if (isActiveElementInChildDocument) {
             try {
-                element = this.getActiveElement(document.activeElement.contentDocument);
+                element = this.getActiveElement(
+                    document.activeElement.contentDocument
+                );
             } catch (e) {
-                if (e instanceof DOMException && e.name === 'SecurityError') {
+                if (e instanceof DOMException && e.name === "SecurityError") {
                     // The document is from a different origin
                     return null;
                 }
             }
-
         } else {
             element = document.activeElement;
         }
@@ -149,7 +177,12 @@ export class TextInputManager {
         return null;
     }
 
-    private isObjectOrIframe(element: Element): element is HTMLObjectElement | HTMLIFrameElement {
-        return element instanceof HTMLObjectElement || element instanceof HTMLIFrameElement;
+    private isObjectOrIframe(
+        element: Element
+    ): element is HTMLObjectElement | HTMLIFrameElement {
+        return (
+            element instanceof HTMLObjectElement ||
+            element instanceof HTMLIFrameElement
+        );
     }
 }

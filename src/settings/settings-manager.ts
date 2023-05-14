@@ -1,10 +1,9 @@
-
-export class SettingsManager<TSettings extends {[key: string]: any}> {
+export class SettingsManager<TSettings extends { [key: string]: any }> {
     private hasLoadedSettings = false;
     private settings: TSettings;
 
     constructor(defaultSettings: TSettings) {
-        this.settings = JSON.parse(JSON.stringify(defaultSettings))
+        this.settings = JSON.parse(JSON.stringify(defaultSettings));
     }
 
     async restoreOptions(): Promise<TSettings> {
@@ -12,7 +11,9 @@ export class SettingsManager<TSettings extends {[key: string]: any}> {
             return this.settings;
         }
 
-        const storedSettings = await chrome.storage.sync.get(this.settings) as TSettings;
+        const storedSettings = (await chrome.storage.sync.get(
+            this.settings
+        )) as TSettings;
         this.copySettings(storedSettings, this.settings);
 
         return this.settings;
@@ -30,7 +31,7 @@ export class SettingsManager<TSettings extends {[key: string]: any}> {
             if (typeof value === "object") {
                 this.copySettings(value, to[key as keyof TSettings]);
 
-            // only copy values that are the same type
+                // only copy values that are the same type
             } else if (typeof value == typeof to[key as keyof TSettings]) {
                 to[key as keyof TSettings] = value;
             }

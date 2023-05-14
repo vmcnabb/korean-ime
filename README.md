@@ -17,7 +17,13 @@ You can [install Korean IME extension from the Chrome Web Store](https://chrome.
 
 ## [Change Log](CHANGELOG.md)
 
+# Development
 ## Build
 Korean IME uses Parcel to build. Just type `npm start build` or `npm start build-dev`.
 
 The output goes to /dist and can be directly loaded as an unpacked extension.
+
+## Recommended Extensions
+* ESLint
+* Vue Language Features (Volar)
+* Typescript Vue Plugin (Volar)

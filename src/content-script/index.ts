@@ -2,9 +2,20 @@
 import { KeyCode } from "./on-screen-keyboard/korean-keyboard-map";
 import { TextInputManager } from "./text-input-manager";
 import { KoreanKeyboardMode } from "../extension-state/korean-keyboard-mode";
-import { ContentScriptRequestAction, ContentScriptRequestMessage } from "../messaging/content-to-service-messages";
-import { ContentScriptBroadcastAction, ContentScriptBroadcastMessage, isContentScriptBroadcastMessage } from "../messaging/content-to-content-messages";
-import { ServiceScriptMessage, ServiceScriptMessageAction, isServiceScriptMessage } from "../messaging/service-to-content-messages";
+import {
+    ContentScriptRequestAction,
+    ContentScriptRequestMessage,
+} from "../messaging/content-to-service-messages";
+import {
+    ContentScriptBroadcastAction,
+    ContentScriptBroadcastMessage,
+    isContentScriptBroadcastMessage,
+} from "../messaging/content-to-content-messages";
+import {
+    ServiceScriptMessage,
+    ServiceScriptMessageAction,
+    isServiceScriptMessage,
+} from "../messaging/service-to-content-messages";
 
 let textEntryMode = KoreanKeyboardMode.English;
 const isTopWindow = window === top;
@@ -26,7 +37,7 @@ function requestState() {
 }
 
 function setupMessageListener() {
-    chrome.runtime.onMessage.addListener(message => {
+    chrome.runtime.onMessage.addListener((message) => {
         console.debug("content.js: received message", message);
 
         if (isServiceScriptMessage(message)) {
@@ -64,7 +75,7 @@ function handleTabStateMessage(message: ServiceScriptMessage.TabStateMessage) {
 function setupDocumentListeners() {
     document.addEventListener(
         "keydown",
-        e => {
+        (e) => {
             if (e.code === KeyCode.AltRight && !e.repeat) {
                 chrome.runtime.sendMessage<ContentScriptRequestMessage>({
                     type: "contentScriptRequest",
@@ -79,9 +90,10 @@ function setupDocumentListeners() {
     // whenever a new element receives focus, notify text input manager
     document.addEventListener(
         "focus",
-        e => {
+        (e) => {
             const element = e.target as HTMLElement;
-            const compositionFeatures = textInputManager.setActiveElement(element);
+            const compositionFeatures =
+                textInputManager.setActiveElement(element);
 
             if (!compositionFeatures) {
                 // todo: notify everyone that there is no active element

@@ -67,28 +67,32 @@ export type KeyRecord = {
     shift?: string;
 
     jamo?: {
-      normal: string;
-      shift?: string;
+        normal: string;
+        shift?: string;
     };
 
     label?: string;
     koreanLabel?: string;
     tooltipResourceKey?: string;
-}
+};
 
 export function isModifierKey(code: KeyCode): boolean {
     return [
-        KeyCode.ShiftLeft, KeyCode.ShiftRight,
-        KeyCode.ControlLeft, KeyCode.ControlRight,
-        KeyCode.MetaLeft, KeyCode.MetaRight,
-        KeyCode.AltLeft, KeyCode.AltRight,
+        KeyCode.ShiftLeft,
+        KeyCode.ShiftRight,
+        KeyCode.ControlLeft,
+        KeyCode.ControlRight,
+        KeyCode.MetaLeft,
+        KeyCode.MetaRight,
+        KeyCode.AltLeft,
+        KeyCode.AltRight,
     ].includes(code);
 }
 
-export function isAltKey(code: KeyCode): code is KeyCode.AltLeft | KeyCode.AltRight {
-    return [
-        KeyCode.AltLeft, KeyCode.AltRight
-    ].includes(code);
+export function isAltKey(
+    code: KeyCode
+): code is KeyCode.AltLeft | KeyCode.AltRight {
+    return [KeyCode.AltLeft, KeyCode.AltRight].includes(code);
 }
 
 export const keyMap: Record<KeyCode, KeyRecord> = {
@@ -105,309 +109,309 @@ export const keyMap: Record<KeyCode, KeyRecord> = {
         shift: "W",
         jamo: {
             normal: "ㅈ",
-            shift: "ㅉ"
-        }
+            shift: "ㅉ",
+        },
     },
     [KeyCode.KeyE]: {
         normal: "e",
         shift: "E",
         jamo: {
             normal: "ㄷ",
-            shift: "ㄸ"
-        }
+            shift: "ㄸ",
+        },
     },
     [KeyCode.KeyR]: {
         normal: "r",
         shift: "R",
         jamo: {
             normal: "ㄱ",
-            shift: "ㄲ"
-        }
+            shift: "ㄲ",
+        },
     },
     [KeyCode.KeyT]: {
         normal: "t",
         shift: "T",
         jamo: {
             normal: "ㅅ",
-            shift: "ㅆ"
-        }
+            shift: "ㅆ",
+        },
     },
     [KeyCode.KeyY]: {
         normal: "y",
         shift: "Y",
         jamo: {
-            normal: "ㅛ"
-        }
+            normal: "ㅛ",
+        },
     },
     [KeyCode.KeyU]: {
         normal: "u",
         shift: "U",
         jamo: {
-            normal: "ㅕ"
-        }
+            normal: "ㅕ",
+        },
     },
     [KeyCode.KeyI]: {
         normal: "i",
         shift: "I",
         jamo: {
-            normal: "ㅑ"
-        }
+            normal: "ㅑ",
+        },
     },
     [KeyCode.KeyO]: {
         normal: "o",
         shift: "O",
         jamo: {
             normal: "ㅐ",
-            shift: "ㅒ"
-        }
+            shift: "ㅒ",
+        },
     },
     [KeyCode.KeyP]: {
         normal: "p",
         shift: "P",
         jamo: {
             normal: "ㅔ",
-            shift: "ㅖ"
-        }
+            shift: "ㅖ",
+        },
     },
     [KeyCode.KeyA]: {
         normal: "a",
         shift: "A",
         jamo: {
-            normal: "ㅁ"
-        }
+            normal: "ㅁ",
+        },
     },
     [KeyCode.KeyS]: {
         normal: "s",
         shift: "S",
         jamo: {
-            normal: "ㄴ"
-        }
+            normal: "ㄴ",
+        },
     },
     [KeyCode.KeyD]: {
         normal: "d",
         shift: "D",
         jamo: {
-            normal: "ㅇ"
-        }
+            normal: "ㅇ",
+        },
     },
     [KeyCode.KeyF]: {
         normal: "f",
         shift: "F",
         jamo: {
-            normal: "ㄹ"
-        }
+            normal: "ㄹ",
+        },
     },
     [KeyCode.KeyG]: {
         normal: "g",
         shift: "G",
         jamo: {
-            normal: "ㅎ"
-        }
+            normal: "ㅎ",
+        },
     },
     [KeyCode.KeyH]: {
         normal: "h",
         shift: "H",
         jamo: {
-            normal: "ㅗ"
-        }
+            normal: "ㅗ",
+        },
     },
     [KeyCode.KeyJ]: {
         normal: "j",
         shift: "J",
         jamo: {
-            normal: "ㅓ"
-        }
+            normal: "ㅓ",
+        },
     },
     [KeyCode.KeyK]: {
         normal: "k",
         shift: "K",
         jamo: {
-            normal: "ㅏ"
-        }
+            normal: "ㅏ",
+        },
     },
     [KeyCode.KeyL]: {
         normal: "l",
         shift: "L",
         jamo: {
-            normal: "ㅣ"
-        }
+            normal: "ㅣ",
+        },
     },
     [KeyCode.KeyZ]: {
         normal: "z",
         shift: "Z",
         jamo: {
-            normal: "ㅋ"
-        }
+            normal: "ㅋ",
+        },
     },
     [KeyCode.KeyX]: {
         normal: "x",
         shift: "X",
         jamo: {
-            normal: "ㅌ"
-        }
+            normal: "ㅌ",
+        },
     },
     [KeyCode.KeyC]: {
         normal: "c",
         shift: "C",
         jamo: {
-            normal: "ㅊ"
-        }
+            normal: "ㅊ",
+        },
     },
     [KeyCode.KeyV]: {
         normal: "v",
         shift: "V",
         jamo: {
-            normal: "ㅍ"
-        }
+            normal: "ㅍ",
+        },
     },
     [KeyCode.KeyB]: {
         normal: "b",
         shift: "B",
         jamo: {
-            normal: "ㅠ"
-        }
+            normal: "ㅠ",
+        },
     },
     [KeyCode.KeyN]: {
         normal: "n",
         shift: "N",
         jamo: {
-            normal: "ㅜ"
-        }
+            normal: "ㅜ",
+        },
     },
     [KeyCode.KeyM]: {
         normal: "m",
         shift: "M",
         jamo: {
-            normal: "ㅡ"
-        }
+            normal: "ㅡ",
+        },
     },
     [KeyCode.Comma]: {
         normal: ",",
-        shift: "<"
+        shift: "<",
     },
     [KeyCode.Period]: {
         normal: ".",
-        shift: ">"
+        shift: ">",
     },
     [KeyCode.Slash]: {
         normal: "/",
-        shift: "?"
+        shift: "?",
     },
     [KeyCode.BracketLeft]: {
         normal: "[",
-        shift: "{"
+        shift: "{",
     },
     [KeyCode.BracketRight]: {
         normal: "]",
-        shift: "}"
+        shift: "}",
     },
     [KeyCode.Backslash]: {
         normal: "\\",
-        shift: "|"
+        shift: "|",
     },
     [KeyCode.Semicolon]: {
         normal: ";",
-        shift: ":"
+        shift: ":",
     },
     [KeyCode.Quote]: {
         normal: "'",
-        shift: '"'
+        shift: '"',
     },
     [KeyCode.Backquote]: {
         normal: "`",
-        shift: "~"
+        shift: "~",
     },
     [KeyCode.Digit1]: {
         normal: "1",
-        shift: "!"
+        shift: "!",
     },
     [KeyCode.Digit2]: {
         normal: "2",
-        shift: "@"
+        shift: "@",
     },
     [KeyCode.Digit3]: {
         normal: "3",
-        shift: "#"
+        shift: "#",
     },
     [KeyCode.Digit4]: {
         normal: "4",
-        shift: "$"
+        shift: "$",
     },
     [KeyCode.Digit5]: {
         normal: "5",
-        shift: "%"
+        shift: "%",
     },
     [KeyCode.Digit6]: {
         normal: "6",
-        shift: "^"
+        shift: "^",
     },
     [KeyCode.Digit7]: {
         normal: "7",
-        shift: "&"
+        shift: "&",
     },
     [KeyCode.Digit8]: {
         normal: "8",
-        shift: "*"
+        shift: "*",
     },
     [KeyCode.Digit9]: {
         normal: "9",
-        shift: "("
+        shift: "(",
     },
     [KeyCode.Digit0]: {
         normal: "0",
-        shift: ")"
+        shift: ")",
     },
     [KeyCode.Minus]: {
         normal: "-",
-        shift: "_"
+        shift: "_",
     },
     [KeyCode.Equals]: {
         normal: "=",
-        shift: "+"
+        shift: "+",
     },
     [KeyCode.Tab]: {
-        label: "Tab"
+        label: "Tab",
     },
     [KeyCode.Enter]: {
-        label: "Enter"
+        label: "Enter",
     },
     [KeyCode.CapsLock]: {
-        label: "Caps Lock"
+        label: "Caps Lock",
     },
     [KeyCode.ShiftLeft]: {
-        label: "Shift"
+        label: "Shift",
     },
     [KeyCode.ShiftRight]: {
-        label: "Shift"
+        label: "Shift",
     },
     [KeyCode.Backspace]: {
-        label: "⌫"
+        label: "⌫",
     },
     [KeyCode.ControlLeft]: {
-        label: "Ctrl"
+        label: "Ctrl",
     },
     [KeyCode.MetaLeft]: {
-        label: ""
+        label: "",
     },
     [KeyCode.AltLeft]: {
-        label: "Alt"
+        label: "Alt",
     },
     [KeyCode.Space]: {
-        label: "Space"
+        label: "Space",
     },
     [KeyCode.AltRight]: {
         label: "한/영",
-        tooltipResourceKey: "keyboard_key_altRight_tooltip"
+        tooltipResourceKey: "keyboard_key_altRight_tooltip",
     },
     [KeyCode.MetaRight]: {
-        label: ""
+        label: "",
     },
     [KeyCode.ContextMenu]: {
-        label: ""
+        label: "",
     },
     [KeyCode.ControlRight]: {
         label: "Ctrl",
         koreanLabel: "한자",
-        tooltipResourceKey: "keyboard_key_controlRight_tooltip"
-    }
+        tooltipResourceKey: "keyboard_key_controlRight_tooltip",
+    },
 };

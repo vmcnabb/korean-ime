@@ -1,7 +1,7 @@
 class StringMap {
     [key: string]: string | undefined;
 
-    constructor (keys: string | string[], values: string[]) {
+    constructor(keys: string | string[], values: string[]) {
         if (keys.length !== values.length) {
             throw new Error("Keys and values must be of equal length.");
         }
@@ -18,14 +18,16 @@ class StringMap {
 class TwoWayMap {
     [key: string]: string | undefined;
 
-    constructor (left: string[], right: string) {
+    constructor(left: string[], right: string) {
         if (left.length !== right.length) {
             throw new Error("Arrays must be of equal length.");
         }
 
         for (let i = 0; i < left.length; i++) {
             if (this.hasOwnProperty(left[i]) || this.hasOwnProperty(right[i])) {
-                throw new Error("left and right cannot share or repeat any values.");
+                throw new Error(
+                    "left and right cannot share or repeat any values."
+                );
             }
 
             this[left[i]] = right[i];
@@ -35,16 +37,15 @@ class TwoWayMap {
 }
 
 /**
-* @param {string} char 
-*/
-export function isHangulCharacter (char: string) {
+ * @param {string} char
+ */
+export function isHangulCharacter(char: string) {
     if (!char) {
         return false;
     }
     const cc = char.charCodeAt(0);
-    return (cc >= 0xAC00 && cc <= 0xD7A3) || (cc >= 0x3131 && cc <= 0x318E);
+    return (cc >= 0xac00 && cc <= 0xd7a3) || (cc >= 0x3131 && cc <= 0x318e);
 }
-
 
 const nDash = "–";
 
@@ -54,44 +55,201 @@ export const hangulMaps = Object.freeze({
     finals: "ㄱㄲㄳㄴㄵㄶㄷㄹㄺㄻㄼㄽㄾㄿㅀㅁㅂㅄㅅㅆㅇㅈㅊㅋㅌㅍㅎ",
     hangulVowelsRoman: new StringMap(
         "ㅏㅐㅑㅒㅓㅔㅕㅖㅗㅘㅙㅚㅛㅜㅝㅞㅟㅠㅡㅢㅣ",
-        [   "a", "ae", "ya", "yae", "eo", "e", "yeo", "ye", "o", "wa", "wae",
-            "oe", "yo", "u", "wo", "we", "wi", "yu", "eu", "ui", "i"
+        [
+            "a",
+            "ae",
+            "ya",
+            "yae",
+            "eo",
+            "e",
+            "yeo",
+            "ye",
+            "o",
+            "wa",
+            "wae",
+            "oe",
+            "yo",
+            "u",
+            "wo",
+            "we",
+            "wi",
+            "yu",
+            "eu",
+            "ui",
+            "i",
         ]
     ),
-    hangulIntialsRoman: new StringMap(
+    hangulInitialsRoman: new StringMap(
         "ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ",
-        [   "g", "kk", "n", "d", "tt", "r", "m", "b", "pp", "s", "ss",
-            nDash, "j", "jj", "ch", "k", "t", "p", "h"
+        [
+            "g",
+            "kk",
+            "n",
+            "d",
+            "tt",
+            "r",
+            "m",
+            "b",
+            "pp",
+            "s",
+            "ss",
+            nDash,
+            "j",
+            "jj",
+            "ch",
+            "k",
+            "t",
+            "p",
+            "h",
         ]
     ),
-    hangulFinalsRoman: new StringMap(
-        "ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ",
-        [   "k", "k", "n", "t", nDash, "l", "m", "p", nDash, "t", "t", "ng", "t",
-            nDash, "t", "k", "t", "p", "h"
-        ]
-    ),
+    hangulFinalsRoman: new StringMap("ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ", [
+        "k",
+        "k",
+        "n",
+        "t",
+        nDash,
+        "l",
+        "m",
+        "p",
+        nDash,
+        "t",
+        "t",
+        "ng",
+        "t",
+        nDash,
+        "t",
+        "k",
+        "t",
+        "p",
+        "h",
+    ]),
     hangulFinalInitialRoman: new StringMap(
-        [   "ㄱㅇ", "ㄱㄴ", "ㄱㄹ", "ㄱㅁ", "ㄱㅋ",
-            "ㄴㅇ", "ㄴㄱ", "ㄴㄹ",
-            "ㄷㅇ", "ㄷㄴ", "ㄷㄹ", "ㄷㅌ", "ㄷㅎ",
-            "ㄹㅇ", "ㄹㄴ", "ㄹㄹ", "ㅁㅇ", "ㅁㄹ", "ㅂㅇ", "ㅂㄴ", "ㅂㄹ", "ㅂㅁ", "ㅂㅍ",
-            "ㅅㅇ", "ㅅㄴ", "ㅅㄹ", "ㅅㅁ", "ㅅㅌ", "ㅅㅎ",
+        [
+            "ㄱㅇ",
+            "ㄱㄴ",
+            "ㄱㄹ",
+            "ㄱㅁ",
+            "ㄱㅋ",
+            "ㄴㅇ",
+            "ㄴㄱ",
+            "ㄴㄹ",
+            "ㄷㅇ",
+            "ㄷㄴ",
+            "ㄷㄹ",
+            "ㄷㅌ",
+            "ㄷㅎ",
+            "ㄹㅇ",
+            "ㄹㄴ",
+            "ㄹㄹ",
+            "ㅁㅇ",
+            "ㅁㄹ",
+            "ㅂㅇ",
+            "ㅂㄴ",
+            "ㅂㄹ",
+            "ㅂㅁ",
+            "ㅂㅍ",
+            "ㅅㅇ",
+            "ㅅㄴ",
+            "ㅅㄹ",
+            "ㅅㅁ",
+            "ㅅㅌ",
+            "ㅅㅎ",
             "ㅇㄹ",
-            "ㅈㅇ", "ㅈㄴ", "ㅈㄹ", "ㅈㅁ", "ㅈㅌ", "ㅈㅎ",
-            "ㅊㅇ", "ㅊㄴ", "ㅊㄹ", "ㅊㅁ", "ㅊㅌ", "ㅊㅎ",
-            "ㅌㅇ", "ㅌㄴ", "ㅌㄹ", "ㅌㅁ", "ㅌㅌ", "ㅌㅎ",
-            "ㅎㅇ", "ㅎㄱ", "ㅎㄴ", "ㅎㄷ", "ㅎㄹ", "ㅎㅁ", "ㅎㅂ", "ㅎㅈ", "ㅎㅊ", "ㅎㅋ", 'ㅎㅌ', "ㅎㅍ", "ㅎㅎ"
+            "ㅈㅇ",
+            "ㅈㄴ",
+            "ㅈㄹ",
+            "ㅈㅁ",
+            "ㅈㅌ",
+            "ㅈㅎ",
+            "ㅊㅇ",
+            "ㅊㄴ",
+            "ㅊㄹ",
+            "ㅊㅁ",
+            "ㅊㅌ",
+            "ㅊㅎ",
+            "ㅌㅇ",
+            "ㅌㄴ",
+            "ㅌㄹ",
+            "ㅌㅁ",
+            "ㅌㅌ",
+            "ㅌㅎ",
+            "ㅎㅇ",
+            "ㅎㄱ",
+            "ㅎㄴ",
+            "ㅎㄷ",
+            "ㅎㄹ",
+            "ㅎㅁ",
+            "ㅎㅂ",
+            "ㅎㅈ",
+            "ㅎㅊ",
+            "ㅎㅋ",
+            "ㅎㅌ",
+            "ㅎㅍ",
+            "ㅎㅎ",
         ],
-        [   "g", "ngn", "ngn", "ngm", `k${nDash}k`,
-            "n", `n${nDash}g`, "ll",
-            "d", "nn", "nn", "tt", "t",
-            "r", "ll", "ll", "m", "mn", "b", "mn", "mn", "mm", `p${nDash}p`,
-            "s", "nn", "nn", "nm", `t${nDash}t`, "t",
+        [
+            "g",
             "ngn",
-            "j", "nn", "nn", "nm", `t${nDash}t`, "t",
-            "ch", "nn", "nn", "nm", `t${nDash}t`, "t",
-            "t", "nn", "nn", "nm", `t${nDash}t`, "t",
-            "h", "k", "nn", "t", "nn", "nm", "p", "ch", "tch", "tk", "tt", "tp", "t"
+            "ngn",
+            "ngm",
+            `k${nDash}k`,
+            "n",
+            `n${nDash}g`,
+            "ll",
+            "d",
+            "nn",
+            "nn",
+            "tt",
+            "t",
+            "r",
+            "ll",
+            "ll",
+            "m",
+            "mn",
+            "b",
+            "mn",
+            "mn",
+            "mm",
+            `p${nDash}p`,
+            "s",
+            "nn",
+            "nn",
+            "nm",
+            `t${nDash}t`,
+            "t",
+            "ngn",
+            "j",
+            "nn",
+            "nn",
+            "nm",
+            `t${nDash}t`,
+            "t",
+            "ch",
+            "nn",
+            "nn",
+            "nm",
+            `t${nDash}t`,
+            "t",
+            "t",
+            "nn",
+            "nn",
+            "nm",
+            `t${nDash}t`,
+            "t",
+            "h",
+            "k",
+            "nn",
+            "t",
+            "nn",
+            "nm",
+            "p",
+            "ch",
+            "tch",
+            "tk",
+            "tt",
+            "tp",
+            "t",
         ]
     ),
     compoundVowels: new TwoWayMap(
@@ -100,9 +258,18 @@ export const hangulMaps = Object.freeze({
     ),
     consonantDigraphs: new TwoWayMap(
         [
-            "ㄱㅅ", "ㄴㅈ", "ㄴㅎ", "ㄹㄱ", "ㄹㅁ", "ㄹㅂ",
-            "ㄹㅅ", "ㄹㅌ", "ㄹㅍ", "ㄹㅎ", "ㅂㅅ"
+            "ㄱㅅ",
+            "ㄴㅈ",
+            "ㄴㅎ",
+            "ㄹㄱ",
+            "ㄹㅁ",
+            "ㄹㅂ",
+            "ㄹㅅ",
+            "ㄹㅌ",
+            "ㄹㅍ",
+            "ㄹㅎ",
+            "ㅂㅅ",
         ],
         "ㄳㄵㄶㄺㄻㄼㄽㄾㄿㅀㅄ"
-    )
+    ),
 });

@@ -4,10 +4,10 @@ import { hangulMaps as maps, isHangulCharacter } from "./mappings";
 /**
  * Return a string with the hangul converted into Roman characters, e.g.
  * "hello 강" => "hello gang"
- * @param {string} text 
+ * @param {string} text
  */
-export function romanize (text: string) {
-    let romanText = '';
+export function romanize(text: string) {
+    let romanText = "";
     let didPreviousCharSetInitial = false;
     let isPreviousCharHangul = false;
     let nextBlock = HangulBlock.fromChar(text[0] || "", false);
@@ -28,13 +28,12 @@ export function romanize (text: string) {
         if (!didPreviousCharSetInitial) {
             if (!isPreviousCharHangul && block.initial === "ㅇ") {
             } else {
-                romanText += maps.hangulIntialsRoman[block.initial];
+                romanText += maps.hangulInitialsRoman[block.initial];
             }
             // TODO: check what happens for "ㄺ" or any other digraph finals used on their own.
         }
         if (block.medial.length > 0) {
             romanText += maps.hangulVowelsRoman[block.medial];
-
         } else {
             didPreviousCharSetInitial = false;
             isPreviousCharHangul = true;
@@ -49,16 +48,16 @@ export function romanize (text: string) {
 
         if (block.final.length == 2) {
             // double-consonant ending, romanise the first jamo as if it were an initial
-            romanText += maps.hangulIntialsRoman[block.final[0]];
+            romanText += maps.hangulInitialsRoman[block.final[0]];
         }
 
         const thisFinal = block.final.slice(-1);
-        const special = maps.hangulFinalInitialRoman[thisFinal + nextBlock.initial];
+        const special =
+            maps.hangulFinalInitialRoman[thisFinal + nextBlock.initial];
 
         if (isHangulCharacter(nextChar) && special !== undefined) {
             romanText += special;
             didPreviousCharSetInitial = true;
-
         } else {
             romanText += maps.hangulFinalsRoman[thisFinal];
             didPreviousCharSetInitial = false;

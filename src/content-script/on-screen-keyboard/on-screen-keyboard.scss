@@ -1,7 +1,7 @@
 #kb-73ce1520-9c19-48ad-bf12-f7ec206ab11f {
     --key-margin: 5px;
     --text-distance: 3px;
-    --keys-per-row: 10;    
+    --keys-per-row: 10;
     --key-length: calc((100% - var(--key-margin) * 11) / 10);
 
     --background-color: #444;
@@ -19,7 +19,8 @@
     --key-mode-active-font-size: 1.15em;
     --key-mode-inactive-font-size: 0.85em;
 
-    &, * {
+    &,
+    * {
         user-select: none;
     }
 
@@ -73,7 +74,7 @@
             background-color: var(--key-active-background-color);
         }
 
-        &+kbd {
+        & + kbd {
             margin-left: 0;
         }
 
@@ -81,7 +82,7 @@
             position: absolute;
             left: var(--text-distance);
         }
-    
+
         .full {
             /* center text vertically */
             display: flex;
@@ -94,11 +95,11 @@
         .base {
             bottom: var(--text-distance);
         }
-    
+
         .shift {
             top: var(--text-distance);
         }
-    
+
         .full,
         .shift,
         .base {
@@ -129,7 +130,7 @@
             color: var(--key-mode-inactive-color);
         }
     }
-    
+
     &.shift {
         kbd .base {
             display: none;
@@ -172,7 +173,7 @@
         right: var(--text-distance);
         left: initial;
     }
-    
+
     &.hanMode .yongMode,
     &.yongMode .hanMode {
         font-size: var(--key-mode-inactive-font-size);

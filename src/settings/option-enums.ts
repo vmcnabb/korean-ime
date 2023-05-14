@@ -10,7 +10,7 @@ export const PersistOptionNames: Record<PersistOptions, string> = {
     [PersistOptions.AlwaysOff]: "Always Off",
     [PersistOptions.AlwaysOn]: "Always On",
     [PersistOptions.KeepLastState]: "Keep Last State",
-}
+};
 
 export function createPersistenceOption(description: string) {
     return createSelectOption(

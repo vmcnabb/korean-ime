@@ -1,4 +1,3 @@
-
 export type KeyboardState = {
     shift: boolean;
     mouse: {

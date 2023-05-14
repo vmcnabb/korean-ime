@@ -5,13 +5,18 @@ import { getSettings } from "../settings";
 start();
 
 async function start() {
-    const { settings, settingsStore, settingsManager, addSettingsUpdateListener } = await getSettings();
+    const {
+        settings,
+        settingsStore,
+        settingsManager,
+        addSettingsUpdateListener,
+    } = await getSettings();
 
     const app = createApp(App, {
         rootSection: settings,
         settingsStore,
         settingsManager,
-        addSettingsUpdateListener
+        addSettingsUpdateListener,
     });
 
     app.mount("#app");

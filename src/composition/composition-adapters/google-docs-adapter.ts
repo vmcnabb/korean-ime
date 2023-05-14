@@ -16,11 +16,15 @@ export class GoogleDocsAdapter extends CompositionAdapter {
     }
 
     @methodNotSupported
-    getPreviousCharacter(): string | undefined { return; }
+    getPreviousCharacter(): string | undefined {
+        return;
+    }
 
     deleteContentBackwards(): void {
         if (this.isCompositing) {
-            throw new Error("Cannot delete character backward when compositing");
+            throw new Error(
+                "Cannot delete character backward when compositing"
+            );
         }
 
         super._deleteContentBackwards(() => {});
@@ -52,36 +56,38 @@ export class GoogleDocsAdapter extends CompositionAdapter {
     */
     beginComposition(data: string, keyCode: KeyCode) {
         if (this.isCompositing) {
-            throw new Error("Cannot begin composition when already compositing");
+            throw new Error(
+                "Cannot begin composition when already compositing"
+            );
         }
 
         const actions: DispatchableAction[] = [
             new KeyboardEvent("keydown", {
                 key: "Process",
                 code: keyCode,
-                view: window
+                view: window,
             }),
             new CompositionEvent("compositionstart", {
-                view: window
+                view: window,
             }),
             new InputEvent("beforeinput", {
                 data: data,
                 isComposing: true,
-                inputType: "insertCompositionText"
+                inputType: "insertCompositionText",
             }),
             new CompositionEvent("compositionupdate", {
                 data: data,
-                view: window
+                view: window,
             }),
             new InputEvent("input", {
                 data: data,
                 isComposing: true,
-                inputType: "insertCompositionText"
+                inputType: "insertCompositionText",
             }),
             new KeyboardEvent("keyup", {
                 key: "Process",
                 code: keyCode,
-                view: window
+                view: window,
             }),
         ];
 
@@ -108,28 +114,28 @@ export class GoogleDocsAdapter extends CompositionAdapter {
                 key: "Process",
                 code: keyCode,
                 isComposing: true,
-                view: window
+                view: window,
             }),
             new InputEvent("beforeinput", {
                 data: data,
                 isComposing: true,
-                inputType: "insertCompositionText"
+                inputType: "insertCompositionText",
             }),
             new CompositionEvent("compositionupdate", {
                 data: data,
-                view: window
+                view: window,
             }),
             new InputEvent("input", {
                 data: data,
                 isComposing: true,
-                inputType: "insertCompositionText"
+                inputType: "insertCompositionText",
             }),
             new KeyboardEvent("keyup", {
                 key: "Process",
                 code: keyCode,
                 isComposing: true,
-                view: window
-            })
+                view: window,
+            }),
         ];
 
         super.dispatchActions(actions);
@@ -141,10 +147,12 @@ export class GoogleDocsAdapter extends CompositionAdapter {
         care how it is ended, so just the compositionend event is fired.
      */
     endComposition(data: string) {
-        this.element.dispatchEvent(new CompositionEvent("compositionend", {
-            data: data,
-            view: window
-        }));
+        this.element.dispatchEvent(
+            new CompositionEvent("compositionend", {
+                data: data,
+                view: window,
+            })
+        );
         this.currentBlock = "";
         this.isCompositing = false;
     }

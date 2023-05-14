@@ -2,15 +2,15 @@ import { romanizeBeside, romanizeInPopup } from "./romanize-menu-actions";
 import { StateManager } from "./state-manager";
 
 export const menus = Object.freeze({
-    "onScreenKeyboard": {
-        id: "menu_onScreenKeyboard"
+    onScreenKeyboard: {
+        id: "menu_onScreenKeyboard",
     },
-    "romanizeInPopup": {
-        id: "menu_romanizeInPopup"
+    romanizeInPopup: {
+        id: "menu_romanizeInPopup",
     },
-    "romanizeBeside": {
-        id: "menu_romanizeBeside"
-    }
+    romanizeBeside: {
+        id: "menu_romanizeBeside",
+    },
 });
 
 export function setupMenuListener() {
@@ -37,23 +37,23 @@ export function setupMenuListener() {
 
 export function createMenus() {
     chrome.contextMenus.create({
-        type: 'normal',
+        type: "normal",
         id: menus.romanizeInPopup.id,
         title: chrome.i18n.getMessage(menus.romanizeInPopup.id),
-        contexts: ['all']
+        contexts: ["all"],
     });
 
     chrome.contextMenus.create({
-        type: 'normal',
+        type: "normal",
         id: menus.romanizeBeside.id,
         title: chrome.i18n.getMessage(menus.romanizeBeside.id),
-        contexts: ['editable']
+        contexts: ["editable"],
     });
 
     chrome.contextMenus.create({
         type: "checkbox",
         id: menus.onScreenKeyboard.id,
         title: chrome.i18n.getMessage(menus.onScreenKeyboard.id),
-        contexts: ['all']
+        contexts: ["all"],
     });
 }

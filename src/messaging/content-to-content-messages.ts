@@ -12,23 +12,29 @@ export enum ContentScriptBroadcastAction {
  * by the adapter attached to the active element.
  */
 type UpdateCompositionFeaturesMessage = {
-    type: "broadcast",
-    action: ContentScriptBroadcastAction.UpdateCompositionFeatures,
-    data: SupportedCompositionFeatures
-}
+    type: "broadcast";
+    action: ContentScriptBroadcastAction.UpdateCompositionFeatures;
+    data: SupportedCompositionFeatures;
+};
 
 type SendKeyMessage = {
-    type: "broadcast",
-    action: ContentScriptBroadcastAction.SendKey,
+    type: "broadcast";
+    action: ContentScriptBroadcastAction.SendKey;
     data: {
-        key: string,
-        keyCode: KeyCode
-    }
-}
+        key: string;
+        keyCode: KeyCode;
+    };
+};
 
-export type ContentScriptBroadcastMessage = UpdateCompositionFeaturesMessage | SendKeyMessage;
+export type ContentScriptBroadcastMessage =
+    | UpdateCompositionFeaturesMessage
+    | SendKeyMessage;
 
-export function isContentScriptBroadcastMessage(message: any): message is ContentScriptBroadcastMessage {
-    return message?.type === "broadcast"
-        && Object.values(ContentScriptBroadcastAction).includes(message.action);
+export function isContentScriptBroadcastMessage(
+    message: any
+): message is ContentScriptBroadcastMessage {
+    return (
+        message?.type === "broadcast" &&
+        Object.values(ContentScriptBroadcastAction).includes(message.action)
+    );
 }

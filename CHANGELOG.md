@@ -8,6 +8,7 @@ Install the latest release from the Chrome Web Store:
 * Added on-screen keyboard
 * Added support for Word for the Web
 * Added support for CKEditor
+* Added options page
 
 ### Internal
 * Updated manifest to v3

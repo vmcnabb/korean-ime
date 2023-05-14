@@ -1,20 +1,38 @@
-import { EnumLike, convertToOneWayNumericEnum, isNumericEnum } from "../types/enums";
-import { CheckboxOption, Option, OptionType, OptionsSection, SelectOption, SystemSetting, TypedOptionsSection } from "./option-types";
+import {
+    EnumLike,
+    convertToOneWayNumericEnum,
+    isNumericEnum,
+} from "../types/enums";
+import {
+    CheckboxOption,
+    Option,
+    OptionType,
+    OptionsSection,
+    SelectOption,
+    SystemSetting,
+    TypedOptionsSection,
+} from "./option-types";
 
-export function createSection<T extends {[key: string]: any & (Option | OptionsSection) }>(title: string, options: T): TypedOptionsSection<T> {
+export function createSection<
+    T extends { [key: string]: any & (Option | OptionsSection) }
+>(title: string, options: T): TypedOptionsSection<T> {
     return {
         type: OptionType.Section,
         title,
-        options
-    }
+        options,
+    };
 }
 
-export function createCheckBoxOption(title: string, defaultValue: boolean = false, description?: string): CheckboxOption {
+export function createCheckBoxOption(
+    title: string,
+    defaultValue = false,
+    description?: string
+): CheckboxOption {
     return {
         title,
         type: OptionType.Checkbox,
         value: defaultValue,
-        description
+        description,
     };
 }
 
@@ -37,23 +55,26 @@ export function createSelectOption<T extends EnumLike>(
         value: defaultValue,
         values: actual,
         names,
-        description
+        description,
     };
 
     return option;
 }
 
-export function createSystemSetting<T>(defaultValue: T): SystemSetting & { value: T } {
+export function createSystemSetting<T>(
+    defaultValue: T
+): SystemSetting & { value: T } {
     return {
         type: OptionType.System,
-        value: defaultValue
+        value: defaultValue,
     };
 }
 
-type FlattenOptionOrSection<T> =
-    T extends { options: infer U }
-    ? U : T extends { value: infer U }
-    ? U : T;
+type FlattenOptionOrSection<T> = T extends { options: infer U }
+    ? U
+    : T extends { value: infer U }
+    ? U
+    : T;
 
 /**
  * returns a type with all settings from the input, but only the values. It also removes
@@ -63,7 +84,6 @@ type FlattenOptionOrSection<T> =
  */
 export type SimplifySettings<T> = {
     [K in keyof T]: T[K] extends { options: any }
-    ? SimplifySettings<FlattenOptionOrSection<T[K]>>
-    : FlattenOptionOrSection<T[K]>
+        ? SimplifySettings<FlattenOptionOrSection<T[K]>>
+        : FlattenOptionOrSection<T[K]>;
 };
-

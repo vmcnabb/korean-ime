@@ -1,0 +1,16 @@
+{
+    "cSpell.words": [
+        "Backquote",
+        "beforeinput",
+        "compositionend",
+        "compositionupdate",
+        "Dispatchable",
+        "Hangul",
+        "Jamo",
+        "Kime",
+        "texteventtarget"
+    ],
+    "editor.codeActionsOnSave": {
+        "source.fixAll": true
+    }
+}

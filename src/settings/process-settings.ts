@@ -1,9 +1,21 @@
 import { SettingsStore } from "./default-settings";
-import { OptionsSection, isOption, isSection, isSystemSetting } from "./option-types";
+import {
+    OptionsSection,
+    isOption,
+    isSection,
+    isSystemSetting,
+} from "./option-types";
 
-export type SettingsChangedCallback = (path: string, previousValue: unknown, newValue: unknown) => void;
+export type SettingsChangedCallback = (
+    path: string,
+    previousValue: unknown,
+    newValue: unknown
+) => void;
 
-export function createSettingsStore(settings: OptionsSection, callback: SettingsChangedCallback) {
+export function createSettingsStore(
+    settings: OptionsSection,
+    callback: SettingsChangedCallback
+) {
     // create a default settings store by copying the default values from defaultSettings
     const settingsStore = {} as SettingsStore;
 
@@ -11,22 +23,34 @@ export function createSettingsStore(settings: OptionsSection, callback: Settings
         const value = settings.options[key as keyof typeof settings];
 
         if (isSection(value)) {
-            settingsStore[key as keyof SettingsStore] = populateSection(value, key, callback);
+            settingsStore[key as keyof SettingsStore] = populateSection(
+                value,
+                key,
+                callback
+            );
         }
     }
 
     return settingsStore;
 }
 
-function populateSection(section: OptionsSection, path: string, callback: SettingsChangedCallback): unknown {
+function populateSection(
+    section: OptionsSection,
+    path: string,
+    callback: SettingsChangedCallback
+): unknown {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const storeSection = {} as any;
 
     for (const key of Object.keys(section.options)) {
         const value = section.options[key];
 
         if (isSection(value)) {
-            storeSection[key as keyof typeof storeSection] = populateSection(value, `${path}.${key}`, callback);
-
+            storeSection[key as keyof typeof storeSection] = populateSection(
+                value,
+                `${path}.${key}`,
+                callback
+            );
         } else if (isOption(value)) {
             storeSection[key as keyof typeof storeSection] = value.value;
 
@@ -46,7 +70,7 @@ function populateSection(section: OptionsSection, path: string, callback: Settin
                         storeSection[key] = value;
                         callback(`${path}.${key}`, previousValue, value);
                     }
-                }
+                },
             });
         }
     }

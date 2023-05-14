@@ -1,4 +1,7 @@
-import { ServiceScriptMessage, ServiceScriptMessageAction } from "../messaging/service-to-content-messages";
+import {
+    ServiceScriptMessage,
+    ServiceScriptMessageAction,
+} from "../messaging/service-to-content-messages";
 import { PopulatePopupConverterMessage } from "./popup-converter/popup-converter-message";
 import { romanize } from "../romanize";
 import popupConverter from "./popup-converter/popup-converter.html";
@@ -11,14 +14,14 @@ export function romanizeInPopup(event: chrome.contextMenus.OnClickData) {
     chrome.windows.create(
         {
             url: popupConverter,
-            type: 'popup',
+            type: "popup",
             width: 600,
-            height: 400
+            height: 400,
         },
         function (newWindow) {
             setTimeout(() => {
                 if (!newWindow?.tabs || !newWindow.tabs[0].id) {
-                    console.error('Failed to create popup window');
+                    console.error("Failed to create popup window");
                     return;
                 }
 
@@ -29,8 +32,8 @@ export function romanizeInPopup(event: chrome.contextMenus.OnClickData) {
                         action: "populate",
                         data: {
                             original: selectionText,
-                            romanized: romanText
-                        }
+                            romanized: romanText,
+                        },
                     }
                 );
             }, 100);
@@ -38,7 +41,10 @@ export function romanizeInPopup(event: chrome.contextMenus.OnClickData) {
     );
 }
 
-export function romanizeBeside(event: chrome.contextMenus.OnClickData, tab: chrome.tabs.Tab | undefined) {
+export function romanizeBeside(
+    event: chrome.contextMenus.OnClickData,
+    tab: chrome.tabs.Tab | undefined
+) {
     if (!tab?.id || !event.selectionText) {
         return;
     }
@@ -49,12 +55,9 @@ export function romanizeBeside(event: chrome.contextMenus.OnClickData, tab: chro
 
     const romanText = romanize(event.selectionText);
 
-    chrome.tabs.sendMessage<ServiceScriptMessage>(
-        tab.id,
-        {
-            type: "serviceScriptMessage",
-            action: ServiceScriptMessageAction.InsertTextAfterSelection,
-            data: romanText
-        }
-    );
+    chrome.tabs.sendMessage<ServiceScriptMessage>(tab.id, {
+        type: "serviceScriptMessage",
+        action: ServiceScriptMessageAction.InsertTextAfterSelection,
+        data: romanText,
+    });
 }

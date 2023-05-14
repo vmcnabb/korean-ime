@@ -1,6 +1,12 @@
-import { ContentScriptRequestMessage, ContentScriptRequestAction } from "../messaging/content-to-service-messages";
+import {
+    ContentScriptRequestMessage,
+    ContentScriptRequestAction,
+} from "../messaging/content-to-service-messages";
 import { StateManager } from "./state-manager";
-import { ContentScriptBroadcastMessage, isContentScriptBroadcastMessage } from "../messaging/content-to-content-messages";
+import {
+    ContentScriptBroadcastMessage,
+    isContentScriptBroadcastMessage,
+} from "../messaging/content-to-content-messages";
 
 /**
  * This class is responsible for listening to messages from the content script.
@@ -26,37 +32,50 @@ export class ContentScriptListener {
         this.isListening = true;
 
         // listen for ContentScriptRequest messages and handle them
-        chrome.runtime.onMessage.addListener((message: ContentScriptRequestMessage | ContentScriptBroadcastMessage, sender) => {
-            console.debug("ContentScriptListener received message: ", message);
+        chrome.runtime.onMessage.addListener(
+            (
+                message:
+                    | ContentScriptRequestMessage
+                    | ContentScriptBroadcastMessage,
+                sender
+            ) => {
+                console.debug(
+                    "ContentScriptListener received message: ",
+                    message
+                );
 
-            if (!sender.tab?.id) {
-                return;
+                if (!sender.tab?.id) {
+                    return;
+                }
+
+                if (isContentScriptBroadcastMessage(message)) {
+                    this.forwardMessageToTab(sender.tab.id, message);
+                    return;
+                }
+
+                switch (message.action) {
+                    case ContentScriptRequestAction.ToggleHanYongMode:
+                        StateManager.instance.toggleHanYongMode(sender.tab.id);
+                        break;
+
+                    case ContentScriptRequestAction.RefreshState:
+                        StateManager.instance.sendStateToTab(sender.tab.id);
+                        break;
+                }
             }
-
-            if (isContentScriptBroadcastMessage(message)) {
-                this.forwardMessageToTab(sender.tab.id, message);
-                return;
-            }
-
-            switch (message.action) {
-                case ContentScriptRequestAction.ToggleHanYongMode:
-                    StateManager.instance.toggleHanYongMode(sender.tab.id);
-                    break;
-
-                case ContentScriptRequestAction.RefreshState:
-                    StateManager.instance.sendStateToTab(sender.tab.id);
-                    break;
-            }
-        });
+        );
 
         // listen for active tab changes and send the state to the new tab
-        chrome.tabs.onActivated.addListener(activeInfo => {
+        chrome.tabs.onActivated.addListener((activeInfo) => {
             StateManager.instance.sendStateToTab(activeInfo.tabId);
             StateManager.instance.updatePresentation(activeInfo.tabId);
         });
     }
 
-    private forwardMessageToTab(tabId: number, message: ContentScriptBroadcastMessage) {
+    private forwardMessageToTab(
+        tabId: number,
+        message: ContentScriptBroadcastMessage
+    ) {
         chrome.tabs.sendMessage(tabId, message);
     }
 }

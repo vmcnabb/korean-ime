@@ -1,11 +1,18 @@
 import { createDefaultSettings } from "./default-settings";
-import { SettingsChangedCallback, createSettingsStore } from "./process-settings";
+import {
+    SettingsChangedCallback,
+    createSettingsStore,
+} from "./process-settings";
 import { SettingsManager } from "./settings-manager";
 
 export async function getSettings() {
     const listeners: SettingsChangedCallback[] = [];
 
-    const callback: SettingsChangedCallback = (path, previousValue, newValue) => {
+    const callback: SettingsChangedCallback = (
+        path,
+        previousValue,
+        newValue
+    ) => {
         for (const listener of listeners) {
             try {
                 listener(path, previousValue, newValue);
@@ -19,7 +26,6 @@ export async function getSettings() {
         listeners.push(listener);
     };
 
-
     const settings = createDefaultSettings();
     const settingsStore = createSettingsStore(settings, callback);
 
@@ -27,5 +33,10 @@ export async function getSettings() {
     const restoredSettings = await settingsManager.restoreOptions();
     settingsManager.copySettings(restoredSettings, settingsStore);
 
-    return { settings, settingsStore, settingsManager, addSettingsUpdateListener };
+    return {
+        settings,
+        settingsStore,
+        settingsManager,
+        addSettingsUpdateListener,
+    };
 }

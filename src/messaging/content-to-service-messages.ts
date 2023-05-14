@@ -8,13 +8,18 @@ export enum ContentScriptRequestAction {
 }
 
 export type ContentScriptRequestMessage = {
-    type: "contentScriptRequest",
-    action: ContentScriptRequestAction.RefreshState
-        | ContentScriptRequestAction.ToggleHanYongMode
-}
+    type: "contentScriptRequest";
+    action:
+        | ContentScriptRequestAction.RefreshState
+        | ContentScriptRequestAction.ToggleHanYongMode;
+};
 
-export function isContentScriptRequestMessage(message: any): message is ContentScriptRequestMessage {
-    return message
-        && message.type === "contentScriptRequest"
-        && Object.values(ContentScriptRequestAction).includes(message.action);
+export function isContentScriptRequestMessage(
+    message: any
+): message is ContentScriptRequestMessage {
+    return (
+        message &&
+        message.type === "contentScriptRequest" &&
+        Object.values(ContentScriptRequestAction).includes(message.action)
+    );
 }

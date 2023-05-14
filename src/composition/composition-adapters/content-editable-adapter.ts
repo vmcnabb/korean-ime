@@ -4,7 +4,7 @@ import { CompositionAdapter, DispatchableAction } from "./composition-adapter";
 /**
  * Handles IME composition for contentEditable elements.
  * Also works in CKEditor.
- * 
+ *
  * Causes "interesting" behaviour in Google Docs. This suggests we are not quite
  * implementing our text entry exactly the same as the browser does - which is our goal.
  * @param {HTMLElement} element
@@ -13,7 +13,7 @@ export class ContentEditableAdapter extends CompositionAdapter {
     private isCompositing: boolean = false;
     private _currentBlock: string = "";
 
-    /** 
+    /**
      * Used to display or underline the current composition.
      */
     private compositingBox?: HTMLElement = undefined;
@@ -34,7 +34,9 @@ export class ContentEditableAdapter extends CompositionAdapter {
     }
 
     deleteContentBackwards(): void {
-        super._deleteContentBackwards(() => { document.execCommand("delete"); });
+        super._deleteContentBackwards(() => {
+            document.execCommand("delete");
+        });
     }
 
     getPreviousCharacter(): string | undefined {
@@ -45,7 +47,7 @@ export class ContentEditableAdapter extends CompositionAdapter {
         }
 
         const range = selection.getRangeAt(0).cloneRange();
-        range.createContextualFragment
+        range.createContextualFragment;
 
         // if range is not caret, return undefined
         if (range.startOffset !== range.endOffset) {
@@ -53,7 +55,10 @@ export class ContentEditableAdapter extends CompositionAdapter {
         }
 
         // if range start and end don't have this.element as an ancestor, return undefined
-        if (!this.element.contains(range.startContainer) || !this.element.contains(range.endContainer)) {
+        if (
+            !this.element.contains(range.startContainer) ||
+            !this.element.contains(range.endContainer)
+        ) {
             return undefined;
         }
 
@@ -96,7 +101,9 @@ export class ContentEditableAdapter extends CompositionAdapter {
     */
     beginComposition(data: string, keyCode: KeyCode) {
         if (this.isCompositing) {
-            throw new Error("Cannot begin composition when already compositing");
+            throw new Error(
+                "Cannot begin composition when already compositing"
+            );
         }
 
         const eventsToDispatch: DispatchableAction[] = [
@@ -212,7 +219,7 @@ export class ContentEditableAdapter extends CompositionAdapter {
                 isComposing: true,
                 view: window,
                 bubbles: true,
-            })
+            }),
         ];
 
         this.dispatchActions(eventsToDispatch);
@@ -229,18 +236,20 @@ export class ContentEditableAdapter extends CompositionAdapter {
         }
 
         try {
-            this.element.dispatchEvent(new CompositionEvent("compositionend", {
-                data: data,
-                view: window,
-                bubbles: true,
-            }));
+            this.element.dispatchEvent(
+                new CompositionEvent("compositionend", {
+                    data: data,
+                    view: window,
+                    bubbles: true,
+                })
+            );
 
             // modify the character immediately before the caret
             const selection = window.getSelection();
             if (selection) {
                 const range = selection.getRangeAt(0);
 
-                if (process.env.NODE_ENV === 'development') {
+                if (process.env.NODE_ENV === "development") {
                     if (range.startOffset === 0) {
                         debugger; // we "know" there is a character before the caret, but apparently not.
                     }
@@ -265,7 +274,9 @@ export class ContentEditableAdapter extends CompositionAdapter {
 
         const selection = window.getSelection();
         if (!selection) {
-            throw new Error("Cannot input character when there is no selection");
+            throw new Error(
+                "Cannot input character when there is no selection"
+            );
         }
 
         const inputCharacterFn = () => {
@@ -307,7 +318,7 @@ export class ContentEditableAdapter extends CompositionAdapter {
         const selection = window.getSelection();
 
         if (!selection || selection.rangeCount === 0) {
-            console.error("no selection!")
+            console.error("no selection!");
             return;
         }
 
@@ -316,7 +327,7 @@ export class ContentEditableAdapter extends CompositionAdapter {
 
         // Create a temporary span element at the caret position to measure the height/width of the
         // selection of a Hangul character as well as the x/y coordinates of the caret.
-        const span = document.createElement('span');
+        const span = document.createElement("span");
         span.textContent = "아"; // same height/width as all Hangul characters
         span.style.display = "inline-block";
         range.insertNode(span);
@@ -329,9 +340,10 @@ export class ContentEditableAdapter extends CompositionAdapter {
         const scrollTop = window.scrollY;
         const scrollLeft = window.scrollX;
 
-        const left = characterRect.left
-            - characterRect.width // we created the compositing box after already rendering the character
-            + scrollLeft;
+        const left =
+            characterRect.left -
+            characterRect.width + // we created the compositing box after already rendering the character
+            scrollLeft;
         const top = characterRect.top + scrollTop;
 
         const borderLeftWidth = 1;
@@ -351,7 +363,7 @@ export class ContentEditableAdapter extends CompositionAdapter {
             borderTop: `${borderTopWidth}px solid #48F`,
             borderRight: "1px solid #48F",
             borderBottom: "1px solid #48F",
-        }
+        };
 
         const characterBox = document.createElement("div");
         Object.assign(characterBox.style, style);
@@ -361,7 +373,9 @@ export class ContentEditableAdapter extends CompositionAdapter {
         this.compositingBox = characterBox;
     }
 
-    private getAssignableStyles(sourceElement: Element): Partial<CSSStyleDeclaration> {
+    private getAssignableStyles(
+        sourceElement: Element
+    ): Partial<CSSStyleDeclaration> {
         const computedStyles = window.getComputedStyle(sourceElement);
 
         const styles: Record<CSSStringKey, string> = {} as any;
@@ -373,7 +387,7 @@ export class ContentEditableAdapter extends CompositionAdapter {
         const defaultStyles = window.getComputedStyle(testElement);
 
         for (let i = 0; i < computedStyles.length; i++) {
-            const styleName = computedStyles[i] as CSSStringKey
+            const styleName = computedStyles[i] as CSSStringKey;
             if (shouldExclude(styleName, computedStyles, defaultStyles)) {
                 continue;
             }
@@ -384,16 +398,30 @@ export class ContentEditableAdapter extends CompositionAdapter {
 
         return styles;
 
-        function shouldExclude(styleName: string, computedStyles: CSSStyleDeclaration, defaultStyles: CSSStyleDeclaration) {
+        function shouldExclude(
+            styleName: string,
+            computedStyles: CSSStyleDeclaration,
+            defaultStyles: CSSStyleDeclaration
+        ) {
             const excludeStartWith = [
-                "background", "border", "outline", "position", "display", "visibility"
+                "background",
+                "border",
+                "outline",
+                "position",
+                "display",
+                "visibility",
             ];
 
-            if (excludeStartWith.some(prefix => styleName.startsWith(prefix))) {
+            if (
+                excludeStartWith.some((prefix) => styleName.startsWith(prefix))
+            ) {
                 return true;
             }
 
-            if (computedStyles.getPropertyValue(styleName) === defaultStyles.getPropertyValue(styleName)) {
+            if (
+                computedStyles.getPropertyValue(styleName) ===
+                defaultStyles.getPropertyValue(styleName)
+            ) {
                 return true;
             }
 
@@ -415,8 +443,9 @@ type StringStyleKeys<T> = {
 
 type CSSStringKey = Extract<StringStyleKeys<CSSStyleDeclaration>, string>;
 
-
-export function updateSelectionToIncludePreviousCharacter(topContainer: Element): Range | undefined {
+export function updateSelectionToIncludePreviousCharacter(
+    topContainer: Element
+): Range | undefined {
     const selection = document.getSelection();
     if (!selection) {
         return;
