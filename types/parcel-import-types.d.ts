@@ -1,11 +1,11 @@
 // Let Typescript know that we can import these file types.
 
-declare module '*.png' {
+declare module "*.png" {
     const value: string;
     export default value;
 }
 
-declare module '*.html' {
+declare module "*.html" {
     const value: string;
     export default value;
 }

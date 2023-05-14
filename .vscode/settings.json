@@ -8,7 +8,8 @@
         "Hangul",
         "Jamo",
         "Kime",
-        "texteventtarget"
+        "texteventtarget",
+        "McNabb"
     ],
     "editor.codeActionsOnSave": {
         "source.fixAll": true
