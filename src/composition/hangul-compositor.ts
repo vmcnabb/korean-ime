@@ -2,12 +2,10 @@ import { hasProperties } from "../types/objects";
 import {
     compoundConsonantMap,
     compoundVowelMap,
-    hangulMaps,
+    jamoIndices,
     isHangulCharacter,
 } from "../mappings";
 import { HangulBlock } from "./hangul-block";
-
-const { initials, medials, finals } = hangulMaps;
 
 type CompositingResult =
     | { started: string }
@@ -94,14 +92,14 @@ export class HangulCompositor {
                 updated: block.toChar(),
             };
         } else if (
-            initials.indexOf(block.initial) > -1 &&
-            medials.indexOf(jamo) > -1
+            jamoIndices.initials.indexOf(block.initial) > -1 &&
+            jamoIndices.medials.indexOf(jamo) > -1
         ) {
             // (C)+V
             return this.addMedialJamo(jamo);
         } else if (
             compoundConsonantMap.has(block.initial) &&
-            medials.indexOf(jamo) > -1
+            jamoIndices.medials.indexOf(jamo) > -1
         ) {
             // (C)C+V
             // e.g. ㄳ + ㅏ = ㄱ사
@@ -136,7 +134,7 @@ export class HangulCompositor {
     private addMedialJamo(jamo: string): CompositingResult {
         const block = this.block;
         const combined = block.medial + jamo;
-        const isMedial = medials.indexOf(jamo) > -1;
+        const isMedial = jamoIndices.medials.indexOf(jamo) > -1;
 
         if ((!block.medial && isMedial) || compoundVowelMap.has(combined)) {
             // (C)+V or (C+V)V
@@ -163,14 +161,14 @@ export class HangulCompositor {
         const block = this.block;
         const combined = block.final + jamo;
         const isValidFinal =
-            (!block.final && finals.indexOf(jamo) > -1) ||
+            (!block.final && jamoIndices.finals.indexOf(jamo) > -1) ||
             compoundConsonantMap.has(combined);
 
         if (isValidFinal) {
             // C+(V|VV)+(C|CC)
             block.final += jamo;
             return { updated: block.toChar() };
-        } else if (block.final && medials.indexOf(jamo) > -1) {
+        } else if (block.final && jamoIndices.medials.indexOf(jamo) > -1) {
             // if this is a vowel, take last consonant and create new character
             const length = block.final.length;
             const lastConsonant = block.final[length - 1];

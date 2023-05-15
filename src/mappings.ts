@@ -3,18 +3,7 @@ class ReadOnlyBiMap<K, V> {
     private readonly backwardMap = new Map<V, K>();
 
     constructor(keyValuePairs: [key: K, value: V][]) {
-        keyValuePairs.forEach(([key, value]) => {
-            if (this.forwardMap.has(key)) {
-                throw new Error(`Duplicate key: ${key}`);
-            }
-
-            if (this.backwardMap.has(value)) {
-                throw new Error(`Duplicate value: ${value}`);
-            }
-
-            this.forwardMap.set(key, value);
-            this.backwardMap.set(value, key);
-        });
+        keyValuePairs.forEach(this.add.bind(this));
     }
 
     get(key: K) {
@@ -32,6 +21,19 @@ class ReadOnlyBiMap<K, V> {
     hasReverse(value: V) {
         return this.backwardMap.has(value);
     }
+
+    private add([key, value]: [K, V]) {
+        if (this.forwardMap.has(key)) {
+            throw new Error(`Duplicate key: ${key}`);
+        }
+
+        if (this.backwardMap.has(value)) {
+            throw new Error(`Duplicate value: ${value}`);
+        }
+
+        this.forwardMap.set(key, value);
+        this.backwardMap.set(value, key);
+    }
 }
 
 export function isHangulCharacter(char: string) {
@@ -45,6 +47,7 @@ export function isHangulCharacter(char: string) {
     );
 }
 
+/** compound vowel = complex vowel = 이중모음 (double vowel) */
 export const compoundVowelMap = new ReadOnlyBiMap([
     ["ㅗㅏ", "ㅘ"],
     ["ㅗㅐ", "ㅙ"],
@@ -55,6 +58,7 @@ export const compoundVowelMap = new ReadOnlyBiMap([
     ["ㅡㅣ", "ㅢ"],
 ]);
 
+/** compound consonant = complex consonant = 이중자음 (double consonant) */
 export const compoundConsonantMap = new ReadOnlyBiMap([
     ["ㄱㅅ", "ㄳ"],
     ["ㄴㅈ", "ㄵ"],
@@ -69,7 +73,7 @@ export const compoundConsonantMap = new ReadOnlyBiMap([
     ["ㅂㅅ", "ㅄ"],
 ]);
 
-export const hangulMaps = Object.freeze({
+export const jamoIndices = Object.freeze({
     initials: "ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ",
     medials: "ㅏㅐㅑㅒㅓㅔㅕㅖㅗㅘㅙㅚㅛㅜㅝㅞㅟㅠㅡㅢㅣ",
     finals: "ㄱㄲㄳㄴㄵㄶㄷㄹㄺㄻㄼㄽㄾㄿㅀㅁㅂㅄㅅㅆㅇㅈㅊㅋㅌㅍㅎ",

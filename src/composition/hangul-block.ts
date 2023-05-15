@@ -1,10 +1,10 @@
 import {
     compoundConsonantMap,
     compoundVowelMap,
-    hangulMaps,
+    jamoIndices,
 } from "../mappings";
 
-const { initials, medials, finals } = hangulMaps;
+const { initials, medials, finals } = jamoIndices;
 
 /**
  * Class representing a Hangul block (Korean character).
