@@ -1,3 +1,4 @@
+import { hasProperties } from "src/types/objects";
 import { TabState } from "../extension-state/tab-state";
 
 export enum ServiceScriptMessageAction {
@@ -5,30 +6,30 @@ export enum ServiceScriptMessageAction {
     UpdateState = "updateState",
 }
 
-export namespace ServiceScriptMessage {
-    export type TabStateMessage = {
-        type: "serviceScriptMessage";
-        action: ServiceScriptMessageAction.UpdateState;
-        data: TabState;
-    };
+export type TabStateMessage = {
+    type: "serviceScriptMessage";
+    action: ServiceScriptMessageAction.UpdateState;
+    data: TabState;
+};
 
-    export type InsertTextAfterSelectionMessage = {
-        type: "serviceScriptMessage";
-        action: ServiceScriptMessageAction.InsertTextAfterSelection;
-        data: string;
-    };
-}
+export type InsertTextAfterSelectionMessage = {
+    type: "serviceScriptMessage";
+    action: ServiceScriptMessageAction.InsertTextAfterSelection;
+    data: string;
+};
 
 export type ServiceScriptMessage =
-    | ServiceScriptMessage.TabStateMessage
-    | ServiceScriptMessage.InsertTextAfterSelectionMessage;
+    | TabStateMessage
+    | InsertTextAfterSelectionMessage;
 
 export function isServiceScriptMessage(
-    message: any
+    message: unknown
 ): message is ServiceScriptMessage {
     return (
-        message &&
+        hasProperties(message, "type", "action") &&
         message.type === "serviceScriptMessage" &&
-        Object.values(ServiceScriptMessageAction).includes(message.action)
+        Object.values(ServiceScriptMessageAction).includes(
+            message.action as ServiceScriptMessageAction
+        )
     );
 }

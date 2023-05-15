@@ -1,3 +1,5 @@
+import { hasProperties } from "src/types/objects";
+
 export enum OptionsPageMessageAction {
     NotifyOptionsChanged = "notifyOptionsChanged",
 }
@@ -8,11 +10,13 @@ export type OptionsPageMessage = {
 };
 
 export function isOptionsPageMessage(
-    message: any
+    message: unknown
 ): message is OptionsPageMessage {
     return (
-        message &&
+        hasProperties(message, "type", "action") &&
         message.type === "optionsPageMessage" &&
-        Object.values(OptionsPageMessageAction).includes(message.action)
+        Object.values(OptionsPageMessageAction).includes(
+            message.action as OptionsPageMessageAction
+        )
     );
 }

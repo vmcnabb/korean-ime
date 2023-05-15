@@ -14,6 +14,7 @@ import {
 import {
     ServiceScriptMessage,
     ServiceScriptMessageAction,
+    TabStateMessage,
     isServiceScriptMessage,
 } from "../messaging/service-to-content-messages";
 
@@ -60,7 +61,7 @@ function setupMessageListener() {
     });
 }
 
-function handleTabStateMessage(message: ServiceScriptMessage.TabStateMessage) {
+function handleTabStateMessage(message: TabStateMessage) {
     if (message.data.koreanKeyboardMode !== textEntryMode) {
         setTextEntryMode(message.data.koreanKeyboardMode);
     }

@@ -1,3 +1,7 @@
+const hasOwnProperty = (obj: object, prop: string) => {
+    return Object.prototype.hasOwnProperty.call(obj, prop);
+};
+
 class StringMap {
     [key: string]: string | undefined;
 
@@ -7,9 +11,10 @@ class StringMap {
         }
 
         for (let i = 0; i < keys.length; i++) {
-            if (this.hasOwnProperty(keys[i])) {
+            if (hasOwnProperty(this, keys[i])) {
                 throw new Error("Cannot have duplicate key: " + keys[i]);
             }
+
             this[keys[i]] = values[i];
         }
     }
@@ -24,7 +29,10 @@ class TwoWayMap {
         }
 
         for (let i = 0; i < left.length; i++) {
-            if (this.hasOwnProperty(left[i]) || this.hasOwnProperty(right[i])) {
+            if (
+                hasOwnProperty(this, left[i]) ||
+                hasOwnProperty(this, right[i])
+            ) {
                 throw new Error(
                     "left and right cannot share or repeat any values."
                 );
@@ -43,8 +51,11 @@ export function isHangulCharacter(char: string) {
     if (!char) {
         return false;
     }
-    const cc = char.charCodeAt(0);
-    return (cc >= 0xac00 && cc <= 0xd7a3) || (cc >= 0x3131 && cc <= 0x318e);
+    const charCode = char.charCodeAt(0);
+    return (
+        (charCode >= 0xac00 && charCode <= 0xd7a3) ||
+        (charCode >= 0x3131 && charCode <= 0x318e)
+    );
 }
 
 const nDash = "–";

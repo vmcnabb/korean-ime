@@ -64,22 +64,22 @@ export function convertToOneWayNumericEnum<T extends NumericEnum>(
     const entries = Object.entries(enumLike);
     const filtered = entries.filter(entryIs(isString, isNumber));
     const newObject = Object.fromEntries(filtered);
-    return newObject as any;
+    return newObject as TypedOneWayNumericEnum<T>;
 }
 
-function isString(value: any): value is string {
+function isString(value: unknown): value is string {
     return typeof value === "string";
 }
 
-function isNumber(value: any): value is number {
+function isNumber(value: unknown): value is number {
     return typeof value === "number";
 }
 
 function entryIs<T1, T2>(
-    keyTypeGuard: (value: any) => value is T1,
-    valueTypeGuard: (value: any) => value is T2
+    keyTypeGuard: (value: unknown) => value is T1,
+    valueTypeGuard: (value: unknown) => value is T2
 ) {
-    return function (entry: [any, any]): entry is [T1, T2] {
+    return function (entry: [unknown, unknown]): entry is [T1, T2] {
         const [key, value] = entry;
         return keyTypeGuard(key) && valueTypeGuard(value);
     };

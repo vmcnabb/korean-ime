@@ -15,7 +15,9 @@ export class ContentScriptListener {
     private static _instance: ContentScriptListener;
     private isListening = false;
 
-    private constructor() {}
+    private constructor() {
+        // private constructor to prevent instantiation
+    }
 
     public static get instance(): ContentScriptListener {
         if (!ContentScriptListener._instance) {

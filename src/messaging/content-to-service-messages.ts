@@ -1,7 +1,9 @@
 // messages sent from content scripts to the background script
 
+import { hasProperties } from "src/types/objects";
+
 export enum ContentScriptRequestAction {
-    /** request the tabstate from the service script */
+    /** request the TabState from the service script */
     RefreshState = "refreshState",
     /** request the service script to toggle han/yong mode */
     ToggleHanYongMode = "toggleHanYongMode",
@@ -15,11 +17,13 @@ export type ContentScriptRequestMessage = {
 };
 
 export function isContentScriptRequestMessage(
-    message: any
+    message: unknown
 ): message is ContentScriptRequestMessage {
     return (
-        message &&
+        hasProperties(message, "type", "action") &&
         message.type === "contentScriptRequest" &&
-        Object.values(ContentScriptRequestAction).includes(message.action)
+        Object.values(ContentScriptRequestAction).includes(
+            message.action as ContentScriptRequestAction
+        )
     );
 }

@@ -77,7 +77,7 @@ export class TextInputManager {
 
     private handleServiceScriptRequest(message: ServiceScriptMessage) {
         switch (message.action) {
-            case ServiceScriptMessageAction.InsertTextAfterSelection:
+            case ServiceScriptMessageAction.InsertTextAfterSelection: {
                 const element = this.getActiveElement(document);
 
                 if (!element) {
@@ -100,6 +100,7 @@ export class TextInputManager {
                 ); // KeyK is arbitrary
                 compositionAdapter.endComposition(message.data);
                 break;
+            }
         }
     }
 

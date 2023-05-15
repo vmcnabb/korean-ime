@@ -8,8 +8,8 @@ import { methodNotSupported } from "../../decorators/method-not-supported";
  * @param {HTMLElement} element
  */
 export class GoogleDocsAdapter extends CompositionAdapter {
-    private isCompositing: boolean = false;
-    private currentBlock: string = "";
+    private isCompositing = false;
+    private currentBlock = "";
 
     constructor(element: HTMLElement) {
         super(element);
@@ -27,7 +27,9 @@ export class GoogleDocsAdapter extends CompositionAdapter {
             );
         }
 
-        super._deleteContentBackwards(() => {});
+        super._deleteContentBackwards(() => {
+            // do nothing as Google Docs handles this for us
+        });
     }
 
     blur() {
@@ -158,7 +160,9 @@ export class GoogleDocsAdapter extends CompositionAdapter {
     }
 
     inputCharacter(data: string, keyCode: KeyCode): void {
-        super._inputCharacter(data, keyCode, () => {});
+        super._inputCharacter(data, keyCode, () => {
+            // do nothing as Google Docs handles this for us
+        });
     }
 
     /** @returns {EventTarget} */

@@ -28,12 +28,14 @@ original.oninput = doRomanize;
 
 document.querySelectorAll("[data-message]").forEach((el) => {
     const element = el as HTMLElement;
-    element.innerText = chrome.i18n.getMessage(element.dataset.message!);
+    element.innerText = element.dataset.message
+        ? chrome.i18n.getMessage(element.dataset.message)
+        : "";
 });
 
 document.querySelectorAll("[data-placeholder-message]").forEach((el) => {
     const element = el as HTMLElement;
-    element.dataset.placeholder = chrome.i18n.getMessage(
-        element.dataset.placeholderMessage!
-    );
+    element.dataset.placeholder = element.dataset.placeholderMessage
+        ? chrome.i18n.getMessage(element.dataset.placeholderMessage)
+        : "";
 });

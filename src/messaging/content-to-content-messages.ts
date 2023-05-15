@@ -1,5 +1,6 @@
 import { SupportedCompositionFeatures } from "src/composition/composition-adapters/composition-adapter";
 import { KeyCode } from "src/content-script/on-screen-keyboard/korean-keyboard-map";
+import { hasProperties } from "src/types/objects";
 
 /** intended for broadcasts to all content script on the current tab */
 export enum ContentScriptBroadcastAction {
@@ -31,10 +32,13 @@ export type ContentScriptBroadcastMessage =
     | SendKeyMessage;
 
 export function isContentScriptBroadcastMessage(
-    message: any
+    message: unknown
 ): message is ContentScriptBroadcastMessage {
     return (
-        message?.type === "broadcast" &&
-        Object.values(ContentScriptBroadcastAction).includes(message.action)
+        hasProperties(message, "type", "action") &&
+        message.type === "broadcast" &&
+        Object.values(ContentScriptBroadcastAction).includes(
+            message.action as ContentScriptBroadcastAction
+        )
     );
 }

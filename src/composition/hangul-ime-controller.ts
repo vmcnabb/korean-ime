@@ -36,10 +36,9 @@ export class HangulImeController {
         }
 
         this.compositionAdapter = compositionAdapter;
-        const self = this;
 
         Object.keys(this.eventHandlers).forEach((type) => {
-            const key = type as keyof typeof self.eventHandlers;
+            const key = type as keyof typeof this.eventHandlers;
 
             this.addListener(
                 compositionAdapter.getListenerTarget(type),

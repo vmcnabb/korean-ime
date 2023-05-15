@@ -10,8 +10,8 @@ import { CompositionAdapter, DispatchableAction } from "./composition-adapter";
  * @param {HTMLElement} element
  */
 export class ContentEditableAdapter extends CompositionAdapter {
-    private isCompositing: boolean = false;
-    private _currentBlock: string = "";
+    private isCompositing = false;
+    private _currentBlock = "";
 
     /**
      * Used to display or underline the current composition.
@@ -251,6 +251,7 @@ export class ContentEditableAdapter extends CompositionAdapter {
 
                 if (process.env.NODE_ENV === "development") {
                     if (range.startOffset === 0) {
+                        // eslint-disable-next-line no-debugger
                         debugger; // we "know" there is a character before the caret, but apparently not.
                     }
                 }

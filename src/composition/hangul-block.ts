@@ -38,16 +38,16 @@ export class HangulBlock {
 
     /**
      * Creates a HangulBlock from a single character string.
-     * @param {string} character The Hangul character to create a HangulBlock from.
-     * @param {boolean} separateMedialDigraph Indicates whether to separate medial digraphs.
-     * @param {boolean} separateFinalDigraph Indicates whether to separate final digraphs.
-     * @returns {HangulBlock} A new HangulBlock instance representing the given character.
+     * @param character The Hangul character to create a HangulBlock from.
+     * @param separateMedialDigraph Indicates whether to separate medial digraphs.
+     * @param separateFinalDigraph Indicates whether to separate final digraphs.
+     * @returns A new HangulBlock instance representing the given character.
      */
     static fromChar(
         character: string,
         separateMedialDigraph = true,
         separateFinalDigraph = true
-    ) {
+    ): HangulBlock {
         let workingIndex = character.charCodeAt(0) - 44032;
 
         if (workingIndex < 0) {

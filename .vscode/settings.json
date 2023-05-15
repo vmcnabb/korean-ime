@@ -4,12 +4,13 @@
         "beforeinput",
         "compositionend",
         "compositionupdate",
+        "contenteditable",
         "Dispatchable",
         "Hangul",
         "Jamo",
         "Kime",
-        "texteventtarget",
-        "McNabb"
+        "McNabb",
+        "texteventtarget"
     ],
     "editor.codeActionsOnSave": {
         "source.fixAll": true

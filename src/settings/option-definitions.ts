@@ -14,7 +14,10 @@ import {
 } from "./option-types";
 
 export function createSection<
-    T extends { [key: string]: any & (Option | OptionsSection) }
+    T extends {
+        [K in keyof T]: (T[K] extends infer U ? U : never) &
+            (Option | OptionsSection);
+    }
 >(title: string, options: T): TypedOptionsSection<T> {
     return {
         type: OptionType.Section,
@@ -37,16 +40,16 @@ export function createCheckBoxOption(
 }
 
 export function createSelectOption<T extends EnumLike>(
-    enume: T,
+    enumObj: T,
     title: string,
     defaultValue: T[keyof T],
     names: Record<T[keyof T], string>,
     description?: string
 ): SelectOption<T> {
-    let actual = enume;
+    let actual = enumObj;
 
-    if (isNumericEnum(enume)) {
-        actual = convertToOneWayNumericEnum(enume);
+    if (isNumericEnum(enumObj)) {
+        actual = convertToOneWayNumericEnum(enumObj);
     }
 
     const option: SelectOption<T> = {
@@ -83,7 +86,7 @@ type FlattenOptionOrSection<T> = T extends { options: infer U }
  * e.g. { title: "page title", options: { age: { value: 1, title: "bla",... } } } becomes { age: 1 }
  */
 export type SimplifySettings<T> = {
-    [K in keyof T]: T[K] extends { options: any }
+    [K in keyof T]: T[K] extends { options: unknown }
         ? SimplifySettings<FlattenOptionOrSection<T[K]>>
         : FlattenOptionOrSection<T[K]>;
 };

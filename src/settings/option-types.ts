@@ -51,8 +51,8 @@ export type TypedOptionsSection<T> = OptionsSection & {
     options: { [K in keyof T]: T[K] extends infer U ? U : never };
 };
 
-export function isSection(value: any): value is OptionsSection {
-    return value?.type === OptionType.Section;
+export function isSection(value: unknown): value is OptionsSection {
+    return hasType(value) && value.type === OptionType.Section;
 }
 
 export function isSelectOption(
@@ -61,14 +61,22 @@ export function isSelectOption(
     return option.type === OptionType.Select;
 }
 
-export function isOption(option: any): option is Option {
-    return option?.type !== undefined && option?.type !== OptionType.Section;
+export function isOption(option: unknown): option is Option {
+    return (
+        hasType(option) &&
+        option.type !== undefined &&
+        option.type !== OptionType.Section
+    );
 }
 
-export function isSystemSetting(option: any): option is SystemSetting {
-    return option?.type === OptionType.System;
+export function isSystemSetting(option: unknown): option is SystemSetting {
+    return hasType(option) && option.type === OptionType.System;
 }
 
-export function isCheckBoxOption(option: any): option is CheckboxOption {
-    return option?.type === OptionType.Checkbox;
+export function isCheckBoxOption(option: unknown): option is CheckboxOption {
+    return hasType(option) && option.type === OptionType.Checkbox;
+}
+
+function hasType(obj: unknown): obj is { type: OptionType } {
+    return Object.prototype.hasOwnProperty.call(obj, "type");
 }

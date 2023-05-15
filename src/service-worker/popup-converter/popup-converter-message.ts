@@ -1,3 +1,5 @@
+import { hasProperties } from "../../types/objects";
+
 export type PopulatePopupConverterMessage = {
     type: "populatePopupConverterMessage";
     action: "populate";
@@ -8,10 +10,11 @@ export type PopulatePopupConverterMessage = {
 };
 
 export function isPopulatePopupConverterMessage(
-    message: any
+    message: unknown
 ): message is PopulatePopupConverterMessage {
     return (
-        message?.type === "populatePopupConverterMessage" &&
-        message?.action === "populate"
+        hasProperties(message, "type", "action") &&
+        message.type === "populatePopupConverterMessage" &&
+        message.action === "populate"
     );
 }
