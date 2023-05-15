@@ -12,7 +12,6 @@ import {
     isContentScriptBroadcastMessage,
 } from "../messaging/content-to-content-messages";
 import {
-    ServiceScriptMessage,
     ServiceScriptMessageAction,
     TabStateMessage,
     isServiceScriptMessage,

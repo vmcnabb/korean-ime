@@ -335,7 +335,8 @@ export class ContentEditableAdapter extends CompositionAdapter {
 
         const characterRect = span.getBoundingClientRect();
         const selectionStyle = this.getAssignableStyles(span);
-        span.parentNode!.removeChild(span);
+
+        span.parentNode?.removeChild(span);
 
         // Take the current scroll position into account
         const scrollTop = window.scrollY;
@@ -379,7 +380,10 @@ export class ContentEditableAdapter extends CompositionAdapter {
     ): Partial<CSSStyleDeclaration> {
         const computedStyles = window.getComputedStyle(sourceElement);
 
-        const styles: Record<CSSStringKey, string> = {} as any;
+        const styles: Record<CSSStringKey, string> = {} as Record<
+            CSSStringKey,
+            string
+        >;
 
         // get the default styles for an element at document root
         const testElement = document.createElement("div");

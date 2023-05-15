@@ -19,12 +19,12 @@ export class HangulBlock {
         const medialIndex =
             this.medial.length == 1
                 ? medials.indexOf(this.medial)
-                : medials.indexOf(compoundVowels[this.medial]!);
+                : medials.indexOf(compoundVowels[this.medial] ?? "");
 
         const finalIndex =
             (this.final.length == 1
                 ? finals.indexOf(this.final)
-                : finals.indexOf(consonantDigraphs[this.final]!)) + 1;
+                : finals.indexOf(consonantDigraphs[this.final] ?? "")) + 1;
 
         // Jamo to Unicode character formula: (initial)×588 + (medial)×28 + (final) + 44032
         return initialIndex > -1 && medialIndex > -1

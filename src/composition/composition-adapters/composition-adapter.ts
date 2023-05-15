@@ -6,10 +6,9 @@ import { DummyAdapter } from "./dummy-adapter";
 
 type DispatchableEvent = KeyboardEvent | CompositionEvent | InputEvent;
 
-type MethodKeys<T extends object> = keyof T &
-    {
-        [K in keyof T]: T[K] extends (...args: any[]) => any ? K : never;
-    }[keyof T];
+type MethodKeys<T extends object> = {
+    [K in keyof T]: T[K] extends (...args: never[]) => unknown ? K : never;
+}[keyof T];
 
 type KeysToFilter = "supportsMethods" | "getSupportedMethods";
 type FilteredKeys<T extends object> = Exclude<MethodKeys<T>, KeysToFilter>;

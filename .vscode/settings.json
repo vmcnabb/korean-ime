@@ -3,6 +3,7 @@
         "Backquote",
         "beforeinput",
         "compositionend",
+        "compositionstart",
         "compositionupdate",
         "contenteditable",
         "Dispatchable",
@@ -10,7 +11,8 @@
         "Jamo",
         "Kime",
         "McNabb",
-        "texteventtarget"
+        "texteventtarget",
+        "vars"
     ],
     "editor.codeActionsOnSave": {
         "source.fixAll": true
