@@ -1,6 +1,6 @@
-import { SupportedCompositionFeatures } from "src/composition/composition-adapters/composition-adapter";
-import { KeyCode } from "src/content-script/on-screen-keyboard/korean-keyboard-map";
-import { hasProperties } from "src/types/objects";
+import { SupportedCompositionFeatures } from "../composition/composition-adapters/composition-adapter";
+import { KeyCode } from "../content-script/on-screen-keyboard/korean-keyboard-map";
+import { hasProperties } from "../types/objects";
 
 /** intended for broadcasts to all content script on the current tab */
 export enum ContentScriptBroadcastAction {

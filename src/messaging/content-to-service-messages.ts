@@ -1,6 +1,6 @@
 // messages sent from content scripts to the background script
 
-import { hasProperties } from "src/types/objects";
+import { hasProperties } from "../types/objects";
 
 export enum ContentScriptRequestAction {
     /** request the TabState from the service script */

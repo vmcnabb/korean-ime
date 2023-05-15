@@ -1,4 +1,4 @@
-import { hasProperties } from "src/types/objects";
+import { hasProperties } from "../types/objects";
 import { TabState } from "../extension-state/tab-state";
 
 export enum ServiceScriptMessageAction {

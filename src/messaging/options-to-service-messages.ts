@@ -1,4 +1,4 @@
-import { hasProperties } from "src/types/objects";
+import { hasProperties } from "../types/objects";
 
 export enum OptionsPageMessageAction {
     NotifyOptionsChanged = "notifyOptionsChanged",
