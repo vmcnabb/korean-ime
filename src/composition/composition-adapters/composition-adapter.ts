@@ -3,24 +3,18 @@ import { KeyCode } from "../../content-script/on-screen-keyboard/korean-keyboard
 import { setAsKimeEvent } from "../../messaging/dom-events";
 import { trace } from "../../decorators/trace";
 import { DummyAdapter } from "./dummy-adapter";
+import { MethodKeys } from "../../types/objects";
+import {
+    ICompositionAdapter,
+    SupportedCompositionFeatures,
+} from "./composition-adapter-interface";
 
 type DispatchableEvent = KeyboardEvent | CompositionEvent | InputEvent;
 
-type MethodKeys<T extends object> = {
-    [K in keyof T]: T[K] extends (...args: never[]) => unknown ? K : never;
-}[keyof T];
-
-type KeysToFilter = "supportsMethods" | "getSupportedMethods";
-type FilteredKeys<T extends object> = Exclude<MethodKeys<T>, KeysToFilter>;
-
-export type SupportedCompositionFeatures = Record<
-    FilteredKeys<CompositionAdapter>,
-    boolean
->;
 export type DispatchableAction = DispatchableEvent | (() => void);
 
 @trace
-export abstract class CompositionAdapter {
+export abstract class CompositionAdapter implements ICompositionAdapter {
     constructor(protected element: HTMLElement) {}
 
     /** Is called when focus has blurred from where the current character is being composited */
@@ -220,7 +214,7 @@ export abstract class CompositionAdapter {
      * Methods are considered supported by default unless they are decorated with `@methodNotSupported`.
      * @param method
      */
-    supportsMethods(...name: FilteredKeys<CompositionAdapter>[]): boolean {
+    supportsMethods(...name: MethodKeys<ICompositionAdapter>[]): boolean {
         return name.every((n) => isMethodSupported(this, n));
     }
 

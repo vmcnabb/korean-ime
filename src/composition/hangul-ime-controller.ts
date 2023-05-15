@@ -5,7 +5,7 @@ import {
     KeyCode,
     keyMap,
 } from "../content-script/on-screen-keyboard/korean-keyboard-map";
-import { isHangulCharacter } from "../mappings";
+import { isHangulCharacter } from "./hangul-maps";
 import { HangulCompositor } from "./hangul-compositor";
 import { CompositionAdapterFactory } from "./composition-adapter-factory";
 import { CompositionAdapter } from "./composition-adapters/composition-adapter";

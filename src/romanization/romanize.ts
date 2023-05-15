@@ -1,5 +1,5 @@
 import { HangulBlock } from "../composition/hangul-block";
-import { isHangulCharacter } from "../mappings";
+import { isHangulCharacter } from "../composition/hangul-maps";
 import {
     hangulInitialsRoman,
     hangulVowelsRoman,

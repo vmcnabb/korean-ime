@@ -4,7 +4,7 @@ import {
     compoundVowelMap,
     jamoIndices,
     isHangulCharacter,
-} from "../mappings";
+} from "./hangul-maps";
 import { HangulBlock } from "./hangul-block";
 
 type CompositingResult =

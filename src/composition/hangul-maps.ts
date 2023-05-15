@@ -1,40 +1,4 @@
-class ReadOnlyBiMap<K, V> {
-    private readonly forwardMap = new Map<K, V>();
-    private readonly backwardMap = new Map<V, K>();
-
-    constructor(keyValuePairs: [key: K, value: V][]) {
-        keyValuePairs.forEach(this.add.bind(this));
-    }
-
-    get(key: K) {
-        return this.forwardMap.get(key);
-    }
-
-    has(key: K) {
-        return this.forwardMap.has(key);
-    }
-
-    getReverse(value: V) {
-        return this.backwardMap.get(value);
-    }
-
-    hasReverse(value: V) {
-        return this.backwardMap.has(value);
-    }
-
-    private add([key, value]: [K, V]) {
-        if (this.forwardMap.has(key)) {
-            throw new Error(`Duplicate key: ${key}`);
-        }
-
-        if (this.backwardMap.has(value)) {
-            throw new Error(`Duplicate value: ${value}`);
-        }
-
-        this.forwardMap.set(key, value);
-        this.backwardMap.set(value, key);
-    }
-}
+import { ReadOnlyBiMap } from "../types/bi-map";
 
 export function isHangulCharacter(char: string) {
     if (!char) {

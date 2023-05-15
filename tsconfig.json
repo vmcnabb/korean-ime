@@ -26,11 +26,10 @@
         "emitDecoratorMetadata": true,
         "sourceMap": true,
         "forceConsistentCasingInFileNames": true,
-        "outDir": "obj",
-        "baseUrl": "."
+        "outDir": "obj"
     },
     "include": [
-        "src/**/*",
+        "src",
         "./types/**/*.d.ts"
     ]
 }

@@ -2,7 +2,7 @@ import {
     compoundConsonantMap,
     compoundVowelMap,
     jamoIndices,
-} from "../mappings";
+} from "./hangul-maps";
 
 const { initials, medials, finals } = jamoIndices;
 
