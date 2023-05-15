@@ -43,11 +43,7 @@ export class HangulBlock {
      * @param separateFinalDigraph Indicates whether to separate final digraphs.
      * @returns A new HangulBlock instance representing the given character.
      */
-    static fromChar(
-        character: string,
-        separateMedialDigraph = true,
-        separateFinalDigraph = true
-    ): HangulBlock {
+    static fromChar(character: string): HangulBlock {
         let workingIndex = character.charCodeAt(0) - 44032;
 
         if (workingIndex < 0) {
@@ -66,10 +62,8 @@ export class HangulBlock {
         // separateMedialDigraph and separateFinalDigraph if possible, otherwise don't.
         return new HangulBlock(
             initials[initialIndex],
-            (separateMedialDigraph && compoundVowels[medials[medialIndex]]) ||
-                medials[medialIndex],
-            (separateFinalDigraph && consonantDigraphs[finals[finalIndex]]) ||
-                finals[finalIndex]
+            compoundVowels[medials[medialIndex]] || medials[medialIndex],
+            consonantDigraphs[finals[finalIndex]] || finals[finalIndex]
         );
     }
 }
