@@ -47,7 +47,15 @@ export class HangulBlock {
         let workingIndex = character.charCodeAt(0) - 44032;
 
         if (workingIndex < 0) {
-            // not a Hangul block
+            // not a standard Hangul block. Could be a Hangul Jamo.
+            if (compoundVowels[character]) {
+                return new HangulBlock(compoundVowels[character]);
+            }
+
+            if (consonantDigraphs[character]) {
+                return new HangulBlock(consonantDigraphs[character]);
+            }
+
             return new HangulBlock(character);
         }
 
@@ -59,7 +67,6 @@ export class HangulBlock {
         workingIndex %= 28;
         const finalIndex = workingIndex - 1;
 
-        // separateMedialDigraph and separateFinalDigraph if possible, otherwise don't.
         return new HangulBlock(
             initials[initialIndex],
             compoundVowels[medials[medialIndex]] || medials[medialIndex],

@@ -1,3 +1,4 @@
+import { hasProperties } from "../types/objects";
 import { hangulMaps, isHangulCharacter } from "../mappings";
 import { HangulBlock } from "./hangul-block";
 
@@ -5,9 +6,10 @@ const { initials, medials, finals, compoundVowels, consonantDigraphs } =
     hangulMaps;
 
 type CompositingResult =
-    | { initial: string; inProgress?: never; completed?: string }
-    | { initial?: string; inProgress: string; completed?: never }
-    | { initial?: never; inProgress?: never; completed: string };
+    | { started: string }
+    | { updated: string }
+    | { completed: string }
+    | { started: string; completed: string };
 
 /**
  * Composes Hangul characters from jamo.
@@ -21,14 +23,16 @@ export class HangulCompositor {
 
     addJamo(jamo: string): CompositingResult {
         if (!isHangulCharacter(jamo)) {
-            throw new Error("addJamo(jamo) must be called with a valid jamo.");
+            throw new Error(`${jamo} is not a valid Jamo.`);
         }
 
-        return this.block.medial.length === 0
-            ? this.addInitialJamo(jamo)
-            : this.block.final.length === 0
-            ? this.addMedialJamo(jamo)
-            : this.addFinalJamo(jamo);
+        if (this.block.medial.length === 0) {
+            return this.addInitialJamo(jamo);
+        }
+        if (this.block.final.length === 0) {
+            return this.addMedialJamo(jamo);
+        }
+        return this.addFinalJamo(jamo);
     }
 
     /**
@@ -59,7 +63,7 @@ export class HangulCompositor {
         return this.block.initial.length > 0;
     }
 
-    getCurrent() {
+    getCurrentChar() {
         return this.block.toChar();
     }
 
@@ -70,15 +74,17 @@ export class HangulCompositor {
         const block = this.block;
         const combined = block.initial + jamo;
 
-        if (
-            compoundVowels[combined] ||
-            consonantDigraphs[combined] ||
-            !block.initial
-        ) {
-            // (V)V or (C)C or C or V, or nothing
+        if (!block.initial) {
+            // C or V, or nothing
+            block.initial = jamo;
+            return {
+                started: jamo,
+            };
+        } else if (compoundVowels[combined] || consonantDigraphs[combined]) {
+            // (V)V or (C)C
             block.initial = combined;
             return {
-                initial: block.toChar(),
+                updated: block.toChar(),
             };
         } else if (
             initials.indexOf(block.initial) > -1 &&
@@ -91,11 +97,20 @@ export class HangulCompositor {
             medials.indexOf(jamo) > -1
         ) {
             // (C)C+V
+            // e.g. ㄳ + ㅏ = ㄱ사
             const completed = block.initial[0];
             block.initial = block.initial[1];
+
+            const updateResult = this.addMedialJamo(jamo);
+            if (!hasProperties(updateResult, "updated")) {
+                throw new Error(
+                    "Expected updateResult to have property 'updated'."
+                );
+            }
+
             return {
                 completed,
-                initial: this.addMedialJamo(jamo).inProgress,
+                started: updateResult.updated,
             };
         } else {
             // (CC|C)C or (VV|V)[VC]
@@ -103,7 +118,7 @@ export class HangulCompositor {
             block.initial = jamo;
             return {
                 completed,
-                initial: jamo,
+                started: jamo,
             };
         }
     }
@@ -119,14 +134,14 @@ export class HangulCompositor {
         if ((!block.medial && isMedial) || compoundVowels[combined]) {
             // (C)+V or (C+V)V
             block.medial += jamo;
-            return { inProgress: block.toChar() };
+            return { updated: block.toChar() };
         } else if (isMedial) {
             // (C+V)+V or (C+VV)+V
             const completed = block.toChar();
             this.block = new HangulBlock(jamo);
             return {
                 completed,
-                initial: jamo,
+                started: jamo,
             };
         } else {
             // (C+V)+C or (C+VV)+C
@@ -147,7 +162,7 @@ export class HangulCompositor {
         if (isValidFinal) {
             // C+(V|VV)+(C|CC)
             block.final += jamo;
-            return { inProgress: block.toChar() };
+            return { updated: block.toChar() };
         } else if (block.final && medials.indexOf(jamo) > -1) {
             // if this is a vowel, take last consonant and create new character
             const length = block.final.length;
@@ -157,14 +172,14 @@ export class HangulCompositor {
             this.block = new HangulBlock(lastConsonant, jamo);
             return {
                 completed,
-                initial: this.block.toChar(),
+                started: this.block.toChar(),
             };
         } else {
             const completed = block.toChar();
             this.block = new HangulBlock(jamo);
             return {
                 completed,
-                initial: this.block.toChar(),
+                started: this.block.toChar(),
             };
         }
     }

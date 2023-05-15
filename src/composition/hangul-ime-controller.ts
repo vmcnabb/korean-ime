@@ -65,7 +65,7 @@ export class HangulImeController {
             // Ending the composition with the current value is the correct thing to do with Korean.
             // If we implement other languages, we may need to change this.
             this.compositionAdapter.endComposition(
-                this.compositor.getCurrent()
+                this.compositor.getCurrentChar()
             );
             this.compositor.reset();
         }
@@ -178,7 +178,7 @@ export class HangulImeController {
             if (!key || event.ctrlKey) {
                 if (this.compositor.isCompositing()) {
                     this.compositionAdapter.endComposition(
-                        this.compositor.getCurrent()
+                        this.compositor.getCurrentChar()
                     );
                     this.compositor.reset();
                 }
@@ -192,7 +192,7 @@ export class HangulImeController {
                 }
 
                 this.compositionAdapter.endComposition(
-                    this.compositor.getCurrent()
+                    this.compositor.getCurrentChar()
                 );
                 this.compositor.reset();
 
@@ -239,7 +239,7 @@ export class HangulImeController {
     addCharacter(char: string, keyCode: KeyCode) {
         if (this.compositor.isCompositing()) {
             this.compositionAdapter.endComposition(
-                this.compositor.getCurrent()
+                this.compositor.getCurrentChar()
             );
             this.compositor.reset();
         }
@@ -268,22 +268,22 @@ export class HangulImeController {
     addJamo(jamo: string, keyCode: KeyCode) {
         const compositionProgress = this.compositor.addJamo(jamo);
 
-        if (compositionProgress.completed) {
+        if ("completed" in compositionProgress) {
             this.compositionAdapter.endComposition(
                 compositionProgress.completed
             );
         }
 
-        if (compositionProgress.initial) {
+        if ("started" in compositionProgress) {
             this.compositionAdapter.beginComposition(
-                compositionProgress.initial,
+                compositionProgress.started,
                 keyCode
             );
         }
 
-        if (compositionProgress.inProgress) {
+        if ("updated" in compositionProgress) {
             this.compositionAdapter.updateComposition(
-                compositionProgress.inProgress,
+                compositionProgress.updated,
                 keyCode
             );
         }

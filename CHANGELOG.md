@@ -10,6 +10,10 @@ Install the latest release from the Chrome Web Store:
 * Added support for CKEditor
 * Added options page
 
+### Fixes
+* Typing in Hangul now works on HTML documents loaded from the local file system
+* Shift+Backspace now works with non-standard Hangul such as ㅘ, ㅙ, ㅚ, ㅝ, ㅞ, ㅟ, ㅢ
+
 ### Internal
 * Updated manifest to v3
 * Migrated project to TypeScript
