@@ -1,9 +1,13 @@
 import { hasProperties } from "../types/objects";
-import { hangulMaps, isHangulCharacter } from "../mappings";
+import {
+    compoundConsonantMap,
+    compoundVowelMap,
+    hangulMaps,
+    isHangulCharacter,
+} from "../mappings";
 import { HangulBlock } from "./hangul-block";
 
-const { initials, medials, finals, compoundVowels, consonantDigraphs } =
-    hangulMaps;
+const { initials, medials, finals } = hangulMaps;
 
 type CompositingResult =
     | { started: string }
@@ -80,7 +84,10 @@ export class HangulCompositor {
             return {
                 started: jamo,
             };
-        } else if (compoundVowels[combined] || consonantDigraphs[combined]) {
+        } else if (
+            compoundVowelMap.has(combined) ||
+            compoundConsonantMap.has(combined)
+        ) {
             // (V)V or (C)C
             block.initial = combined;
             return {
@@ -93,7 +100,7 @@ export class HangulCompositor {
             // (C)+V
             return this.addMedialJamo(jamo);
         } else if (
-            consonantDigraphs[block.initial] &&
+            compoundConsonantMap.has(block.initial) &&
             medials.indexOf(jamo) > -1
         ) {
             // (C)C+V
@@ -131,7 +138,7 @@ export class HangulCompositor {
         const combined = block.medial + jamo;
         const isMedial = medials.indexOf(jamo) > -1;
 
-        if ((!block.medial && isMedial) || compoundVowels[combined]) {
+        if ((!block.medial && isMedial) || compoundVowelMap.has(combined)) {
             // (C)+V or (C+V)V
             block.medial += jamo;
             return { updated: block.toChar() };
@@ -157,7 +164,7 @@ export class HangulCompositor {
         const combined = block.final + jamo;
         const isValidFinal =
             (!block.final && finals.indexOf(jamo) > -1) ||
-            consonantDigraphs[combined];
+            compoundConsonantMap.has(combined);
 
         if (isValidFinal) {
             // C+(V|VV)+(C|CC)

@@ -1,5 +1,5 @@
 import { HangulImeController } from "../../composition/hangul-ime-controller";
-import { romanize } from "../../romanize";
+import { romanize } from "../../romanization/romanize";
 import { PopulatePopupConverterMessage } from "./popup-converter-message";
 
 chrome.runtime.onMessage.addListener(

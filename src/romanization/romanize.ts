@@ -1,5 +1,11 @@
-import { HangulBlock } from "./composition/hangul-block";
-import { hangulMaps as maps, isHangulCharacter } from "./mappings";
+import { HangulBlock } from "../composition/hangul-block";
+import { isHangulCharacter } from "../mappings";
+import {
+    hangulInitialsRoman,
+    hangulVowelsRoman,
+    hangulFinalInitialRoman,
+    hangulFinalsRoman,
+} from "./hangul-to-roman-maps";
 
 /**
  * Return a string with the hangul converted into Roman characters, e.g.
@@ -27,13 +33,14 @@ export function romanize(text: string) {
 
         if (!didPreviousCharSetInitial) {
             if (!isPreviousCharHangul && block.initial === "ㅇ") {
+                // do nothing
             } else {
-                romanText += maps.hangulInitialsRoman[block.initial];
+                romanText += hangulInitialsRoman.get(block.initial);
             }
             // TODO: check what happens for "ㄺ" or any other digraph finals used on their own.
         }
         if (block.medial.length > 0) {
-            romanText += maps.hangulVowelsRoman[block.medial];
+            romanText += hangulVowelsRoman.get(block.medial);
         } else {
             didPreviousCharSetInitial = false;
             isPreviousCharHangul = true;
@@ -48,18 +55,19 @@ export function romanize(text: string) {
 
         if (block.final.length == 2) {
             // double-consonant ending, romanise the first jamo as if it were an initial
-            romanText += maps.hangulInitialsRoman[block.final[0]];
+            romanText += hangulInitialsRoman.get(block.final[0]);
         }
 
         const thisFinal = block.final.slice(-1);
-        const special =
-            maps.hangulFinalInitialRoman[thisFinal + nextBlock.initial];
+        const special = hangulFinalInitialRoman.get(
+            thisFinal + nextBlock.initial
+        );
 
         if (isHangulCharacter(nextChar) && special !== undefined) {
             romanText += special;
             didPreviousCharSetInitial = true;
         } else {
-            romanText += maps.hangulFinalsRoman[thisFinal];
+            romanText += hangulFinalsRoman.get(thisFinal);
             didPreviousCharSetInitial = false;
         }
         isPreviousCharHangul = true;
