@@ -3,7 +3,7 @@ import { KoreanKeyboardMode } from "../../extension-state/korean-keyboard-mode";
 import { CompositionAdapterFactory } from "../../composition/composition-adapter-factory";
 import { isHangulCharacter } from "../../composition/hangul-maps";
 import { KeyCode } from "../on-screen-keyboard/korean-keyboard-map";
-import { SupportedCompositionFeatures } from "../../composition/composition-adapters/composition-adapter";
+import { SupportedCompositionFeatures } from "../../composition/composition-adapters/composition-adapter-interface";
 import {
     ContentScriptBroadcastAction,
     ContentScriptBroadcastMessage,

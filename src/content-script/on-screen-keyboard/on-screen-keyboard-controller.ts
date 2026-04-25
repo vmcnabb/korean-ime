@@ -1,7 +1,7 @@
 import { KoreanKeyboardMode } from "../../extension-state/korean-keyboard-mode";
 import { KeyCode, KeyRecord, keyMap } from "./korean-keyboard-map";
 import { KeyboardLayout, defaultLayout } from "./layouts";
-import { SupportedCompositionFeatures } from "../../composition/composition-adapters/composition-adapter";
+import { SupportedCompositionFeatures } from "../../composition/composition-adapters/composition-adapter-interface";
 import "./on-screen-keyboard.scss";
 import {
     ContentScriptRequestAction,

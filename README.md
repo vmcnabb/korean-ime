@@ -19,7 +19,7 @@ You can [install Korean IME extension from the Chrome Web Store](https://chrome.
 
 # Development
 ## Build
-Korean IME uses Parcel to build. Just type `npm start build` or `npm start build-dev`.
+Korean IME uses Parcel to build. Just type `npm run build` or `npm run build-dev`.
 
 The output goes to /dist and can be directly loaded as an unpacked extension.
 

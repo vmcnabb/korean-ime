@@ -15,11 +15,11 @@ describe("HangulCompositor", () => {
         it("should throw error on invalid jamo input", () => {
             expect(() => {
                 compositor.addJamo("X");
-            }).toThrowError(new Error("X is not a valid Jamo."));
+            }).toThrow(new Error("X is not a valid Jamo."));
 
             expect(() => {
                 compositor.addJamo("ZZ");
-            }).toThrowError(new Error("ZZ is not a valid Jamo."));
+            }).toThrow(new Error("ZZ is not a valid Jamo."));
         });
 
         it("should add initial jamo", () => {

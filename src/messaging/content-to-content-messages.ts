@@ -1,4 +1,4 @@
-import { SupportedCompositionFeatures } from "../composition/composition-adapters/composition-adapter";
+import { SupportedCompositionFeatures } from "../composition/composition-adapters/composition-adapter-interface";
 import { KeyCode } from "../content-script/on-screen-keyboard/korean-keyboard-map";
 import { hasProperties } from "../types/objects";
 

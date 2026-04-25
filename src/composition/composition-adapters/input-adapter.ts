@@ -1,4 +1,4 @@
-import { KeyCode } from "src/content-script/on-screen-keyboard/korean-keyboard-map";
+import { KeyCode } from "../../content-script/on-screen-keyboard/korean-keyboard-map";
 import { CompositionAdapter } from "./composition-adapter";
 
 export class InputAdapter extends CompositionAdapter {
