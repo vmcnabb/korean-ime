@@ -1,7 +1,7 @@
 import { TabState } from "../extension-state/tab-state";
 import { KoreanKeyboardMode } from "../extension-state/korean-keyboard-mode";
-import icon16h from "../images/icon16h.png";
-import icon16a from "../images/icon16a.png";
+import icon16h from "url:../images/icon16h.png";
+import icon16a from "url:../images/icon16a.png";
 import {
     ServiceScriptMessage,
     ServiceScriptMessageAction,
@@ -13,7 +13,6 @@ import { menus } from "./menus";
  */
 export class StateManager {
     private static _instance: StateManager;
-    private tabStates = new Map<number, TabState>();
 
     private constructor() {
         // ensure we are only referenced from the service worker
@@ -31,10 +30,10 @@ export class StateManager {
         return StateManager._instance;
     }
 
-    public toggleHanYongMode(tabId: number): void {
+    public async toggleHanYongMode(tabId: number): Promise<void> {
         let newMode: KoreanKeyboardMode = KoreanKeyboardMode.Hangul;
 
-        this.setTabState(tabId, (tabState) => {
+        await this.setTabState(tabId, (tabState) => {
             const currentMode = tabState.koreanKeyboardMode;
 
             switch (currentMode) {
@@ -53,29 +52,31 @@ export class StateManager {
         });
     }
 
-    updatePresentation(tabId: number) {
-        const tabState = this.getTabState(tabId);
+    public async updatePresentation(tabId: number) {
+        const tabState = await this.getTabState(tabId);
 
         const isHangulMode =
             tabState.koreanKeyboardMode === KoreanKeyboardMode.Hangul;
-        chrome.action.setIcon({
+        await chrome.action.setIcon({
             tabId: tabId,
-            path: isHangulMode ? icon16h : icon16a,
+            path: isHangulMode
+                ? icon16h
+                : icon16a,
         });
 
         // update on-screen-keyboard menu item to checked or not
-        chrome.contextMenus.update(menus.onScreenKeyboard.id, {
+        await chrome.contextMenus.update(menus.onScreenKeyboard.id, {
             checked: tabState.isOnScreenKeyboardEnabled,
         });
     }
 
-    public toggleOnScreenKeyboard(tabId: number): boolean {
-        const tabState = this.getTabState(tabId);
+    public async toggleOnScreenKeyboard(tabId: number): Promise<boolean> {
+        const tabState = await this.getTabState(tabId);
         const newTabState = {
             ...tabState,
             isOnScreenKeyboardEnabled: !tabState.isOnScreenKeyboardEnabled,
         };
-        this.setTabState(tabId, () => newTabState);
+        await this.setTabState(tabId, () => newTabState);
 
         return newTabState.isOnScreenKeyboardEnabled;
     }
@@ -85,26 +86,32 @@ export class StateManager {
      * @param tabId
      * @param updateFn function that takes the current tab state and returns the new tab state
      */
-    private setTabState(
+    private async setTabState(
         tabId: number,
         updateFn: (tabState: TabState) => TabState
     ) {
-        const currentTabState = this.getTabState(tabId);
+        const currentTabState = await this.getTabState(tabId);
         const newTabState = updateFn(currentTabState);
 
-        this.tabStates.set(tabId, newTabState);
+        const storageKey = `tabState-${tabId}`;
+        await chrome.storage.local.set({ [storageKey]: newTabState });
 
-        this.sendStateToTab(tabId);
-        this.updatePresentation(tabId);
+        await this.sendStateToTab(tabId);
+        await this.updatePresentation(tabId);
     }
 
-    public sendStateToTab(tabId: number) {
-        const tabState = this.getTabState(tabId);
-        chrome.tabs.sendMessage<ServiceScriptMessage>(tabId, {
-            type: "serviceScriptMessage",
-            action: ServiceScriptMessageAction.UpdateState,
-            data: tabState,
-        });
+    public async sendStateToTab(tabId: number) {
+        const tabState = await this.getTabState(tabId);
+        try {
+            await chrome.tabs.sendMessage<ServiceScriptMessage>(tabId, {
+                type: "serviceScriptMessage",
+                action: ServiceScriptMessageAction.UpdateState,
+                data: tabState,
+            });
+        } catch (error) {
+            // this is usually due to the target tab not having a content script (e.g. chrome://extensions), so we can ignore it
+            console.debug(`Failed to send state to tab ${tabId}:`, error);
+        }
     }
 
     private defaultTabState(): TabState {
@@ -114,8 +121,10 @@ export class StateManager {
         };
     }
 
-    private getTabState(tabId: number): TabState {
-        const tabState = this.tabStates.get(tabId);
+    private async getTabState(tabId: number): Promise<TabState> {
+        const storageKey = `tabState-${tabId}`;
+        const result = await chrome.storage.local.get(storageKey);
+        const tabState = result[storageKey] as TabState | undefined;
 
         if (!tabState) {
             return this.defaultTabState();

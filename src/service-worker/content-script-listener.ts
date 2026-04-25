@@ -68,9 +68,9 @@ export class ContentScriptListener {
         );
 
         // listen for active tab changes and send the state to the new tab
-        chrome.tabs.onActivated.addListener((activeInfo) => {
-            StateManager.instance.sendStateToTab(activeInfo.tabId);
-            StateManager.instance.updatePresentation(activeInfo.tabId);
+        chrome.tabs.onActivated.addListener(async (activeInfo) => {
+            await StateManager.instance.sendStateToTab(activeInfo.tabId);
+            await StateManager.instance.updatePresentation(activeInfo.tabId);
         });
     }
 
