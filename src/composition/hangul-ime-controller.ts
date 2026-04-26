@@ -5,7 +5,7 @@ import {
     KeyCode,
     keyMap,
 } from "../content-script/on-screen-keyboard/korean-keyboard-map";
-import { isHangulCharacter } from "./hangul-maps";
+import { isHangulOrJamo } from "./hangul-maps";
 import { HangulCompositor } from "./hangul-compositor";
 import { CompositionAdapterFactory } from "./composition-adapter-factory";
 import { CompositionAdapter } from "./composition-adapters/composition-adapter";
@@ -134,7 +134,7 @@ export class HangulImeController {
             if (reqPrevCharComposition && canInsertPrevChar) {
                 const character =
                     this.compositionAdapter.getPreviousCharacter();
-                if (character && isHangulCharacter(character)) {
+                if (character && isHangulOrJamo(character)) {
                     this.compositor.setCharacter(character);
 
                     this.compositionAdapter.deleteContentBackwards();

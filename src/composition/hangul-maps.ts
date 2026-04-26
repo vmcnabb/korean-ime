@@ -1,6 +1,6 @@
 import { ReadOnlyBiMap } from "../types/bi-map";
 
-export function isHangulCharacter(char: string) {
+export function isHangulOrJamo(char: string) {
     if (!char) {
         return false;
     }

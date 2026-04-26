@@ -12,12 +12,16 @@ export class CompositionAdapterFactory {
         const adapter = (function () {
             if (canBeTreatedAsInputElement(element)) {
                 return new InputAdapter(element);
+
             } else if (isGoogleDocsElement(element)) {
                 return new GoogleDocsAdapter(element);
+
             } else if (isCkEditorElement(element)) {
                 return new CkEditorAdapter(element);
+
             } else if (isWordForTheWebElement(element)) {
                 return new WordForTheWebAdapter(element);
+
             } else if (element.isContentEditable) {
                 return new ContentEditableAdapter(element);
             }

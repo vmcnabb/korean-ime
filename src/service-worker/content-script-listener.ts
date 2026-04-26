@@ -13,19 +13,9 @@ import {
  * This class is responsible for listening to messages from the content script.
  */
 export class ContentScriptListener {
-    private static _instance: ContentScriptListener;
     private isListening = false;
 
-    private constructor() {
-        // private constructor to prevent instantiation
-    }
-
-    public static get instance(): ContentScriptListener {
-        if (!ContentScriptListener._instance) {
-            ContentScriptListener._instance = new ContentScriptListener();
-        }
-        return ContentScriptListener._instance;
-    }
+    public constructor(private stateManager: StateManager) {}
 
     public listen() {
         if (this.isListening) {
@@ -53,7 +43,7 @@ export class ContentScriptListener {
 
                 if (isContentScriptBroadcastMessage(message)) {
                     if (sender.frameId !== undefined) {
-                        StateManager.instance.setFocusedFrame(
+                        this.stateManager.setFocusedFrame(
                             sender.tab.id,
                             sender.frameId
                         );
@@ -64,15 +54,15 @@ export class ContentScriptListener {
 
                 switch (message.action) {
                     case ContentScriptRequestAction.ToggleHanYongMode:
-                        StateManager.instance.toggleHanYongMode(sender.tab.id);
+                        this.stateManager.toggleHanYongMode(sender.tab.id);
                         break;
 
                     case ContentScriptRequestAction.RefreshState:
-                        StateManager.instance.sendStateToTab(sender.tab.id);
+                        this.stateManager.sendStateToTab(sender.tab.id);
                         break;
 
                     case ContentScriptRequestAction.SendKey:
-                        StateManager.instance.routeSendKey(
+                        this.stateManager.routeSendKey(
                             sender.tab.id,
                             (message as SendKeyRequestMessage).data
                         );
@@ -83,8 +73,8 @@ export class ContentScriptListener {
 
         // listen for active tab changes and send the state to the new tab
         chrome.tabs.onActivated.addListener(async (activeInfo) => {
-            await StateManager.instance.sendStateToTab(activeInfo.tabId);
-            await StateManager.instance.updatePresentation(activeInfo.tabId);
+            await this.stateManager.sendStateToTab(activeInfo.tabId);
+            await this.stateManager.updatePresentation(activeInfo.tabId);
         });
     }
 

@@ -8,7 +8,8 @@ import { ContentScriptListener } from "./content-script-listener";
 
 chrome.runtime.onInstalled.addListener(onInstall);
 
-StateManager.instance;
-ContentScriptListener.instance.listen();
+const stateManager = new StateManager();
+const contentScriptListener = new ContentScriptListener(stateManager);
+contentScriptListener.listen();
 setupMenuListener();
 setupActionListener();

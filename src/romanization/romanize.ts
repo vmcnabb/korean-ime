@@ -1,5 +1,5 @@
 import { HangulBlock } from "../composition/hangul-block";
-import { isHangulCharacter } from "../composition/hangul-maps";
+import { isHangulOrJamo } from "../composition/hangul-maps";
 import {
     hangulInitialsRoman,
     hangulVowelsRoman,
@@ -24,7 +24,7 @@ export function romanize(text: string) {
         const nextChar = text[i + 1] || "";
         nextBlock = HangulBlock.fromChar(nextChar, false);
 
-        if (!isHangulCharacter(thisChar)) {
+        if (!isHangulOrJamo(thisChar)) {
             didPreviousCharSetInitial = false;
             isPreviousCharHangul = false;
             romanText += thisChar;
@@ -63,7 +63,7 @@ export function romanize(text: string) {
             thisFinal + nextBlock.initial
         );
 
-        if (isHangulCharacter(nextChar) && special !== undefined) {
+        if (isHangulOrJamo(nextChar) && special !== undefined) {
             romanText += special;
             didPreviousCharSetInitial = true;
         } else {

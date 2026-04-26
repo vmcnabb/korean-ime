@@ -3,7 +3,7 @@ import {
     compoundConsonantMap,
     compoundVowelMap,
     jamoIndices,
-    isHangulCharacter,
+    isHangulOrJamo,
 } from "./hangul-maps";
 import { HangulBlock } from "./hangul-block";
 
@@ -24,7 +24,7 @@ export class HangulCompositor {
     }
 
     addJamo(jamo: string): CompositingResult {
-        if (!isHangulCharacter(jamo)) {
+        if (!isHangulOrJamo(jamo)) {
             throw new Error(`${jamo} is not a valid Jamo.`);
         }
 

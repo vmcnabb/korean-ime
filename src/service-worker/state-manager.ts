@@ -13,23 +13,15 @@ import { menus } from "./menus";
  * Manages extension state for all tabs
  */
 export class StateManager {
-    private static _instance: StateManager;
     private focusedFrames = new Map<number, number>(); // tabId → frameId
 
-    private constructor() {
+    public constructor() {
         // ensure we are only referenced from the service worker
         if (!chrome.runtime.onMessage) {
             throw new Error(
                 "StateManager can only be used from the service worker"
             );
         }
-    }
-
-    static get instance(): StateManager {
-        if (!StateManager._instance) {
-            StateManager._instance = new StateManager();
-        }
-        return StateManager._instance;
     }
 
     public setFocusedFrame(tabId: number, frameId: number) {

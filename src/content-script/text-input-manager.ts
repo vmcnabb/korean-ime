@@ -1,19 +1,18 @@
-import { HangulImeController } from "../../composition/hangul-ime-controller";
-import { KoreanKeyboardMode } from "../../extension-state/korean-keyboard-mode";
-import { CompositionAdapterFactory } from "../../composition/composition-adapter-factory";
-import { isHangulCharacter } from "../../composition/hangul-maps";
-import { KeyCode } from "../on-screen-keyboard/korean-keyboard-map";
-import { SupportedCompositionFeatures } from "../../composition/composition-adapters/composition-adapter-interface";
+import { HangulImeController } from "../composition/hangul-ime-controller";
+import { KoreanKeyboardMode } from "../extension-state/korean-keyboard-mode";
+import { CompositionAdapterFactory } from "../composition/composition-adapter-factory";
+import { isHangulOrJamo } from "../composition/hangul-maps";
+import { KeyCode } from "./on-screen-keyboard/korean-keyboard-map";
+import { SupportedCompositionFeatures } from "../composition/composition-adapters/composition-adapter-interface";
 import {
     ContentScriptBroadcastMessage,
-    isContentScriptBroadcastMessage,
-} from "../../messaging/content-to-content-messages";
+} from "../messaging/content-to-content-messages";
 import {
     ServiceScriptMessage,
     ServiceScriptMessageAction,
     SendKeyServiceMessage,
     isServiceScriptMessage,
-} from "../../messaging/service-to-content-messages";
+} from "../messaging/service-to-content-messages";
 
 const nonTextInputTypes = [
     "button",
@@ -111,7 +110,7 @@ export class TextInputManager {
             return false;
         }
 
-        if (isHangulCharacter(char)) {
+        if (isHangulOrJamo(char)) {
             imeController.addJamo(char, keyCode);
         } else {
             if (KeyCode.Backspace === keyCode) {
