@@ -1,11 +1,9 @@
 import { SupportedCompositionFeatures } from "../composition/composition-adapters/composition-adapter-interface";
-import { KeyCode } from "../content-script/on-screen-keyboard/korean-keyboard-map";
 import { hasProperties } from "../types/objects";
 
 /** intended for broadcasts to all content script on the current tab */
 export enum ContentScriptBroadcastAction {
     UpdateCompositionFeatures = "updateCompositionFeatures",
-    SendKey = "sendKey",
 }
 
 /**
@@ -18,18 +16,7 @@ type UpdateCompositionFeaturesMessage = {
     data: SupportedCompositionFeatures;
 };
 
-type SendKeyMessage = {
-    type: "broadcast";
-    action: ContentScriptBroadcastAction.SendKey;
-    data: {
-        key: string;
-        keyCode: KeyCode;
-    };
-};
-
-export type ContentScriptBroadcastMessage =
-    | UpdateCompositionFeaturesMessage
-    | SendKeyMessage;
+export type ContentScriptBroadcastMessage = UpdateCompositionFeaturesMessage;
 
 export function isContentScriptBroadcastMessage(
     message: unknown

@@ -7,10 +7,6 @@ import {
     ContentScriptRequestAction,
     ContentScriptRequestMessage,
 } from "../../messaging/content-to-service-messages";
-import {
-    ContentScriptBroadcastAction,
-    ContentScriptBroadcastMessage,
-} from "../../messaging/content-to-content-messages";
 
 export class OnScreenKeyboardController {
     private _keyboardElement: HTMLDivElement;
@@ -32,8 +28,10 @@ export class OnScreenKeyboardController {
     private _isShift = false;
     private _compositionFeatures: SupportedCompositionFeatures | undefined;
     private _keyElements = new Map<KeyCode, HTMLElement>();
+    private _onSendKey: (key: string, keyCode: KeyCode) => void;
 
-    constructor() {
+    constructor(onSendKey: (key: string, keyCode: KeyCode) => void) {
+        this._onSendKey = onSendKey;
         this._keyboardElement = this.createKeyboard();
         this.setMode(this._mode);
     }
@@ -312,15 +310,7 @@ export class OnScreenKeyboardController {
 
     private sendKey(key: string, keyCode: KeyCode) {
         console.debug(`Sending key: ${key} (${keyCode})`);
-
-        chrome.runtime.sendMessage<ContentScriptBroadcastMessage>({
-            type: "broadcast",
-            action: ContentScriptBroadcastAction.SendKey,
-            data: {
-                key,
-                keyCode,
-            },
-        });
+        this._onSendKey(key, keyCode);
     }
 
     private createLabelElement(className: string, text: string): HTMLElement {

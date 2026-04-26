@@ -22,7 +22,9 @@ const isTopWindow = window === top;
 
 const textInputManager = new TextInputManager();
 const keyboardController = isTopWindow
-    ? new OnScreenKeyboardController()
+    ? new OnScreenKeyboardController((key, keyCode) =>
+          textInputManager.enterCharacter(key, keyCode)
+      )
     : undefined;
 
 setupMessageListener();

@@ -5,7 +5,6 @@ import { isHangulCharacter } from "../../composition/hangul-maps";
 import { KeyCode } from "../on-screen-keyboard/korean-keyboard-map";
 import { SupportedCompositionFeatures } from "../../composition/composition-adapters/composition-adapter-interface";
 import {
-    ContentScriptBroadcastAction,
     ContentScriptBroadcastMessage,
     isContentScriptBroadcastMessage,
 } from "../../messaging/content-to-content-messages";
@@ -38,9 +37,7 @@ export class TextInputManager {
     public handleMessage(
         message: ContentScriptBroadcastMessage | ServiceScriptMessage
     ) {
-        if (isContentScriptBroadcastMessage(message)) {
-            this.handleBroadcast(message);
-        } else if (isServiceScriptMessage(message)) {
+        if (isServiceScriptMessage(message)) {
             this.handleServiceScriptRequest(message);
         }
     }
@@ -65,14 +62,6 @@ export class TextInputManager {
             return this.processElement(element);
         }
         return;
-    }
-
-    private handleBroadcast(message: ContentScriptBroadcastMessage) {
-        switch (message.action) {
-            case ContentScriptBroadcastAction.SendKey:
-                this.enterCharacter(message.data.key, message.data.keyCode);
-                break;
-        }
     }
 
     private handleServiceScriptRequest(message: ServiceScriptMessage) {
@@ -104,7 +93,7 @@ export class TextInputManager {
         }
     }
 
-    private enterCharacter(char: string, keyCode: KeyCode) {
+    public enterCharacter(char: string, keyCode: KeyCode) {
         const activeElement = this.getActiveElement(document);
         if (!activeElement) {
             return;
