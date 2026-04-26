@@ -4,7 +4,7 @@ import {
 } from "../messaging/service-to-content-messages";
 import { PopulatePopupConverterMessage } from "./popup-converter/popup-converter-message";
 import { romanize } from "../romanization/romanize";
-import popupConverter from "./popup-converter/popup-converter.html";
+import popupConverter from "url:./popup-converter/popup-converter.html";
 
 export function romanizeInPopup(event: chrome.contextMenus.OnClickData) {
     const selectionText = event.selectionText || "";
