@@ -22,9 +22,16 @@ const isTopWindow = window === top;
 
 const textInputManager = new TextInputManager();
 const keyboardController = isTopWindow
-    ? new OnScreenKeyboardController((key, keyCode) =>
-          textInputManager.enterCharacter(key, keyCode)
-      )
+    ? new OnScreenKeyboardController((key, keyCode) => {
+          const handled = textInputManager.enterCharacter(key, keyCode);
+          if (!handled) {
+              chrome.runtime.sendMessage<ContentScriptRequestMessage>({
+                  type: "contentScriptRequest",
+                  action: ContentScriptRequestAction.SendKey,
+                  data: { key, keyCode },
+              });
+          }
+      })
     : undefined;
 
 setupMessageListener();

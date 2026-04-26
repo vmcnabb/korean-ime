@@ -11,6 +11,7 @@ import {
 import {
     ServiceScriptMessage,
     ServiceScriptMessageAction,
+    SendKeyServiceMessage,
     isServiceScriptMessage,
 } from "../../messaging/service-to-content-messages";
 
@@ -66,6 +67,11 @@ export class TextInputManager {
 
     private handleServiceScriptRequest(message: ServiceScriptMessage) {
         switch (message.action) {
+            case ServiceScriptMessageAction.SendKey: {
+                const { key, keyCode } = (message as SendKeyServiceMessage).data;
+                this.enterCharacter(key, keyCode);
+                break;
+            }
             case ServiceScriptMessageAction.InsertTextAfterSelection: {
                 const element = this.getActiveElement(document);
 
@@ -93,16 +99,16 @@ export class TextInputManager {
         }
     }
 
-    public enterCharacter(char: string, keyCode: KeyCode) {
+    public enterCharacter(char: string, keyCode: KeyCode): boolean {
         const activeElement = this.getActiveElement(document);
         if (!activeElement) {
-            return;
+            return false;
         }
 
         const imeController = this.imeControllers.get(activeElement);
 
         if (!imeController) {
-            return;
+            return false;
         }
 
         if (isHangulCharacter(char)) {
@@ -114,6 +120,8 @@ export class TextInputManager {
                 imeController.addCharacter(char, keyCode);
             }
         }
+
+        return true;
     }
 
     private processElement(element: HTMLElement) {
@@ -159,7 +167,7 @@ export class TextInputManager {
             element = document.activeElement;
         }
 
-        if (element instanceof HTMLElement) {
+        if (element instanceof HTMLElement && element.matches(textInputElementsSelector)) {
             this.processElement(element);
             return element;
         }

@@ -1,6 +1,7 @@
 import {
     ContentScriptRequestMessage,
     ContentScriptRequestAction,
+    SendKeyRequestMessage,
 } from "../messaging/content-to-service-messages";
 import { StateManager } from "./state-manager";
 import {
@@ -51,6 +52,12 @@ export class ContentScriptListener {
                 }
 
                 if (isContentScriptBroadcastMessage(message)) {
+                    if (sender.frameId !== undefined) {
+                        StateManager.instance.setFocusedFrame(
+                            sender.tab.id,
+                            sender.frameId
+                        );
+                    }
                     this.forwardMessageToTab(sender.tab.id, message);
                     return;
                 }
@@ -62,6 +69,13 @@ export class ContentScriptListener {
 
                     case ContentScriptRequestAction.RefreshState:
                         StateManager.instance.sendStateToTab(sender.tab.id);
+                        break;
+
+                    case ContentScriptRequestAction.SendKey:
+                        StateManager.instance.routeSendKey(
+                            sender.tab.id,
+                            (message as SendKeyRequestMessage).data
+                        );
                         break;
                 }
             }

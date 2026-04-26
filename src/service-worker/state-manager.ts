@@ -5,6 +5,7 @@ import icon16a from "url:../images/icon16a.png";
 import {
     ServiceScriptMessage,
     ServiceScriptMessageAction,
+    SendKeyServiceMessage,
 } from "../messaging/service-to-content-messages";
 import { menus } from "./menus";
 
@@ -13,6 +14,7 @@ import { menus } from "./menus";
  */
 export class StateManager {
     private static _instance: StateManager;
+    private focusedFrames = new Map<number, number>(); // tabId → frameId
 
     private constructor() {
         // ensure we are only referenced from the service worker
@@ -28,6 +30,30 @@ export class StateManager {
             StateManager._instance = new StateManager();
         }
         return StateManager._instance;
+    }
+
+    public setFocusedFrame(tabId: number, frameId: number) {
+        this.focusedFrames.set(tabId, frameId);
+    }
+
+    public async routeSendKey(
+        tabId: number,
+        data: SendKeyServiceMessage["data"]
+    ) {
+        const frameId = this.focusedFrames.get(tabId);
+        if (frameId === undefined) {
+            return;
+        }
+        const message: SendKeyServiceMessage = {
+            type: "serviceScriptMessage",
+            action: ServiceScriptMessageAction.SendKey,
+            data,
+        };
+        try {
+            await chrome.tabs.sendMessage(tabId, message, { frameId });
+        } catch (error) {
+            console.debug(`Failed to send key to frame ${frameId} in tab ${tabId}:`, error);
+        }
     }
 
     public async toggleHanYongMode(tabId: number): Promise<void> {

@@ -1,9 +1,11 @@
+import { KeyCode } from "../content-script/on-screen-keyboard/korean-keyboard-map";
 import { hasProperties } from "../types/objects";
 import { TabState } from "../extension-state/tab-state";
 
 export enum ServiceScriptMessageAction {
     InsertTextAfterSelection = "insertTextAfterSelection",
     UpdateState = "updateState",
+    SendKey = "sendKey",
 }
 
 export type TabStateMessage = {
@@ -18,9 +20,16 @@ export type InsertTextAfterSelectionMessage = {
     data: string;
 };
 
+export type SendKeyServiceMessage = {
+    type: "serviceScriptMessage";
+    action: ServiceScriptMessageAction.SendKey;
+    data: { key: string; keyCode: KeyCode };
+};
+
 export type ServiceScriptMessage =
     | TabStateMessage
-    | InsertTextAfterSelectionMessage;
+    | InsertTextAfterSelectionMessage
+    | SendKeyServiceMessage;
 
 export function isServiceScriptMessage(
     message: unknown
