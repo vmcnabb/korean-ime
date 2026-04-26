@@ -70,6 +70,11 @@ export class StateManager {
         });
     }
 
+    /**
+     * Toggles the on-screen keyboard state for the given tab and returns the new state
+     * @param tabId The ID of the tab for which to toggle the on-screen keyboard
+     * @returns true if the on-screen keyboard is now enabled, false if it is now disabled
+     */
     public async toggleOnScreenKeyboard(tabId: number): Promise<boolean> {
         const tabState = await this.getTabState(tabId);
         const newTabState = {
@@ -83,7 +88,7 @@ export class StateManager {
 
     /**
      * Updates the TabState and sends a message to the content scripts to update the state
-     * @param tabId
+     * @param tabId The ID of the tab for which to update the state
      * @param updateFn function that takes the current tab state and returns the new tab state
      */
     private async setTabState(
