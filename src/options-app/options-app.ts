@@ -1,6 +1,6 @@
 import { createApp } from "vue";
 import App from "./options-page.vue";
-import { getSettings } from "../settings";
+import { getSettings } from "../settings/settings-factory";
 
 start();
 

@@ -132,14 +132,12 @@ export class HangulImeController {
             );
 
             if (reqPrevCharComposition && canInsertPrevChar) {
-                const character =
-                    this.compositionAdapter.getPreviousCharacter();
-                if (character && isHangulOrJamo(character)) {
-                    this.compositor.setCharacter(character);
+                const character = this.compositionAdapter.getPreviousCharacter();
 
+                if (this.compositor.setCharacter(character)) {
                     this.compositionAdapter.deleteContentBackwards();
                     this.compositionAdapter.beginComposition(
-                        character,
+                        character!,
                         KeyCode.Backspace
                     );
 

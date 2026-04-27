@@ -129,5 +129,28 @@ describe("HangulCompositor", () => {
             expect(compositor.isCompositing()).toEqual(true);
             expect(compositor.getCurrentChar()).toEqual("가");
         });
+
+        it("should return true on successful character set", () => {
+            const result = compositor.setCharacter("가");
+            expect(result).toEqual(true);
+        });
+
+        it("should return false for non-Korean characters", () => {
+            const result = compositor.setCharacter("X");
+            expect(result).toEqual(false);
+            expect(compositor.isCompositing()).toEqual(false);
+        });
+
+        it("should return false for undefined", () => {
+            const result = compositor.setCharacter(undefined);
+            expect(result).toEqual(false);
+            expect(compositor.isCompositing()).toEqual(false);
+        });
+
+        it("should return false for empty string", () => {
+            const result = compositor.setCharacter("");
+            expect(result).toEqual(false);
+            expect(compositor.isCompositing()).toEqual(false);
+        });
     });
 });

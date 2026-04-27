@@ -1,13 +1,12 @@
 import { ReadOnlyBiMap } from "../types/bi-map";
 
 export function isHangulOrJamo(char: string) {
-    if (!char) {
-        return false;
-    }
+    if (!char) return false;
+
     const charCode = char.charCodeAt(0);
     return (
-        (charCode >= 0xac00 && charCode <= 0xd7a3) ||
-        (charCode >= 0x3131 && charCode <= 0x318e)
+        (charCode >= 0xAC00 && charCode <= 0xD7A3)
+        || (charCode >= 0x3131 && charCode <= 0x318E)
     );
 }
 

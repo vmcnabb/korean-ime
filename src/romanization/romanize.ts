@@ -1,5 +1,5 @@
 import { HangulBlock } from "../composition/hangul-block";
-import { isHangulOrJamo } from "../composition/hangul-maps";
+import { compoundConsonantMap, isHangulOrJamo } from "../composition/hangul-maps";
 import {
     hangulInitialsRoman,
     hangulVowelsRoman,
@@ -15,62 +15,100 @@ import {
 export function romanize(text: string) {
     let romanText = "";
     let didPreviousCharSetInitial = false;
-    let isPreviousCharHangul = false;
-    let nextBlock = HangulBlock.fromChar(text[0] || "", false);
+
+    let nextBlock = isHangulOrJamo(text[0])
+        ? HangulBlock.fromChar(text[0], false)
+        : undefined;
 
     for (let i = 0; i < text.length; i++) {
-        const block = nextBlock;
         const thisChar = text[i];
-        const nextChar = text[i + 1] || "";
-        nextBlock = HangulBlock.fromChar(nextChar, false);
+        const nextChar: string | undefined = text[i + 1];
 
-        if (!isHangulOrJamo(thisChar)) {
+        const block = nextBlock;
+        nextBlock = isHangulOrJamo(nextChar)
+            ? HangulBlock.fromChar(nextChar, false)
+            : undefined;
+
+        if (block === undefined) {
             didPreviousCharSetInitial = false;
-            isPreviousCharHangul = false;
             romanText += thisChar;
             continue;
         }
 
-        if (!didPreviousCharSetInitial) {
-            if (!isPreviousCharHangul && block.initial === "ㅇ") {
-                // do nothing
-            } else {
-                romanText += hangulInitialsRoman.get(block.initial);
+        if (!block.hasMedial()) {
+            let textToAdd =
+                // standard initials (standalone consonant case)
+                hangulInitialsRoman.get(block.initial)
+                // standalone vowel case - initial is a vowel
+                ?? hangulVowelsRoman.get(block.initial);
+
+            if (textToAdd === '' && block.initial === "ㅇ") {
+                textToAdd = "ng";
             }
-            // TODO: check what happens for "ㄺ" or any other digraph finals used on their own.
-        }
-        if (block.medial.length > 0) {
-            romanText += hangulVowelsRoman.get(block.medial);
-        } else {
+            if (textToAdd === undefined) {
+                // standalone digraph case - initial is a digraph consonant
+                if (compoundConsonantMap.hasReverse(block.initial)) {
+                    const consonants = compoundConsonantMap.getReverse(block.initial)!;
+                    const first = hangulFinalsRoman.get(consonants[0]);
+                    const second = hangulInitialsRoman.get(consonants[1]);
+                    if (first && second) {
+                        textToAdd = first + second;
+                    }
+                }
+            }
+
+            const lastBlockWasNotInitial =
+                !isHangulOrJamo(text[i - 1])
+                || HangulBlock.fromChar(text[i - 1]).hasMedial();
+            const lastCharWasNotWhitespace = i === 0 || text[i - 1].trim() !== "";
+
+            if (lastBlockWasNotInitial && i > 0 && lastCharWasNotWhitespace) {
+                romanText += "-";
+            }
+            romanText += textToAdd ?? "�";
+            if (nextChar && nextChar.trim() !== "") {
+                romanText += "-";
+            }
+
             didPreviousCharSetInitial = false;
-            isPreviousCharHangul = true;
+            continue;
+
+        } else if (!didPreviousCharSetInitial) {
+            romanText += hangulInitialsRoman.get(block.initial) ?? "�";
+        }
+
+        romanText += hangulVowelsRoman.get(block.medial) ?? "�";
+
+        if (!block.hasFinal()) {
+            didPreviousCharSetInitial = false;
             continue;
         }
 
-        if (block.final.length == 0) {
-            didPreviousCharSetInitial = false;
-            isPreviousCharHangul = true;
-            continue;
+        // e.g. "ㄱ" or "ㄹㄱ"
+        const decomposedFinal = compoundConsonantMap.getReverse(block.final) ?? block.final;
+
+        const specialFinalInitialCombination = nextBlock && nextBlock.hasMedial()
+            ? hangulFinalInitialRoman.get(decomposedFinal.at(-1)! + nextBlock.initial) 
+            : undefined;
+
+        const isNextPhonemeAVowel = !!nextBlock?.hasMedial() && nextBlock.initial === "ㅇ";
+        const isSpecial = specialFinalInitialCombination !== undefined;
+        const isCompoundFinal = decomposedFinal.length === 2;
+
+        if (isCompoundFinal && (isNextPhonemeAVowel || isSpecial)) {
+            romanText += hangulFinalsRoman.get(decomposedFinal[0]) ?? "�";
         }
 
-        if (block.final.length == 2) {
-            // double-consonant ending, romanise the first jamo as if it were an initial
-            romanText += hangulInitialsRoman.get(block.final[0]);
-        }
+        if (isSpecial) {
+            romanText += specialFinalInitialCombination;
+        
+        } else if (isNextPhonemeAVowel) {
+            romanText += hangulInitialsRoman.get(decomposedFinal.at(-1)!) ?? "�";
 
-        const thisFinal = block.final.slice(-1);
-        const special = hangulFinalInitialRoman.get(
-            thisFinal + nextBlock.initial
-        );
-
-        if (isHangulOrJamo(nextChar) && special !== undefined) {
-            romanText += special;
-            didPreviousCharSetInitial = true;
         } else {
-            romanText += hangulFinalsRoman.get(thisFinal);
-            didPreviousCharSetInitial = false;
+            romanText += hangulFinalsRoman.get(block.final) ?? "�";
         }
-        isPreviousCharHangul = true;
+        didPreviousCharSetInitial = isSpecial || isNextPhonemeAVowel;
     } // for i
 
     return romanText;

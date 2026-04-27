@@ -1,6 +1,7 @@
 import {
     compoundConsonantMap,
     compoundVowelMap,
+    isHangulOrJamo,
     jamoIndices,
 } from "./hangul-maps";
 
@@ -41,13 +42,26 @@ export class HangulBlock {
                   this.initial;
     }
 
+    hasMedial() {
+        return this.medial.length > 0;
+    }
+
+    hasFinal() {
+        return this.final.length > 0;
+    }
+
     /**
      * Creates a HangulBlock from a single character string.
      * @param char The Hangul character to create a HangulBlock from.
      * @param separateDigraphs Indicates whether to separate digraphs.
      * @returns A new HangulBlock instance representing the given character.
      */
-    static fromChar(char: string, separateDigraphs = true): HangulBlock {
+    static fromChar(char: string, separateDigraphs = true): HangulBlock
+    {
+        if (!isHangulOrJamo(char)) {
+            throw new Error(`${char} is not a valid Hangul character or Jamo.`);
+        }
+
         let workingIndex = char.charCodeAt(0) - 44032;
 
         if (workingIndex < 0) {
@@ -71,13 +85,18 @@ export class HangulBlock {
         workingIndex %= 28;
         const finalIndex = workingIndex - 1;
 
+        const initial = initials[initialIndex];
+        const medial = separateDigraphs
+            ? compoundVowelMap.getReverse(medials[medialIndex]) ?? medials[medialIndex]
+            : medials[medialIndex];
+        const final = separateDigraphs
+            ? compoundConsonantMap.getReverse(finals[finalIndex]) ?? finals[finalIndex]
+            : finals[finalIndex];
+
         return new HangulBlock(
-            initials[initialIndex],
-            (separateDigraphs &&
-                compoundVowelMap.getReverse(medials[medialIndex])) ||
-                medials[medialIndex],
-            compoundConsonantMap.getReverse(finals[finalIndex]) ||
-                finals[finalIndex]
+            initial,
+            medial,
+            final
         );
     }
 }

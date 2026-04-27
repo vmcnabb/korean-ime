@@ -57,8 +57,13 @@ export class HangulCompositor {
         return this.block.toChar();
     }
 
-    setCharacter(char: string) {
+    setCharacter(char: string | undefined): boolean {
+        if (!char || !isHangulOrJamo(char)) {
+            return false;
+        }
+
         this.block = HangulBlock.fromChar(char);
+        return true;
     }
 
     isCompositing() {
