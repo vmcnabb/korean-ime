@@ -9,11 +9,13 @@
   },
   "scripts": {
     "test": "jest",
-    "build": "npm run clean && npm run check && cross-env NODE_ENV=production parcel build",
+    "build": "npm run clean && npm run check && npm run lint && cross-env NODE_ENV=production parcel build",
     "start": "cross-env NODE_ENV=development parcel watch src/manifest.json --host localhost --config @parcel/config-webextension",
     "build-dev": "npm run clean && cross-env NODE_ENV=development parcel build --no-optimize",
     "clean": "rimraf dist obj .parcel-cache coverage",
-    "check": "tsc --noEmit"
+    "check": "tsc --noEmit",
+    "lint": "eslint src",
+    "lint:fix": "eslint src --fix"
   },
   "repository": {
     "type": "git",
@@ -27,6 +29,7 @@
   "homepage": "https://github.com/vmcnabb/korean-ime#readme",
   "devDependencies": {
     "@babel/types": "^7.29.0",
+    "@eslint/js": "^9.39.4",
     "@parcel/config-webextension": "^2.16.4",
     "@parcel/transformer-sass": "^2.16.4",
     "@parcel/transformer-vue": "^2.16.4",
@@ -49,6 +52,7 @@
     "ts-jest": "^29.4.9",
     "ts-node": "^10.9.2",
     "typescript": "^6.0.3",
+    "typescript-eslint": "^8.60.0",
     "vue": "^3.5.33"
   },
   "dependencies": {
