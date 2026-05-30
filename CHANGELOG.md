@@ -2,7 +2,11 @@ Install the latest release from the Chrome Web Store:
 [https://chrome.google.com/webstore/detail/korean-ime/cimmbifnciobjhchpimjekibbndgmkfk?hl=en-GB]
 
 # 2.3.0
-[date of release snapshot]
+2026-05-31 (release candidate — not yet published to the Chrome Web Store)
+
+This is the Manifest V3 rewrite. The previous store listing (2.x, Manifest V2)
+was removed after Google's MV3 requirement; this version is what brings the
+extension back into compliance.
 
 ### Features
 * Added on-screen keyboard
