@@ -41,6 +41,7 @@ npm install
 | `npm run check` | Type-check without emitting output |
 | `npm run lint` | Lint with ESLint (`npm run lint:fix` to auto-fix) |
 | `npm test` | Run unit tests |
+| `npm run package` | Build and zip `dist/` into `korean-ime-<version>.zip` for the store |
 
 The output goes to `/dist` and can be loaded directly as an unpacked extension:
 1. Open `chrome://extensions`

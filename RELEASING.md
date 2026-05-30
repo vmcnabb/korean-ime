@@ -61,12 +61,13 @@ git push --tags
 
 ## 7. Package for the Chrome Web Store
 
-The store wants a `.zip` whose **root** contains `manifest.json` — i.e. zip the
-*contents* of `dist/`, not the `dist/` folder:
-
-```powershell
-Compress-Archive -Path dist/* -DestinationPath korean-ime-X.Y.Z.zip -Force
+```sh
+npm run package
 ```
+
+This re-runs the build and zips the *contents* of `dist/` into
+`korean-ime-<version>.zip` (with `manifest.json` at the zip root, as the store
+requires). The zip is git-ignored.
 
 ## 8. Upload and submit
 

@@ -14,11 +14,12 @@ on-screen keyboard. TypeScript, bundled with **Parcel**; the options page uses
 | Command | Purpose |
 |---|---|
 | `npm start` | Parcel watch mode — rebuilds to `dist/` on change |
-| `npm run build` | Production build: `clean` → `check` → `lint` → `parcel build` |
+| `npm run build` | Production build: `clean` → `sync-version` → `check` → `lint` → `parcel build` |
 | `npm run build-dev` | Unoptimized dev build |
 | `npm run check` | Type-check only (`tsc --noEmit`) |
 | `npm run lint` / `lint:fix` | ESLint (flat config in `eslint.config.mjs`) |
 | `npm test` | Jest unit tests (ts-jest + jsdom) |
+| `npm run package` | Build and zip `dist/` into `korean-ime-<version>.zip` (store upload) |
 
 Load `dist/` as an unpacked extension at `chrome://extensions` (Developer mode → Load unpacked).
 
