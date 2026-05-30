@@ -11,5 +11,5 @@ chrome.runtime.onInstalled.addListener(onInstall);
 const stateManager = new StateManager();
 const contentScriptListener = new ContentScriptListener(stateManager);
 contentScriptListener.listen();
-setupMenuListener();
-setupActionListener();
+setupMenuListener(stateManager);
+setupActionListener(stateManager);

@@ -13,7 +13,7 @@ export const menus = Object.freeze({
     },
 });
 
-export function setupMenuListener() {
+export function setupMenuListener(stateManager: StateManager) {
     chrome.contextMenus.onClicked.addListener((event, tab) => {
         if (!tab?.id) {
             return;
@@ -29,7 +29,7 @@ export function setupMenuListener() {
                 break;
 
             case menus.onScreenKeyboard.id:
-                StateManager.instance.toggleOnScreenKeyboard(tab.id);
+                stateManager.toggleOnScreenKeyboard(tab.id);
                 break;
         }
     });

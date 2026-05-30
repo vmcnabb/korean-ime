@@ -1,11 +1,11 @@
 import { StateManager } from "./state-manager";
 
-export function setupActionListener() {
+export function setupActionListener(stateManager: StateManager) {
     chrome.action.onClicked.addListener((tab) => {
         if (!tab.id) {
             return;
         }
 
-        StateManager.instance.toggleHanYongMode(tab.id);
+        stateManager.toggleHanYongMode(tab.id);
     });
 }
