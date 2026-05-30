@@ -2,16 +2,14 @@ import { HangulImeController } from "../../composition/hangul-ime-controller";
 import { romanize } from "../../romanization/romanize";
 import { PopulatePopupConverterMessage } from "./popup-converter-message";
 
-chrome.runtime.onMessage.addListener(
-    (request: PopulatePopupConverterMessage) => {
-        switch (request.action) {
-            case "populate":
-                original.innerText = request.data.original;
-                roman.innerText = request.data.romanized;
-                break;
-        }
+chrome.runtime.onMessage.addListener((request: PopulatePopupConverterMessage) => {
+    switch (request.action) {
+        case "populate":
+            original.innerText = request.data.original;
+            roman.innerText = request.data.romanized;
+            break;
     }
-);
+});
 
 const original = document.getElementById("original") as HTMLDivElement,
     roman = document.getElementById("romanized") as HTMLDivElement,
@@ -28,9 +26,7 @@ original.oninput = doRomanize;
 
 document.querySelectorAll("[data-message]").forEach((el) => {
     const element = el as HTMLElement;
-    element.innerText = element.dataset.message
-        ? chrome.i18n.getMessage(element.dataset.message)
-        : "";
+    element.innerText = element.dataset.message ? chrome.i18n.getMessage(element.dataset.message) : "";
 });
 
 document.querySelectorAll("[data-placeholder-message]").forEach((el) => {

@@ -23,9 +23,7 @@ function createTraceProxy<T extends object>(instance: T): T {
                 return (...args: []) => {
                     const returnValue = value.apply(target, args);
                     console.debug(
-                        `Called ${name(
-                            property
-                        )} at\n${getCallStack()}\nWith args, returning:`,
+                        `Called ${name(property)} at\n${getCallStack()}\nWith args, returning:`,
                         args,
                         returnValue
                     );
@@ -33,20 +31,14 @@ function createTraceProxy<T extends object>(instance: T): T {
                 };
             } else {
                 // Log property access
-                console.debug(
-                    `Get ${name(property)} at\n${getCallStack()}\nValue:`,
-                    value
-                );
+                console.debug(`Get ${name(property)} at\n${getCallStack()}\nValue:`, value);
                 return value;
             }
         },
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         set(target: any, property: PropertyKey, value: any): boolean {
             // Log property updates
-            console.debug(
-                `Set ${name(property)} at\n${getCallStack()}\nValue:`,
-                value
-            );
+            console.debug(`Set ${name(property)} at\n${getCallStack()}\nValue:`, value);
             return Reflect.set(target, property, value);
         },
     });
@@ -56,15 +48,10 @@ type ConcreteConstructor<T = object> = new (...args: []) => T;
 type AbstractConstructor<T = object> = abstract new (...args: []) => T;
 type Constructor = AbstractConstructor | ConcreteConstructor;
 
-// eslint-disable-next-line @typescript-eslint/ban-types
+// eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
 type ConstructorFn = Constructor | Function;
 
-export const trace: ClassDecorator = <
-    T extends ConstructorFn,
-    TArgs extends []
->(
-    target: T
-): T | void => {
+export const trace: ClassDecorator = <T extends ConstructorFn, TArgs extends []>(target: T): T | void => {
     if (process.env.NODE_ENV === "production") {
         return target;
     }

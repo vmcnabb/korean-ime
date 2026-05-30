@@ -55,18 +55,12 @@ export function isSection(value: unknown): value is OptionsSection {
     return hasType(value) && value.type === OptionType.Section;
 }
 
-export function isSelectOption(
-    option: Option
-): option is SelectOption<EnumLike> {
+export function isSelectOption(option: Option): option is SelectOption<EnumLike> {
     return option.type === OptionType.Select;
 }
 
 export function isOption(option: unknown): option is Option {
-    return (
-        hasType(option) &&
-        option.type !== undefined &&
-        option.type !== OptionType.Section
-    );
+    return hasType(option) && option.type !== undefined && option.type !== OptionType.Section;
 }
 
 export function isSystemSetting(option: unknown): option is SystemSetting {

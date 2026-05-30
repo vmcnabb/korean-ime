@@ -1,10 +1,5 @@
 import { hasProperties } from "../types/objects";
-import {
-    compoundConsonantMap,
-    compoundVowelMap,
-    jamoIndices,
-    isHangulOrJamo,
-} from "./hangul-maps";
+import { compoundConsonantMap, compoundVowelMap, jamoIndices, isHangulOrJamo } from "./hangul-maps";
 import { HangulBlock } from "./hangul-block";
 
 type CompositingResult =
@@ -87,25 +82,16 @@ export class HangulCompositor {
             return {
                 started: jamo,
             };
-        } else if (
-            compoundVowelMap.has(combined) ||
-            compoundConsonantMap.has(combined)
-        ) {
+        } else if (compoundVowelMap.has(combined) || compoundConsonantMap.has(combined)) {
             // (V)V or (C)C
             block.initial = combined;
             return {
                 updated: block.toChar(),
             };
-        } else if (
-            jamoIndices.initials.indexOf(block.initial) > -1 &&
-            jamoIndices.medials.indexOf(jamo) > -1
-        ) {
+        } else if (jamoIndices.initials.indexOf(block.initial) > -1 && jamoIndices.medials.indexOf(jamo) > -1) {
             // (C)+V
             return this.addMedialJamo(jamo);
-        } else if (
-            compoundConsonantMap.has(block.initial) &&
-            jamoIndices.medials.indexOf(jamo) > -1
-        ) {
+        } else if (compoundConsonantMap.has(block.initial) && jamoIndices.medials.indexOf(jamo) > -1) {
             // (C)C+V
             // e.g. ㄳ + ㅏ = ㄱ사
             const completed = block.initial[0];
@@ -113,9 +99,7 @@ export class HangulCompositor {
 
             const updateResult = this.addMedialJamo(jamo);
             if (!hasProperties(updateResult, "updated")) {
-                throw new Error(
-                    "Expected updateResult to have property 'updated'."
-                );
+                throw new Error("Expected updateResult to have property 'updated'.");
             }
 
             return {
@@ -166,8 +150,7 @@ export class HangulCompositor {
         const block = this.block;
         const combined = block.final + jamo;
         const isValidFinal =
-            (!block.final && jamoIndices.finals.indexOf(jamo) > -1) ||
-            compoundConsonantMap.has(combined);
+            (!block.final && jamoIndices.finals.indexOf(jamo) > -1) || compoundConsonantMap.has(combined);
 
         if (isValidFinal) {
             // C+(V|VV)+(C|CC)

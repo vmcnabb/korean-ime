@@ -18,14 +18,10 @@ type UpdateCompositionFeaturesMessage = {
 
 export type ContentScriptBroadcastMessage = UpdateCompositionFeaturesMessage;
 
-export function isContentScriptBroadcastMessage(
-    message: unknown
-): message is ContentScriptBroadcastMessage {
+export function isContentScriptBroadcastMessage(message: unknown): message is ContentScriptBroadcastMessage {
     return (
         hasProperties(message, "type", "action") &&
         message.type === "broadcast" &&
-        Object.values(ContentScriptBroadcastAction).includes(
-            message.action as ContentScriptBroadcastAction
-        )
+        Object.values(ContentScriptBroadcastAction).includes(message.action as ContentScriptBroadcastAction)
     );
 }

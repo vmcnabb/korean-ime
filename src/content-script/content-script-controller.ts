@@ -2,10 +2,7 @@ import { OnScreenKeyboardController } from "./on-screen-keyboard/on-screen-keybo
 import { KeyCode } from "./on-screen-keyboard/korean-keyboard-map";
 import { TextInputManager } from "./text-input-manager";
 import { KoreanKeyboardMode } from "../extension-state/korean-keyboard-mode";
-import {
-    ContentScriptRequestAction,
-    ContentScriptRequestMessage,
-} from "../messaging/content-to-service-messages";
+import { ContentScriptRequestAction, ContentScriptRequestMessage } from "../messaging/content-to-service-messages";
 import {
     ContentScriptBroadcastAction,
     ContentScriptBroadcastMessage,
@@ -25,15 +22,15 @@ export class ContentScriptController {
     public initialize(isTopWindow: boolean) {
         this.keyboardController = isTopWindow
             ? new OnScreenKeyboardController((key, keyCode) => {
-                const handled = this.textInputManager.enterCharacter(key, keyCode);
-                if (!handled) {
-                    chrome.runtime.sendMessage<ContentScriptRequestMessage>({
-                        type: "contentScriptRequest",
-                        action: ContentScriptRequestAction.SendKey,
-                        data: { key, keyCode },
-                    });
-                }
-            })
+                  const handled = this.textInputManager.enterCharacter(key, keyCode);
+                  if (!handled) {
+                      chrome.runtime.sendMessage<ContentScriptRequestMessage>({
+                          type: "contentScriptRequest",
+                          action: ContentScriptRequestAction.SendKey,
+                          data: { key, keyCode },
+                      });
+                  }
+              })
             : undefined;
 
         this.setupMessageListener();
@@ -104,8 +101,7 @@ export class ContentScriptController {
             "focus",
             (e) => {
                 const element = e.target as HTMLElement;
-                const compositionFeatures =
-                    this.textInputManager.setActiveElement(element);
+                const compositionFeatures = this.textInputManager.setActiveElement(element);
 
                 if (!compositionFeatures) {
                     // todo: notify everyone that there is no active element
@@ -132,4 +128,4 @@ export class ContentScriptController {
         this.textInputManager.setMode(mode);
         this.keyboardController?.setMode(mode);
     }
-};
+}

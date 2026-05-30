@@ -1,7 +1,4 @@
-import {
-    ServiceScriptMessage,
-    ServiceScriptMessageAction,
-} from "../messaging/service-to-content-messages";
+import { ServiceScriptMessage, ServiceScriptMessageAction } from "../messaging/service-to-content-messages";
 import { PopulatePopupConverterMessage } from "./popup-converter/popup-converter-message";
 import { romanize } from "../romanization/romanize";
 import popupConverter from "url:./popup-converter/popup-converter.html";
@@ -25,26 +22,20 @@ export function romanizeInPopup(event: chrome.contextMenus.OnClickData) {
                     return;
                 }
 
-                chrome.tabs.sendMessage<PopulatePopupConverterMessage>(
-                    newWindow.tabs[0].id,
-                    {
-                        type: "populatePopupConverterMessage",
-                        action: "populate",
-                        data: {
-                            original: selectionText,
-                            romanized: romanText,
-                        },
-                    }
-                );
+                chrome.tabs.sendMessage<PopulatePopupConverterMessage>(newWindow.tabs[0].id, {
+                    type: "populatePopupConverterMessage",
+                    action: "populate",
+                    data: {
+                        original: selectionText,
+                        romanized: romanText,
+                    },
+                });
             }, 100);
         }
     );
 }
 
-export function romanizeBeside(
-    event: chrome.contextMenus.OnClickData,
-    tab: chrome.tabs.Tab | undefined
-) {
+export function romanizeBeside(event: chrome.contextMenus.OnClickData, tab: chrome.tabs.Tab | undefined) {
     if (!tab?.id || !event.selectionText) {
         return;
     }

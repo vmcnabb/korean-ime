@@ -26,16 +26,8 @@ export class ContentScriptListener {
 
         // listen for ContentScriptRequest messages and handle them
         chrome.runtime.onMessage.addListener(
-            (
-                message:
-                    | ContentScriptRequestMessage
-                    | ContentScriptBroadcastMessage,
-                sender
-            ) => {
-                console.debug(
-                    "ContentScriptListener received message: ",
-                    message
-                );
+            (message: ContentScriptRequestMessage | ContentScriptBroadcastMessage, sender) => {
+                console.debug("ContentScriptListener received message: ", message);
 
                 if (!sender.tab?.id) {
                     return;
@@ -43,10 +35,7 @@ export class ContentScriptListener {
 
                 if (isContentScriptBroadcastMessage(message)) {
                     if (sender.frameId !== undefined) {
-                        this.stateManager.setFocusedFrame(
-                            sender.tab.id,
-                            sender.frameId
-                        );
+                        this.stateManager.setFocusedFrame(sender.tab.id, sender.frameId);
                     }
                     this.forwardMessageToTab(sender.tab.id, message);
                     return;
@@ -62,10 +51,7 @@ export class ContentScriptListener {
                         break;
 
                     case ContentScriptRequestAction.SendKey:
-                        this.stateManager.routeSendKey(
-                            sender.tab.id,
-                            (message as SendKeyRequestMessage).data
-                        );
+                        this.stateManager.routeSendKey(sender.tab.id, (message as SendKeyRequestMessage).data);
                         break;
                 }
             }
@@ -78,10 +64,7 @@ export class ContentScriptListener {
         });
     }
 
-    private forwardMessageToTab(
-        tabId: number,
-        message: ContentScriptBroadcastMessage
-    ) {
+    private forwardMessageToTab(tabId: number, message: ContentScriptBroadcastMessage) {
         chrome.tabs.sendMessage(tabId, message);
     }
 }

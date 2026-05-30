@@ -9,14 +9,10 @@ export type OptionsPageMessage = {
     action: OptionsPageMessageAction;
 };
 
-export function isOptionsPageMessage(
-    message: unknown
-): message is OptionsPageMessage {
+export function isOptionsPageMessage(message: unknown): message is OptionsPageMessage {
     return (
         hasProperties(message, "type", "action") &&
         message.type === "optionsPageMessage" &&
-        Object.values(OptionsPageMessageAction).includes(
-            message.action as OptionsPageMessageAction
-        )
+        Object.values(OptionsPageMessageAction).includes(message.action as OptionsPageMessageAction)
     );
 }

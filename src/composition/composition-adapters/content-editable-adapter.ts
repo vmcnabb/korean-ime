@@ -47,7 +47,6 @@ export class ContentEditableAdapter extends CompositionAdapter {
         }
 
         const range = selection.getRangeAt(0).cloneRange();
-        range.createContextualFragment;
 
         // if range is not caret, return undefined
         if (range.startOffset !== range.endOffset) {
@@ -55,10 +54,7 @@ export class ContentEditableAdapter extends CompositionAdapter {
         }
 
         // if range start and end don't have this.element as an ancestor, return undefined
-        if (
-            !this.element.contains(range.startContainer) ||
-            !this.element.contains(range.endContainer)
-        ) {
+        if (!this.element.contains(range.startContainer) || !this.element.contains(range.endContainer)) {
             return undefined;
         }
 
@@ -101,9 +97,7 @@ export class ContentEditableAdapter extends CompositionAdapter {
     */
     beginComposition(data: string, keyCode: KeyCode) {
         if (this.isCompositing) {
-            throw new Error(
-                "Cannot begin composition when already compositing"
-            );
+            throw new Error("Cannot begin composition when already compositing");
         }
 
         const eventsToDispatch: DispatchableAction[] = [
@@ -275,9 +269,7 @@ export class ContentEditableAdapter extends CompositionAdapter {
 
         const selection = window.getSelection();
         if (!selection) {
-            throw new Error(
-                "Cannot input character when there is no selection"
-            );
+            throw new Error("Cannot input character when there is no selection");
         }
 
         const inputCharacterFn = () => {
@@ -375,15 +367,10 @@ export class ContentEditableAdapter extends CompositionAdapter {
         this.compositingBox = characterBox;
     }
 
-    private getAssignableStyles(
-        sourceElement: Element
-    ): Partial<CSSStyleDeclaration> {
+    private getAssignableStyles(sourceElement: Element): Partial<CSSStyleDeclaration> {
         const computedStyles = window.getComputedStyle(sourceElement);
 
-        const styles: Record<CSSStringKey, string> = {} as Record<
-            CSSStringKey,
-            string
-        >;
+        const styles: Record<CSSStringKey, string> = {} as Record<CSSStringKey, string>;
 
         // get the default styles for an element at document root
         const testElement = document.createElement("div");
@@ -408,25 +395,13 @@ export class ContentEditableAdapter extends CompositionAdapter {
             computedStyles: CSSStyleDeclaration,
             defaultStyles: CSSStyleDeclaration
         ) {
-            const excludeStartWith = [
-                "background",
-                "border",
-                "outline",
-                "position",
-                "display",
-                "visibility",
-            ];
+            const excludeStartWith = ["background", "border", "outline", "position", "display", "visibility"];
 
-            if (
-                excludeStartWith.some((prefix) => styleName.startsWith(prefix))
-            ) {
+            if (excludeStartWith.some((prefix) => styleName.startsWith(prefix))) {
                 return true;
             }
 
-            if (
-                computedStyles.getPropertyValue(styleName) ===
-                defaultStyles.getPropertyValue(styleName)
-            ) {
+            if (computedStyles.getPropertyValue(styleName) === defaultStyles.getPropertyValue(styleName)) {
                 return true;
             }
 
@@ -448,9 +423,7 @@ type StringStyleKeys<T> = {
 
 type CSSStringKey = Extract<StringStyleKeys<CSSStyleDeclaration>, string>;
 
-export function updateSelectionToIncludePreviousCharacter(
-    topContainer: Element
-): Range | undefined {
+export function updateSelectionToIncludePreviousCharacter(topContainer: Element): Range | undefined {
     const selection = document.getSelection();
     if (!selection) {
         return;

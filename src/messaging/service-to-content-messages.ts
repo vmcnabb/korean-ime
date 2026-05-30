@@ -26,19 +26,12 @@ export type SendKeyServiceMessage = {
     data: { key: string; keyCode: KeyCode };
 };
 
-export type ServiceScriptMessage =
-    | TabStateMessage
-    | InsertTextAfterSelectionMessage
-    | SendKeyServiceMessage;
+export type ServiceScriptMessage = TabStateMessage | InsertTextAfterSelectionMessage | SendKeyServiceMessage;
 
-export function isServiceScriptMessage(
-    message: unknown
-): message is ServiceScriptMessage {
+export function isServiceScriptMessage(message: unknown): message is ServiceScriptMessage {
     return (
         hasProperties(message, "type", "action") &&
         message.type === "serviceScriptMessage" &&
-        Object.values(ServiceScriptMessageAction).includes(
-            message.action as ServiceScriptMessageAction
-        )
+        Object.values(ServiceScriptMessageAction).includes(message.action as ServiceScriptMessageAction)
     );
 }

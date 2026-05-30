@@ -48,9 +48,7 @@ export function isNumericEnum(enumLike: EnumLike): enumLike is NumericEnum {
     return Object.values(enumLike).some((value) => typeof value === "number");
 }
 
-export function isTypedNumericEnum<T extends EnumLike>(
-    enumLike: T
-): enumLike is TypedNumericEnum<T> {
+export function isTypedNumericEnum<T extends EnumLike>(enumLike: T): enumLike is TypedNumericEnum<T> {
     return Object.values(enumLike).some((value) => typeof value === "number");
 }
 
@@ -58,9 +56,7 @@ export function isStringEnum(enumLike: EnumLike): enumLike is StringEnum {
     return Object.values(enumLike).every((value) => typeof value === "string");
 }
 
-export function convertToOneWayNumericEnum<T extends NumericEnum>(
-    enumLike: T
-): TypedOneWayNumericEnum<T> {
+export function convertToOneWayNumericEnum<T extends NumericEnum>(enumLike: T): TypedOneWayNumericEnum<T> {
     const entries = Object.entries(enumLike);
     const filtered = entries.filter(entryIs(isString, isNumber));
     const newObject = Object.fromEntries(filtered);
@@ -85,8 +81,6 @@ function entryIs<T1, T2>(
     };
 }
 
-export function enumValues<T extends StringEnum | OneWayNumericEnum>(
-    enumLike: T
-): T[] {
+export function enumValues<T extends StringEnum | OneWayNumericEnum>(enumLike: T): T[] {
     return Object.values(enumLike);
 }

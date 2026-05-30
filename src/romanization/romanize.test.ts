@@ -103,7 +103,7 @@ describe("romanize", () => {
 
     it("should romanize something for every character in the Unicode Hangul ranges.", () => {
         const range1 = [0x3131, 0x3163];
-        const range2 = [0xAC00, 0xD7A3];
+        const range2 = [0xac00, 0xd7a3];
 
         for (let codePoint = range1[0]; codePoint <= range1[1]; codePoint++) {
             const char = String.fromCharCode(codePoint);
@@ -135,7 +135,6 @@ describe("romanize", () => {
         it("should romanize names of people", () => {
             // this sort of special case is currently not implemented as it would require name detection, which is
             // nontrivial and likely to be flaky without a large database of names and their romanizations.
-
             // expect(romanize("박영희")).toBe("Park Young-hee");
             // expect(romanize("이순신")).toBe("Lee Soon-shin");
         });

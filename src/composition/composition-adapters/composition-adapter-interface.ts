@@ -15,7 +15,4 @@ export interface ICompositionAdapter {
     endComposition(data: string): void;
 }
 
-export type SupportedCompositionFeatures = Record<
-    MethodKeys<ICompositionAdapter>,
-    boolean
->;
+export type SupportedCompositionFeatures = Record<MethodKeys<ICompositionAdapter>, boolean>;

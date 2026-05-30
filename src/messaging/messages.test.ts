@@ -81,7 +81,10 @@ describe("isServiceScriptMessage", () => {
             isServiceScriptMessage({
                 type: "serviceScriptMessage",
                 action: ServiceScriptMessageAction.UpdateState,
-                data: { koreanKeyboardMode: 0, isOnScreenKeyboardEnabled: false },
+                data: {
+                    koreanKeyboardMode: 0,
+                    isOnScreenKeyboardEnabled: false,
+                },
             })
         ).toBe(true);
     });

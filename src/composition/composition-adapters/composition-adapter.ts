@@ -4,10 +4,7 @@ import { setAsKimeEvent } from "../../messaging/dom-events";
 import { trace } from "../../decorators/trace";
 import { DummyAdapter } from "./dummy-adapter";
 import { MethodKeys } from "../../types/objects";
-import {
-    ICompositionAdapter,
-    SupportedCompositionFeatures,
-} from "./composition-adapter-interface";
+import { ICompositionAdapter, SupportedCompositionFeatures } from "./composition-adapter-interface";
 
 type DispatchableEvent = KeyboardEvent | CompositionEvent | InputEvent;
 
@@ -38,11 +35,7 @@ export abstract class CompositionAdapter implements ICompositionAdapter {
         const selection = window.getSelection();
 
         // throw if selection doesn't contain our element
-        if (
-            !selection ||
-            !this.element.contains(selection.anchorNode) ||
-            !this.element.contains(selection.focusNode)
-        ) {
+        if (!selection || !this.element.contains(selection.anchorNode) || !this.element.contains(selection.focusNode)) {
             throw new Error("Selection does not include element");
         }
 
@@ -55,10 +48,7 @@ export abstract class CompositionAdapter implements ICompositionAdapter {
         const range = selection.getRangeAt(0);
         const startNode = range.startContainer;
         const endNode = range.endContainer;
-        if (
-            !this.element.contains(startNode) ||
-            !this.element.contains(endNode)
-        ) {
+        if (!this.element.contains(startNode) || !this.element.contains(endNode)) {
             throw new Error("Selection contains nodes outside of element");
         }
 
@@ -111,11 +101,7 @@ export abstract class CompositionAdapter implements ICompositionAdapter {
      * @param data the character to input
      */
     abstract inputCharacter(data: string, keyCode: KeyCode): void;
-    protected _inputCharacter(
-        data: string,
-        keyCode: KeyCode,
-        inputCharacterFn: () => void
-    ) {
+    protected _inputCharacter(data: string, keyCode: KeyCode, inputCharacterFn: () => void) {
         // simulate the events that would be fired when typing a character
         const eventsToDispatch: DispatchableAction[] = [
             new KeyboardEvent("keydown", {
@@ -235,14 +221,10 @@ export abstract class CompositionAdapter implements ICompositionAdapter {
     }
 }
 
-function isDispatchableFunction(
-    action: DispatchableAction
-): action is () => void {
+function isDispatchableFunction(action: DispatchableAction): action is () => void {
     return typeof action === "function";
 }
 
-function isDispatchableEvent(
-    action: DispatchableAction
-): action is DispatchableEvent {
+function isDispatchableEvent(action: DispatchableAction): action is DispatchableEvent {
     return action instanceof Event;
 }

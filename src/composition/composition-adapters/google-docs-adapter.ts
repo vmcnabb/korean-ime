@@ -22,9 +22,7 @@ export class GoogleDocsAdapter extends CompositionAdapter {
 
     deleteContentBackwards(): void {
         if (this.isCompositing) {
-            throw new Error(
-                "Cannot delete character backward when compositing"
-            );
+            throw new Error("Cannot delete character backward when compositing");
         }
 
         super._deleteContentBackwards(() => {
@@ -58,9 +56,7 @@ export class GoogleDocsAdapter extends CompositionAdapter {
     */
     beginComposition(data: string, keyCode: KeyCode) {
         if (this.isCompositing) {
-            throw new Error(
-                "Cannot begin composition when already compositing"
-            );
+            throw new Error("Cannot begin composition when already compositing");
         }
 
         const actions: DispatchableAction[] = [

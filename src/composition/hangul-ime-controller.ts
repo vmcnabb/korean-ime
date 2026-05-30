@@ -1,11 +1,5 @@
 ﻿import { isKimeEvent } from "../messaging/dom-events";
-import {
-    isAltKey,
-    isModifierKey,
-    KeyCode,
-    keyMap,
-} from "../content-script/on-screen-keyboard/korean-keyboard-map";
-import { isHangulOrJamo } from "./hangul-maps";
+import { isAltKey, isModifierKey, KeyCode, keyMap } from "../content-script/on-screen-keyboard/korean-keyboard-map";
 import { HangulCompositor } from "./hangul-compositor";
 import { CompositionAdapterFactory } from "./composition-adapter-factory";
 import { CompositionAdapter } from "./composition-adapters/composition-adapter";
@@ -29,8 +23,7 @@ export class HangulImeController {
     private lastAlt?: KeyCode.AltLeft | KeyCode.AltRight = undefined;
 
     constructor(element: HTMLElement) {
-        const compositionAdapter =
-            CompositionAdapterFactory.createCompositionAdapter(element);
+        const compositionAdapter = CompositionAdapterFactory.createCompositionAdapter(element);
         if (!compositionAdapter) {
             throw new Error("Could not create composition adapter for element");
         }
@@ -64,9 +57,7 @@ export class HangulImeController {
         if (this.compositor.isCompositing()) {
             // Ending the composition with the current value is the correct thing to do with Korean.
             // If we implement other languages, we may need to change this.
-            this.compositionAdapter.endComposition(
-                this.compositor.getCurrentChar()
-            );
+            this.compositionAdapter.endComposition(this.compositor.getCurrentChar());
             this.compositor.reset();
         }
 
@@ -122,9 +113,7 @@ export class HangulImeController {
             }
 
             const reqPrevCharComposition =
-                !this.compositor.isCompositing() &&
-                event.shiftKey &&
-                code === KeyCode.Backspace;
+                !this.compositor.isCompositing() && event.shiftKey && code === KeyCode.Backspace;
 
             const canInsertPrevChar = this.compositionAdapter.supportsMethods(
                 "getPreviousCharacter",
@@ -136,10 +125,7 @@ export class HangulImeController {
 
                 if (this.compositor.setCharacter(character)) {
                     this.compositionAdapter.deleteContentBackwards();
-                    this.compositionAdapter.beginComposition(
-                        character!,
-                        KeyCode.Backspace
-                    );
+                    this.compositionAdapter.beginComposition(character!, KeyCode.Backspace);
 
                     event.preventDefault();
                     event.stopPropagation();
@@ -175,9 +161,7 @@ export class HangulImeController {
             // don't interfere with keyboard shortcuts or keys we don't understand
             if (!key || event.ctrlKey) {
                 if (this.compositor.isCompositing()) {
-                    this.compositionAdapter.endComposition(
-                        this.compositor.getCurrentChar()
-                    );
+                    this.compositionAdapter.endComposition(this.compositor.getCurrentChar());
                     this.compositor.reset();
                 }
 
@@ -189,9 +173,7 @@ export class HangulImeController {
                     return;
                 }
 
-                this.compositionAdapter.endComposition(
-                    this.compositor.getCurrentChar()
-                );
+                this.compositionAdapter.endComposition(this.compositor.getCurrentChar());
                 this.compositor.reset();
 
                 // CKEditor throws errors and the character is not inputted unless we add this timeout.
@@ -199,10 +181,7 @@ export class HangulImeController {
                     this.compositionAdapter.inputCharacter(event.key, code);
                 }, 0);
             } else {
-                const jamo =
-                    event.shiftKey && key.jamo.shift
-                        ? key.jamo.shift
-                        : key.jamo.normal;
+                const jamo = event.shiftKey && key.jamo.shift ? key.jamo.shift : key.jamo.normal;
 
                 this.addJamo(jamo, code);
             }
@@ -236,9 +215,7 @@ export class HangulImeController {
      */
     addCharacter(char: string, keyCode: KeyCode) {
         if (this.compositor.isCompositing()) {
-            this.compositionAdapter.endComposition(
-                this.compositor.getCurrentChar()
-            );
+            this.compositionAdapter.endComposition(this.compositor.getCurrentChar());
             this.compositor.reset();
         }
 
@@ -249,10 +226,7 @@ export class HangulImeController {
         if (this.compositor.isCompositing()) {
             const block = this.compositor.removeLastJamo();
             if (block) {
-                this.compositionAdapter.updateComposition(
-                    block,
-                    KeyCode.Backspace
-                );
+                this.compositionAdapter.updateComposition(block, KeyCode.Backspace);
             } else {
                 this.compositionAdapter.endComposition("");
             }
@@ -267,33 +241,21 @@ export class HangulImeController {
         const compositionProgress = this.compositor.addJamo(jamo);
 
         if ("completed" in compositionProgress) {
-            this.compositionAdapter.endComposition(
-                compositionProgress.completed
-            );
+            this.compositionAdapter.endComposition(compositionProgress.completed);
         }
 
         if ("started" in compositionProgress) {
-            this.compositionAdapter.beginComposition(
-                compositionProgress.started,
-                keyCode
-            );
+            this.compositionAdapter.beginComposition(compositionProgress.started, keyCode);
         }
 
         if ("updated" in compositionProgress) {
-            this.compositionAdapter.updateComposition(
-                compositionProgress.updated,
-                keyCode
-            );
+            this.compositionAdapter.updateComposition(compositionProgress.updated, keyCode);
         }
 
         this.notifyOnEntry();
     }
 
-    private addListener(
-        target: EventTarget,
-        type: string,
-        listener: EventListener
-    ) {
+    private addListener(target: EventTarget, type: string, listener: EventListener) {
         target.addEventListener(type, listener);
         this.eventListeners.push({ target, type, listener });
     }

@@ -6,10 +6,8 @@ const notSupportedMetadataKey = Symbol("notSupported");
  * Decorator that marks a method as not supported and causes it to throw an error when called.
  */
 export const methodNotSupported: MethodDecorator = <Function>(
-    // eslint-disable-next-line @typescript-eslint/ban-types
-    target: Object,
+    target: object,
     propertyKey: string | symbol,
-    // eslint-disable-next-line @typescript-eslint/ban-types
     descriptor: TypedPropertyDescriptor<Function>
 ) => {
     Reflect.defineMetadata(notSupportedMetadataKey, true, target, propertyKey);
@@ -17,13 +15,9 @@ export const methodNotSupported: MethodDecorator = <Function>(
     // Replace the original method with a new one that throws an error
     descriptor.value = function (): void {
         throw new Error(`Method "${String(propertyKey)}" is not supported.`);
-        // eslint-disable-next-line @typescript-eslint/ban-types
     } as Function;
 };
 
-export function isMethodSupported<T extends object>(
-    target: T,
-    propertyKey: keyof T & (string | symbol)
-): boolean {
+export function isMethodSupported<T extends object>(target: T, propertyKey: keyof T & (string | symbol)): boolean {
     return !Reflect.getMetadata(notSupportedMetadataKey, target, propertyKey);
 }

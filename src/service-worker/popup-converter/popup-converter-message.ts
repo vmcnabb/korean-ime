@@ -9,9 +9,7 @@ export type PopulatePopupConverterMessage = {
     };
 };
 
-export function isPopulatePopupConverterMessage(
-    message: unknown
-): message is PopulatePopupConverterMessage {
+export function isPopulatePopupConverterMessage(message: unknown): message is PopulatePopupConverterMessage {
     return (
         hasProperties(message, "type", "action") &&
         message.type === "populatePopupConverterMessage" &&

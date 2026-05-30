@@ -18,9 +18,7 @@ export class StateManager {
     public constructor() {
         // ensure we are only referenced from the service worker
         if (!chrome.runtime.onMessage) {
-            throw new Error(
-                "StateManager can only be used from the service worker"
-            );
+            throw new Error("StateManager can only be used from the service worker");
         }
     }
 
@@ -28,10 +26,7 @@ export class StateManager {
         this.focusedFrames.set(tabId, frameId);
     }
 
-    public async routeSendKey(
-        tabId: number,
-        data: SendKeyServiceMessage["data"]
-    ) {
+    public async routeSendKey(tabId: number, data: SendKeyServiceMessage["data"]) {
         const frameId = this.focusedFrames.get(tabId);
         if (frameId === undefined) {
             return;
@@ -73,13 +68,10 @@ export class StateManager {
     public async updatePresentation(tabId: number) {
         const tabState = await this.getTabState(tabId);
 
-        const isHangulMode =
-            tabState.koreanKeyboardMode === KoreanKeyboardMode.Hangul;
+        const isHangulMode = tabState.koreanKeyboardMode === KoreanKeyboardMode.Hangul;
         await chrome.action.setIcon({
             tabId: tabId,
-            path: isHangulMode
-                ? icon16h
-                : icon16a,
+            path: isHangulMode ? icon16h : icon16a,
         });
 
         // update on-screen-keyboard menu item to checked or not
@@ -109,10 +101,7 @@ export class StateManager {
      * @param tabId The ID of the tab for which to update the state
      * @param updateFn function that takes the current tab state and returns the new tab state
      */
-    private async setTabState(
-        tabId: number,
-        updateFn: (tabState: TabState) => TabState
-    ) {
+    private async setTabState(tabId: number, updateFn: (tabState: TabState) => TabState) {
         const currentTabState = await this.getTabState(tabId);
         const newTabState = updateFn(currentTabState);
 

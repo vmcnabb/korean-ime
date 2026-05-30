@@ -16,18 +16,14 @@ export function romanize(text: string) {
     let romanText = "";
     let didPreviousCharSetInitial = false;
 
-    let nextBlock = isHangulOrJamo(text[0])
-        ? HangulBlock.fromChar(text[0], false)
-        : undefined;
+    let nextBlock = isHangulOrJamo(text[0]) ? HangulBlock.fromChar(text[0], false) : undefined;
 
     for (let i = 0; i < text.length; i++) {
         const thisChar = text[i];
         const nextChar: string | undefined = text[i + 1];
 
         const block = nextBlock;
-        nextBlock = isHangulOrJamo(nextChar)
-            ? HangulBlock.fromChar(nextChar, false)
-            : undefined;
+        nextBlock = isHangulOrJamo(nextChar) ? HangulBlock.fromChar(nextChar, false) : undefined;
 
         if (block === undefined) {
             didPreviousCharSetInitial = false;
@@ -38,11 +34,11 @@ export function romanize(text: string) {
         if (!block.hasMedial()) {
             let textToAdd =
                 // standard initials (standalone consonant case)
-                hangulInitialsRoman.get(block.initial)
+                hangulInitialsRoman.get(block.initial) ??
                 // standalone vowel case - initial is a vowel
-                ?? hangulVowelsRoman.get(block.initial);
+                hangulVowelsRoman.get(block.initial);
 
-            if (textToAdd === '' && block.initial === "ㅇ") {
+            if (textToAdd === "" && block.initial === "ㅇ") {
                 textToAdd = "ng";
             }
             if (textToAdd === undefined) {
@@ -58,8 +54,7 @@ export function romanize(text: string) {
             }
 
             const lastBlockWasNotInitial =
-                !isHangulOrJamo(text[i - 1])
-                || HangulBlock.fromChar(text[i - 1]).hasMedial();
+                !isHangulOrJamo(text[i - 1]) || HangulBlock.fromChar(text[i - 1]).hasMedial();
             const lastCharWasNotWhitespace = i === 0 || text[i - 1].trim() !== "";
 
             if (lastBlockWasNotInitial && i > 0 && lastCharWasNotWhitespace) {
@@ -72,7 +67,6 @@ export function romanize(text: string) {
 
             didPreviousCharSetInitial = false;
             continue;
-
         } else if (!didPreviousCharSetInitial) {
             romanText += hangulInitialsRoman.get(block.initial) ?? "�";
         }
@@ -87,9 +81,10 @@ export function romanize(text: string) {
         // e.g. "ㄱ" or "ㄹㄱ"
         const decomposedFinal = compoundConsonantMap.getReverse(block.final) ?? block.final;
 
-        const specialFinalInitialCombination = nextBlock && nextBlock.hasMedial()
-            ? hangulFinalInitialRoman.get(decomposedFinal.at(-1)! + nextBlock.initial) 
-            : undefined;
+        const specialFinalInitialCombination =
+            nextBlock && nextBlock.hasMedial()
+                ? hangulFinalInitialRoman.get(decomposedFinal.at(-1)! + nextBlock.initial)
+                : undefined;
 
         const isNextPhonemeAVowel = !!nextBlock?.hasMedial() && nextBlock.initial === "ㅇ";
         const isSpecial = specialFinalInitialCombination !== undefined;
@@ -101,10 +96,8 @@ export function romanize(text: string) {
 
         if (isSpecial) {
             romanText += specialFinalInitialCombination;
-        
         } else if (isNextPhonemeAVowel) {
             romanText += hangulInitialsRoman.get(decomposedFinal.at(-1)!) ?? "�";
-
         } else {
             romanText += hangulFinalsRoman.get(block.final) ?? "�";
         }

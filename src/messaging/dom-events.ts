@@ -2,9 +2,7 @@ export interface KimeEvent extends Event {
     isKimeEvent: true;
 }
 
-export function isKimeEvent<T extends Event>(
-    event: T | KimeEvent
-): event is KimeEvent & T {
+export function isKimeEvent<T extends Event>(event: T | KimeEvent): event is KimeEvent & T {
     return "isKimeEvent" in event && event.isKimeEvent === true;
 }
 

@@ -5,12 +5,7 @@ import { getSettings } from "../settings/settings-factory";
 start();
 
 async function start() {
-    const {
-        settings,
-        settingsStore,
-        settingsManager,
-        addSettingsUpdateListener,
-    } = await getSettings();
+    const { settings, settingsStore, settingsManager, addSettingsUpdateListener } = await getSettings();
 
     const app = createApp(App, {
         rootSection: settings,

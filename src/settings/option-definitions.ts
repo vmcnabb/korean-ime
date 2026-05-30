@@ -1,8 +1,4 @@
-import {
-    EnumLike,
-    convertToOneWayNumericEnum,
-    isNumericEnum,
-} from "../types/enums";
+import { EnumLike, convertToOneWayNumericEnum, isNumericEnum } from "../types/enums";
 import {
     CheckboxOption,
     Option,
@@ -15,9 +11,8 @@ import {
 
 export function createSection<
     T extends {
-        [K in keyof T]: (T[K] extends infer U ? U : never) &
-            (Option | OptionsSection);
-    }
+        [K in keyof T]: (T[K] extends infer U ? U : never) & (Option | OptionsSection);
+    },
 >(title: string, options: T): TypedOptionsSection<T> {
     return {
         type: OptionType.Section,
@@ -26,11 +21,7 @@ export function createSection<
     };
 }
 
-export function createCheckBoxOption(
-    title: string,
-    defaultValue = false,
-    description?: string
-): CheckboxOption {
+export function createCheckBoxOption(title: string, defaultValue = false, description?: string): CheckboxOption {
     return {
         title,
         type: OptionType.Checkbox,
@@ -64,20 +55,14 @@ export function createSelectOption<T extends EnumLike>(
     return option;
 }
 
-export function createSystemSetting<T>(
-    defaultValue: T
-): SystemSetting & { value: T } {
+export function createSystemSetting<T>(defaultValue: T): SystemSetting & { value: T } {
     return {
         type: OptionType.System,
         value: defaultValue,
     };
 }
 
-type FlattenOptionOrSection<T> = T extends { options: infer U }
-    ? U
-    : T extends { value: infer U }
-    ? U
-    : T;
+type FlattenOptionOrSection<T> = T extends { options: infer U } ? U : T extends { value: infer U } ? U : T;
 
 /**
  * returns a type with all settings from the input, but only the values. It also removes

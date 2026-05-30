@@ -1,18 +1,11 @@
 import { createDefaultSettings } from "./default-settings";
-import {
-    SettingsChangedCallback,
-    createSettingsStore,
-} from "./process-settings";
+import { SettingsChangedCallback, createSettingsStore } from "./process-settings";
 import { SettingsManager } from "./settings-manager";
 
 export async function getSettings() {
     const listeners: SettingsChangedCallback[] = [];
 
-    const callback: SettingsChangedCallback = (
-        path,
-        previousValue,
-        newValue
-    ) => {
+    const callback: SettingsChangedCallback = (path, previousValue, newValue) => {
         for (const listener of listeners) {
             try {
                 listener(path, previousValue, newValue);

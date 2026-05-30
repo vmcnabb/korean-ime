@@ -89,9 +89,7 @@ export function isModifierKey(code: KeyCode): boolean {
     ].includes(code);
 }
 
-export function isAltKey(
-    code: KeyCode
-): code is KeyCode.AltLeft | KeyCode.AltRight {
+export function isAltKey(code: KeyCode): code is KeyCode.AltLeft | KeyCode.AltRight {
     return [KeyCode.AltLeft, KeyCode.AltRight].includes(code);
 }
 

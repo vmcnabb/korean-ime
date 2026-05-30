@@ -1,3 +1,4 @@
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export class SettingsManager<TSettings extends { [key: string]: any }> {
     private hasLoadedSettings = false;
     private settings: TSettings;
@@ -11,9 +12,7 @@ export class SettingsManager<TSettings extends { [key: string]: any }> {
             return this.settings;
         }
 
-        const storedSettings = (await chrome.storage.sync.get(
-            this.settings
-        )) as TSettings;
+        const storedSettings = (await chrome.storage.sync.get(this.settings)) as TSettings;
         this.copySettings(storedSettings, this.settings);
 
         return this.settings;

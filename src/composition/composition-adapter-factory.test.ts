@@ -10,7 +10,10 @@ import { WordForTheWebAdapter } from "./composition-adapters/word-for-the-web-ad
 describe("CompositionAdapterFactory", () => {
     // jsdom does not implement isContentEditable, so we define it manually.
     function makeContentEditable(el: HTMLElement): HTMLElement {
-        Object.defineProperty(el, "isContentEditable", { get: () => true, configurable: true });
+        Object.defineProperty(el, "isContentEditable", {
+            get: () => true,
+            configurable: true,
+        });
         return el;
     }
 

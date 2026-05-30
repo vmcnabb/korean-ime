@@ -3,10 +3,7 @@ import { KeyCode, KeyRecord, keyMap } from "./korean-keyboard-map";
 import { KeyboardLayout, defaultLayout } from "./layouts";
 import { SupportedCompositionFeatures } from "../../composition/composition-adapters/composition-adapter-interface";
 import "./on-screen-keyboard.scss";
-import {
-    ContentScriptRequestAction,
-    ContentScriptRequestMessage,
-} from "../../messaging/content-to-service-messages";
+import { ContentScriptRequestAction, ContentScriptRequestMessage } from "../../messaging/content-to-service-messages";
 
 export class OnScreenKeyboardController {
     private _keyboardElement: HTMLDivElement;
@@ -60,10 +57,7 @@ export class OnScreenKeyboardController {
         if (this._compositionFeatures) {
             this._keyElements
                 .get(KeyCode.Backspace)
-                ?.classList.toggle(
-                    "disabled",
-                    !this._compositionFeatures.deleteContentBackwards
-                );
+                ?.classList.toggle("disabled", !this._compositionFeatures.deleteContentBackwards);
         }
     }
 
@@ -102,15 +96,9 @@ export class OnScreenKeyboardController {
         const width = this._keyboardElement.offsetWidth;
         const height = this._keyboardElement.offsetHeight;
 
-        let x =
-            placement.originX === "right"
-                ? window.innerWidth - width - placement.x
-                : placement.x;
+        let x = placement.originX === "right" ? window.innerWidth - width - placement.x : placement.x;
 
-        let y =
-            placement.originY === "bottom"
-                ? window.innerHeight - height - placement.y
-                : placement.y;
+        let y = placement.originY === "bottom" ? window.innerHeight - height - placement.y : placement.y;
 
         // try to make sure keyboard is not partially off screen
         if (x < 0) x = 0;
@@ -180,10 +168,7 @@ export class OnScreenKeyboardController {
                 return;
             }
 
-            if (
-                e.target === keyboardElement ||
-                e.target.classList.contains("row")
-            ) {
+            if (e.target === keyboardElement || e.target.classList.contains("row")) {
                 this._keyboardMovement.mouse.down = true;
                 this._keyboardMovement.mouse.startX = e.screenX;
                 this._keyboardMovement.mouse.startY = e.screenY;
@@ -220,9 +205,7 @@ export class OnScreenKeyboardController {
         document.addEventListener("keydown", (e) => {
             const keyCode = e.code as KeyCode;
 
-            const keyElement = keyboardElement.querySelector(
-                `.${keyCode}`
-            ) as HTMLDivElement;
+            const keyElement = keyboardElement.querySelector(`.${keyCode}`) as HTMLDivElement;
 
             if (keyElement) {
                 keyElement.classList.add("active");
@@ -235,9 +218,7 @@ export class OnScreenKeyboardController {
         document.addEventListener("keyup", (e) => {
             const keyCode = e.code as KeyCode;
 
-            const keyElement = keyboardElement.querySelector(
-                `.${keyCode}`
-            ) as HTMLDivElement;
+            const keyElement = keyboardElement.querySelector(`.${keyCode}`) as HTMLDivElement;
 
             if (keyElement) {
                 keyElement.classList.remove("active");
@@ -266,11 +247,7 @@ export class OnScreenKeyboardController {
      * @param key
      * @param keyCode
      */
-    private handleKbdMouseDown(
-        e: MouseEvent,
-        key: KeyRecord,
-        keyCode: KeyCode
-    ) {
+    private handleKbdMouseDown(e: MouseEvent, key: KeyRecord, keyCode: KeyCode) {
         e.preventDefault();
         e.stopPropagation();
         e.stopImmediatePropagation();
@@ -286,8 +263,7 @@ export class OnScreenKeyboardController {
         const isShift = this._isShift;
 
         if (key.jamo && isHanMode) {
-            const jamoToAdd =
-                isShift && key.jamo.shift ? key.jamo.shift : key.jamo.normal;
+            const jamoToAdd = isShift && key.jamo.shift ? key.jamo.shift : key.jamo.normal;
 
             this.sendKey(jamoToAdd, keyCode);
         } else if (key.normal && (!isHanMode || !key.jamo)) {
@@ -320,24 +296,15 @@ export class OnScreenKeyboardController {
         return label;
     }
 
-    private renderNormalKeyLabels(
-        keyElement: HTMLElement,
-        key: KeyRecord
-    ): void {
+    private renderNormalKeyLabels(keyElement: HTMLElement, key: KeyRecord): void {
         if (!key.normal) return;
 
         const yongClass = key.jamo ? " yong" : "";
-        const baseLabel = this.createLabelElement(
-            `base${yongClass}`,
-            key.normal
-        );
+        const baseLabel = this.createLabelElement(`base${yongClass}`, key.normal);
         keyElement.appendChild(baseLabel);
 
         if (key.shift) {
-            const shiftLabel = this.createLabelElement(
-                `shift${yongClass}`,
-                key.shift
-            );
+            const shiftLabel = this.createLabelElement(`shift${yongClass}`, key.shift);
             keyElement.appendChild(shiftLabel);
         }
     }
@@ -346,27 +313,16 @@ export class OnScreenKeyboardController {
         if (!key.jamo) return;
 
         if (key.jamo.shift) {
-            const shiftJamo = this.createLabelElement(
-                "shift jamo",
-                key.jamo.shift
-            );
+            const shiftJamo = this.createLabelElement("shift jamo", key.jamo.shift);
             keyElement.appendChild(shiftJamo);
         }
 
-        const baseJamoClassName =
-            "shift" in key.jamo && key.jamo.shift ? "base jamo" : "full jamo";
-        const baseJamo = this.createLabelElement(
-            baseJamoClassName,
-            key.jamo.normal
-        );
+        const baseJamoClassName = "shift" in key.jamo && key.jamo.shift ? "base jamo" : "full jamo";
+        const baseJamo = this.createLabelElement(baseJamoClassName, key.jamo.normal);
         keyElement.appendChild(baseJamo);
     }
 
-    private renderSpecialKeyLabels(
-        keyElement: HTMLElement,
-        key: KeyRecord,
-        keyCode: KeyCode
-    ): void {
+    private renderSpecialKeyLabels(keyElement: HTMLElement, key: KeyRecord, keyCode: KeyCode): void {
         if (keyCode === KeyCode.ShiftLeft) {
             const label = this.createLabelElement("full", "⇧");
             keyElement.appendChild(label);
@@ -380,10 +336,7 @@ export class OnScreenKeyboardController {
             keyElement.appendChild(label);
 
             if (key.koreanLabel) {
-                const koreanLabel = this.createLabelElement(
-                    "full jamo",
-                    key.koreanLabel
-                );
+                const koreanLabel = this.createLabelElement("full jamo", key.koreanLabel);
                 keyElement.appendChild(koreanLabel);
                 label.classList.add("yong");
             }
@@ -395,9 +348,7 @@ export class OnScreenKeyboardController {
         const key = keyMap[keyCode];
 
         keyElement.className = keyCode;
-        keyElement.addEventListener("mousedown", (e) =>
-            this.handleKbdMouseDown(e, key, keyCode)
-        );
+        keyElement.addEventListener("mousedown", (e) => this.handleKbdMouseDown(e, key, keyCode));
 
         this.renderNormalKeyLabels(keyElement, key);
         this.renderJamoKeyLabels(keyElement, key);
@@ -416,10 +367,7 @@ export class OnScreenKeyboardController {
      * Creates keys and handlers then adds them to the keyboard
      * @param keyboard the keyboard element to be rendered
      */
-    private renderKeyboard(
-        keyboardELement: HTMLDivElement,
-        layout: KeyboardLayout
-    ): void {
+    private renderKeyboard(keyboardELement: HTMLDivElement, layout: KeyboardLayout): void {
         this._keyElements.clear();
 
         layout.forEach((row) => {

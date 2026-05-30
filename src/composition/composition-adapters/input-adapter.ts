@@ -24,10 +24,7 @@ export class InputAdapter extends CompositionAdapter {
 
         let end = element.selectionEnd || 0;
 
-        element.value =
-            element.value.substring(0, start) +
-            text +
-            element.value.substring(end, element.value.length);
+        element.value = element.value.substring(0, start) + text + element.value.substring(end, element.value.length);
         end = start + text.length;
         element.selectionStart = start;
         element.selectionEnd = end;
@@ -53,9 +50,7 @@ export class InputAdapter extends CompositionAdapter {
             let end = element.selectionEnd || 0;
 
             element.value =
-                element.value.substring(0, start) +
-                data +
-                element.value.substring(end, element.value.length);
+                element.value.substring(0, start) + data + element.value.substring(end, element.value.length);
             end = start + data.length;
             element.selectionStart = end;
             element.selectionEnd = end;
@@ -88,10 +83,7 @@ export class InputAdapter extends CompositionAdapter {
         const element = this.element;
 
         super._deleteContentBackwards(() => {
-            if (
-                element.selectionStart == null ||
-                element.selectionEnd == null
-            ) {
+            if (element.selectionStart == null || element.selectionEnd == null) {
                 return;
             }
 
@@ -99,10 +91,7 @@ export class InputAdapter extends CompositionAdapter {
             if (element.selectionStart !== this.element.selectionEnd) {
                 element.value =
                     this.element.value.substring(0, element.selectionStart) +
-                    this.element.value.substring(
-                        element.selectionEnd,
-                        element.value.length
-                    );
+                    this.element.value.substring(element.selectionEnd, element.value.length);
                 element.selectionEnd = element.selectionStart;
                 return;
             }
@@ -111,9 +100,7 @@ export class InputAdapter extends CompositionAdapter {
             const caretPos = element.selectionStart; // get the current caret position
             if (caretPos > 0) {
                 // make sure the caret is not at the beginning of the input field
-                const newVal =
-                    element.value.slice(0, caretPos - 1) +
-                    element.value.slice(caretPos); // remove the character preceding the caret
+                const newVal = element.value.slice(0, caretPos - 1) + element.value.slice(caretPos); // remove the character preceding the caret
                 element.value = newVal; // set the new value of the input field
                 element.selectionStart = caretPos - 1; // set the caret position to the deleted character's position
                 element.selectionEnd = caretPos - 1;

@@ -21,20 +21,14 @@ export type SendKeyRequestMessage = {
 export type ContentScriptRequestMessage =
     | {
           type: "contentScriptRequest";
-          action:
-              | ContentScriptRequestAction.RefreshState
-              | ContentScriptRequestAction.ToggleHanYongMode;
+          action: ContentScriptRequestAction.RefreshState | ContentScriptRequestAction.ToggleHanYongMode;
       }
     | SendKeyRequestMessage;
 
-export function isContentScriptRequestMessage(
-    message: unknown
-): message is ContentScriptRequestMessage {
+export function isContentScriptRequestMessage(message: unknown): message is ContentScriptRequestMessage {
     return (
         hasProperties(message, "type", "action") &&
         message.type === "contentScriptRequest" &&
-        Object.values(ContentScriptRequestAction).includes(
-            message.action as ContentScriptRequestAction
-        )
+        Object.values(ContentScriptRequestAction).includes(message.action as ContentScriptRequestAction)
     );
 }
