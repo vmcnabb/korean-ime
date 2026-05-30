@@ -9,13 +9,14 @@
   },
   "scripts": {
     "test": "jest",
-    "build": "npm run clean && npm run check && npm run lint && cross-env NODE_ENV=production parcel build",
-    "start": "cross-env NODE_ENV=development parcel watch src/manifest.json --host localhost --config @parcel/config-webextension",
-    "build-dev": "npm run clean && cross-env NODE_ENV=development parcel build --no-optimize",
+    "build": "npm run clean && npm run sync-version && npm run check && npm run lint && cross-env NODE_ENV=production parcel build",
+    "start": "npm run sync-version && cross-env NODE_ENV=development parcel watch src/manifest.json --host localhost --config @parcel/config-webextension",
+    "build-dev": "npm run clean && npm run sync-version && cross-env NODE_ENV=development parcel build --no-optimize",
     "clean": "rimraf dist obj .parcel-cache coverage",
     "check": "tsc --noEmit",
     "lint": "eslint src",
-    "lint:fix": "eslint src --fix"
+    "lint:fix": "eslint src --fix",
+    "sync-version": "node scripts/sync-manifest-version.mjs"
   },
   "repository": {
     "type": "git",

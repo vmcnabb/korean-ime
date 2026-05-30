@@ -55,8 +55,20 @@ Core domain logic (mostly pure, well unit-tested):
   `.nvmrc` (used by CI) instead.
 - **`src/manifest.json` must keep its `version` field** — Parcel's manifest
   schema requires it and Chrome won't load the extension without it. (It was
-  once dropped by accident and broke the build.)
+  once dropped by accident and broke the build.) The build runs
+  `npm run sync-version` to copy `package.json`'s version into the manifest, so
+  **bump the version in `package.json`** and let the build propagate it.
 - ESLint uses **flat config** (`eslint.config.mjs`). There is no `.eslintrc`.
 - `tsc` is type-check only (`--noEmit`); Parcel does the actual bundling.
 - Tracing decorator (`src/decorators/trace.ts`) is a no-op in production and
   logs method calls in dev — handy for debugging composition flow.
+
+## Releases
+
+The last published release was 2.2.x (Manifest V2, 2020), since removed from the
+Chrome Web Store. 2.3.0 is the unreleased MV3 rewrite — see `CHANGELOG.md`.
+
+Git tags were reconstructed after the fact. **All tags (v1.0.1–v2.2.2) are
+approximate**: they're anchored to commits by best effort using the dates in
+`CHANGELOG.md`, so they mark roughly where each release was, not exactly. 2.3.0
+is intentionally untagged until it actually ships.
