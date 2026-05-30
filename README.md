@@ -47,6 +47,10 @@ The output goes to `/dist` and can be loaded directly as an unpacked extension:
 2. Enable **Developer mode**
 3. Click **Load unpacked** and select the `/dist` folder
 
+### Releasing
+
+See [RELEASING.md](RELEASING.md) for the step-by-step release checklist.
+
 ### Recommended VS Code Extensions
 * ESLint
 * Vue Language Features (Volar)
