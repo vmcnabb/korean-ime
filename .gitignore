@@ -4,3 +4,4 @@ node_modules
 .parcel-cache
 coverage/
 korean-ime-*.zip
+.chrome-profile/

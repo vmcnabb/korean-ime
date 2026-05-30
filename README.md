@@ -38,6 +38,7 @@ npm install
 | `npm run build` | Production build (type check + lint + bundle) |
 | `npm run build-dev` | Development build (no optimisation) |
 | `npm start` | Watch mode — rebuilds on file changes |
+| `npm run dev` | Watch + launch Chrome (persistent dev profile) on a test page; load unpacked once |
 | `npm run check` | Type-check without emitting output |
 | `npm run lint` | Lint with ESLint (`npm run lint:fix` to auto-fix) |
 | `npm test` | Run unit tests |

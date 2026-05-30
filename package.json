@@ -17,7 +17,8 @@
     "lint": "eslint src",
     "lint:fix": "eslint src --fix",
     "sync-version": "node scripts/sync-manifest-version.mjs",
-    "package": "npm run build && node scripts/package.mjs"
+    "package": "npm run build && node scripts/package.mjs",
+    "dev": "node scripts/dev.mjs"
   },
   "repository": {
     "type": "git",
@@ -41,6 +42,7 @@
     "@typescript-eslint/eslint-plugin": "^8.59.0",
     "@typescript-eslint/parser": "^8.59.0",
     "archiver": "^8.0.0",
+    "chrome-launcher": "^1.2.1",
     "cross-env": "^10.1.0",
     "eslint": "^10.2.1",
     "eslint-config-prettier": "^10.1.8",
