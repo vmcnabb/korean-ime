@@ -42,9 +42,12 @@ Core domain logic (mostly pure, well unit-tested):
 - **`src/composition/`** — the heart of the IME. `hangul-compositor.ts` assembles
   jamo into syllable blocks (`hangul-block.ts`, `hangul-maps.ts`).
   `hangul-ime-controller.ts` interprets keydown events and drives composition.
-  **`composition-adapters/`** abstracts over editor types (plain input,
-  contentEditable, Google Docs, Word for the Web, CKEditor); the right adapter
-  is chosen by `composition-adapter-factory.ts`.
+  **`composition-adapters/`** abstracts over editor types; the right adapter is
+  chosen by `composition-adapter-factory.ts`. Active adapters: plain input,
+  contentEditable, CKEditor. **Google Docs is unsupported** (factory returns no
+  adapter — see gotcha below) and **Word for the Web is off by default**
+  (flag-gated on `KIME_ENABLE_WORD`). The `GoogleDocsAdapter` file is kept for
+  reference but is no longer selected.
 - **`src/romanization/`** — Hangul → Latin conversion.
 - **`src/settings/`** — option definitions and a `SettingsManager` backed by
   `chrome.storage.sync`.
@@ -60,6 +63,14 @@ Core domain logic (mostly pure, well unit-tested):
   once dropped by accident and broke the build.) The build runs
   `npm run sync-version` to copy `package.json`'s version into the manifest, so
   **bump the version in `package.json`** and let the build propagate it.
+- **Google Docs & Word for the Web use canvas + the EditContext API.** Docs
+  ignores synthetic composition events entirely (input goes through an
+  EditContext the page owns, not the DOM), so it's unsupported — the factory
+  returns no adapter for it. Word still works via direct DOM editing but is on
+  the same path, so it's disabled by default behind `KIME_ENABLE_WORD`
+  (`npm run dev -- --enable-word`). Don't waste time trying to drive Docs with
+  synthetic events; that door is closed (Google Input Tools only works via a
+  private main-world bridge into Docs' internal `kix` editor).
 - **`--load-extension` is dead in current Chrome.** Chrome 137+ removed the
   command-line switch (anti-malware), and by Chrome 148 the
   `--disable-features=DisableLoadExtensionCommandLineSwitch` opt-out no longer

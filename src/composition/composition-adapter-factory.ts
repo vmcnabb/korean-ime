@@ -1,5 +1,4 @@
 import { InputAdapter } from "./composition-adapters/input-adapter";
-import { GoogleDocsAdapter } from "./composition-adapters/google-docs-adapter";
 import { CompositionAdapter } from "./composition-adapters/composition-adapter";
 import { WordForTheWebAdapter } from "./composition-adapters/word-for-the-web-adapter";
 import { CkEditorAdapter } from "./composition-adapters/ck-editor-adapter";
@@ -12,11 +11,18 @@ export class CompositionAdapterFactory {
             if (canBeTreatedAsInputElement(element)) {
                 return new InputAdapter(element);
             } else if (isGoogleDocsElement(element)) {
-                return new GoogleDocsAdapter(element);
+                // Google Docs moved to a canvas + EditContext editor that ignores
+                // synthetic composition events, so we can't drive it. Stay out of the
+                // way (return undefined) rather than composing into the void.
+                return undefined;
             } else if (isCkEditorElement(element)) {
                 return new CkEditorAdapter(element);
             } else if (isWordForTheWebElement(element)) {
-                return new WordForTheWebAdapter(element);
+                // Word for the Web still works via direct DOM editing, but it's on the
+                // same EditContext trajectory as Docs and is fragile, so it's off by
+                // default. Enable it for development with `npm run dev -- --enable-word`
+                // (sets KIME_ENABLE_WORD, which Parcel inlines at build time).
+                return process.env.KIME_ENABLE_WORD === "true" ? new WordForTheWebAdapter(element) : undefined;
             } else if (element.isContentEditable) {
                 return new ContentEditableAdapter(element);
             }

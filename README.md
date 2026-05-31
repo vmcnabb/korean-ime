@@ -10,7 +10,8 @@ Allows typing Hangul in Chrome without a Korean IME installed at the OS level. U
 
 ### Hangul typing
 * Toggle between Hangul and Latin input by clicking the extension icon or pressing the right-hand **Alt** key.
-* Works in standard text inputs, textareas, `contenteditable` elements, Google Docs, Word for the Web, and CKEditor.
+* Works in standard text inputs, textareas, `contenteditable` elements, and CKEditor.
+* **Not supported:** Google Docs and Word for the Web — both moved to canvas/EditContext-based editors that don't accept programmatic composition. The extension stays out of the way on those rather than mis-typing. (Word still partly works and can be enabled for development with a build flag — see below — but it's off by default.)
 * Re-enter composition on an existing character by placing the caret immediately after it and pressing **Shift+Backspace**. This lets you continue building a syllable block you've already committed.
 
 ### Romanization
@@ -48,6 +49,16 @@ The production build output goes to `/dist` (dev builds go to `/dist-dev`, kept 
 1. Open `chrome://extensions`
 2. Enable **Developer mode**
 3. Click **Load unpacked** and select the `/dist` folder
+
+#### Enabling the Word for the Web adapter
+
+The Word for the Web adapter is off by default. To enable it for a dev session:
+
+```sh
+npm run dev -- --enable-word
+```
+
+This sets the `KIME_ENABLE_WORD` build flag (which Parcel inlines). For other builds, set the env var directly, e.g. `KIME_ENABLE_WORD=true npm run build-dev`.
 
 ### Releasing
 

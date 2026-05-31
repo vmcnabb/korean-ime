@@ -43,13 +43,6 @@ describe("CompositionAdapterFactory", () => {
             expect(adapter).toBeInstanceOf(CkEditorAdapter);
         });
 
-        it("should return a WordForTheWebAdapter for a Word for the Web element", () => {
-            const div = makeContentEditable(document.createElement("div"));
-            div.id = "WACViewPanel_EditingElement";
-            const adapter = CompositionAdapterFactory.createCompositionAdapter(div);
-            expect(adapter).toBeInstanceOf(WordForTheWebAdapter);
-        });
-
         it("should prefer CkEditorAdapter over the generic ContentEditable fallback for CKEditor elements", () => {
             const div = makeContentEditable(document.createElement("div"));
             div.classList.add("ck-editor__editable");
@@ -59,11 +52,36 @@ describe("CompositionAdapterFactory", () => {
             expect(adapter).toBeInstanceOf(CkEditorAdapter);
         });
 
-        it("should prefer WordForTheWebAdapter over the generic ContentEditable fallback for Word elements", () => {
+        it("should not engage on Google Docs (its canvas/EditContext editor can't be driven)", () => {
+            const iframe = document.createElement("div");
+            iframe.classList.add("docs-texteventtarget-iframe");
+            Object.defineProperty(window, "frameElement", { value: iframe, configurable: true });
+            try {
+                const div = makeContentEditable(document.createElement("div"));
+                const adapter = CompositionAdapterFactory.createCompositionAdapter(div);
+                expect(adapter).toBeUndefined();
+            } finally {
+                Object.defineProperty(window, "frameElement", { value: null, configurable: true });
+            }
+        });
+
+        it("should not engage on Word for the Web by default", () => {
             const div = makeContentEditable(document.createElement("div"));
             div.id = "WACViewPanel_EditingElement";
             const adapter = CompositionAdapterFactory.createCompositionAdapter(div);
-            expect(adapter).toBeInstanceOf(WordForTheWebAdapter);
+            expect(adapter).toBeUndefined();
+        });
+
+        it("should return a WordForTheWebAdapter for a Word element when KIME_ENABLE_WORD is set", () => {
+            process.env.KIME_ENABLE_WORD = "true";
+            try {
+                const div = makeContentEditable(document.createElement("div"));
+                div.id = "WACViewPanel_EditingElement";
+                const adapter = CompositionAdapterFactory.createCompositionAdapter(div);
+                expect(adapter).toBeInstanceOf(WordForTheWebAdapter);
+            } finally {
+                delete process.env.KIME_ENABLE_WORD;
+            }
         });
 
         it("should return undefined for a non-interactive element", () => {

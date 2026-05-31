@@ -26,6 +26,17 @@ const root = process.cwd();
 // production dist/ that `npm run package` ships. Keep this in sync with the
 // --dist-dir in the "start" npm script.
 const distDir = resolve(root, "dist-dev");
+
+// The Word for the Web adapter is disabled by default (see the factory). Turn it
+// on for this dev session with `npm run dev -- --enable-word` (flag reaches argv)
+// or `npm run dev --enable-word` (npm exposes it as npm_config_enable_word). The
+// build reads KIME_ENABLE_WORD, which we set on the spawned Parcel process below.
+function wordAdapterRequested() {
+    if (process.argv.slice(2).includes("--enable-word")) return true;
+    const cfg = process.env.npm_config_enable_word;
+    if (cfg !== undefined && cfg !== "false" && cfg !== "0") return true;
+    return process.env.KIME_ENABLE_WORD === "true";
+}
 const profileDir = resolve(root, ".chrome-profile");
 
 const TEST_PAGE = `<!DOCTYPE html>
@@ -105,10 +116,12 @@ await new Promise((r) => server.listen(0, "127.0.0.1", r));
 const testUrl = `http://localhost:${server.address().port}/`;
 
 // 2. Start Parcel watch (via `npm start`) and wait for the first completed build.
+const enableWord = wordAdapterRequested();
+console.log(`[dev] Word for the Web adapter: ${enableWord ? "enabled" : "disabled"} (Google Docs is unsupported)`);
 watch = spawn("npm", ["start"], {
     shell: true,
     stdio: ["inherit", "pipe", "inherit"],
-    env: { ...process.env, NODE_ENV: "development" },
+    env: { ...process.env, NODE_ENV: "development", KIME_ENABLE_WORD: enableWord ? "true" : "" },
 });
 watch.on("exit", (code) => {
     if (!shuttingDown) {

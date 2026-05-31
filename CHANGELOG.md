@@ -10,9 +10,17 @@ extension back into compliance.
 
 ### Features
 * Added on-screen keyboard
-* Added support for Word for the Web
 * Added support for CKEditor
 * Added options page
+
+### Removed / not supported
+* **Google Docs** is no longer supported. Docs moved to a canvas + EditContext
+  editor that doesn't accept programmatic composition, so the integration can't
+  work; the extension now stays out of the way on Docs rather than appearing
+  broken.
+* **Word for the Web** is disabled by default for the same trajectory (it still
+  partly works via direct DOM editing but is fragile). It can be enabled in
+  development builds with the `KIME_ENABLE_WORD` flag.
 
 ### Fixes
 * Typing in Hangul now works on HTML documents loaded from the local file system
