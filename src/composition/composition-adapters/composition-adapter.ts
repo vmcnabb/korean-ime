@@ -1,5 +1,5 @@
 import { isMethodSupported } from "../../decorators/method-not-supported";
-import { KeyCode } from "../../content-script/on-screen-keyboard/korean-keyboard-map";
+import { KeyCode } from "../../keyboard/korean-keyboard-map";
 import { setAsKimeEvent } from "../../messaging/dom-events";
 import { trace } from "../../decorators/trace";
 import { DummyAdapter } from "./dummy-adapter";

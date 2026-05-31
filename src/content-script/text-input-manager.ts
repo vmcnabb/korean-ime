@@ -2,7 +2,7 @@ import { HangulImeController } from "../composition/hangul-ime-controller";
 import { KoreanKeyboardMode } from "../extension-state/korean-keyboard-mode";
 import { CompositionAdapterFactory } from "../composition/composition-adapter-factory";
 import { isHangulOrJamo } from "../composition/hangul-maps";
-import { KeyCode } from "./on-screen-keyboard/korean-keyboard-map";
+import { KeyCode } from "../keyboard/korean-keyboard-map";
 import { SupportedCompositionFeatures } from "../composition/composition-adapters/composition-adapter-interface";
 import { ContentScriptBroadcastMessage } from "../messaging/content-to-content-messages";
 import {

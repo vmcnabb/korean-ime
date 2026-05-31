@@ -1,4 +1,4 @@
-import { KeyCode } from "../content-script/on-screen-keyboard/korean-keyboard-map";
+import { KeyCode } from "../keyboard/korean-keyboard-map";
 import { hasProperties } from "../types/objects";
 import { TabState } from "../extension-state/tab-state";
 

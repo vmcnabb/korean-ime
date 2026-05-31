@@ -1,5 +1,5 @@
 import { OnScreenKeyboardController } from "./on-screen-keyboard/on-screen-keyboard-controller";
-import { KeyCode } from "./on-screen-keyboard/korean-keyboard-map";
+import { KeyCode } from "../keyboard/korean-keyboard-map";
 import { TextInputManager } from "./text-input-manager";
 import { debugLog } from "../debug-log";
 import { KoreanKeyboardMode } from "../extension-state/korean-keyboard-mode";

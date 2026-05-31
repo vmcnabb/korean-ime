@@ -1,4 +1,4 @@
-import { KeyCode } from "../../content-script/on-screen-keyboard/korean-keyboard-map";
+import { KeyCode } from "../../keyboard/korean-keyboard-map";
 import { ContentEditableAdapter } from "./content-editable-adapter";
 
 export class CkEditorAdapter extends ContentEditableAdapter {

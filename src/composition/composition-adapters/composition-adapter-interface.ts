@@ -1,4 +1,4 @@
-import { KeyCode } from "../../content-script/on-screen-keyboard/korean-keyboard-map";
+import { KeyCode } from "../../keyboard/korean-keyboard-map";
 import { MethodKeys } from "../../types/objects";
 
 // interface used by ContentEditableAdapter, InputAdapter, etc.

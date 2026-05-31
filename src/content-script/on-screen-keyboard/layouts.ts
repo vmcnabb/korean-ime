@@ -1,4 +1,4 @@
-import { KeyCode } from "./korean-keyboard-map";
+import { KeyCode } from "../../keyboard/korean-keyboard-map";
 
 export type KeyboardLayout = KeyCode[][];
 

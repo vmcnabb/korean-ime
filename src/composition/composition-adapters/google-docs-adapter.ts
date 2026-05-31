@@ -1,4 +1,4 @@
-import { KeyCode } from "../../content-script/on-screen-keyboard/korean-keyboard-map";
+import { KeyCode } from "../../keyboard/korean-keyboard-map";
 import { CompositionAdapter, DispatchableAction } from "./composition-adapter";
 import { methodNotSupported } from "../../decorators/method-not-supported";
 

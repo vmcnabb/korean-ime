@@ -1,5 +1,5 @@
 ﻿import { isKimeEvent } from "../messaging/dom-events";
-import { isAltKey, isModifierKey, KeyCode, keyMap } from "../content-script/on-screen-keyboard/korean-keyboard-map";
+import { isAltKey, isModifierKey, KeyCode, keyMap } from "../keyboard/korean-keyboard-map";
 import { HangulCompositor } from "./hangul-compositor";
 import { CompositionAdapterFactory } from "./composition-adapter-factory";
 import { CompositionAdapter } from "./composition-adapters/composition-adapter";
