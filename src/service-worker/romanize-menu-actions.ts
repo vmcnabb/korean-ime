@@ -1,6 +1,7 @@
 import { ServiceScriptMessage, ServiceScriptMessageAction } from "../messaging/service-to-content-messages";
 import { PopulatePopupConverterMessage } from "./popup-converter/popup-converter-message";
 import { romanize } from "../romanization/romanize";
+import { sendMessageToTab } from "./send-message-to-tab";
 import popupConverter from "url:./popup-converter/popup-converter.html";
 
 export function romanizeInPopup(event: chrome.contextMenus.OnClickData) {
@@ -22,7 +23,7 @@ export function romanizeInPopup(event: chrome.contextMenus.OnClickData) {
                     return;
                 }
 
-                chrome.tabs.sendMessage<PopulatePopupConverterMessage>(newWindow.tabs[0].id, {
+                sendMessageToTab<PopulatePopupConverterMessage>(newWindow.tabs[0].id, {
                     type: "populatePopupConverterMessage",
                     action: "populate",
                     data: {
@@ -46,7 +47,7 @@ export function romanizeBeside(event: chrome.contextMenus.OnClickData, tab: chro
 
     const romanText = romanize(event.selectionText);
 
-    chrome.tabs.sendMessage<ServiceScriptMessage>(tab.id, {
+    sendMessageToTab<ServiceScriptMessage>(tab.id, {
         type: "serviceScriptMessage",
         action: ServiceScriptMessageAction.InsertTextAfterSelection,
         data: romanText,

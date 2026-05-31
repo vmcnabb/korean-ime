@@ -4,6 +4,7 @@ import {
     SendKeyRequestMessage,
 } from "../messaging/content-to-service-messages";
 import { StateManager } from "./state-manager";
+import { sendMessageToTab } from "./send-message-to-tab";
 import {
     ContentScriptBroadcastMessage,
     isContentScriptBroadcastMessage,
@@ -37,7 +38,7 @@ export class ContentScriptListener {
                     if (sender.frameId !== undefined) {
                         this.stateManager.setFocusedFrame(sender.tab.id, sender.frameId);
                     }
-                    this.forwardMessageToTab(sender.tab.id, message);
+                    sendMessageToTab(sender.tab.id, message);
                     return;
                 }
 
@@ -62,9 +63,10 @@ export class ContentScriptListener {
             await this.stateManager.sendStateToTab(activeInfo.tabId);
             await this.stateManager.updatePresentation(activeInfo.tabId);
         });
-    }
 
-    private forwardMessageToTab(tabId: number, message: ContentScriptBroadcastMessage) {
-        chrome.tabs.sendMessage(tabId, message);
+        // discard a tab's state when it closes so it doesn't accumulate
+        chrome.tabs.onRemoved.addListener((tabId) => {
+            this.stateManager.clearTabState(tabId);
+        });
     }
 }

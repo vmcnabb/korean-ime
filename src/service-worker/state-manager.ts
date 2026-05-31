@@ -8,6 +8,7 @@ import {
     SendKeyServiceMessage,
 } from "../messaging/service-to-content-messages";
 import { menus } from "./menus";
+import { sendMessageToTab } from "./send-message-to-tab";
 
 /**
  * Manages extension state for all tabs
@@ -36,11 +37,7 @@ export class StateManager {
             action: ServiceScriptMessageAction.SendKey,
             data,
         };
-        try {
-            await chrome.tabs.sendMessage(tabId, message, { frameId });
-        } catch (error) {
-            console.debug(`Failed to send key to frame ${frameId} in tab ${tabId}:`, error);
-        }
+        await sendMessageToTab(tabId, message, { frameId });
     }
 
     public async toggleHanYongMode(tabId: number): Promise<void> {
@@ -105,8 +102,7 @@ export class StateManager {
         const currentTabState = await this.getTabState(tabId);
         const newTabState = updateFn(currentTabState);
 
-        const storageKey = `tabState-${tabId}`;
-        await chrome.storage.local.set({ [storageKey]: newTabState });
+        await chrome.storage.session.set({ [this.tabStateKey(tabId)]: newTabState });
 
         await this.sendStateToTab(tabId);
         await this.updatePresentation(tabId);
@@ -114,16 +110,26 @@ export class StateManager {
 
     public async sendStateToTab(tabId: number) {
         const tabState = await this.getTabState(tabId);
-        try {
-            await chrome.tabs.sendMessage<ServiceScriptMessage>(tabId, {
-                type: "serviceScriptMessage",
-                action: ServiceScriptMessageAction.UpdateState,
-                data: tabState,
-            });
-        } catch (error) {
-            // this is usually due to the target tab not having a content script (e.g. chrome://extensions), so we can ignore it
-            console.debug(`Failed to send state to tab ${tabId}:`, error);
-        }
+        await sendMessageToTab<ServiceScriptMessage>(tabId, {
+            type: "serviceScriptMessage",
+            action: ServiceScriptMessageAction.UpdateState,
+            data: tabState,
+        });
+    }
+
+    /**
+     * Discards the state for a tab. Call this when a tab closes so per-tab state
+     * doesn't accumulate. Tab state lives in session storage (tab ids are only
+     * meaningful within a browser session), so it's all cleared on browser
+     * close anyway — this just reclaims it promptly during a long session.
+     */
+    public async clearTabState(tabId: number) {
+        this.focusedFrames.delete(tabId);
+        await chrome.storage.session.remove(this.tabStateKey(tabId));
+    }
+
+    private tabStateKey(tabId: number) {
+        return `tabState-${tabId}`;
     }
 
     private defaultTabState(): TabState {
@@ -134,8 +140,8 @@ export class StateManager {
     }
 
     private async getTabState(tabId: number): Promise<TabState> {
-        const storageKey = `tabState-${tabId}`;
-        const result = await chrome.storage.local.get(storageKey);
+        const storageKey = this.tabStateKey(tabId);
+        const result = await chrome.storage.session.get(storageKey);
         const tabState = result[storageKey] as TabState | undefined;
 
         if (!tabState) {
