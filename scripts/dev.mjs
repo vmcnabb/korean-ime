@@ -22,7 +22,10 @@ import { resolve } from "node:path";
 import * as ChromeLauncher from "chrome-launcher";
 
 const root = process.cwd();
-const distDir = resolve(root, "dist");
+// Dev builds go to dist-dev/ so they can never be mistaken for, or clobber, the
+// production dist/ that `npm run package` ships. Keep this in sync with the
+// --dist-dir in the "start" npm script.
+const distDir = resolve(root, "dist-dev");
 const profileDir = resolve(root, ".chrome-profile");
 
 const TEST_PAGE = `<!DOCTYPE html>

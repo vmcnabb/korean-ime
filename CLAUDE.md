@@ -14,8 +14,8 @@ on-screen keyboard. TypeScript, bundled with **Parcel**; the options page uses
 | Command | Purpose |
 |---|---|
 | `npm start` | Parcel watch mode — rebuilds to `dist/` on change |
-| `npm run build` | Production build: `clean` → `sync-version` → `check` → `lint` → `parcel build` |
-| `npm run build-dev` | Unoptimized dev build |
+| `npm run build` | Production build to `dist/`: `clean` → `sync-version` → `check` → `lint` → `parcel build` |
+| `npm run build-dev` | Unoptimized dev build to `dist-dev/` |
 | `npm run dev` | Watch + launch Chrome on a persistent dev profile + test page (see `scripts/dev.mjs`) |
 | `npm run check` | Type-check only (`tsc --noEmit`) |
 | `npm run lint` / `lint:fix` | ESLint (flat config in `eslint.config.mjs`) |
@@ -64,7 +64,8 @@ Core domain logic (mostly pure, well unit-tested):
   command-line switch (anti-malware), and by Chrome 148 the
   `--disable-features=DisableLoadExtensionCommandLineSwitch` opt-out no longer
   works either. So `npm run dev` can't auto-load into a throwaway profile — it
-  uses a persistent `.chrome-profile/` where you "Load unpacked" once.
+  uses a persistent `.chrome-profile/` where you "Load unpacked" once (from
+  `dist-dev/`; dev builds are kept out of the production `dist/`).
 - ESLint uses **flat config** (`eslint.config.mjs`). There is no `.eslintrc`.
 - `tsc` is type-check only (`--noEmit`); Parcel does the actual bundling.
 - Tracing decorator (`src/decorators/trace.ts`) is a no-op in production and

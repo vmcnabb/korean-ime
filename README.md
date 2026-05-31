@@ -35,16 +35,16 @@ npm install
 
 | Command | Description |
 |---|---|
-| `npm run build` | Production build (type check + lint + bundle) |
-| `npm run build-dev` | Development build (no optimisation) |
-| `npm start` | Watch mode — rebuilds on file changes |
+| `npm run build` | Production build to `/dist` (type check + lint + bundle) |
+| `npm run build-dev` | Development build to `/dist-dev` (no optimisation) |
+| `npm start` | Watch mode (to `/dist-dev`) — rebuilds on file changes |
 | `npm run dev` | Watch + launch Chrome (persistent dev profile) on a test page; load unpacked once |
 | `npm run check` | Type-check without emitting output |
 | `npm run lint` | Lint with ESLint (`npm run lint:fix` to auto-fix) |
 | `npm test` | Run unit tests |
 | `npm run package` | Build and zip `dist/` into `korean-ime-<version>.zip` for the store |
 
-The output goes to `/dist` and can be loaded directly as an unpacked extension:
+The production build output goes to `/dist` (dev builds go to `/dist-dev`, kept separate so they can't be shipped by accident) and can be loaded directly as an unpacked extension:
 1. Open `chrome://extensions`
 2. Enable **Developer mode**
 3. Click **Load unpacked** and select the `/dist` folder
