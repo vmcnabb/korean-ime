@@ -150,6 +150,11 @@ export class HangulImeController {
             }
 
             const key = keyMap[code];
+            // event.key is a single character for printable keys, but a multi-character name
+            // for functional keys ("Tab", "Enter", "CapsLock", …). keyMap lists those so the
+            // on-screen keyboard can label them — but they must never be inserted as text, so
+            // only single-character keys are treated as input below.
+            const isCharacterKey = event.key.length === 1;
 
             if (code === KeyCode.Backspace && this.compositor.isCompositing()) {
                 const block = this.compositor.removeLastJamo();
@@ -173,8 +178,10 @@ export class HangulImeController {
                 return;
             }
 
-            // don't interfere with keyboard shortcuts or keys we don't understand
-            if (!key || event.ctrlKey) {
+            // don't interfere with shortcuts, functional keys (Tab, Enter, …), or keys we
+            // don't understand — commit any in-progress composition and let the browser
+            // handle them natively
+            if (!key || event.ctrlKey || !isCharacterKey) {
                 if (this.compositor.isCompositing()) {
                     this.compositionAdapter.endComposition(this.compositor.getCurrentChar());
                     this.compositor.reset();

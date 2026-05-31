@@ -1,4 +1,11 @@
 import { HangulImeController } from "./hangul-ime-controller";
+import { InputAdapter } from "./composition-adapters/input-adapter";
+
+function dispatchKeydown(target: EventTarget, code: string, key: string): KeyboardEvent {
+    const event = new KeyboardEvent("keydown", { code, key, bubbles: true, cancelable: true });
+    target.dispatchEvent(event);
+    return event;
+}
 
 function makeContentEditable(): HTMLElement {
     const element = document.createElement("div");
@@ -35,5 +42,51 @@ describe("HangulImeController", () => {
 
         // the element listeners are removed too
         expect(elementRemove.mock.calls.map(([type]) => type)).toEqual(expect.arrayContaining(["keydown", "blur"]));
+    });
+});
+
+describe("HangulImeController functional keys during composition", () => {
+    afterEach(() => jest.restoreAllMocks());
+
+    function activeControllerOnTextarea() {
+        // Stub the adapter's DOM mutations so we can drive composition state in jsdom.
+        jest.spyOn(InputAdapter.prototype, "beginComposition").mockImplementation(() => {});
+        jest.spyOn(InputAdapter.prototype, "updateComposition").mockImplementation(() => {});
+        const endComposition = jest.spyOn(InputAdapter.prototype, "endComposition").mockImplementation(() => {});
+
+        const element = document.createElement("textarea");
+        const controller = new HangulImeController(element);
+        controller.activate();
+        return { element, endComposition };
+    }
+
+    // Regression: while composing, Tab/Enter used to be inserted as the literal text
+    // "Tab"/"Enter" (and their default action suppressed), because keyMap has label-only
+    // entries for them and the handler fed event.key to inputCharacter.
+    it("lets the browser handle Tab while composing, and commits the composition", () => {
+        const { element, endComposition } = activeControllerOnTextarea();
+
+        dispatchKeydown(element, "KeyR", "r"); // start composing ㄱ
+        const tab = dispatchKeydown(element, "Tab", "Tab");
+
+        expect(tab.defaultPrevented).toBe(false); // not swallowed → browser tabs away
+        expect(endComposition).toHaveBeenCalled(); // in-progress block was committed
+    });
+
+    it("lets the browser handle Enter while composing", () => {
+        const { element } = activeControllerOnTextarea();
+
+        dispatchKeydown(element, "KeyR", "r");
+        const enter = dispatchKeydown(element, "Enter", "Enter");
+
+        expect(enter.defaultPrevented).toBe(false);
+    });
+
+    it("still intercepts jamo keys (preventDefault)", () => {
+        const { element } = activeControllerOnTextarea();
+
+        const r = dispatchKeydown(element, "KeyR", "r");
+
+        expect(r.defaultPrevented).toBe(true);
     });
 });
