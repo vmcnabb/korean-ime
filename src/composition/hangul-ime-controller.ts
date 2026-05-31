@@ -64,6 +64,21 @@ export class HangulImeController {
         this._isActive = false;
     }
 
+    /**
+     * Tears down the controller and removes every event listener it registered.
+     * Some listeners live on `document` (e.g. mousedown for contenteditable), so
+     * without this the controller — and the element it references — would never
+     * be garbage-collected after the element leaves the DOM.
+     */
+    dispose() {
+        this._isActive = false;
+        for (const { target, type, listener } of this.eventListeners) {
+            target.removeEventListener(type, listener);
+        }
+        this.eventListeners = [];
+        this.changeListeners = [];
+    }
+
     getCompositionFeatures() {
         return this.compositionAdapter.getSupportedMethods();
     }

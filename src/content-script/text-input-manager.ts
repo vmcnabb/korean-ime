@@ -23,6 +23,7 @@ export const textInputElementsSelector = `[contenteditable]:not([contenteditable
 export class TextInputManager {
     private imeControllers = new Map<HTMLElement, HangulImeController>();
     private textEntryMode: KoreanKeyboardMode = KoreanKeyboardMode.English;
+    private removalObserver?: MutationObserver;
 
     public handleMessage(message: ContentScriptBroadcastMessage | ServiceScriptMessage) {
         if (isServiceScriptMessage(message)) {
@@ -111,6 +112,7 @@ export class TextInputManager {
         if (!imeController) {
             imeController = new HangulImeController(element);
             this.imeControllers.set(element, imeController);
+            this.watchForRemoval();
         }
 
         const isHangulMode = this.textEntryMode === KoreanKeyboardMode.Hangul;
@@ -123,6 +125,27 @@ export class TextInputManager {
         }
 
         return imeController.getCompositionFeatures();
+    }
+
+    // An element that leaves the DOM keeps its IME controller alive via this
+    // Map, and the controller holds listeners (some on `document`) that wouldn't
+    // be garbage-collected with the element. Watch for removals and tear those
+    // down. One observer per content-script frame, started lazily on first use.
+    private watchForRemoval() {
+        if (this.removalObserver) {
+            return;
+        }
+        this.removalObserver = new MutationObserver(() => this.disposeDisconnectedControllers());
+        this.removalObserver.observe(document.documentElement, { childList: true, subtree: true });
+    }
+
+    private disposeDisconnectedControllers() {
+        for (const [element, controller] of this.imeControllers) {
+            if (!element.isConnected) {
+                controller.dispose();
+                this.imeControllers.delete(element);
+            }
+        }
     }
 
     private getActiveElement(document: Document): HTMLElement | null {
