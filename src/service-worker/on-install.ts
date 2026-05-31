@@ -1,6 +1,7 @@
 import { createMenus } from "./menus";
+import { debugLog } from "../debug-log";
 
 export function onInstall(_details: chrome.runtime.InstalledDetails): void {
-    console.debug("onInstall _details: ", _details);
+    debugLog("onInstall _details: ", _details);
     createMenus();
 }

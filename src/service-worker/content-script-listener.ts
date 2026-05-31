@@ -5,6 +5,7 @@ import {
 } from "../messaging/content-to-service-messages";
 import { StateManager } from "./state-manager";
 import { sendMessageToTab } from "./send-message-to-tab";
+import { debugLog } from "../debug-log";
 import {
     ContentScriptBroadcastMessage,
     isContentScriptBroadcastMessage,
@@ -28,7 +29,7 @@ export class ContentScriptListener {
         // listen for ContentScriptRequest messages and handle them
         chrome.runtime.onMessage.addListener(
             (message: ContentScriptRequestMessage | ContentScriptBroadcastMessage, sender) => {
-                console.debug("ContentScriptListener received message: ", message);
+                debugLog("ContentScriptListener received message: ", message);
 
                 if (!sender.tab?.id) {
                     return;

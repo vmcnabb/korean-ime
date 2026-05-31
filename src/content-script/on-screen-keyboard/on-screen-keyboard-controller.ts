@@ -4,6 +4,7 @@ import { KeyboardLayout, defaultLayout } from "./layouts";
 import { SupportedCompositionFeatures } from "../../composition/composition-adapters/composition-adapter-interface";
 import "./on-screen-keyboard.scss";
 import { ContentScriptRequestAction, ContentScriptRequestMessage } from "../../messaging/content-to-service-messages";
+import { debugLog } from "../../debug-log";
 
 export class OnScreenKeyboardController {
     private _keyboardElement: HTMLDivElement;
@@ -34,7 +35,7 @@ export class OnScreenKeyboardController {
     }
 
     public setMode(mode: KoreanKeyboardMode) {
-        console.debug("OnScreenKeyboardController.setMode", mode);
+        debugLog("OnScreenKeyboardController.setMode", mode);
 
         this._mode = mode;
         const isHanMode = mode === KoreanKeyboardMode.Hangul;
@@ -285,7 +286,7 @@ export class OnScreenKeyboardController {
     }
 
     private sendKey(key: string, keyCode: KeyCode) {
-        console.debug(`Sending key: ${key} (${keyCode})`);
+        debugLog(`Sending key: ${key} (${keyCode})`);
         this._onSendKey(key, keyCode);
     }
 

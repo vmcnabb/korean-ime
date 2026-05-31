@@ -1,6 +1,7 @@
 import { OnScreenKeyboardController } from "./on-screen-keyboard/on-screen-keyboard-controller";
 import { KeyCode } from "./on-screen-keyboard/korean-keyboard-map";
 import { TextInputManager } from "./text-input-manager";
+import { debugLog } from "../debug-log";
 import { KoreanKeyboardMode } from "../extension-state/korean-keyboard-mode";
 import { ContentScriptRequestAction, ContentScriptRequestMessage } from "../messaging/content-to-service-messages";
 import {
@@ -47,7 +48,7 @@ export class ContentScriptController {
 
     private setupMessageListener() {
         chrome.runtime.onMessage.addListener((message) => {
-            console.debug("content.js: received message", message);
+            debugLog("content.js: received message", message);
 
             if (isServiceScriptMessage(message)) {
                 switch (message.action) {

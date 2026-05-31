@@ -4,6 +4,7 @@ import { CompositionAdapter } from "./composition-adapters/composition-adapter";
 import { WordForTheWebAdapter } from "./composition-adapters/word-for-the-web-adapter";
 import { CkEditorAdapter } from "./composition-adapters/ck-editor-adapter";
 import { ContentEditableAdapter } from "./composition-adapters/content-editable-adapter";
+import { debugLog } from "../debug-log";
 
 export class CompositionAdapterFactory {
     static createCompositionAdapter(element: HTMLElement): CompositionAdapter | undefined {
@@ -23,7 +24,7 @@ export class CompositionAdapterFactory {
             return undefined;
         })();
 
-        console.debug("Creating composition adapter", adapter);
+        debugLog("Creating composition adapter", adapter);
         return adapter;
     }
 }
