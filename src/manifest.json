@@ -1,6 +1,7 @@
 {
     "manifest_version": 3,
     "version": "2.3.0",
+    "minimum_chrome_version": "102",
     "name": "__MSG_extension_name__",
     "short_name": "__MSG_extension_short_name__",
     "default_locale": "en",
@@ -33,6 +34,5 @@
         }
     ],
     "web_accessible_resources": [],
-    "permissions": ["contextMenus", "storage"],
-    "offline_enabled": true
+    "permissions": ["contextMenus", "storage"]
 }
