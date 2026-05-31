@@ -24,6 +24,15 @@ function doRomanize() {
 he.onEntry(() => doRomanize());
 original.oninput = doRomanize;
 
+// Paste as plain text only — the input is a contenteditable, so a default paste
+// would drop in the source's HTML/styling. insertText also fires `input`, which
+// triggers doRomanize.
+original.addEventListener("paste", (event) => {
+    event.preventDefault();
+    const text = event.clipboardData?.getData("text/plain") ?? "";
+    document.execCommand("insertText", false, text);
+});
+
 document.querySelectorAll("[data-message]").forEach((el) => {
     const element = el as HTMLElement;
     element.innerText = element.dataset.message ? chrome.i18n.getMessage(element.dataset.message) : "";
