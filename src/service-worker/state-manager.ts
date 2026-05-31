@@ -14,8 +14,6 @@ import { sendMessageToTab } from "./send-message-to-tab";
  * Manages extension state for all tabs
  */
 export class StateManager {
-    private focusedFrames = new Map<number, number>(); // tabId → frameId
-
     public constructor() {
         // ensure we are only referenced from the service worker
         if (!chrome.runtime.onMessage) {
@@ -23,12 +21,13 @@ export class StateManager {
         }
     }
 
-    public setFocusedFrame(tabId: number, frameId: number) {
-        this.focusedFrames.set(tabId, frameId);
+    public async setFocusedFrame(tabId: number, frameId: number) {
+        await chrome.storage.session.set({ [this.focusedFrameKey(tabId)]: frameId });
     }
 
     public async routeSendKey(tabId: number, data: SendKeyServiceMessage["data"]) {
-        const frameId = this.focusedFrames.get(tabId);
+        const key = this.focusedFrameKey(tabId);
+        const frameId = (await chrome.storage.session.get(key))[key] as number | undefined;
         if (frameId === undefined) {
             return;
         }
@@ -124,12 +123,15 @@ export class StateManager {
      * close anyway — this just reclaims it promptly during a long session.
      */
     public async clearTabState(tabId: number) {
-        this.focusedFrames.delete(tabId);
-        await chrome.storage.session.remove(this.tabStateKey(tabId));
+        await chrome.storage.session.remove([this.tabStateKey(tabId), this.focusedFrameKey(tabId)]);
     }
 
     private tabStateKey(tabId: number) {
         return `tabState-${tabId}`;
+    }
+
+    private focusedFrameKey(tabId: number) {
+        return `focusedFrame-${tabId}`;
     }
 
     private defaultTabState(): TabState {
