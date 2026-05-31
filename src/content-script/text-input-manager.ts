@@ -14,7 +14,11 @@ import {
 
 const nonTextInputTypes = ["button", "checkbox", "file", "hidden", "image", "radio", "range", "submit", "password"];
 const inputSelector = `input:not(${nonTextInputTypes.map((t) => `[type=${t}]`).join(",")})`;
-const textInputElementsSelector = `[contenteditable=true],textarea,${inputSelector}`;
+// Match any element whose contenteditable attribute makes it editable. The
+// attribute is an enumerated one — "", "true" and "plaintext-only" all enable
+// editing — so we can't look only for [contenteditable=true]; we instead match
+// the attribute when it isn't explicitly "false".
+export const textInputElementsSelector = `[contenteditable]:not([contenteditable=false]),textarea,${inputSelector}`;
 
 export class TextInputManager {
     private imeControllers = new Map<HTMLElement, HangulImeController>();
