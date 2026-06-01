@@ -10,15 +10,15 @@ onMounted(initSettings);
 
 <template>
     <main>
-        <h1>Korean IME options</h1>
+        <h1>Korean IME Options</h1>
         <OnScreenKeyboardSection />
         <HanYongSection />
         <section>
             <h2>General</h2>
             <LabeledCheckbox
                 v-model="settings.shareAcrossTabs"
-                label="Share state across tabs"
-                description="Apply on-screen keyboard and Han/Yong changes to every tab at once, not just the focused one."
+                label="Share status across tabs"
+                description="When you turn the on-screen keyboard or Han/Yong mode on or off, apply it to every tab at once, not just the focused one."
             />
         </section>
     </main>
