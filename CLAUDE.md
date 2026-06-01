@@ -49,8 +49,13 @@ Core domain logic (mostly pure, well unit-tested):
   (flag-gated on `KIME_ENABLE_WORD`). The `GoogleDocsAdapter` file is kept for
   reference but is no longer selected.
 - **`src/romanization/`** — Hangul → Latin conversion.
-- **`src/settings/`** — option definitions and a `SettingsManager` backed by
-  `chrome.storage.sync`.
+- **`src/settings/`** — a plain typed `Settings` object + defaults
+  (`settings.ts`), loaded/saved to `chrome.storage.sync` via `settings-store.ts`.
+  Other contexts react to changes via `chrome.storage.onChanged` (the options
+  page only writes — there is no options→service-worker message).
+- **`src/keyboard/`** — `korean-keyboard-map.ts`: the `KeyCode` enum, the key
+  map (`keyMap`), and key helpers (`isModifierKey`, `isAltKey`). Foundational —
+  imported across `composition/`, `content-script/`, and `messaging/`.
 
 ## Gotchas
 
@@ -84,13 +89,13 @@ Core domain logic (mostly pure, well unit-tested):
 
 ## Releases
 
-The last published release was 2.2.x (Manifest V2, 2020), since removed from the
-Chrome Web Store. 2.3.0 is the unreleased MV3 rewrite — see `CHANGELOG.md`.
+For information on each release, see `CHANGELOG.md`.
 
-Git tags were reconstructed after the fact. **All tags (v1.0.1–v2.2.2) are
-approximate**: they're anchored to commits by best effort using the dates in
-`CHANGELOG.md`, so they mark roughly where each release was, not exactly. 2.3.0
-is intentionally untagged until it actually ships.
+The full release checklist is in `RELEASING.md`.
 
-The full release checklist (bump → build → tag → push → upload) is in
-`RELEASING.md`.
+### Note
+The first release to be properly tagged in the repo is 2.3.0.
+
+All previous Git tags (v1.0.1–v2.2.2) were reconstructed after the fact on the day we did the 2.3.0 release
+and are approximate: they're anchored to commits by best effort using the dates in
+`CHANGELOG.md`, so they mark roughly where each release was, not exactly.
