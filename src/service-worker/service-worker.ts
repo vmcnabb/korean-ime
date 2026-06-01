@@ -18,7 +18,11 @@ setupActionListener(stateManager);
 // wake, which previously left the menus missing until a reload (#28).
 // createMenus is idempotent (it clears first), so running it on each startup is
 // safe. Keep this the single caller to avoid concurrent create collisions.
-createMenus().catch((error) => debugLog("createMenus failed:", error));
+// Recreating the checkbox resets it to unchecked, so refresh the active tab's
+// presentation afterwards to restore the real on-screen-keyboard state.
+createMenus()
+    .then(() => stateManager.refreshActiveTabPresentation())
+    .catch((error) => debugLog("menu setup failed:", error));
 
 // React to settings changes (written by the options page to storage.sync).
 // Registered synchronously at the top level so it can wake an idle MV3 service

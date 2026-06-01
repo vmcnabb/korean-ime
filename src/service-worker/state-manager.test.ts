@@ -262,3 +262,33 @@ describe("share across tabs", () => {
         expect(lastSentTo(2)).toBeUndefined();
     });
 });
+
+describe("refreshActiveTabPresentation", () => {
+    it("sets the menu checkbox to the active tab's persisted OSK state", async () => {
+        // After menus are recreated on startup the checkbox defaults to
+        // unchecked; this must restore it to the real (enabled) state.
+        withSettings({});
+        session["tabState-1"] = {
+            koreanKeyboardMode: KoreanKeyboardMode.English,
+            isOnScreenKeyboardEnabled: true,
+        };
+        const manager = new StateManager();
+
+        await manager.refreshActiveTabPresentation();
+
+        expect(chrome.contextMenus.update).toHaveBeenCalledWith(
+            "menu_onScreenKeyboard",
+            expect.objectContaining({ checked: true })
+        );
+    });
+
+    it("does nothing when there is no active tab", async () => {
+        withSettings({});
+        tabs = [];
+        const manager = new StateManager();
+
+        await manager.refreshActiveTabPresentation();
+
+        expect(chrome.contextMenus.update).not.toHaveBeenCalled();
+    });
+});

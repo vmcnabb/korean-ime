@@ -9,25 +9,31 @@ jest.mock("url:./popup-converter/popup-converter.html", () => "popup.html", { vi
 
 let created: { id?: string }[];
 let removeAllCalls: number;
-let removeAllResolvedBeforeCreate: boolean;
+let removeAllCompleted: boolean;
+let createdBeforeRemoveAllCompleted: boolean;
 
 beforeEach(() => {
     created = [];
     removeAllCalls = 0;
-    removeAllResolvedBeforeCreate = false;
+    removeAllCompleted = false;
+    createdBeforeRemoveAllCompleted = false;
 
     Object.assign(globalThis, {
         chrome: {
             contextMenus: {
                 removeAll: jest.fn(async () => {
                     removeAllCalls++;
+                    // Real async boundary: `completed` flips only after a
+                    // microtask, so the ordering assertions below pass only if
+                    // createMenus actually awaits removeAll rather than firing
+                    // it and proceeding straight to create.
+                    await Promise.resolve();
+                    removeAllCompleted = true;
                     created = []; // model real chrome: clears all existing items
                 }),
                 create: jest.fn((options: { id?: string }) => {
-                    // Records whether removeAll has been awaited by the time any
-                    // item is created — i.e. the clear happens first.
-                    if (created.length === 0) {
-                        removeAllResolvedBeforeCreate = removeAllCalls > 0;
+                    if (!removeAllCompleted) {
+                        createdBeforeRemoveAllCompleted = true;
                     }
                     created.push(options);
                 }),
@@ -38,11 +44,11 @@ beforeEach(() => {
 });
 
 describe("createMenus", () => {
-    it("clears existing menus before creating, so repeated calls don't collide", async () => {
+    it("awaits removeAll before creating, so repeated calls don't collide", async () => {
         await createMenus();
 
         expect(removeAllCalls).toBe(1);
-        expect(removeAllResolvedBeforeCreate).toBe(true);
+        expect(createdBeforeRemoveAllCompleted).toBe(false);
     });
 
     it("creates the three expected menu items", async () => {

@@ -97,14 +97,27 @@ export class StateManager {
         });
 
         // Update the on-screen-keyboard menu checkbox. The menu may not exist
-        // yet (it's created on install); tolerate that rather than throwing an
-        // unhandled rejection into the presentation path.
+        // yet (it's created on service-worker startup); tolerate that rather
+        // than throwing an unhandled rejection into the presentation path.
         try {
             await chrome.contextMenus.update(menus.onScreenKeyboard.id, {
                 checked: tabState.isOnScreenKeyboardEnabled,
             });
         } catch (error) {
             debugLog("Could not update on-screen-keyboard menu item:", error);
+        }
+    }
+
+    /**
+     * Refresh the action icon and menu checkbox for the currently active tab.
+     * Called after the menus are (re)created on service-worker startup: the
+     * checkbox is recreated unchecked, so without this it would misrepresent an
+     * enabled on-screen keyboard until the next state change.
+     */
+    public async refreshActiveTabPresentation(): Promise<void> {
+        const [active] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+        if (active?.id !== undefined) {
+            await this.updatePresentation(active.id);
         }
     }
 
