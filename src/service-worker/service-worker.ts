@@ -5,6 +5,8 @@ import { onInstall } from "./on-install";
 import { setupMenuListener } from "./menus";
 import { setupActionListener } from "./action";
 import { ContentScriptListener } from "./content-script-listener";
+import { settingsKeys } from "../settings/settings";
+import { debugLog } from "../debug-log";
 
 chrome.runtime.onInstalled.addListener(onInstall);
 
@@ -13,3 +15,20 @@ const contentScriptListener = new ContentScriptListener(stateManager);
 contentScriptListener.listen();
 setupMenuListener(stateManager);
 setupActionListener(stateManager);
+
+// React to settings changes (written by the options page to storage.sync).
+// Registered synchronously at the top level so it can wake an idle MV3 service
+// worker. The single storage write is the broadcast — there is no explicit
+// options→service-worker message (see #25/#26).
+chrome.storage.onChanged.addListener((changes, areaName) => {
+    if (areaName !== "sync") {
+        return;
+    }
+    if (!Object.keys(changes).some((key) => (settingsKeys as string[]).includes(key))) {
+        return;
+    }
+    // The listener must stay synchronous (storage.onChanged ignores a returned
+    // promise), so detach and log rather than letting a rejection surface as an
+    // unhandled promise rejection in the service worker.
+    stateManager.onSettingsChanged().catch((error) => debugLog("onSettingsChanged failed:", error));
+});

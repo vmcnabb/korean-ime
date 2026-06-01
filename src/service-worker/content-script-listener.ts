@@ -59,15 +59,21 @@ export class ContentScriptListener {
             }
         );
 
-        // listen for active tab changes and send the state to the new tab
-        chrome.tabs.onActivated.addListener(async (activeInfo) => {
-            await this.stateManager.sendStateToTab(activeInfo.tabId);
-            await this.stateManager.updatePresentation(activeInfo.tabId);
+        // listen for active tab changes: record the newly active tab as the
+        // live state (so later-opened tabs inherit it) and refresh its
+        // presentation. The listener stays synchronous (the event ignores a
+        // returned promise), so detach and log rather than leaking an unhandled
+        // rejection into the service worker.
+        chrome.tabs.onActivated.addListener((activeInfo) => {
+            void (async () => {
+                await this.stateManager.markTabActive(activeInfo.tabId);
+                await this.stateManager.sendStateToTab(activeInfo.tabId);
+            })().catch((error) => debugLog("onActivated handling failed:", error));
         });
 
         // discard a tab's state when it closes so it doesn't accumulate
         chrome.tabs.onRemoved.addListener((tabId) => {
-            this.stateManager.clearTabState(tabId);
+            this.stateManager.clearTabState(tabId).catch((error) => debugLog("clearTabState failed:", error));
         });
     }
 }

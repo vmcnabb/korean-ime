@@ -9,9 +9,33 @@ import {
 } from "../messaging/service-to-content-messages";
 import { menus } from "./menus";
 import { sendMessageToTab } from "./send-message-to-tab";
+import { Persistence, Settings } from "../settings/settings";
+import { loadSettings } from "../settings/settings-store";
+import { debugLog } from "../debug-log";
 
 /**
- * Manages extension state for all tabs
+ * Global current live state (browser-session-lived). New tabs inherit it, and
+ * in "share across tabs" mode every tab is kept equal to it. Updated whenever a
+ * tab's state changes or a tab becomes active.
+ */
+const LIVE_STATE_KEY = "liveState";
+/** Persisted (survives restart) last state, source for KeepLastState seeding. */
+const LAST_STATE_KEY = "lastState";
+
+/**
+ * Manages extension state for all tabs.
+ *
+ * Live per-tab state lives in `storage.session` (`tabState-<id>`). Two globals
+ * connect it to the user's settings (#26):
+ *  - `storage.session[liveState]` — the current value new tabs inherit (and
+ *    that all tabs share when "share across tabs" is on). Tracks the last
+ *    active tab.
+ *  - `storage.local[lastState]` — the value remembered across a browser
+ *    restart, used to seed `KeepLastState` features on a fresh session.
+ *
+ * Persistence policy (Always off / Always on / Keep last state) governs only
+ * how a *fresh session* is seeded; mid-session, a new tab simply inherits the
+ * last active tab's state (see {@link deriveInitialState}).
  */
 export class StateManager {
     public constructor() {
@@ -40,25 +64,27 @@ export class StateManager {
     }
 
     public async toggleHanYongMode(tabId: number): Promise<void> {
-        let newMode: KoreanKeyboardMode = KoreanKeyboardMode.Hangul;
+        await this.setTabState(tabId, (tabState) => ({
+            ...tabState,
+            koreanKeyboardMode:
+                tabState.koreanKeyboardMode === KoreanKeyboardMode.Hangul
+                    ? KoreanKeyboardMode.English
+                    : KoreanKeyboardMode.Hangul,
+        }));
+    }
 
-        await this.setTabState(tabId, (tabState) => {
-            const currentMode = tabState.koreanKeyboardMode;
+    /**
+     * Toggles the on-screen keyboard state for the given tab and returns the new state
+     * @param tabId The ID of the tab for which to toggle the on-screen keyboard
+     * @returns true if the on-screen keyboard is now enabled, false if it is now disabled
+     */
+    public async toggleOnScreenKeyboard(tabId: number): Promise<boolean> {
+        const newTabState = await this.setTabState(tabId, (tabState) => ({
+            ...tabState,
+            isOnScreenKeyboardEnabled: !tabState.isOnScreenKeyboardEnabled,
+        }));
 
-            switch (currentMode) {
-                case KoreanKeyboardMode.English:
-                    newMode = KoreanKeyboardMode.Hangul;
-                    break;
-                case KoreanKeyboardMode.Hangul:
-                    newMode = KoreanKeyboardMode.English;
-                    break;
-            }
-
-            return {
-                ...tabState,
-                koreanKeyboardMode: newMode,
-            };
-        });
+        return newTabState.isOnScreenKeyboardEnabled;
     }
 
     public async updatePresentation(tabId: number) {
@@ -70,50 +96,127 @@ export class StateManager {
             path: isHangulMode ? icon16h : icon16a,
         });
 
-        // update on-screen-keyboard menu item to checked or not
-        await chrome.contextMenus.update(menus.onScreenKeyboard.id, {
-            checked: tabState.isOnScreenKeyboardEnabled,
-        });
+        // Update the on-screen-keyboard menu checkbox. The menu may not exist
+        // yet (it's created on install); tolerate that rather than throwing an
+        // unhandled rejection into the presentation path.
+        try {
+            await chrome.contextMenus.update(menus.onScreenKeyboard.id, {
+                checked: tabState.isOnScreenKeyboardEnabled,
+            });
+        } catch (error) {
+            debugLog("Could not update on-screen-keyboard menu item:", error);
+        }
     }
 
     /**
-     * Toggles the on-screen keyboard state for the given tab and returns the new state
-     * @param tabId The ID of the tab for which to toggle the on-screen keyboard
-     * @returns true if the on-screen keyboard is now enabled, false if it is now disabled
+     * Record that a tab became active. Its state becomes the live value that
+     * subsequently-opened tabs inherit (the "new tab adopts the last active
+     * tab" behaviour).
      */
-    public async toggleOnScreenKeyboard(tabId: number): Promise<boolean> {
-        const tabState = await this.getTabState(tabId);
-        const newTabState = {
-            ...tabState,
-            isOnScreenKeyboardEnabled: !tabState.isOnScreenKeyboardEnabled,
-        };
-        await this.setTabState(tabId, () => newTabState);
-
-        return newTabState.isOnScreenKeyboardEnabled;
+    public async markTabActive(tabId: number): Promise<void> {
+        await this.setLiveState(await this.anchorTabState(tabId));
     }
 
     /**
-     * Updates the TabState and sends a message to the content scripts to update the state
+     * Ensure a tab has its *own* persisted state. A tab that inherited its state
+     * (a newly opened/cloned tab) has no `tabState-<id>` entry, so every read
+     * would otherwise fall back to the global live value and the tab would keep
+     * tracking whatever tab was last active. Persisting the derived state on
+     * first sight anchors the tab so it becomes independent. Returns the state.
+     */
+    private async anchorTabState(tabId: number): Promise<TabState> {
+        const key = this.tabStateKey(tabId);
+        const existing = (await chrome.storage.session.get(key))[key] as TabState | undefined;
+        if (existing) {
+            return this.cloneTabState(existing);
+        }
+
+        const derived = await this.deriveInitialState();
+        await chrome.storage.session.set({ [key]: derived });
+        return derived;
+    }
+
+    /**
+     * React to a settings change (the service worker's top-level
+     * `storage.onChanged` listener calls this — see #25/#26).
+     *
+     * Persistence changes are restart-only, so they don't disturb open tabs.
+     * The one live effect is enabling "share across tabs": that should converge
+     * the currently-open tabs onto the shared live value immediately.
+     */
+    public async onSettingsChanged(): Promise<void> {
+        const settings = await loadSettings();
+        if (!settings.shareAcrossTabs) {
+            return;
+        }
+
+        let live = await this.getLiveState();
+        if (!live) {
+            const [active] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+            live = active?.id !== undefined ? await this.getTabState(active.id) : await this.deriveInitialState();
+            await this.setLiveState(live);
+        }
+        await this.broadcastState(live);
+    }
+
+    /**
+     * Updates a tab's state and propagates it. Returns the new state.
+     *
+     * Always updates the global live value (so new tabs inherit it) and, for any
+     * `KeepLastState` feature, the persisted `storage.local` value. When "share
+     * across tabs" is on, mirrors the new state to every open tab instead of
+     * just this one.
      * @param tabId The ID of the tab for which to update the state
      * @param updateFn function that takes the current tab state and returns the new tab state
      */
-    private async setTabState(tabId: number, updateFn: (tabState: TabState) => TabState) {
+    private async setTabState(tabId: number, updateFn: (tabState: TabState) => TabState): Promise<TabState> {
+        const settings = await loadSettings();
         const currentTabState = await this.getTabState(tabId);
         const newTabState = updateFn(currentTabState);
 
         await chrome.storage.session.set({ [this.tabStateKey(tabId)]: newTabState });
+        await this.persistLastState(settings, newTabState);
+        await this.setLiveState(newTabState);
 
-        await this.sendStateToTab(tabId);
+        if (settings.shareAcrossTabs) {
+            await this.broadcastState(newTabState);
+        } else {
+            await this.sendStateToTab(tabId);
+        }
+
+        return newTabState;
+    }
+
+    /** Push a tab's current state to it and refresh its icon / menu presentation. */
+    public async sendStateToTab(tabId: number) {
+        // Anchor on the way out so a freshly loaded/cloned tab persists its
+        // inherited state and stops tracking the global live value.
+        const state = await this.anchorTabState(tabId);
+        await this.pushState(tabId, state);
         await this.updatePresentation(tabId);
     }
 
-    public async sendStateToTab(tabId: number) {
-        const tabState = await this.getTabState(tabId);
+    private async pushState(tabId: number, state: TabState) {
         await sendMessageToTab<ServiceScriptMessage>(tabId, {
             type: "serviceScriptMessage",
             action: ServiceScriptMessageAction.UpdateState,
-            data: tabState,
+            data: state,
         });
+    }
+
+    /** Apply one state to every open tab (used in "share across tabs" mode). */
+    private async broadcastState(state: TabState) {
+        const tabs = await chrome.tabs.query({});
+        await Promise.all(
+            tabs.map(async (tab) => {
+                if (tab.id === undefined) {
+                    return;
+                }
+                await chrome.storage.session.set({ [this.tabStateKey(tab.id)]: state });
+                await this.pushState(tab.id, state);
+                await this.updatePresentation(tab.id);
+            })
+        );
     }
 
     /**
@@ -134,23 +237,104 @@ export class StateManager {
         return `focusedFrame-${tabId}`;
     }
 
-    private defaultTabState(): TabState {
-        return {
-            koreanKeyboardMode: KoreanKeyboardMode.English,
-            isOnScreenKeyboardEnabled: false,
-        };
-    }
-
     private async getTabState(tabId: number): Promise<TabState> {
         const storageKey = this.tabStateKey(tabId);
         const result = await chrome.storage.session.get(storageKey);
         const tabState = result[storageKey] as TabState | undefined;
 
-        if (!tabState) {
-            return this.defaultTabState();
+        if (tabState) {
+            return this.cloneTabState(tabState);
         }
 
-        return this.cloneTabState(tabState);
+        return this.deriveInitialState();
+    }
+
+    /**
+     * The state a tab starts in. Mid-session it inherits the global live value
+     * (the last active tab, also the shared value when sharing is on). Only on a
+     * fresh session — when no live value exists yet — does persistence policy
+     * decide the seed, reading `storage.local` for `KeepLastState`.
+     */
+    private async deriveInitialState(): Promise<TabState> {
+        const live = await this.getLiveState();
+        if (live) {
+            return live;
+        }
+
+        // No live value yet, so seed from persistence. This is safe even though
+        // liveState isn't initialised until the first toggle/activation:
+        // liveState lives in storage.session (survives SW respawns, cleared only
+        // on browser close), so the undefined window is just the start of a
+        // fresh session. And there, seeding and inheritance are equivalent —
+        // every tab seeds identically, and the only paths that make a tab differ
+        // from that seed (setTabState / broadcast) also set liveState. So by the
+        // time inheritance could differ from the seed, liveState is already set.
+        const settings = await loadSettings();
+        const last = await this.getLastState();
+        const lastHangul = (last.koreanKeyboardMode ?? KoreanKeyboardMode.English) === KoreanKeyboardMode.Hangul;
+
+        return {
+            isOnScreenKeyboardEnabled: this.seedFeature(
+                settings.onScreenKeyboard.persistence,
+                last.isOnScreenKeyboardEnabled ?? false
+            ),
+            koreanKeyboardMode: this.seedFeature(settings.hanYong.persistence, lastHangul)
+                ? KoreanKeyboardMode.Hangul
+                : KoreanKeyboardMode.English,
+        };
+    }
+
+    /** How a feature is seeded on a fresh session, given its persistence policy. */
+    private seedFeature(persistence: Persistence, lastValue: boolean): boolean {
+        switch (persistence) {
+            case Persistence.AlwaysOff:
+                return false;
+            case Persistence.AlwaysOn:
+                return true;
+            case Persistence.KeepLastState:
+                return lastValue;
+            default:
+                // loadSettings only type-checks via `typeof`, so a stale or
+                // corrupt persistence value in storage.sync can slip through as
+                // a string. Treat anything unrecognised as "off".
+                return false;
+        }
+    }
+
+    /** Persist the new value to `storage.local`, but only for KeepLastState features. */
+    private async persistLastState(settings: Settings, next: TabState) {
+        const oskKeepsState = settings.onScreenKeyboard.persistence === Persistence.KeepLastState;
+        const hanYongKeepsState = settings.hanYong.persistence === Persistence.KeepLastState;
+
+        if (!oskKeepsState && !hanYongKeepsState) {
+            return;
+        }
+
+        const updated: Partial<TabState> = { ...(await this.getLastState()) };
+
+        if (oskKeepsState) {
+            updated.isOnScreenKeyboardEnabled = next.isOnScreenKeyboardEnabled;
+        }
+        if (hanYongKeepsState) {
+            updated.koreanKeyboardMode = next.koreanKeyboardMode;
+        }
+
+        await chrome.storage.local.set({ [LAST_STATE_KEY]: updated });
+    }
+
+    private async getLastState(): Promise<Partial<TabState>> {
+        const result = await chrome.storage.local.get(LAST_STATE_KEY);
+        return (result[LAST_STATE_KEY] as Partial<TabState> | undefined) ?? {};
+    }
+
+    private async getLiveState(): Promise<TabState | undefined> {
+        const result = await chrome.storage.session.get(LIVE_STATE_KEY);
+        const live = result[LIVE_STATE_KEY] as TabState | undefined;
+        return live ? this.cloneTabState(live) : undefined;
+    }
+
+    private async setLiveState(state: TabState) {
+        await chrome.storage.session.set({ [LIVE_STATE_KEY]: this.cloneTabState(state) });
     }
 
     private cloneTabState(tabState: TabState): TabState {
