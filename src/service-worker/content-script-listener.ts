@@ -59,10 +59,11 @@ export class ContentScriptListener {
             }
         );
 
-        // listen for active tab changes and send the state to the new tab
+        // listen for active tab changes: record the newly active tab as the
+        // live state (so later-opened tabs inherit it) and refresh its presentation
         chrome.tabs.onActivated.addListener(async (activeInfo) => {
+            await this.stateManager.markTabActive(activeInfo.tabId);
             await this.stateManager.sendStateToTab(activeInfo.tabId);
-            await this.stateManager.updatePresentation(activeInfo.tabId);
         });
 
         // discard a tab's state when it closes so it doesn't accumulate

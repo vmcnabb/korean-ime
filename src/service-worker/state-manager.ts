@@ -11,23 +11,31 @@ import { menus } from "./menus";
 import { sendMessageToTab } from "./send-message-to-tab";
 import { Persistence, Settings } from "../settings/settings";
 import { loadSettings } from "../settings/settings-store";
+import { debugLog } from "../debug-log";
 
-/** Global, browser-session-lived shared value, used when `shareAcrossTabs`. */
-const SHARED_LIVE_STATE_KEY = "sharedLiveState";
-/** Persisted (survives restart) last toggled value, source for KeepLastState. */
+/**
+ * Global current live state (browser-session-lived). New tabs inherit it, and
+ * in "share across tabs" mode every tab is kept equal to it. Updated whenever a
+ * tab's state changes or a tab becomes active.
+ */
+const LIVE_STATE_KEY = "liveState";
+/** Persisted (survives restart) last state, source for KeepLastState seeding. */
 const LAST_STATE_KEY = "lastState";
 
 /**
  * Manages extension state for all tabs.
  *
- * Live per-tab state lives in `storage.session` (`tabState-<id>`). Two extra
- * slots connect it to the user's settings (#26):
- *  - `storage.session[sharedLiveState]` — when "share across tabs" is on, the
- *    one value every tab adopts.
- *  - `storage.local[lastState]` — the remembered value for features set to
- *    `KeepLastState`, the only state that survives a browser restart.
- * Initial state is *derived* from `Settings` (see {@link deriveInitialState})
- * rather than a hardcoded default.
+ * Live per-tab state lives in `storage.session` (`tabState-<id>`). Two globals
+ * connect it to the user's settings (#26):
+ *  - `storage.session[liveState]` — the current value new tabs inherit (and
+ *    that all tabs share when "share across tabs" is on). Tracks the last
+ *    active tab.
+ *  - `storage.local[lastState]` — the value remembered across a browser
+ *    restart, used to seed `KeepLastState` features on a fresh session.
+ *
+ * Persistence policy (Always off / Always on / Keep last state) governs only
+ * how a *fresh session* is seeded; mid-session, a new tab simply inherits the
+ * last active tab's state (see {@link deriveInitialState}).
  */
 export class StateManager {
     public constructor() {
@@ -88,45 +96,56 @@ export class StateManager {
             path: isHangulMode ? icon16h : icon16a,
         });
 
-        // update on-screen-keyboard menu item to checked or not
-        await chrome.contextMenus.update(menus.onScreenKeyboard.id, {
-            checked: tabState.isOnScreenKeyboardEnabled,
-        });
+        // Update the on-screen-keyboard menu checkbox. The menu may not exist
+        // yet (it's created on install); tolerate that rather than throwing an
+        // unhandled rejection into the presentation path.
+        try {
+            await chrome.contextMenus.update(menus.onScreenKeyboard.id, {
+                checked: tabState.isOnScreenKeyboardEnabled,
+            });
+        } catch (error) {
+            debugLog("Could not update on-screen-keyboard menu item:", error);
+        }
+    }
+
+    /**
+     * Record that a tab became active. Its state becomes the live value that
+     * subsequently-opened tabs inherit (the "new tab adopts the last active
+     * tab" behaviour).
+     */
+    public async markTabActive(tabId: number): Promise<void> {
+        await this.setLiveState(await this.getTabState(tabId));
     }
 
     /**
      * React to a settings change (the service worker's top-level
-     * `storage.onChanged` listener calls this — see #25/#26). Settings only
-     * change how *new* tabs derive their initial state, except for "share
-     * across tabs": flipping it on should immediately converge open tabs, so we
-     * seed the shared value from the active tab and broadcast it.
+     * `storage.onChanged` listener calls this — see #25/#26).
+     *
+     * Persistence changes are restart-only, so they don't disturb open tabs.
+     * The one live effect is enabling "share across tabs": that should converge
+     * the currently-open tabs onto the shared live value immediately.
      */
     public async onSettingsChanged(): Promise<void> {
         const settings = await loadSettings();
-
         if (!settings.shareAcrossTabs) {
-            // Persistence changes affect only future tabs/sessions; just refresh
-            // presentation so any settings-derived UI stays correct.
-            const tabs = await chrome.tabs.query({});
-            await Promise.all(tabs.map((tab) => (tab.id !== undefined ? this.updatePresentation(tab.id) : undefined)));
             return;
         }
 
-        let shared = await this.getSharedLiveState();
-        if (!shared) {
+        let live = await this.getLiveState();
+        if (!live) {
             const [active] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
-            shared = active?.id !== undefined ? await this.getTabState(active.id) : await this.deriveInitialState();
-            await this.setSharedLiveState(shared);
+            live = active?.id !== undefined ? await this.getTabState(active.id) : await this.deriveInitialState();
+            await this.setLiveState(live);
         }
-        await this.broadcastState(shared);
+        await this.broadcastState(live);
     }
 
     /**
-     * Updates the TabState and propagates it. Returns the new state.
+     * Updates a tab's state and propagates it. Returns the new state.
      *
-     * Side effects beyond the per-tab slot: persists to `storage.local` for any
-     * feature set to `KeepLastState`, and — when "share across tabs" is on —
-     * mirrors the new state to the shared slot and every open tab instead of
+     * Always updates the global live value (so new tabs inherit it) and, for any
+     * `KeepLastState` feature, the persisted `storage.local` value. When "share
+     * across tabs" is on, mirrors the new state to every open tab instead of
      * just this one.
      * @param tabId The ID of the tab for which to update the state
      * @param updateFn function that takes the current tab state and returns the new tab state
@@ -138,20 +157,22 @@ export class StateManager {
 
         await chrome.storage.session.set({ [this.tabStateKey(tabId)]: newTabState });
         await this.persistLastState(settings, newTabState);
+        await this.setLiveState(newTabState);
 
         if (settings.shareAcrossTabs) {
-            await this.setSharedLiveState(newTabState);
             await this.broadcastState(newTabState);
         } else {
             await this.sendStateToTab(tabId);
-            await this.updatePresentation(tabId);
         }
 
         return newTabState;
     }
 
+    /** Push a tab's current state to it and refresh its icon / menu presentation. */
     public async sendStateToTab(tabId: number) {
-        await this.pushState(tabId, await this.getTabState(tabId));
+        const state = await this.getTabState(tabId);
+        await this.pushState(tabId, state);
+        await this.updatePresentation(tabId);
     }
 
     private async pushState(tabId: number, state: TabState) {
@@ -208,37 +229,34 @@ export class StateManager {
     }
 
     /**
-     * The state a tab starts in, derived from settings. In share mode an
-     * existing shared value wins (so tabs opened later adopt it); otherwise each
-     * feature follows its persistence policy, reading the remembered value for
-     * `KeepLastState`.
+     * The state a tab starts in. Mid-session it inherits the global live value
+     * (the last active tab, also the shared value when sharing is on). Only on a
+     * fresh session — when no live value exists yet — does persistence policy
+     * decide the seed, reading `storage.local` for `KeepLastState`.
      */
     private async deriveInitialState(): Promise<TabState> {
-        const settings = await loadSettings();
-
-        if (settings.shareAcrossTabs) {
-            const shared = await this.getSharedLiveState();
-            if (shared) {
-                return shared;
-            }
+        const live = await this.getLiveState();
+        if (live) {
+            return live;
         }
 
+        const settings = await loadSettings();
         const last = await this.getLastState();
-
         const lastHangul = (last.koreanKeyboardMode ?? KoreanKeyboardMode.English) === KoreanKeyboardMode.Hangul;
 
         return {
-            isOnScreenKeyboardEnabled: this.deriveFeature(
+            isOnScreenKeyboardEnabled: this.seedFeature(
                 settings.onScreenKeyboard.persistence,
                 last.isOnScreenKeyboardEnabled ?? false
             ),
-            koreanKeyboardMode: this.deriveFeature(settings.hanYong.persistence, lastHangul)
+            koreanKeyboardMode: this.seedFeature(settings.hanYong.persistence, lastHangul)
                 ? KoreanKeyboardMode.Hangul
                 : KoreanKeyboardMode.English,
         };
     }
 
-    private deriveFeature(persistence: Persistence, lastValue: boolean): boolean {
+    /** How a feature is seeded on a fresh session, given its persistence policy. */
+    private seedFeature(persistence: Persistence, lastValue: boolean): boolean {
         switch (persistence) {
             case Persistence.AlwaysOff:
                 return false;
@@ -280,14 +298,14 @@ export class StateManager {
         return (result[LAST_STATE_KEY] as Partial<TabState> | undefined) ?? {};
     }
 
-    private async getSharedLiveState(): Promise<TabState | undefined> {
-        const result = await chrome.storage.session.get(SHARED_LIVE_STATE_KEY);
-        const shared = result[SHARED_LIVE_STATE_KEY] as TabState | undefined;
-        return shared ? this.cloneTabState(shared) : undefined;
+    private async getLiveState(): Promise<TabState | undefined> {
+        const result = await chrome.storage.session.get(LIVE_STATE_KEY);
+        const live = result[LIVE_STATE_KEY] as TabState | undefined;
+        return live ? this.cloneTabState(live) : undefined;
     }
 
-    private async setSharedLiveState(state: TabState) {
-        await chrome.storage.session.set({ [SHARED_LIVE_STATE_KEY]: this.cloneTabState(state) });
+    private async setLiveState(state: TabState) {
+        await chrome.storage.session.set({ [LIVE_STATE_KEY]: this.cloneTabState(state) });
     }
 
     private cloneTabState(tabState: TabState): TabState {

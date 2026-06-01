@@ -87,7 +87,10 @@ function lastSentTo(tabId: number): TabState | undefined {
     return [...sentMessages].reverse().find((m) => m.tabId === tabId)?.data;
 }
 
-describe("initial state derivation", () => {
+// On a fresh browser session there is no live value yet, so a tab's initial
+// state is seeded from the persistence policy (empty session storage models
+// this).
+describe("fresh-session seeding from persistence", () => {
     it("AlwaysOff starts the feature off", async () => {
         withSettings({ onScreenKeyboard: { persistence: Persistence.AlwaysOff } });
         const manager = new StateManager();
@@ -136,6 +139,37 @@ describe("initial state derivation", () => {
         await manager.sendStateToTab(1);
 
         expect(lastSentTo(1)?.isOnScreenKeyboardEnabled).toBe(false);
+    });
+});
+
+// Mid-session, a new tab inherits the last active tab's live state — persistence
+// policy does NOT apply once a session is underway.
+describe("mid-session new-tab inheritance", () => {
+    it("a new tab inherits the live value even when persistence says AlwaysOff", async () => {
+        withSettings({ onScreenKeyboard: { persistence: Persistence.AlwaysOff } });
+        const manager = new StateManager();
+
+        // Tab 1 turns the OSK on; that becomes the live value.
+        await manager.toggleOnScreenKeyboard(1);
+
+        // A tab opened afterwards inherits ON, ignoring the AlwaysOff policy.
+        await manager.sendStateToTab(2);
+
+        expect(lastSentTo(2)?.isOnScreenKeyboardEnabled).toBe(true);
+    });
+
+    it("activating a tab makes its state the value later tabs inherit", async () => {
+        withSettings({ hanYong: { persistence: Persistence.AlwaysOff } });
+        session["tabState-1"] = {
+            koreanKeyboardMode: KoreanKeyboardMode.Hangul,
+            isOnScreenKeyboardEnabled: false,
+        };
+        const manager = new StateManager();
+
+        await manager.markTabActive(1);
+        await manager.sendStateToTab(2);
+
+        expect(lastSentTo(2)?.koreanKeyboardMode).toBe(KoreanKeyboardMode.Hangul);
     });
 });
 
