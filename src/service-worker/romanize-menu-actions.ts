@@ -1,53 +1,47 @@
 import { ServiceScriptMessage, ServiceScriptMessageAction } from "../messaging/service-to-content-messages";
-import { PopulatePopupConverterMessage } from "./popup-converter/popup-converter-message";
+import { PopupConverterData, popupConverterDataKey } from "./popup-converter/popup-converter-data";
 import { romanize } from "../romanization/romanize";
 import { sendMessageToTab } from "./send-message-to-tab";
 import popupConverter from "url:./popup-converter/popup-converter.html";
 
-export function romanizeInPopup(event: chrome.contextMenus.OnClickData) {
+export async function romanizeInPopup(event: chrome.contextMenus.OnClickData) {
     const selectionText = event.selectionText || "";
-    const romanText = romanize(selectionText);
+    const data: PopupConverterData = {
+        original: selectionText,
+        romanized: romanize(selectionText),
+    };
 
-    // put text into popup window
-    chrome.windows.create(
-        {
-            url: popupConverter,
-            type: "popup",
-            width: 600,
-            height: 400,
-        },
-        function (newWindow) {
-            setTimeout(() => {
-                if (!newWindow?.tabs || !newWindow.tabs[0].id) {
-                    console.error("Failed to create popup window");
-                    return;
-                }
+    const newWindow = await chrome.windows.create({
+        url: popupConverter,
+        type: "popup",
+        width: 600,
+        height: 400,
+    });
 
-                sendMessageToTab<PopulatePopupConverterMessage>(newWindow.tabs[0].id, {
-                    type: "populatePopupConverterMessage",
-                    action: "populate",
-                    data: {
-                        original: selectionText,
-                        romanized: romanText,
-                    },
-                });
-            }, 100);
-        }
-    );
+    if (newWindow?.id === undefined) {
+        console.error("Failed to create popup window");
+        return;
+    }
+
+    // Hand the text off via storage rather than messaging the new window on a
+    // timer: the popup reads it on load, so there's no load-timing race and no
+    // dependence on the window having a content script listening yet.
+    await chrome.storage.session.set({ [popupConverterDataKey(newWindow.id)]: data });
 }
 
-export function romanizeBeside(event: chrome.contextMenus.OnClickData, tab: chrome.tabs.Tab | undefined) {
+export async function romanizeBeside(event: chrome.contextMenus.OnClickData, tab: chrome.tabs.Tab | undefined) {
     if (!tab?.id || !event.selectionText) {
         return;
     }
 
     if (!event.editable) {
-        return romanizeInPopup(event);
+        await romanizeInPopup(event);
+        return;
     }
 
     const romanText = romanize(event.selectionText);
 
-    sendMessageToTab<ServiceScriptMessage>(tab.id, {
+    await sendMessageToTab<ServiceScriptMessage>(tab.id, {
         type: "serviceScriptMessage",
         action: ServiceScriptMessageAction.InsertTextAfterSelection,
         data: romanText,
