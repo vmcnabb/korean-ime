@@ -35,7 +35,19 @@ export function setupMenuListener(stateManager: StateManager) {
     });
 }
 
-export function createMenus() {
+/**
+ * (Re)create the context menus. Idempotent: clears any existing items first, so
+ * it's safe to call on every service-worker startup.
+ *
+ * MV3 service workers are ephemeral and `onInstalled` only fires on
+ * install/update — not on a normal wake — so creating menus there alone left
+ * them missing whenever the worker started for any other reason (#28). Call this
+ * from a single top-level site instead. Keep it a single caller: two concurrent
+ * removeAll-then-create sequences can still collide on duplicate ids.
+ */
+export async function createMenus() {
+    await chrome.contextMenus.removeAll();
+
     chrome.contextMenus.create({
         type: "normal",
         id: menus.romanizeInPopup.id,
