@@ -46,7 +46,7 @@ export class TextInputManager {
     public setActiveElement(element: HTMLElement): SupportedCompositionFeatures | undefined {
         // check if element matches the selector `textInputElementsSelector`
         if (element.matches(textInputElementsSelector)) {
-            return this.processElement(element);
+            return this.ensureController(element).getCompositionFeatures();
         }
         return;
     }
@@ -87,11 +87,7 @@ export class TextInputManager {
             return false;
         }
 
-        const imeController = this.imeControllers.get(activeElement);
-
-        if (!imeController) {
-            return false;
-        }
+        const imeController = this.ensureController(activeElement);
 
         if (isHangulOrJamo(char)) {
             imeController.addJamo(char, keyCode);
@@ -106,7 +102,12 @@ export class TextInputManager {
         return true;
     }
 
-    private processElement(element: HTMLElement) {
+    /**
+     * Get (creating if necessary) the IME controller for an element, with its
+     * active state synced to the current text-entry mode. This is the single
+     * place that creates controllers; `getActiveElement` stays a pure query.
+     */
+    private ensureController(element: HTMLElement): HangulImeController {
         let imeController = this.imeControllers.get(element);
 
         if (!imeController) {
@@ -124,7 +125,7 @@ export class TextInputManager {
             }
         }
 
-        return imeController.getCompositionFeatures();
+        return imeController;
     }
 
     // An element that leaves the DOM keeps its IME controller alive via this
@@ -148,6 +149,12 @@ export class TextInputManager {
         }
     }
 
+    /**
+     * Pure query: find the focused editable element, descending into same-origin
+     * iframes/objects. Returns null if there's no match (or a cross-origin
+     * boundary blocks the walk). Creates nothing — controller creation is the
+     * caller's job via `ensureController`.
+     */
     private getActiveElement(document: Document): HTMLElement | null {
         const isActiveElementInChildDocument =
             document.activeElement &&
@@ -170,7 +177,6 @@ export class TextInputManager {
         }
 
         if (element instanceof HTMLElement && element.matches(textInputElementsSelector)) {
-            this.processElement(element);
             return element;
         }
 

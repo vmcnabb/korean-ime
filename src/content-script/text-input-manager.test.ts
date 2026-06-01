@@ -1,5 +1,6 @@
 import { TextInputManager, textInputElementsSelector } from "./text-input-manager";
 import { HangulImeController } from "../composition/hangul-ime-controller";
+import { KeyCode } from "../keyboard/korean-keyboard-map";
 
 function element(html: string): HTMLElement {
     const wrapper = document.createElement("div");
@@ -51,5 +52,34 @@ describe("TextInputManager DOM-removal cleanup", () => {
         await new Promise((resolve) => setTimeout(resolve, 0));
 
         expect(dispose).toHaveBeenCalledTimes(1);
+    });
+});
+
+describe("TextInputManager.enterCharacter", () => {
+    afterEach(() => {
+        jest.restoreAllMocks();
+        document.body.innerHTML = "";
+    });
+
+    it("returns false when no editable element is focused", () => {
+        const manager = new TextInputManager();
+
+        expect(manager.enterCharacter("a", KeyCode.KeyA)).toBe(false);
+    });
+
+    it("creates a controller for the focused element and routes the character", () => {
+        const addCharacter = jest.spyOn(HangulImeController.prototype, "addCharacter").mockImplementation(() => {});
+        const manager = new TextInputManager();
+
+        const input = document.createElement("input");
+        document.body.appendChild(input);
+        input.focus();
+
+        // No setActiveElement call first: enterCharacter must create the
+        // controller itself (via ensureController), not rely on a getter side effect.
+        const handled = manager.enterCharacter("a", KeyCode.KeyA);
+
+        expect(handled).toBe(true);
+        expect(addCharacter).toHaveBeenCalledWith("a", KeyCode.KeyA);
     });
 });
