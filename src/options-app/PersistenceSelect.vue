@@ -1,18 +1,23 @@
 <script setup lang="ts">
+import { computed } from "vue";
 import { Persistence } from "../settings/settings";
 
-defineProps<{
+const props = defineProps<{
     label: string;
+    // Display text for each persistence value, supplied per feature so the
+    // wording can be specific (e.g. "Start in Hangul" vs "Start shown").
+    optionLabels: Record<Persistence, string>;
     description?: string;
 }>();
 
 const model = defineModel<Persistence>({ required: true });
 
-const options: { value: Persistence; name: string }[] = [
-    { value: Persistence.AlwaysOff, name: "Always off" },
-    { value: Persistence.AlwaysOn, name: "Always on" },
-    { value: Persistence.KeepLastState, name: "Keep last state" },
-];
+// Fixed order, names from the per-feature prop.
+const options = computed(() => [
+    { value: Persistence.AlwaysOff, name: props.optionLabels[Persistence.AlwaysOff] },
+    { value: Persistence.AlwaysOn, name: props.optionLabels[Persistence.AlwaysOn] },
+    { value: Persistence.KeepLastState, name: props.optionLabels[Persistence.KeepLastState] },
+]);
 </script>
 
 <template>
