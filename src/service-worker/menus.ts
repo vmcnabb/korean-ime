@@ -1,5 +1,6 @@
 import { romanizeBeside, romanizeInPopup } from "./romanize-menu-actions";
 import { StateManager } from "./state-manager";
+import { debugLog } from "../debug-log";
 
 export const menus = Object.freeze({
     onScreenKeyboard: {
@@ -21,15 +22,17 @@ export function setupMenuListener(stateManager: StateManager) {
 
         switch (event.menuItemId) {
             case menus.romanizeInPopup.id:
-                romanizeInPopup(event);
+                romanizeInPopup(event).catch((error) => debugLog("romanizeInPopup failed:", error));
                 break;
 
             case menus.romanizeBeside.id:
-                romanizeBeside(event, tab);
+                romanizeBeside(event, tab).catch((error) => debugLog("romanizeBeside failed:", error));
                 break;
 
             case menus.onScreenKeyboard.id:
-                stateManager.toggleOnScreenKeyboard(tab.id);
+                stateManager
+                    .toggleOnScreenKeyboard(tab.id)
+                    .catch((error) => debugLog("toggleOnScreenKeyboard failed:", error));
                 break;
         }
     });
