@@ -124,6 +124,19 @@ describe("initial state derivation", () => {
 
         expect(lastSentTo(1)?.isOnScreenKeyboardEnabled).toBe(true);
     });
+
+    it("falls back to off for a corrupt/unknown persistence value in storage", async () => {
+        // Simulates stale storage.sync data that slips past loadSettings' typeof check.
+        sync = {
+            ...defaultSettings,
+            onScreenKeyboard: { persistence: "some-removed-value" as unknown as Persistence },
+        };
+        const manager = new StateManager();
+
+        await manager.sendStateToTab(1);
+
+        expect(lastSentTo(1)?.isOnScreenKeyboardEnabled).toBe(false);
+    });
 });
 
 describe("KeepLastState persistence", () => {
@@ -143,6 +156,18 @@ describe("KeepLastState persistence", () => {
         await manager.toggleOnScreenKeyboard(1);
 
         expect((local.lastState as Partial<TabState> | undefined)?.isOnScreenKeyboardEnabled).toBeUndefined();
+    });
+
+    it("does not touch storage.local when neither feature is KeepLastState", async () => {
+        withSettings({
+            onScreenKeyboard: { persistence: Persistence.AlwaysOff },
+            hanYong: { persistence: Persistence.AlwaysOn },
+        });
+        const manager = new StateManager();
+
+        await manager.toggleOnScreenKeyboard(1);
+
+        expect(chrome.storage.local.set).not.toHaveBeenCalled();
     });
 });
 

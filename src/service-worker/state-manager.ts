@@ -115,7 +115,7 @@ export class StateManager {
         let shared = await this.getSharedLiveState();
         if (!shared) {
             const [active] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
-            shared = active?.id !== undefined ? await this.getTabState(active.id) : this.defaultTabState();
+            shared = active?.id !== undefined ? await this.getTabState(active.id) : await this.deriveInitialState();
             await this.setSharedLiveState(shared);
         }
         await this.broadcastState(shared);
@@ -195,13 +195,6 @@ export class StateManager {
         return `focusedFrame-${tabId}`;
     }
 
-    private defaultTabState(): TabState {
-        return {
-            koreanKeyboardMode: KoreanKeyboardMode.English,
-            isOnScreenKeyboardEnabled: false,
-        };
-    }
-
     private async getTabState(tabId: number): Promise<TabState> {
         const storageKey = this.tabStateKey(tabId);
         const result = await chrome.storage.session.get(storageKey);
@@ -253,18 +246,29 @@ export class StateManager {
                 return true;
             case Persistence.KeepLastState:
                 return lastValue;
+            default:
+                // loadSettings only type-checks via `typeof`, so a stale or
+                // corrupt persistence value in storage.sync can slip through as
+                // a string. Treat anything unrecognised as "off".
+                return false;
         }
     }
 
     /** Persist the new value to `storage.local`, but only for KeepLastState features. */
     private async persistLastState(settings: Settings, next: TabState) {
-        const last = await this.getLastState();
-        const updated: Partial<TabState> = { ...last };
+        const oskKeepsState = settings.onScreenKeyboard.persistence === Persistence.KeepLastState;
+        const hanYongKeepsState = settings.hanYong.persistence === Persistence.KeepLastState;
 
-        if (settings.onScreenKeyboard.persistence === Persistence.KeepLastState) {
+        if (!oskKeepsState && !hanYongKeepsState) {
+            return;
+        }
+
+        const updated: Partial<TabState> = { ...(await this.getLastState()) };
+
+        if (oskKeepsState) {
             updated.isOnScreenKeyboardEnabled = next.isOnScreenKeyboardEnabled;
         }
-        if (settings.hanYong.persistence === Persistence.KeepLastState) {
+        if (hanYongKeepsState) {
             updated.koreanKeyboardMode = next.koreanKeyboardMode;
         }
 

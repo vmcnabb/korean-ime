@@ -6,6 +6,7 @@ import { setupMenuListener } from "./menus";
 import { setupActionListener } from "./action";
 import { ContentScriptListener } from "./content-script-listener";
 import { settingsKeys } from "../settings/settings";
+import { debugLog } from "../debug-log";
 
 chrome.runtime.onInstalled.addListener(onInstall);
 
@@ -26,5 +27,8 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
     if (!Object.keys(changes).some((key) => (settingsKeys as string[]).includes(key))) {
         return;
     }
-    stateManager.onSettingsChanged();
+    // The listener must stay synchronous (storage.onChanged ignores a returned
+    // promise), so detach and log rather than letting a rejection surface as an
+    // unhandled promise rejection in the service worker.
+    stateManager.onSettingsChanged().catch((error) => debugLog("onSettingsChanged failed:", error));
 });
