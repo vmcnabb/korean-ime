@@ -9,9 +9,7 @@ import { Settings, defaultSettings } from "./settings";
  */
 export async function loadSettings(): Promise<Settings> {
     const stored = (await chrome.storage.sync.get(null)) as Record<string, unknown>;
-    // Plain JSON-safe data, so a JSON round-trip is a fine deep clone — and
-    // unlike structuredClone it's available in every runtime, including jsdom.
-    const result = JSON.parse(JSON.stringify(defaultSettings)) as Settings;
+    const result = structuredClone(defaultSettings);
     overlayStored(result as unknown as Record<string, unknown>, stored);
     return result;
 }

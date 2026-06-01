@@ -1,3 +1,10 @@
+/**
+ * @jest-environment node
+ *
+ * Pure data logic with no DOM needs — run it in the `node` env (the project
+ * default is jsdom), which has a real `structuredClone`, matching the browser
+ * runtimes this code actually ships to. jsdom does not provide it.
+ */
 import { loadSettings, saveSettings } from "./settings-store";
 import { Persistence, Settings, defaultSettings } from "./settings";
 
