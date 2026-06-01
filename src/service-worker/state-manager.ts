@@ -9,9 +9,25 @@ import {
 } from "../messaging/service-to-content-messages";
 import { menus } from "./menus";
 import { sendMessageToTab } from "./send-message-to-tab";
+import { Persistence, Settings } from "../settings/settings";
+import { loadSettings } from "../settings/settings-store";
+
+/** Global, browser-session-lived shared value, used when `shareAcrossTabs`. */
+const SHARED_LIVE_STATE_KEY = "sharedLiveState";
+/** Persisted (survives restart) last toggled value, source for KeepLastState. */
+const LAST_STATE_KEY = "lastState";
 
 /**
- * Manages extension state for all tabs
+ * Manages extension state for all tabs.
+ *
+ * Live per-tab state lives in `storage.session` (`tabState-<id>`). Two extra
+ * slots connect it to the user's settings (#26):
+ *  - `storage.session[sharedLiveState]` — when "share across tabs" is on, the
+ *    one value every tab adopts.
+ *  - `storage.local[lastState]` — the remembered value for features set to
+ *    `KeepLastState`, the only state that survives a browser restart.
+ * Initial state is *derived* from `Settings` (see {@link deriveInitialState})
+ * rather than a hardcoded default.
  */
 export class StateManager {
     public constructor() {
@@ -40,25 +56,27 @@ export class StateManager {
     }
 
     public async toggleHanYongMode(tabId: number): Promise<void> {
-        let newMode: KoreanKeyboardMode = KoreanKeyboardMode.Hangul;
+        await this.setTabState(tabId, (tabState) => ({
+            ...tabState,
+            koreanKeyboardMode:
+                tabState.koreanKeyboardMode === KoreanKeyboardMode.Hangul
+                    ? KoreanKeyboardMode.English
+                    : KoreanKeyboardMode.Hangul,
+        }));
+    }
 
-        await this.setTabState(tabId, (tabState) => {
-            const currentMode = tabState.koreanKeyboardMode;
+    /**
+     * Toggles the on-screen keyboard state for the given tab and returns the new state
+     * @param tabId The ID of the tab for which to toggle the on-screen keyboard
+     * @returns true if the on-screen keyboard is now enabled, false if it is now disabled
+     */
+    public async toggleOnScreenKeyboard(tabId: number): Promise<boolean> {
+        const newTabState = await this.setTabState(tabId, (tabState) => ({
+            ...tabState,
+            isOnScreenKeyboardEnabled: !tabState.isOnScreenKeyboardEnabled,
+        }));
 
-            switch (currentMode) {
-                case KoreanKeyboardMode.English:
-                    newMode = KoreanKeyboardMode.Hangul;
-                    break;
-                case KoreanKeyboardMode.Hangul:
-                    newMode = KoreanKeyboardMode.English;
-                    break;
-            }
-
-            return {
-                ...tabState,
-                koreanKeyboardMode: newMode,
-            };
-        });
+        return newTabState.isOnScreenKeyboardEnabled;
     }
 
     public async updatePresentation(tabId: number) {
@@ -77,43 +95,86 @@ export class StateManager {
     }
 
     /**
-     * Toggles the on-screen keyboard state for the given tab and returns the new state
-     * @param tabId The ID of the tab for which to toggle the on-screen keyboard
-     * @returns true if the on-screen keyboard is now enabled, false if it is now disabled
+     * React to a settings change (the service worker's top-level
+     * `storage.onChanged` listener calls this — see #25/#26). Settings only
+     * change how *new* tabs derive their initial state, except for "share
+     * across tabs": flipping it on should immediately converge open tabs, so we
+     * seed the shared value from the active tab and broadcast it.
      */
-    public async toggleOnScreenKeyboard(tabId: number): Promise<boolean> {
-        const tabState = await this.getTabState(tabId);
-        const newTabState = {
-            ...tabState,
-            isOnScreenKeyboardEnabled: !tabState.isOnScreenKeyboardEnabled,
-        };
-        await this.setTabState(tabId, () => newTabState);
+    public async onSettingsChanged(): Promise<void> {
+        const settings = await loadSettings();
 
-        return newTabState.isOnScreenKeyboardEnabled;
+        if (!settings.shareAcrossTabs) {
+            // Persistence changes affect only future tabs/sessions; just refresh
+            // presentation so any settings-derived UI stays correct.
+            const tabs = await chrome.tabs.query({});
+            await Promise.all(tabs.map((tab) => (tab.id !== undefined ? this.updatePresentation(tab.id) : undefined)));
+            return;
+        }
+
+        let shared = await this.getSharedLiveState();
+        if (!shared) {
+            const [active] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+            shared = active?.id !== undefined ? await this.getTabState(active.id) : this.defaultTabState();
+            await this.setSharedLiveState(shared);
+        }
+        await this.broadcastState(shared);
     }
 
     /**
-     * Updates the TabState and sends a message to the content scripts to update the state
+     * Updates the TabState and propagates it. Returns the new state.
+     *
+     * Side effects beyond the per-tab slot: persists to `storage.local` for any
+     * feature set to `KeepLastState`, and — when "share across tabs" is on —
+     * mirrors the new state to the shared slot and every open tab instead of
+     * just this one.
      * @param tabId The ID of the tab for which to update the state
      * @param updateFn function that takes the current tab state and returns the new tab state
      */
-    private async setTabState(tabId: number, updateFn: (tabState: TabState) => TabState) {
+    private async setTabState(tabId: number, updateFn: (tabState: TabState) => TabState): Promise<TabState> {
+        const settings = await loadSettings();
         const currentTabState = await this.getTabState(tabId);
         const newTabState = updateFn(currentTabState);
 
         await chrome.storage.session.set({ [this.tabStateKey(tabId)]: newTabState });
+        await this.persistLastState(settings, newTabState);
 
-        await this.sendStateToTab(tabId);
-        await this.updatePresentation(tabId);
+        if (settings.shareAcrossTabs) {
+            await this.setSharedLiveState(newTabState);
+            await this.broadcastState(newTabState);
+        } else {
+            await this.sendStateToTab(tabId);
+            await this.updatePresentation(tabId);
+        }
+
+        return newTabState;
     }
 
     public async sendStateToTab(tabId: number) {
-        const tabState = await this.getTabState(tabId);
+        await this.pushState(tabId, await this.getTabState(tabId));
+    }
+
+    private async pushState(tabId: number, state: TabState) {
         await sendMessageToTab<ServiceScriptMessage>(tabId, {
             type: "serviceScriptMessage",
             action: ServiceScriptMessageAction.UpdateState,
-            data: tabState,
+            data: state,
         });
+    }
+
+    /** Apply one state to every open tab (used in "share across tabs" mode). */
+    private async broadcastState(state: TabState) {
+        const tabs = await chrome.tabs.query({});
+        await Promise.all(
+            tabs.map(async (tab) => {
+                if (tab.id === undefined) {
+                    return;
+                }
+                await chrome.storage.session.set({ [this.tabStateKey(tab.id)]: state });
+                await this.pushState(tab.id, state);
+                await this.updatePresentation(tab.id);
+            })
+        );
     }
 
     /**
@@ -146,11 +207,83 @@ export class StateManager {
         const result = await chrome.storage.session.get(storageKey);
         const tabState = result[storageKey] as TabState | undefined;
 
-        if (!tabState) {
-            return this.defaultTabState();
+        if (tabState) {
+            return this.cloneTabState(tabState);
         }
 
-        return this.cloneTabState(tabState);
+        return this.deriveInitialState();
+    }
+
+    /**
+     * The state a tab starts in, derived from settings. In share mode an
+     * existing shared value wins (so tabs opened later adopt it); otherwise each
+     * feature follows its persistence policy, reading the remembered value for
+     * `KeepLastState`.
+     */
+    private async deriveInitialState(): Promise<TabState> {
+        const settings = await loadSettings();
+
+        if (settings.shareAcrossTabs) {
+            const shared = await this.getSharedLiveState();
+            if (shared) {
+                return shared;
+            }
+        }
+
+        const last = await this.getLastState();
+
+        const lastHangul = (last.koreanKeyboardMode ?? KoreanKeyboardMode.English) === KoreanKeyboardMode.Hangul;
+
+        return {
+            isOnScreenKeyboardEnabled: this.deriveFeature(
+                settings.onScreenKeyboard.persistence,
+                last.isOnScreenKeyboardEnabled ?? false
+            ),
+            koreanKeyboardMode: this.deriveFeature(settings.hanYong.persistence, lastHangul)
+                ? KoreanKeyboardMode.Hangul
+                : KoreanKeyboardMode.English,
+        };
+    }
+
+    private deriveFeature(persistence: Persistence, lastValue: boolean): boolean {
+        switch (persistence) {
+            case Persistence.AlwaysOff:
+                return false;
+            case Persistence.AlwaysOn:
+                return true;
+            case Persistence.KeepLastState:
+                return lastValue;
+        }
+    }
+
+    /** Persist the new value to `storage.local`, but only for KeepLastState features. */
+    private async persistLastState(settings: Settings, next: TabState) {
+        const last = await this.getLastState();
+        const updated: Partial<TabState> = { ...last };
+
+        if (settings.onScreenKeyboard.persistence === Persistence.KeepLastState) {
+            updated.isOnScreenKeyboardEnabled = next.isOnScreenKeyboardEnabled;
+        }
+        if (settings.hanYong.persistence === Persistence.KeepLastState) {
+            updated.koreanKeyboardMode = next.koreanKeyboardMode;
+        }
+
+        await chrome.storage.local.set({ [LAST_STATE_KEY]: updated });
+    }
+
+    private async getLastState(): Promise<Partial<TabState>> {
+        const result = await chrome.storage.local.get(LAST_STATE_KEY);
+        return (result[LAST_STATE_KEY] as Partial<TabState> | undefined) ?? {};
+    }
+
+    private async getSharedLiveState(): Promise<TabState | undefined> {
+        const result = await chrome.storage.session.get(SHARED_LIVE_STATE_KEY);
+        const shared = result[SHARED_LIVE_STATE_KEY] as TabState | undefined;
+        return shared ? this.cloneTabState(shared) : undefined;
+    }
+
+    private async setSharedLiveState(state: TabState) {
+        await chrome.storage.session.set({ [SHARED_LIVE_STATE_KEY]: this.cloneTabState(state) });
     }
 
     private cloneTabState(tabState: TabState): TabState {
