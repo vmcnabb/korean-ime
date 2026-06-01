@@ -114,7 +114,26 @@ export class StateManager {
      * tab" behaviour).
      */
     public async markTabActive(tabId: number): Promise<void> {
-        await this.setLiveState(await this.getTabState(tabId));
+        await this.setLiveState(await this.anchorTabState(tabId));
+    }
+
+    /**
+     * Ensure a tab has its *own* persisted state. A tab that inherited its state
+     * (a newly opened/cloned tab) has no `tabState-<id>` entry, so every read
+     * would otherwise fall back to the global live value and the tab would keep
+     * tracking whatever tab was last active. Persisting the derived state on
+     * first sight anchors the tab so it becomes independent. Returns the state.
+     */
+    private async anchorTabState(tabId: number): Promise<TabState> {
+        const key = this.tabStateKey(tabId);
+        const existing = (await chrome.storage.session.get(key))[key] as TabState | undefined;
+        if (existing) {
+            return this.cloneTabState(existing);
+        }
+
+        const derived = await this.deriveInitialState();
+        await chrome.storage.session.set({ [key]: derived });
+        return derived;
     }
 
     /**
@@ -170,7 +189,9 @@ export class StateManager {
 
     /** Push a tab's current state to it and refresh its icon / menu presentation. */
     public async sendStateToTab(tabId: number) {
-        const state = await this.getTabState(tabId);
+        // Anchor on the way out so a freshly loaded/cloned tab persists its
+        // inherited state and stops tracking the global live value.
+        const state = await this.anchorTabState(tabId);
         await this.pushState(tabId, state);
         await this.updatePresentation(tabId);
     }

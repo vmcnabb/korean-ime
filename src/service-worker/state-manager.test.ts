@@ -171,6 +171,28 @@ describe("mid-session new-tab inheritance", () => {
 
         expect(lastSentTo(2)?.koreanKeyboardMode).toBe(KoreanKeyboardMode.Hangul);
     });
+
+    it("an inherited tab becomes independent and stops tracking the active tab", async () => {
+        // Regression for the cloned-tab bug: a tab that inherits its state must
+        // anchor it, so it does not follow whatever tab is activated next.
+        withSettings({ onScreenKeyboard: { persistence: Persistence.AlwaysOff } });
+        const manager = new StateManager();
+
+        // Tab 1 turns OSK on (becomes the live value).
+        await manager.toggleOnScreenKeyboard(1);
+        // Tab 2 opens and inherits ON, then is turned off and becomes the live value.
+        await manager.sendStateToTab(2);
+        await manager.toggleOnScreenKeyboard(2);
+        // Tab 3 opens, inheriting OFF from tab 2.
+        await manager.sendStateToTab(3);
+
+        // Activating tab 1 moves the live value back to ON...
+        await manager.markTabActive(1);
+        // ...but tab 3 must keep its own anchored OFF.
+        await manager.sendStateToTab(3);
+
+        expect(lastSentTo(3)?.isOnScreenKeyboardEnabled).toBe(false);
+    });
 });
 
 describe("KeepLastState persistence", () => {
