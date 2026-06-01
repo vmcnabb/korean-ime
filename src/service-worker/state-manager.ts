@@ -261,6 +261,14 @@ export class StateManager {
             return live;
         }
 
+        // No live value yet, so seed from persistence. This is safe even though
+        // liveState isn't initialised until the first toggle/activation:
+        // liveState lives in storage.session (survives SW respawns, cleared only
+        // on browser close), so the undefined window is just the start of a
+        // fresh session. And there, seeding and inheritance are equivalent —
+        // every tab seeds identically, and the only paths that make a tab differ
+        // from that seed (setTabState / broadcast) also set liveState. So by the
+        // time inheritance could differ from the seed, liveState is already set.
         const settings = await loadSettings();
         const last = await this.getLastState();
         const lastHangul = (last.koreanKeyboardMode ?? KoreanKeyboardMode.English) === KoreanKeyboardMode.Hangul;
