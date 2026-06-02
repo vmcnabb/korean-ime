@@ -18,11 +18,22 @@ export const menus = Object.freeze({
     },
 });
 
-// Firefox doesn't add an "Options" entry to the toolbar-icon context menu the
-// way Chrome does, so we add our own there — but only on Firefox, to avoid a
-// redundant duplicate of Chrome's built-in item.
-function isFirefox(): boolean {
-    return typeof navigator !== "undefined" && navigator.userAgent.includes("Firefox");
+// Chrome adds an "Options" entry to the toolbar-icon context menu automatically;
+// Firefox doesn't, so we add our own there — but not on Chrome, to avoid a
+// redundant duplicate of its built-in item.
+//
+// There's no API for the thing we actually care about ("does this browser's icon
+// menu already include Options?"), so we key off the closest robust signal: the
+// presence of `runtime.getBrowserInfo`, which only Firefox (and its forks)
+// implement. We test for its *presence* rather than calling it — calling and
+// checking `name === "Firefox"` would wrongly exclude Firefox forks (LibreWolf
+// etc.), reintroducing the one failure we most want to avoid: a *missing*
+// Options entry. Unlike navigator.userAgent (which Firefox's Resist
+// Fingerprinting can mask), this privileged API isn't spoofed. And the bias is
+// deliberate: if the signal is ever wrong, the result is a tolerable duplicate,
+// never a missing item.
+function lacksBuiltInOptionsMenu(): boolean {
+    return typeof (api.runtime as { getBrowserInfo?: unknown } | undefined)?.getBrowserInfo === "function";
 }
 
 export function setupMenuListener(stateManager: StateManager) {
@@ -87,7 +98,7 @@ export async function createMenus() {
         contexts: ["all"],
     });
 
-    if (isFirefox()) {
+    if (lacksBuiltInOptionsMenu()) {
         api.contextMenus.create({
             type: "normal",
             id: menus.openOptions.id,

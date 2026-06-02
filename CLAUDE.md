@@ -13,7 +13,7 @@ on-screen keyboard. TypeScript, bundled with **Parcel**; the options page uses
 
 | Command | Purpose |
 |---|---|
-| `npm start` | Parcel watch mode — rebuilds to `dist/` on change |
+| `npm start` | Parcel watch mode — rebuilds to `dist-dev/` on change |
 | `npm run build` | Production (Chrome) build to `dist/`: `clean` → `gen-manifest` → `check` → `lint` → `check-translations` → `parcel build` |
 | `npm run build:firefox` | Firefox build to `dist-firefox/` (see Firefox build note below) |
 | `npm run lint:firefox` | `web-ext lint` the Firefox build in `dist-firefox/` |

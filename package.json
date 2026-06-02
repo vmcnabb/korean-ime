@@ -13,7 +13,7 @@
     "build:firefox": "rimraf dist-firefox .parcel-cache && node scripts/build-manifest.mjs firefox && npm run check && npm run lint && npm run check-translations && cross-env NODE_ENV=production parcel build --dist-dir dist-firefox && node scripts/patch-firefox-manifest.mjs dist-firefox",
     "start": "npm run gen-manifest && cross-env NODE_ENV=development parcel watch src/manifest.json --dist-dir dist-dev --host localhost --config @parcel/config-webextension",
     "build-dev": "npm run clean && npm run gen-manifest && cross-env NODE_ENV=development parcel build --dist-dir dist-dev --no-optimize",
-    "clean": "rimraf dist dist-dev dist-firefox obj .parcel-cache coverage",
+    "clean": "rimraf dist dist-dev dist-firefox obj .parcel-cache coverage src/manifest.json",
     "check": "tsc --noEmit",
     "lint": "eslint src",
     "lint:fix": "eslint src --fix",

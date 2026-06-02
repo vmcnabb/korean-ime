@@ -12,7 +12,10 @@ let removeAllCalls: number;
 let removeAllCompleted: boolean;
 let createdBeforeRemoveAllCompleted: boolean;
 
-beforeEach(() => {
+// `runtime` controls the Firefox signal: presence of getBrowserInfo means
+// "Firefox-family" (no built-in Options entry → add ours). Default mock omits
+// it, modelling Chrome.
+function installChromeMock(runtime: object = {}) {
     created = [];
     removeAllCalls = 0;
     removeAllCompleted = false;
@@ -20,6 +23,7 @@ beforeEach(() => {
 
     Object.assign(globalThis, {
         chrome: {
+            runtime,
             contextMenus: {
                 removeAll: jest.fn(async () => {
                     removeAllCalls++;
@@ -41,7 +45,9 @@ beforeEach(() => {
             i18n: { getMessage: (key: string) => key },
         },
     });
-});
+}
+
+beforeEach(() => installChromeMock());
 
 describe("createMenus", () => {
     it("awaits removeAll before creating, so repeated calls don't collide", async () => {
@@ -68,5 +74,19 @@ describe("createMenus", () => {
         // Each run clears first, so after two runs there are exactly three items, not six.
         expect(removeAllCalls).toBe(2);
         expect(created).toHaveLength(3);
+    });
+
+    it("does NOT add an Options item on Chrome (no getBrowserInfo)", async () => {
+        await createMenus();
+
+        expect(created.map((c) => c.id)).not.toContain(menus.openOptions.id);
+    });
+
+    it("adds an Options item on Firefox (getBrowserInfo present)", async () => {
+        installChromeMock({ getBrowserInfo: () => Promise.resolve({ name: "Firefox" }) });
+
+        await createMenus();
+
+        expect(created.map((c) => c.id)).toContain(menus.openOptions.id);
     });
 });
