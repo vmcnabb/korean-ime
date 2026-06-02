@@ -1,4 +1,5 @@
 import { debugLog } from "../debug-log";
+import { api } from "../platform/browser-api";
 
 // chrome.tabs.sendMessage rejects with "Receiving end does not exist" whenever
 // the target tab/frame has no content script listening — chrome:// pages, the
@@ -11,7 +12,7 @@ export async function sendMessageToTab<M>(
     options?: chrome.tabs.MessageSendOptions
 ): Promise<void> {
     try {
-        await chrome.tabs.sendMessage(tabId, message, options ?? {});
+        await api.tabs.sendMessage(tabId, message, options ?? {});
     } catch (error) {
         const frame = options?.frameId !== undefined ? ` (frame ${options.frameId})` : "";
         debugLog(`Failed to send message to tab ${tabId}${frame}:`, error);

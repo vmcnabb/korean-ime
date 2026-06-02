@@ -6,6 +6,7 @@ import { setupActionListener } from "./action";
 import { ContentScriptListener } from "./content-script-listener";
 import { settingsKeys } from "../settings/settings";
 import { debugLog } from "../debug-log";
+import { api } from "../platform/browser-api";
 
 const stateManager = new StateManager();
 const contentScriptListener = new ContentScriptListener(stateManager);
@@ -28,7 +29,7 @@ createMenus()
 // Registered synchronously at the top level so it can wake an idle MV3 service
 // worker. The single storage write is the broadcast — there is no explicit
 // options→service-worker message (see #25/#26).
-chrome.storage.onChanged.addListener((changes, areaName) => {
+api.storage.onChanged.addListener((changes, areaName) => {
     if (areaName !== "sync") {
         return;
     }

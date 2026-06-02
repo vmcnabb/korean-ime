@@ -1,7 +1,8 @@
 import { StateManager } from "./state-manager";
+import { api } from "../platform/browser-api";
 
 export function setupActionListener(stateManager: StateManager) {
-    chrome.action.onClicked.addListener((tab) => {
+    api.action.onClicked.addListener((tab) => {
         if (!tab.id) {
             return;
         }

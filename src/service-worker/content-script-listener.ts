@@ -10,6 +10,7 @@ import {
     ContentScriptBroadcastMessage,
     isContentScriptBroadcastMessage,
 } from "../messaging/content-to-content-messages";
+import { api } from "../platform/browser-api";
 
 /**
  * This class is responsible for listening to messages from the content script.
@@ -27,7 +28,7 @@ export class ContentScriptListener {
         this.isListening = true;
 
         // listen for ContentScriptRequest messages and handle them
-        chrome.runtime.onMessage.addListener(
+        api.runtime.onMessage.addListener(
             (message: ContentScriptRequestMessage | ContentScriptBroadcastMessage, sender) => {
                 debugLog("ContentScriptListener received message: ", message);
 
@@ -64,7 +65,7 @@ export class ContentScriptListener {
         // presentation. The listener stays synchronous (the event ignores a
         // returned promise), so detach and log rather than leaking an unhandled
         // rejection into the service worker.
-        chrome.tabs.onActivated.addListener((activeInfo) => {
+        api.tabs.onActivated.addListener((activeInfo) => {
             void (async () => {
                 await this.stateManager.markTabActive(activeInfo.tabId);
                 await this.stateManager.sendStateToTab(activeInfo.tabId);
@@ -72,7 +73,7 @@ export class ContentScriptListener {
         });
 
         // discard a tab's state when it closes so it doesn't accumulate
-        chrome.tabs.onRemoved.addListener((tabId) => {
+        api.tabs.onRemoved.addListener((tabId) => {
             this.stateManager.clearTabState(tabId).catch((error) => debugLog("clearTabState failed:", error));
         });
     }

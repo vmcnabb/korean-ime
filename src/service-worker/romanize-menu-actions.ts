@@ -3,6 +3,7 @@ import { PopupConverterData, popupConverterDataKey } from "./popup-converter/pop
 import { romanize } from "../romanization/romanize";
 import { sendMessageToTab } from "./send-message-to-tab";
 import popupConverter from "url:./popup-converter/popup-converter.html";
+import { api } from "../platform/browser-api";
 
 export async function romanizeInPopup(event: chrome.contextMenus.OnClickData) {
     const selectionText = event.selectionText || "";
@@ -11,7 +12,7 @@ export async function romanizeInPopup(event: chrome.contextMenus.OnClickData) {
         romanized: romanize(selectionText),
     };
 
-    const newWindow = await chrome.windows.create({
+    const newWindow = await api.windows.create({
         url: popupConverter,
         type: "popup",
         width: 600,
@@ -26,7 +27,7 @@ export async function romanizeInPopup(event: chrome.contextMenus.OnClickData) {
     // Hand the text off via storage rather than messaging the new window on a
     // timer: the popup reads it on load, so there's no load-timing race and no
     // dependence on the window having a content script listening yet.
-    await chrome.storage.session.set({ [popupConverterDataKey(newWindow.id)]: data });
+    await api.storage.session.set({ [popupConverterDataKey(newWindow.id)]: data });
 }
 
 export async function romanizeBeside(event: chrome.contextMenus.OnClickData, tab: chrome.tabs.Tab | undefined) {
