@@ -9,14 +9,14 @@
   },
   "scripts": {
     "test": "jest",
-    "build": "npm run clean && npm run sync-version && npm run check && npm run lint && npm run check-translations && cross-env NODE_ENV=production parcel build",
-    "start": "npm run sync-version && cross-env NODE_ENV=development parcel watch src/manifest.json --dist-dir dist-dev --host localhost --config @parcel/config-webextension",
-    "build-dev": "npm run clean && npm run sync-version && cross-env NODE_ENV=development parcel build --dist-dir dist-dev --no-optimize",
+    "build": "npm run clean && npm run gen-manifest && npm run check && npm run lint && npm run check-translations && cross-env NODE_ENV=production parcel build",
+    "start": "npm run gen-manifest && cross-env NODE_ENV=development parcel watch src/manifest.json --dist-dir dist-dev --host localhost --config @parcel/config-webextension",
+    "build-dev": "npm run clean && npm run gen-manifest && cross-env NODE_ENV=development parcel build --dist-dir dist-dev --no-optimize",
     "clean": "rimraf dist dist-dev obj .parcel-cache coverage",
     "check": "tsc --noEmit",
     "lint": "eslint src",
     "lint:fix": "eslint src --fix",
-    "sync-version": "node scripts/sync-manifest-version.mjs",
+    "gen-manifest": "node scripts/build-manifest.mjs chrome",
     "check-translations": "node scripts/check-translations.mjs",
     "package": "npm run build && node scripts/package.mjs",
     "dev": "node scripts/dev.mjs"

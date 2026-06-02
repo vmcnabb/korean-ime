@@ -14,7 +14,7 @@ on-screen keyboard. TypeScript, bundled with **Parcel**; the options page uses
 | Command | Purpose |
 |---|---|
 | `npm start` | Parcel watch mode — rebuilds to `dist/` on change |
-| `npm run build` | Production build to `dist/`: `clean` → `sync-version` → `check` → `lint` → `parcel build` |
+| `npm run build` | Production build to `dist/`: `clean` → `gen-manifest` → `check` → `lint` → `check-translations` → `parcel build` |
 | `npm run build-dev` | Unoptimized dev build to `dist-dev/` |
 | `npm run dev` | Watch + launch Chrome on a persistent dev profile + test page (see `scripts/dev.mjs`) |
 | `npm run check` | Type-check only (`tsc --noEmit`) |
@@ -63,11 +63,15 @@ Core domain logic (mostly pure, well unit-tested):
   target and the web-extension HTML transformer then fails with
   `invalid type: unit value, expected a sequence`. The Node version is pinned in
   `.nvmrc` (used by CI) instead.
-- **`src/manifest.json` must keep its `version` field** — Parcel's manifest
-  schema requires it and Chrome won't load the extension without it. (It was
-  once dropped by accident and broke the build.) The build runs
-  `npm run sync-version` to copy `package.json`'s version into the manifest, so
-  **bump the version in `package.json`** and let the build propagate it.
+- **`src/manifest.json` is generated — do not edit it.** It's produced from
+  `src/manifest.base.json` by `scripts/build-manifest.mjs` (run as `gen-manifest`
+  before every build) and is gitignored. Edit `manifest.base.json` for shared
+  fields; `version` comes from `package.json` (so **bump the version there**) and
+  the per-browser `background` key + browser-specific settings come from the
+  target overrides in `build-manifest.mjs`. Parcel requires the generated file to
+  be named exactly `manifest.json` and to sit in `src/` beside the assets it
+  references (relative paths like `images/`, `_locales/`), which is why it's
+  generated in place.
 - **Google Docs & Word for the Web use canvas + the EditContext API.** Docs
   ignores synthetic composition events entirely (input goes through an
   EditContext the page owns, not the DOM), so it's unsupported — the factory
