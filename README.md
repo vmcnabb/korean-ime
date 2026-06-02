@@ -60,6 +60,20 @@ npm run dev -- --enable-word
 
 This sets the `KIME_ENABLE_WORD` build flag (which Parcel inlines). For other builds, set the env var directly, e.g. `KIME_ENABLE_WORD=true npm run build-dev`.
 
+#### Debugging in VS Code
+
+`npm run dev` launches Chrome with the DevTools remote debugging port enabled on `localhost:9222`.
+
+Press `F5` with one of these configs selected:
+
+1. **Debug Extension in Dev Chrome** for content-script debugging on normal `http` and `https` pages
+2. **Debug Options Page in Dev Chrome** for the extension settings page
+3. **Debug Popup Converter in Dev Chrome** for the popup converter window
+
+Stopping any of those debug sessions from VS Code also shuts down the matching Chrome/dev task.
+
+If VS Code auto-attaches to `scripts/dev.mjs`, change the terminal's **Auto Attach** mode to **Only With Flag** or turn it off for that terminal. Auto Attach only targets the Node launcher; Chrome debugging uses the workspace launch configuration above.
+
 ### Releasing
 
 See [RELEASING.md](RELEASING.md) for the step-by-step release checklist.

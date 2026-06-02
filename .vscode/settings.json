@@ -15,6 +15,7 @@
         "texteventtarget",
         "vars"
     ],
+    "debug.javascript.autoAttachFilter": "onlyWithFlag",
     "editor.codeActionsOnSave": {
         "source.fixAll": "explicit"
     }
