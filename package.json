@@ -20,7 +20,8 @@
     "lint:firefox": "web-ext lint --source-dir dist-firefox",
     "gen-manifest": "node scripts/build-manifest.mjs chrome",
     "check-translations": "node scripts/check-translations.mjs",
-    "package": "npm run build && node scripts/package.mjs",
+    "package": "npm run build && node scripts/package.mjs chrome",
+    "package:firefox": "npm run build:firefox && npm run lint:firefox && node scripts/package.mjs firefox",
     "dev": "node scripts/dev.mjs"
   },
   "repository": {

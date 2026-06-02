@@ -22,7 +22,8 @@ on-screen keyboard. TypeScript, bundled with **Parcel**; the options page uses
 | `npm run check` | Type-check only (`tsc --noEmit`) |
 | `npm run lint` / `lint:fix` | ESLint (flat config in `eslint.config.mjs`) |
 | `npm test` | Jest unit tests (ts-jest + jsdom) |
-| `npm run package` | Build and zip `dist/` into `korean-ime-<version>.zip` (store upload) |
+| `npm run package` | Chrome build + zip `dist/` into `korean-ime-<version>.zip` (Web Store upload) |
+| `npm run package:firefox` | Firefox build + `web-ext lint` + zip `dist-firefox/` into `korean-ime-<version>-firefox.zip` (AMO upload) |
 
 Load `dist/` as an unpacked extension at `chrome://extensions` (Developer mode → Load unpacked).
 
