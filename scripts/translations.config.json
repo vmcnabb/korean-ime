@@ -1,0 +1,5 @@
+{
+    "localesDir": "src/_locales",
+    "defaultLocale": "en",
+    "requiredLocales": ["ko"]
+}

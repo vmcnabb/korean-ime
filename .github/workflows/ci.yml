@@ -22,14 +22,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Type check
-        run: npm run check
-
-      - name: Lint
-        run: npm run lint
-
+      # Tests aren't part of `build`, so run them on their own.
       - name: Test
         run: npm test
 
+      # `build` already runs check → lint → check-translations → parcel build,
+      # so we don't repeat those as separate steps. The build log shows which
+      # sub-step failed.
       - name: Build
         run: npm run build
