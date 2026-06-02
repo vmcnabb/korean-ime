@@ -17,6 +17,9 @@
     "menu_onScreenKeyboard": {
         "message": "화면 키보드"
     },
+    "menu_openOptions": {
+        "message": "설정"
+    },
     "romanize_popup_title": {
         "message": "한글 입력기 - 로마자 변환"
     },

@@ -13,7 +13,17 @@ export const menus = Object.freeze({
     romanizeBeside: {
         id: "menu_romanizeBeside",
     },
+    openOptions: {
+        id: "menu_openOptions",
+    },
 });
+
+// Firefox doesn't add an "Options" entry to the toolbar-icon context menu the
+// way Chrome does, so we add our own there — but only on Firefox, to avoid a
+// redundant duplicate of Chrome's built-in item.
+function isFirefox(): boolean {
+    return typeof navigator !== "undefined" && navigator.userAgent.includes("Firefox");
+}
 
 export function setupMenuListener(stateManager: StateManager) {
     api.contextMenus.onClicked.addListener((event, tab) => {
@@ -34,6 +44,10 @@ export function setupMenuListener(stateManager: StateManager) {
                 stateManager
                     .toggleOnScreenKeyboard(tab.id)
                     .catch((error) => debugLog("toggleOnScreenKeyboard failed:", error));
+                break;
+
+            case menus.openOptions.id:
+                api.runtime.openOptionsPage().catch((error) => debugLog("openOptionsPage failed:", error));
                 break;
         }
     });
@@ -72,4 +86,13 @@ export async function createMenus() {
         title: api.i18n.getMessage(menus.onScreenKeyboard.id),
         contexts: ["all"],
     });
+
+    if (isFirefox()) {
+        api.contextMenus.create({
+            type: "normal",
+            id: menus.openOptions.id,
+            title: api.i18n.getMessage(menus.openOptions.id),
+            contexts: ["action"],
+        });
+    }
 }

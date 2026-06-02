@@ -17,6 +17,9 @@
     "menu_onScreenKeyboard": {
         "message": "On-Screen Keyboard"
     },
+    "menu_openOptions": {
+        "message": "Options"
+    },
     "romanize_popup_title": {
         "message": "Korean IME - Romanization"
     },
