@@ -4,9 +4,13 @@
  * `src/_locales/<locale>/messages.json`; Chrome falls back to the default
  * locale (en) for any key a locale doesn't define.
  *
- * The `chrome?.i18n` guard keeps this usable outside the extension runtime
- * (e.g. a unit test or a plain preview), where it returns the key unchanged.
+ * Outside the extension runtime (a unit test or a plain preview) `chrome.i18n`
+ * is absent, so the key is returned unchanged. We only fall back when i18n is
+ * unavailable — not when the resolved message is falsy — because an empty
+ * string can be an intentional translation (e.g. a hint omitted in some
+ * locales); `|| key` would wrongly render the key name in that case.
  */
 export function t(key: string): string {
-    return globalThis.chrome?.i18n?.getMessage(key) || key;
+    const i18n = globalThis.chrome?.i18n;
+    return i18n ? i18n.getMessage(key) : key;
 }
