@@ -34,5 +34,47 @@
     },
     "keyboard_key_controlRight_tooltip": {
         "message": "선택한 한글을 한자로 변환하십시오"
+    },
+    "options_title": {
+        "message": "한글 입력기 설정"
+    },
+    "options_onScreenKeyboard_heading": {
+        "message": "화면 키보드"
+    },
+    "options_hanYong_heading": {
+        "message": "한/영 전환"
+    },
+    "options_hanYong_hint": {
+        "message": "한글과 로마자 입력을 전환합니다."
+    },
+    "options_persistence_label": {
+        "message": "브라우저를 시작할 때"
+    },
+    "options_onScreenKeyboard_startOff": {
+        "message": "숨긴 상태로 시작"
+    },
+    "options_onScreenKeyboard_startOn": {
+        "message": "표시된 상태로 시작"
+    },
+    "options_onScreenKeyboard_restore": {
+        "message": "마지막 상태 유지"
+    },
+    "options_hanYong_startOff": {
+        "message": "로마자로 시작"
+    },
+    "options_hanYong_startOn": {
+        "message": "한글로 시작"
+    },
+    "options_hanYong_restore": {
+        "message": "마지막 모드 유지"
+    },
+    "options_general_heading": {
+        "message": "일반"
+    },
+    "options_shareAcrossTabs_label": {
+        "message": "모든 탭에서 상태 공유"
+    },
+    "options_shareAcrossTabs_description": {
+        "message": "화면 키보드나 한/영 모드를 켜거나 끄면 현재 탭뿐만 아니라 모든 탭에 동시에 적용됩니다."
     }
 }

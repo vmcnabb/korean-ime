@@ -1,22 +1,23 @@
 <script setup lang="ts">
 import { settings } from "./use-settings";
 import { Persistence } from "../settings/settings";
+import { t } from "./i18n";
 import PersistenceSelect from "./PersistenceSelect.vue";
 
 const optionLabels: Record<Persistence, string> = {
-    [Persistence.AlwaysOff]: "Start in Latin",
-    [Persistence.AlwaysOn]: "Start in Hangul",
-    [Persistence.KeepLastState]: "Restore last mode",
+    [Persistence.AlwaysOff]: t("options_hanYong_startOff"),
+    [Persistence.AlwaysOn]: t("options_hanYong_startOn"),
+    [Persistence.KeepLastState]: t("options_hanYong_restore"),
 };
 </script>
 
 <template>
     <section>
-        <h2>Han/Yong (한/영) toggle</h2>
-        <p class="description section-hint">Switches between Hangul and Latin input.</p>
+        <h2>{{ t("options_hanYong_heading") }}</h2>
+        <p class="description section-hint">{{ t("options_hanYong_hint") }}</p>
         <PersistenceSelect
             v-model="settings.hanYong.persistence"
-            label="When the browser starts"
+            :label="t('options_persistence_label')"
             :option-labels="optionLabels"
         />
     </section>
