@@ -23,7 +23,7 @@ const localesRoot = resolve(root, config.localesDir);
 
 function readJson(path) {
     // Strip a leading BOM; some message files are saved with one.
-    return JSON.parse(readFileSync(path, "utf8").replace(/^﻿/, ""));
+    return JSON.parse(readFileSync(path, "utf8").replace(/^\uFEFF/, ""));
 }
 
 function messageKeys(locale) {
