@@ -14,7 +14,9 @@ on-screen keyboard. TypeScript, bundled with **Parcel**; the options page uses
 | Command | Purpose |
 |---|---|
 | `npm start` | Parcel watch mode — rebuilds to `dist/` on change |
-| `npm run build` | Production build to `dist/`: `clean` → `gen-manifest` → `check` → `lint` → `check-translations` → `parcel build` |
+| `npm run build` | Production (Chrome) build to `dist/`: `clean` → `gen-manifest` → `check` → `lint` → `check-translations` → `parcel build` |
+| `npm run build:firefox` | Firefox build to `dist-firefox/` (see Firefox build note below) |
+| `npm run lint:firefox` | `web-ext lint` the Firefox build in `dist-firefox/` |
 | `npm run build-dev` | Unoptimized dev build to `dist-dev/` |
 | `npm run dev` | Watch + launch Chrome on a persistent dev profile + test page (see `scripts/dev.mjs`) |
 | `npm run check` | Type-check only (`tsc --noEmit`) |
@@ -72,6 +74,15 @@ Core domain logic (mostly pure, well unit-tested):
   be named exactly `manifest.json` and to sit in `src/` beside the assets it
   references (relative paths like `images/`, `_locales/`), which is why it's
   generated in place.
+- **Firefox build needs a post-build manifest patch.** Firefox MV3 requires
+  `background.scripts` (it doesn't support `service_worker`), but Parcel's
+  webextension transformer *only* accepts `service_worker` and rejects a manifest
+  with both keys. So `build:firefox` generates a `service_worker` manifest (what
+  Parcel allows), lets Parcel bundle, then `scripts/patch-firefox-manifest.mjs`
+  adds `background.scripts` to the *emitted* `dist-firefox/manifest.json` — the
+  dual-key form Mozilla recommends, assembled after Parcel because it won't pass
+  it through pre-build. `lint:firefox` (`web-ext lint`) validates the result;
+  `BACKGROUND_SERVICE_WORKER_IGNORED` is the expected, correct warning.
 - **Google Docs & Word for the Web use canvas + the EditContext API.** Docs
   ignores synthetic composition events entirely (input goes through an
   EditContext the page owns, not the DOM), so it's unsupported — the factory

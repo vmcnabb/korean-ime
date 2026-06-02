@@ -1,5 +1,6 @@
 dist/
 dist-dev/
+dist-firefox/
 obj/
 # Generated from manifest.base.json by scripts/build-manifest.mjs
 src/manifest.json

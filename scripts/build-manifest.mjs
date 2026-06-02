@@ -18,10 +18,28 @@ const basePath = resolve(root, "src/manifest.base.json");
 const outPath = resolve(root, "src/manifest.json");
 const pkgPath = resolve(root, "package.json");
 
-// Per-target overrides merged onto the base manifest. Firefox is added here later.
+// Per-target overrides merged onto the base manifest.
+//
+// Both targets use `background.service_worker` here because Parcel's
+// webextension transformer only accepts the service_worker form — it rejects
+// `background.scripts`, and rejects a manifest containing both. Firefox doesn't
+// support service_worker, so the Firefox build adds `background.scripts` to the
+// *emitted* manifest afterwards (scripts/patch-firefox-manifest.mjs) — the
+// dual-key form Mozilla recommends, assembled post-Parcel because Parcel won't
+// pass it through.
 const targets = {
     chrome: {
         minimum_chrome_version: "102",
+        background: {
+            service_worker: "service-worker/service-worker.ts",
+            type: "module",
+        },
+    },
+    firefox: {
+        browser_specific_settings: {
+            // storage.session (used heavily) requires Firefox 115+.
+            gecko: { id: "korean-ime@vmcnabb", strict_min_version: "115.0" },
+        },
         background: {
             service_worker: "service-worker/service-worker.ts",
             type: "module",
