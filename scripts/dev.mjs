@@ -242,7 +242,12 @@ chrome.on("exit", () => {
     shutdown(0);
 });
 
-await waitForChromePageTarget(chromeDebugPort, testUrl);
+try {
+    await waitForChromePageTarget(chromeDebugPort, testUrl);
+} catch (err) {
+    console.error(err instanceof Error ? err.message : err);
+    shutdown(1);
+}
 
 if (firstRun) {
     console.log("\n[dev] First run on this dev profile — load the extension once:");
