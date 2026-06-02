@@ -1,6 +1,7 @@
 import { romanizeBeside, romanizeInPopup } from "./romanize-menu-actions";
 import { StateManager } from "./state-manager";
 import { debugLog } from "../debug-log";
+import { api } from "../platform/browser-api";
 
 export const menus = Object.freeze({
     onScreenKeyboard: {
@@ -15,7 +16,7 @@ export const menus = Object.freeze({
 });
 
 export function setupMenuListener(stateManager: StateManager) {
-    chrome.contextMenus.onClicked.addListener((event, tab) => {
+    api.contextMenus.onClicked.addListener((event, tab) => {
         if (!tab?.id) {
             return;
         }
@@ -49,26 +50,26 @@ export function setupMenuListener(stateManager: StateManager) {
  * removeAll-then-create sequences can still collide on duplicate ids.
  */
 export async function createMenus() {
-    await chrome.contextMenus.removeAll();
+    await api.contextMenus.removeAll();
 
-    chrome.contextMenus.create({
+    api.contextMenus.create({
         type: "normal",
         id: menus.romanizeInPopup.id,
-        title: chrome.i18n.getMessage(menus.romanizeInPopup.id),
+        title: api.i18n.getMessage(menus.romanizeInPopup.id),
         contexts: ["all"],
     });
 
-    chrome.contextMenus.create({
+    api.contextMenus.create({
         type: "normal",
         id: menus.romanizeBeside.id,
-        title: chrome.i18n.getMessage(menus.romanizeBeside.id),
+        title: api.i18n.getMessage(menus.romanizeBeside.id),
         contexts: ["editable"],
     });
 
-    chrome.contextMenus.create({
+    api.contextMenus.create({
         type: "checkbox",
         id: menus.onScreenKeyboard.id,
-        title: chrome.i18n.getMessage(menus.onScreenKeyboard.id),
+        title: api.i18n.getMessage(menus.onScreenKeyboard.id),
         contexts: ["all"],
     });
 }

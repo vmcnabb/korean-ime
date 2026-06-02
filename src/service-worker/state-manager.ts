@@ -12,6 +12,7 @@ import { sendMessageToTab } from "./send-message-to-tab";
 import { Persistence, Settings } from "../settings/settings";
 import { loadSettings } from "../settings/settings-store";
 import { debugLog } from "../debug-log";
+import { api } from "../platform/browser-api";
 
 /**
  * Global current live state (browser-session-lived). New tabs inherit it, and
@@ -40,18 +41,18 @@ const LAST_STATE_KEY = "lastState";
 export class StateManager {
     public constructor() {
         // ensure we are only referenced from the service worker
-        if (!chrome.runtime.onMessage) {
+        if (!api.runtime.onMessage) {
             throw new Error("StateManager can only be used from the service worker");
         }
     }
 
     public async setFocusedFrame(tabId: number, frameId: number) {
-        await chrome.storage.session.set({ [this.focusedFrameKey(tabId)]: frameId });
+        await api.storage.session.set({ [this.focusedFrameKey(tabId)]: frameId });
     }
 
     public async routeSendKey(tabId: number, data: SendKeyServiceMessage["data"]) {
         const key = this.focusedFrameKey(tabId);
-        const frameId = (await chrome.storage.session.get(key))[key] as number | undefined;
+        const frameId = (await api.storage.session.get(key))[key] as number | undefined;
         if (frameId === undefined) {
             return;
         }
@@ -91,7 +92,7 @@ export class StateManager {
         const tabState = await this.getTabState(tabId);
 
         const isHangulMode = tabState.koreanKeyboardMode === KoreanKeyboardMode.Hangul;
-        await chrome.action.setIcon({
+        await api.action.setIcon({
             tabId: tabId,
             path: isHangulMode ? icon16h : icon16a,
         });
@@ -100,7 +101,7 @@ export class StateManager {
         // yet (it's created on service-worker startup); tolerate that rather
         // than throwing an unhandled rejection into the presentation path.
         try {
-            await chrome.contextMenus.update(menus.onScreenKeyboard.id, {
+            await api.contextMenus.update(menus.onScreenKeyboard.id, {
                 checked: tabState.isOnScreenKeyboardEnabled,
             });
         } catch (error) {
@@ -115,7 +116,7 @@ export class StateManager {
      * enabled on-screen keyboard until the next state change.
      */
     public async refreshActiveTabPresentation(): Promise<void> {
-        const [active] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+        const [active] = await api.tabs.query({ active: true, lastFocusedWindow: true });
         if (active?.id !== undefined) {
             await this.updatePresentation(active.id);
         }
@@ -139,13 +140,13 @@ export class StateManager {
      */
     private async anchorTabState(tabId: number): Promise<TabState> {
         const key = this.tabStateKey(tabId);
-        const existing = (await chrome.storage.session.get(key))[key] as TabState | undefined;
+        const existing = (await api.storage.session.get(key))[key] as TabState | undefined;
         if (existing) {
             return this.cloneTabState(existing);
         }
 
         const derived = await this.deriveInitialState();
-        await chrome.storage.session.set({ [key]: derived });
+        await api.storage.session.set({ [key]: derived });
         return derived;
     }
 
@@ -165,7 +166,7 @@ export class StateManager {
 
         let live = await this.getLiveState();
         if (!live) {
-            const [active] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+            const [active] = await api.tabs.query({ active: true, lastFocusedWindow: true });
             live = active?.id !== undefined ? await this.getTabState(active.id) : await this.deriveInitialState();
             await this.setLiveState(live);
         }
@@ -187,7 +188,7 @@ export class StateManager {
         const currentTabState = await this.getTabState(tabId);
         const newTabState = updateFn(currentTabState);
 
-        await chrome.storage.session.set({ [this.tabStateKey(tabId)]: newTabState });
+        await api.storage.session.set({ [this.tabStateKey(tabId)]: newTabState });
         await this.persistLastState(settings, newTabState);
         await this.setLiveState(newTabState);
 
@@ -219,13 +220,13 @@ export class StateManager {
 
     /** Apply one state to every open tab (used in "share across tabs" mode). */
     private async broadcastState(state: TabState) {
-        const tabs = await chrome.tabs.query({});
+        const tabs = await api.tabs.query({});
         await Promise.all(
             tabs.map(async (tab) => {
                 if (tab.id === undefined) {
                     return;
                 }
-                await chrome.storage.session.set({ [this.tabStateKey(tab.id)]: state });
+                await api.storage.session.set({ [this.tabStateKey(tab.id)]: state });
                 await this.pushState(tab.id, state);
                 await this.updatePresentation(tab.id);
             })
@@ -239,7 +240,7 @@ export class StateManager {
      * close anyway — this just reclaims it promptly during a long session.
      */
     public async clearTabState(tabId: number) {
-        await chrome.storage.session.remove([this.tabStateKey(tabId), this.focusedFrameKey(tabId)]);
+        await api.storage.session.remove([this.tabStateKey(tabId), this.focusedFrameKey(tabId)]);
     }
 
     private tabStateKey(tabId: number) {
@@ -252,7 +253,7 @@ export class StateManager {
 
     private async getTabState(tabId: number): Promise<TabState> {
         const storageKey = this.tabStateKey(tabId);
-        const result = await chrome.storage.session.get(storageKey);
+        const result = await api.storage.session.get(storageKey);
         const tabState = result[storageKey] as TabState | undefined;
 
         if (tabState) {
@@ -332,22 +333,22 @@ export class StateManager {
             updated.koreanKeyboardMode = next.koreanKeyboardMode;
         }
 
-        await chrome.storage.local.set({ [LAST_STATE_KEY]: updated });
+        await api.storage.local.set({ [LAST_STATE_KEY]: updated });
     }
 
     private async getLastState(): Promise<Partial<TabState>> {
-        const result = await chrome.storage.local.get(LAST_STATE_KEY);
+        const result = await api.storage.local.get(LAST_STATE_KEY);
         return (result[LAST_STATE_KEY] as Partial<TabState> | undefined) ?? {};
     }
 
     private async getLiveState(): Promise<TabState | undefined> {
-        const result = await chrome.storage.session.get(LIVE_STATE_KEY);
+        const result = await api.storage.session.get(LIVE_STATE_KEY);
         const live = result[LIVE_STATE_KEY] as TabState | undefined;
         return live ? this.cloneTabState(live) : undefined;
     }
 
     private async setLiveState(state: TabState) {
-        await chrome.storage.session.set({ [LIVE_STATE_KEY]: this.cloneTabState(state) });
+        await api.storage.session.set({ [LIVE_STATE_KEY]: this.cloneTabState(state) });
     }
 
     private cloneTabState(tabState: TabState): TabState {

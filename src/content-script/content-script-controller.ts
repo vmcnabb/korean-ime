@@ -14,6 +14,7 @@ import {
     TabStateMessage,
     isServiceScriptMessage,
 } from "../messaging/service-to-content-messages";
+import { api } from "../platform/browser-api";
 
 export class ContentScriptController {
     private textEntryMode = KoreanKeyboardMode.English;
@@ -25,7 +26,7 @@ export class ContentScriptController {
             ? new OnScreenKeyboardController((key, keyCode) => {
                   const handled = this.textInputManager.enterCharacter(key, keyCode);
                   if (!handled) {
-                      chrome.runtime.sendMessage<ContentScriptRequestMessage>({
+                      api.runtime.sendMessage<ContentScriptRequestMessage>({
                           type: "contentScriptRequest",
                           action: ContentScriptRequestAction.SendKey,
                           data: { key, keyCode },
@@ -40,14 +41,14 @@ export class ContentScriptController {
     }
 
     private requestState() {
-        chrome.runtime.sendMessage<ContentScriptRequestMessage>({
+        api.runtime.sendMessage<ContentScriptRequestMessage>({
             type: "contentScriptRequest",
             action: ContentScriptRequestAction.RefreshState,
         });
     }
 
     private setupMessageListener() {
-        chrome.runtime.onMessage.addListener((message) => {
+        api.runtime.onMessage.addListener((message) => {
             debugLog("content.js: received message", message);
 
             if (isServiceScriptMessage(message)) {
@@ -87,7 +88,7 @@ export class ContentScriptController {
             "keydown",
             (e) => {
                 if (e.code === KeyCode.AltRight && !e.repeat) {
-                    chrome.runtime.sendMessage<ContentScriptRequestMessage>({
+                    api.runtime.sendMessage<ContentScriptRequestMessage>({
                         type: "contentScriptRequest",
                         action: ContentScriptRequestAction.ToggleHanYongMode,
                     });
@@ -109,7 +110,7 @@ export class ContentScriptController {
                     return;
                 }
 
-                chrome.runtime.sendMessage<ContentScriptBroadcastMessage>({
+                api.runtime.sendMessage<ContentScriptBroadcastMessage>({
                     type: "broadcast",
                     action: ContentScriptBroadcastAction.UpdateCompositionFeatures,
                     data: compositionFeatures,

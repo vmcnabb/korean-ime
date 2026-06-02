@@ -1,4 +1,5 @@
 import { Settings, defaultSettings } from "./settings";
+import { api } from "../platform/browser-api";
 
 /**
  * Load/save the settings to `chrome.storage.sync`.
@@ -8,14 +9,14 @@ import { Settings, defaultSettings } from "./settings";
  * so there is no separate options→service-worker message (see #25/#26).
  */
 export async function loadSettings(): Promise<Settings> {
-    const stored = (await chrome.storage.sync.get(null)) as Record<string, unknown>;
+    const stored = (await api.storage.sync.get(null)) as Record<string, unknown>;
     const result = structuredClone(defaultSettings);
     overlayStored(result as unknown as Record<string, unknown>, stored);
     return result;
 }
 
 export async function saveSettings(settings: Settings): Promise<void> {
-    await chrome.storage.sync.set(settings);
+    await api.storage.sync.set(settings);
 }
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {

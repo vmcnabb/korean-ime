@@ -5,6 +5,7 @@ import { SupportedCompositionFeatures } from "../../composition/composition-adap
 import "./on-screen-keyboard.scss";
 import { ContentScriptRequestAction, ContentScriptRequestMessage } from "../../messaging/content-to-service-messages";
 import { debugLog } from "../../debug-log";
+import { api } from "../../platform/browser-api";
 
 export class OnScreenKeyboardController {
     private _keyboardElement: HTMLDivElement;
@@ -274,7 +275,7 @@ export class OnScreenKeyboardController {
         } else if (key.label === "Shift") {
             this.setShift(!isShift);
         } else if (keyCode === KeyCode.AltRight) {
-            chrome.runtime.sendMessage<ContentScriptRequestMessage>({
+            api.runtime.sendMessage<ContentScriptRequestMessage>({
                 type: "contentScriptRequest",
                 action: ContentScriptRequestAction.ToggleHanYongMode,
             });
@@ -356,7 +357,7 @@ export class OnScreenKeyboardController {
         this.renderSpecialKeyLabels(keyElement, key, keyCode);
 
         if (key.tooltipResourceKey) {
-            keyElement.title = chrome.i18n.getMessage(key.tooltipResourceKey);
+            keyElement.title = api.i18n.getMessage(key.tooltipResourceKey);
         }
 
         rowElement.appendChild(keyElement);
