@@ -40,5 +40,47 @@
     },
     "keyboard_key_controlRight_tooltip": {
         "message": "Convert the selected Hangul to Hanja"
+    },
+    "options_title": {
+        "message": "Korean IME Options"
+    },
+    "options_onScreenKeyboard_heading": {
+        "message": "On-screen keyboard"
+    },
+    "options_hanYong_heading": {
+        "message": "Han/Yong (한/영) toggle"
+    },
+    "options_hanYong_hint": {
+        "message": "Switches between Hangul and Latin input."
+    },
+    "options_persistence_label": {
+        "message": "When the browser starts"
+    },
+    "options_onScreenKeyboard_startOff": {
+        "message": "Start hidden"
+    },
+    "options_onScreenKeyboard_startOn": {
+        "message": "Start shown"
+    },
+    "options_onScreenKeyboard_restore": {
+        "message": "Restore last state"
+    },
+    "options_hanYong_startOff": {
+        "message": "Start in English"
+    },
+    "options_hanYong_startOn": {
+        "message": "Start in Hangul"
+    },
+    "options_hanYong_restore": {
+        "message": "Restore last mode"
+    },
+    "options_general_heading": {
+        "message": "General"
+    },
+    "options_shareAcrossTabs_label": {
+        "message": "Share status across tabs"
+    },
+    "options_shareAcrossTabs_description": {
+        "message": "When you turn the on-screen keyboard or Han/Yong mode on or off, apply it to every tab at once, not just the focused one."
     }
 }

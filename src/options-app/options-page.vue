@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted } from "vue";
 import { initSettings, settings } from "./use-settings";
+import { t } from "./i18n";
 import OnScreenKeyboardSection from "./OnScreenKeyboardSection.vue";
 import HanYongSection from "./HanYongSection.vue";
 import LabeledCheckbox from "./LabeledCheckbox.vue";
@@ -10,15 +11,15 @@ onMounted(initSettings);
 
 <template>
     <main>
-        <h1>Korean IME Options</h1>
+        <h1>{{ t("options_title") }}</h1>
         <OnScreenKeyboardSection />
         <HanYongSection />
         <section>
-            <h2>General</h2>
+            <h2>{{ t("options_general_heading") }}</h2>
             <LabeledCheckbox
                 v-model="settings.shareAcrossTabs"
-                label="Share status across tabs"
-                description="When you turn the on-screen keyboard or Han/Yong mode on or off, apply it to every tab at once, not just the focused one."
+                :label="t('options_shareAcrossTabs_label')"
+                :description="t('options_shareAcrossTabs_description')"
             />
         </section>
     </main>
