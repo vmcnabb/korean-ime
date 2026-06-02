@@ -1,0 +1,46 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Start Dev Chrome",
+            "type": "npm",
+            "script": "dev",
+            "isBackground": true,
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated"
+            },
+            "problemMatcher": {
+                "owner": "custom",
+                "fileLocation": "autoDetect",
+                "source": "korean-ime-dev",
+                "pattern": {
+                    "regexp": "^(__never_match__):(\\d+):(\\d+):(.*)$",
+                    "file": 1,
+                    "line": 2,
+                    "column": 3,
+                    "message": 4
+                },
+                "background": {
+                    "activeOnStart": true,
+                    "beginsPattern": "^\\[dev\\] Word for the Web adapter:",
+                    "endsPattern": "^\\[dev\\] VS Code debugger target ready\\.$"
+                }
+            }
+        },
+        {
+            "label": "Stop Dev Chrome",
+            "type": "process",
+            "command": "node",
+            "args": [
+                "scripts/stop-dev.mjs"
+            ],
+            "presentation": {
+                "reveal": "never",
+                "panel": "dedicated",
+                "close": true
+            },
+            "problemMatcher": []
+        }
+    ]
+}

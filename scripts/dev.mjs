@@ -17,11 +17,12 @@
 
 import { spawn, spawnSync } from "node:child_process";
 import { createServer } from "node:http";
-import { existsSync, mkdirSync } from "node:fs";
+import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import * as ChromeLauncher from "chrome-launcher";
 
 const root = process.cwd();
+const DEFAULT_CHROME_DEBUG_PORT = 9222;
 // Dev builds go to dist-dev/ so they can never be mistaken for, or clobber, the
 // production dist/ that `npm run package` ships. Keep this in sync with the
 // --dist-dir in the "start" npm script.
@@ -37,7 +38,45 @@ function wordAdapterRequested() {
     if (cfg !== undefined && cfg !== "false" && cfg !== "0") return true;
     return process.env.KIME_ENABLE_WORD === "true";
 }
+
+function getChromeDebugPort() {
+    const rawPort = process.env.KIME_CHROME_DEBUG_PORT ?? process.env.CHROME_DEBUG_PORT;
+    if (rawPort === undefined || rawPort.trim() === "") return DEFAULT_CHROME_DEBUG_PORT;
+
+    const port = Number(rawPort);
+    if (!Number.isInteger(port) || port < 1 || port > 65535) {
+        throw new Error(`Invalid Chrome debug port: ${rawPort}`);
+    }
+
+    return port;
+}
+
+async function waitForChromePageTarget(port, url, timeout = 10000) {
+    const endpoint = `http://127.0.0.1:${port}/json/list`;
+    const deadline = Date.now() + timeout;
+
+    while (Date.now() < deadline) {
+        try {
+            const response = await fetch(endpoint);
+            if (response.ok) {
+                const targets = await response.json();
+                if (Array.isArray(targets) && targets.some((target) => target?.type === "page" && target?.url === url)) {
+                    return;
+                }
+            }
+        } catch {
+            // Chrome starts listening on the debugging port before it publishes targets.
+        }
+
+        await new Promise((resolveDelay) => setTimeout(resolveDelay, 200));
+    }
+
+    throw new Error(`[dev] Timed out waiting for a Chrome page target at ${endpoint}.`);
+}
+
 const profileDir = resolve(root, ".chrome-profile");
+const sessionFile = resolve(profileDir, "dev-session.json");
+const chromeDebugPort = getChromeDebugPort();
 
 const TEST_PAGE = `<!DOCTYPE html>
 <html lang="en">
@@ -75,6 +114,27 @@ let watch;
 let chrome;
 let shuttingDown = false;
 
+function removeSessionFile() {
+    rmSync(sessionFile, { force: true });
+}
+
+function writeSessionFile(chromePid) {
+    writeFileSync(
+        sessionFile,
+        JSON.stringify(
+            {
+                devPid: process.pid,
+                chromePid,
+                debugPort: chromeDebugPort,
+                startedAt: new Date().toISOString(),
+                testUrl,
+            },
+            null,
+            2,
+        ),
+    );
+}
+
 // child.kill() only kills the immediate process. `npm start` runs through a
 // shell and spawns Parcel underneath, so on Windows we must kill the whole tree
 // or Parcel keeps holding the HMR port (1234) after we exit.
@@ -94,6 +154,7 @@ function killTree(proc) {
 function shutdown(code = 0) {
     if (shuttingDown) return;
     shuttingDown = true;
+    removeSessionFile();
     killTree(chrome);
     killTree(watch);
     server?.close();
@@ -157,12 +218,20 @@ if (!chromePath) {
 
 const firstRun = !existsSync(profileDir);
 mkdirSync(profileDir, { recursive: true });
+removeSessionFile();
 
 // On first run, also open the extensions page so the one-time load is easy.
 const urls = firstRun ? ["chrome://extensions", testUrl] : [testUrl];
-const args = [`--user-data-dir=${profileDir}`, "--no-first-run", "--no-default-browser-check", ...urls];
+const args = [
+    `--user-data-dir=${profileDir}`,
+    `--remote-debugging-port=${chromeDebugPort}`,
+    "--no-first-run",
+    "--no-default-browser-check",
+    ...urls,
+];
 
 chrome = spawn(chromePath, args, { stdio: "ignore" });
+writeSessionFile(chrome.pid ?? null);
 const launchedAt = Date.now();
 
 chrome.on("exit", () => {
@@ -173,6 +242,8 @@ chrome.on("exit", () => {
     shutdown(0);
 });
 
+await waitForChromePageTarget(chromeDebugPort, testUrl);
+
 if (firstRun) {
     console.log("\n[dev] First run on this dev profile — load the extension once:");
     console.log("[dev]   1. On the chrome://extensions tab, turn on \"Developer mode\" (top right).");
@@ -182,5 +253,7 @@ if (firstRun) {
 }
 console.log(`\n[dev] Dev profile:  ${profileDir}`);
 console.log(`[dev] Extension:    ${distDir}`);
+console.log(`[dev] Debug port:   ${chromeDebugPort}`);
 console.log(`[dev] Test page:    ${testUrl}`);
+console.log("[dev] VS Code debugger target ready.");
 console.log("[dev] Edit & save to rebuild (auto-reloads). Close Chrome or press Ctrl+C to stop.\n");

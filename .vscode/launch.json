@@ -1,0 +1,38 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug Extension in Dev Chrome",
+            "type": "chrome",
+            "request": "attach",
+            "address": "localhost",
+            "port": 9222,
+            "webRoot": "${workspaceFolder}",
+            "urlFilter": "http*://*/*",
+            "preLaunchTask": "Start Dev Chrome",
+            "postDebugTask": "Stop Dev Chrome"
+        },
+        {
+            "name": "Debug Options Page in Dev Chrome",
+            "type": "chrome",
+            "request": "attach",
+            "address": "localhost",
+            "port": 9222,
+            "webRoot": "${workspaceFolder}",
+            "urlFilter": "chrome-extension://*/options-app*.html*",
+            "preLaunchTask": "Start Dev Chrome",
+            "postDebugTask": "Stop Dev Chrome"
+        },
+        {
+            "name": "Debug Popup Converter in Dev Chrome",
+            "type": "chrome",
+            "request": "attach",
+            "address": "localhost",
+            "port": 9222,
+            "webRoot": "${workspaceFolder}",
+            "urlFilter": "chrome-extension://*/popup-converter*.html*",
+            "preLaunchTask": "Start Dev Chrome",
+            "postDebugTask": "Stop Dev Chrome"
+        }
+    ]
+}
