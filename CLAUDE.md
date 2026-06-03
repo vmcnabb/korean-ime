@@ -13,14 +13,17 @@ on-screen keyboard. TypeScript, bundled with **Parcel**; the options page uses
 
 | Command | Purpose |
 |---|---|
-| `npm start` | Parcel watch mode — rebuilds to `dist/` on change |
-| `npm run build` | Production build to `dist/`: `clean` → `sync-version` → `check` → `lint` → `parcel build` |
+| `npm start` | Parcel watch mode — rebuilds to `dist-dev/` on change |
+| `npm run build` | Production (Chrome) build to `dist/`: `clean` → `gen-manifest` → `check` → `lint` → `check-translations` → `parcel build` |
+| `npm run build:firefox` | Firefox build to `dist-firefox/` (see Firefox build note below) |
+| `npm run lint:firefox` | `web-ext lint` the Firefox build in `dist-firefox/` |
 | `npm run build-dev` | Unoptimized dev build to `dist-dev/` |
 | `npm run dev` | Watch + launch Chrome on a persistent dev profile + test page (see `scripts/dev.mjs`) |
 | `npm run check` | Type-check only (`tsc --noEmit`) |
 | `npm run lint` / `lint:fix` | ESLint (flat config in `eslint.config.mjs`) |
 | `npm test` | Jest unit tests (ts-jest + jsdom) |
-| `npm run package` | Build and zip `dist/` into `korean-ime-<version>.zip` (store upload) |
+| `npm run package` | Chrome build + zip `dist/` into `korean-ime-<version>.zip` (Web Store upload) |
+| `npm run package:firefox` | Firefox build + `web-ext lint` + zip `dist-firefox/` into `korean-ime-<version>-firefox.zip` (AMO upload) |
 
 Load `dist/` as an unpacked extension at `chrome://extensions` (Developer mode → Load unpacked).
 
@@ -63,11 +66,24 @@ Core domain logic (mostly pure, well unit-tested):
   target and the web-extension HTML transformer then fails with
   `invalid type: unit value, expected a sequence`. The Node version is pinned in
   `.nvmrc` (used by CI) instead.
-- **`src/manifest.json` must keep its `version` field** — Parcel's manifest
-  schema requires it and Chrome won't load the extension without it. (It was
-  once dropped by accident and broke the build.) The build runs
-  `npm run sync-version` to copy `package.json`'s version into the manifest, so
-  **bump the version in `package.json`** and let the build propagate it.
+- **`src/manifest.json` is generated — do not edit it.** It's produced from
+  `src/manifest.base.json` by `scripts/build-manifest.mjs` (run as `gen-manifest`
+  before every build) and is gitignored. Edit `manifest.base.json` for shared
+  fields; `version` comes from `package.json` (so **bump the version there**) and
+  the per-browser `background` key + browser-specific settings come from the
+  target overrides in `build-manifest.mjs`. Parcel requires the generated file to
+  be named exactly `manifest.json` and to sit in `src/` beside the assets it
+  references (relative paths like `images/`, `_locales/`), which is why it's
+  generated in place.
+- **Firefox build needs a post-build manifest patch.** Firefox MV3 requires
+  `background.scripts` (it doesn't support `service_worker`), but Parcel's
+  webextension transformer *only* accepts `service_worker` and rejects a manifest
+  with both keys. So `build:firefox` generates a `service_worker` manifest (what
+  Parcel allows), lets Parcel bundle, then `scripts/patch-firefox-manifest.mjs`
+  adds `background.scripts` to the *emitted* `dist-firefox/manifest.json` — the
+  dual-key form Mozilla recommends, assembled after Parcel because it won't pass
+  it through pre-build. `lint:firefox` (`web-ext lint`) validates the result;
+  `BACKGROUND_SERVICE_WORKER_IGNORED` is the expected, correct warning.
 - **Google Docs & Word for the Web use canvas + the EditContext API.** Docs
   ignores synthetic composition events entirely (input goes through an
   EditContext the page owns, not the DOM), so it's unsupported — the factory

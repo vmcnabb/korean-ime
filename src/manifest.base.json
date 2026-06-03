@@ -1,7 +1,5 @@
 {
     "manifest_version": 3,
-    "version": "2.3.0",
-    "minimum_chrome_version": "102",
     "name": "__MSG_extension_name__",
     "short_name": "__MSG_extension_short_name__",
     "default_locale": "en",
@@ -19,10 +17,6 @@
     "options_ui": {
         "page": "options-app/index.html",
         "open_in_tab": true
-    },
-    "background": {
-        "service_worker": "service-worker/service-worker.ts",
-        "type": "module"
     },
     "content_scripts": [
         {

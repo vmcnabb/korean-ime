@@ -98,6 +98,20 @@ export class ContentScriptController {
             true
         );
 
+        // Firefox (Windows/Linux) toggles its menu bar when Alt is pressed and
+        // released without an intervening key — triggered on keyup. The keydown
+        // preventDefault above doesn't stop it, so also swallow the AltRight
+        // keyup. (No-op on Chrome, which has no such behaviour.)
+        document.addEventListener(
+            "keyup",
+            (e) => {
+                if (e.code === KeyCode.AltRight) {
+                    e.preventDefault();
+                }
+            },
+            true
+        );
+
         // whenever a new element receives focus, notify text input manager
         document.addEventListener(
             "focus",

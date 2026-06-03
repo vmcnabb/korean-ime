@@ -13,7 +13,28 @@ export const menus = Object.freeze({
     romanizeBeside: {
         id: "menu_romanizeBeside",
     },
+    openOptions: {
+        id: "menu_openOptions",
+    },
 });
+
+// Chrome adds an "Options" entry to the toolbar-icon context menu automatically;
+// Firefox doesn't, so we add our own there — but not on Chrome, to avoid a
+// redundant duplicate of its built-in item.
+//
+// There's no API for the thing we actually care about ("does this browser's icon
+// menu already include Options?"), so we key off the closest robust signal: the
+// presence of `runtime.getBrowserInfo`, which only Firefox (and its forks)
+// implement. We test for its *presence* rather than calling it — calling and
+// checking `name === "Firefox"` would wrongly exclude Firefox forks (LibreWolf
+// etc.), reintroducing the one failure we most want to avoid: a *missing*
+// Options entry. Unlike navigator.userAgent (which Firefox's Resist
+// Fingerprinting can mask), this privileged API isn't spoofed. And the bias is
+// deliberate: if the signal is ever wrong, the result is a tolerable duplicate,
+// never a missing item.
+function lacksBuiltInOptionsMenu(): boolean {
+    return typeof (api.runtime as { getBrowserInfo?: unknown } | undefined)?.getBrowserInfo === "function";
+}
 
 export function setupMenuListener(stateManager: StateManager) {
     api.contextMenus.onClicked.addListener((event, tab) => {
@@ -34,6 +55,10 @@ export function setupMenuListener(stateManager: StateManager) {
                 stateManager
                     .toggleOnScreenKeyboard(tab.id)
                     .catch((error) => debugLog("toggleOnScreenKeyboard failed:", error));
+                break;
+
+            case menus.openOptions.id:
+                api.runtime.openOptionsPage().catch((error) => debugLog("openOptionsPage failed:", error));
                 break;
         }
     });
@@ -72,4 +97,13 @@ export async function createMenus() {
         title: api.i18n.getMessage(menus.onScreenKeyboard.id),
         contexts: ["all"],
     });
+
+    if (lacksBuiltInOptionsMenu()) {
+        api.contextMenus.create({
+            type: "normal",
+            id: menus.openOptions.id,
+            title: api.i18n.getMessage(menus.openOptions.id),
+            contexts: ["action"],
+        });
+    }
 }
