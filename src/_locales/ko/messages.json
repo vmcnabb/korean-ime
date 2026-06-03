@@ -20,6 +20,12 @@
     "menu_openOptions": {
         "message": "설정"
     },
+    "action_title_hangul": {
+        "message": "한글 입력기 — 한글"
+    },
+    "action_title_english": {
+        "message": "한글 입력기 — 영문"
+    },
     "romanize_popup_title": {
         "message": "한글 입력기 - 로마자 변환"
     },

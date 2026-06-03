@@ -96,6 +96,10 @@ export class StateManager {
             tabId: tabId,
             path: isHangulMode ? icon16h : icon16a,
         });
+        await api.action.setTitle({
+            tabId: tabId,
+            title: api.i18n.getMessage(isHangulMode ? "action_title_hangul" : "action_title_english"),
+        });
 
         // Update the on-screen-keyboard menu checkbox. The menu may not exist
         // yet (it's created on service-worker startup); tolerate that rather
