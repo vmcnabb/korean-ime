@@ -89,6 +89,16 @@ npm run dev:chrome -- --enable-word
 
 This sets the `KIME_ENABLE_WORD` build flag (which Parcel inlines). For other builds, set the env var directly, e.g. `KIME_ENABLE_WORD=true npm run build-dev:chrome`.
 
+#### Testing a different locale
+
+Launch the dev Chrome in a specific UI language to check the `chrome.i18n` strings (e.g. Korean):
+
+```sh
+npm run dev:chrome -- --locale=ko
+```
+
+This passes `--lang=ko` to Chrome. Because Chrome caches the UI language in a profile, the change is most reliable on a fresh profile — delete `.chrome-profile/` if a locale switch doesn't take effect.
+
 #### Debugging in VS Code
 
 `npm run dev:chrome` launches Chrome with the DevTools remote debugging port enabled on `localhost:9222`.

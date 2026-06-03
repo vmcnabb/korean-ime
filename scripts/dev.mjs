@@ -40,6 +40,16 @@ function wordAdapterRequested() {
     return process.env.KIME_ENABLE_WORD === "true";
 }
 
+// Optional UI locale for the dev Chrome, for testing chrome.i18n strings.
+// `npm run dev:chrome -- --locale=ko` (flag reaches argv) or
+// `npm run dev:chrome --locale=ko` (npm exposes it as npm_config_locale).
+// Passed to Chrome as --lang, which sets the locale chrome.i18n resolves against.
+function requestedLocale() {
+    const fromArgv = process.argv.slice(2).find((a) => a.startsWith("--locale="));
+    if (fromArgv) return fromArgv.slice("--locale=".length);
+    return process.env.npm_config_locale || undefined;
+}
+
 function getChromeDebugPort() {
     const rawPort = process.env.KIME_CHROME_DEBUG_PORT ?? process.env.CHROME_DEBUG_PORT;
     if (rawPort === undefined || rawPort.trim() === "") return DEFAULT_CHROME_DEBUG_PORT;
@@ -61,7 +71,10 @@ async function waitForChromePageTarget(port, url, timeout = 10000) {
             const response = await fetch(endpoint);
             if (response.ok) {
                 const targets = await response.json();
-                if (Array.isArray(targets) && targets.some((target) => target?.type === "page" && target?.url === url)) {
+                if (
+                    Array.isArray(targets) &&
+                    targets.some((target) => target?.type === "page" && target?.url === url)
+                ) {
                     return;
                 }
             }
@@ -131,8 +144,8 @@ function writeSessionFile(chromePid) {
                 testUrl,
             },
             null,
-            2,
-        ),
+            2
+        )
     );
 }
 
@@ -223,13 +236,22 @@ removeSessionFile();
 
 // On first run, also open the extensions page so the one-time load is easy.
 const urls = firstRun ? ["chrome://extensions", testUrl] : [testUrl];
+const locale = requestedLocale();
 const args = [
     `--user-data-dir=${profileDir}`,
     `--remote-debugging-port=${chromeDebugPort}`,
     "--no-first-run",
     "--no-default-browser-check",
+    // --lang sets the UI locale chrome.i18n resolves against. Note: Chrome
+    // caches the UI language in an existing profile, so a locale change is most
+    // reliable on a fresh .chrome-profile/ (delete it to force a re-read).
+    ...(locale ? [`--lang=${locale}`] : []),
     ...urls,
 ];
+
+if (locale) {
+    console.log(`[dev] UI locale: ${locale} (delete .chrome-profile/ if it doesn't take effect)`);
+}
 
 chrome = spawn(chromePath, args, { stdio: "ignore" });
 writeSessionFile(chrome.pid ?? null);
@@ -252,7 +274,7 @@ try {
 
 if (firstRun) {
     console.log("\n[dev] First run on this dev profile — load the extension once:");
-    console.log("[dev]   1. On the chrome://extensions tab, turn on \"Developer mode\" (top right).");
+    console.log('[dev]   1. On the chrome://extensions tab, turn on "Developer mode" (top right).');
     console.log('[dev]   2. Click "Load unpacked" and select:');
     console.log(`[dev]        ${distDir}`);
     console.log("[dev]   It stays loaded for future `npm run dev:chrome` runs (Parcel still auto-reloads it).");

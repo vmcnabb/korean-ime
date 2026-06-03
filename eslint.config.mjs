@@ -19,16 +19,28 @@ export default tseslint.config(
     ...tseslint.configs.recommended,
     prettierRecommended,
     {
+        // Project-wide rules (not environment-specific).
+        rules: {
+            "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
+        },
+    },
+    {
+        // Extension code runs in the browser. Scoped to src/ so these globals
+        // don't leak into the Node scripts and mask real mistakes there.
+        files: ["src/**"],
         languageOptions: {
             globals: {
                 ...globals.browser,
             },
         },
-        rules: {
-            "@typescript-eslint/no-unused-vars": [
-                "error",
-                { argsIgnorePattern: "^_" },
-            ],
+    },
+    {
+        // Build/dev scripts run in Node, not the browser.
+        files: ["scripts/**/*.mjs", "*.mjs"],
+        languageOptions: {
+            globals: {
+                ...globals.node,
+            },
         },
     }
 );

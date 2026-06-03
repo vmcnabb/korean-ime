@@ -62,7 +62,9 @@ if (!overrides) {
     process.exit(1);
 }
 
-const readJson = (path) => JSON.parse(readFileSync(path, "utf8").replace(/^﻿/, ""));
+// Strip a leading BOM (U+FEFF) if present, so JSON.parse doesn't choke on it.
+const stripBom = (text) => (text.charCodeAt(0) === 0xfeff ? text.slice(1) : text);
+const readJson = (path) => JSON.parse(stripBom(readFileSync(path, "utf8")));
 
 const version = readJson(pkgPath).version;
 if (!version) {
