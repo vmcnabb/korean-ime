@@ -25,7 +25,11 @@
     "package": "node scripts/package-help.mjs",
     "package:chrome": "npm run validate && npm run build:chrome && node scripts/package.mjs chrome",
     "package:firefox": "npm run validate && npm run build:firefox && npm run lint:firefox && node scripts/package.mjs firefox",
-    "dev:chrome": "node scripts/dev.mjs"
+    "dev:chrome": "node scripts/dev.mjs",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.{ts,vue,mjs}": "eslint --fix"
   },
   "repository": {
     "type": "git",
@@ -54,8 +58,10 @@
     "eslint": "^10.2.1",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.5",
+    "husky": "^9.1.7",
     "jest": "^30.3.0",
     "jest-environment-jsdom": "^30.3.0",
+    "lint-staged": "^17.0.7",
     "parcel": "^2.16.4",
     "prettier": "^3.8.3",
     "process": "^0.11.10",

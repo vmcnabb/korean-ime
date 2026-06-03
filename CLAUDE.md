@@ -104,6 +104,10 @@ Core domain logic (mostly pure, well unit-tested):
   `dist-chrome-dev/`; dev builds are kept out of the production `dist-chrome/`).
 - ESLint uses **flat config** (`eslint.config.mjs`). There is no `.eslintrc`.
 - `tsc` is type-check only (`--noEmit`); Parcel does the actual bundling.
+- A **husky pre-commit hook** (`.husky/pre-commit`, installed via the `prepare`
+  script on `npm install`) runs `lint-staged` (ESLint `--fix` on staged files)
+  then `npm run check`. Commits with lint/type errors are blocked; `--no-verify`
+  bypasses.
 - Tracing decorator (`src/decorators/trace.ts`) is a no-op in production and
   logs method calls in dev — handy for debugging composition flow.
 

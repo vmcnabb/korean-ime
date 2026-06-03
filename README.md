@@ -112,6 +112,14 @@ See [RELEASING.md](RELEASING.md) for the step-by-step release checklist.
 * Vue Language Features (Volar)
 * TypeScript Vue Plugin (Volar)
 
+### Pre-commit hook
+
+`npm install` sets up a [husky](https://typicode.github.io/husky/) pre-commit
+hook (via the `prepare` script). On commit it runs ESLint (`--fix`) on staged
+files through [lint-staged](https://github.com/lint-staged/lint-staged), then a
+full type-check (`npm run check`). Bypass with `git commit --no-verify` if you
+ever need to.
+
 ## Contributing
 
 Contributions are welcome — please open an issue or pull request on [GitHub](https://github.com/vmcnabb/korean-ime). It's worth discussing your idea first to make sure it fits the direction of the project.
