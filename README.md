@@ -51,10 +51,10 @@ npm ci                   # install exact dependencies from package-lock.json
 npm run package:firefox  # produces korean-ime-<version>-firefox.zip
 ```
 
-`package:firefox` runs every step needed to produce the add-on: generate the
-Firefox manifest from `src/manifest.base.json` (`scripts/build-manifest.mjs`) →
-type-check → lint → translation check → Parcel production build into
-`dist-firefox/` → patch the emitted manifest's background key
+`package:firefox` runs every step needed to produce the add-on: validate
+(type-check → lint → translation check → tests) → generate the Firefox manifest
+from `src/manifest.base.json` (`scripts/build-manifest.mjs`) → Parcel production
+build into `dist-firefox/` → patch the emitted manifest's background key
 (`scripts/patch-firefox-manifest.mjs`) → `web-ext lint` → zip the contents of
 `dist-firefox/`. The contents of the resulting zip match the submitted add-on.
 
@@ -62,35 +62,36 @@ type-check → lint → translation check → Parcel production build into
 
 | Command | Description |
 |---|---|
-| `npm run build` | Production (Chrome) build to `/dist` (type check + lint + bundle) |
+| `npm run build` | Build **both** targets (Chrome + Firefox) — an all-targets sanity build |
+| `npm run build:chrome` | Production Chrome build to `/dist-chrome` (bundle only — run `validate` for gates) |
 | `npm run build:firefox` | Production Firefox build to `/dist-firefox` |
-| `npm run build-dev` | Development build to `/dist-dev` (no optimisation) |
-| `npm start` | Watch mode (to `/dist-dev`) — rebuilds on file changes |
-| `npm run dev` | Watch + launch Chrome (persistent dev profile) on a test page; load unpacked once |
+| `npm run build-dev:chrome` | Development Chrome build to `/dist-chrome-dev` (no optimisation) |
+| `npm run start:chrome` | Watch mode (to `/dist-chrome-dev`) — rebuilds on file changes |
+| `npm run dev:chrome` | Watch + launch Chrome (persistent dev profile) on a test page; load unpacked once |
 | `npm run check` | Type-check without emitting output |
 | `npm run lint` | Lint with ESLint (`npm run lint:fix` to auto-fix) |
 | `npm test` | Run unit tests |
-| `npm run package` | Chrome build + zip `/dist` into `korean-ime-<version>.zip` (Web Store) |
+| `npm run package:chrome` | Chrome build + zip `/dist-chrome` into `korean-ime-<version>-chrome.zip` (Web Store) |
 | `npm run package:firefox` | Firefox build + `web-ext lint` + zip `/dist-firefox` into `korean-ime-<version>-firefox.zip` (AMO) |
 
-The production build output goes to `/dist` (dev builds go to `/dist-dev`, kept separate so they can't be shipped by accident) and can be loaded directly as an unpacked extension:
+The Chrome production build (`npm run build:chrome`) outputs to `/dist-chrome` (dev builds go to `/dist-chrome-dev`, kept separate so they can't be shipped by accident) and can be loaded directly as an unpacked extension:
 1. Open `chrome://extensions`
 2. Enable **Developer mode**
-3. Click **Load unpacked** and select the `/dist` folder
+3. Click **Load unpacked** and select the `/dist-chrome` folder
 
 #### Enabling the Word for the Web adapter
 
 The Word for the Web adapter is off by default. To enable it for a dev session:
 
 ```sh
-npm run dev -- --enable-word
+npm run dev:chrome -- --enable-word
 ```
 
-This sets the `KIME_ENABLE_WORD` build flag (which Parcel inlines). For other builds, set the env var directly, e.g. `KIME_ENABLE_WORD=true npm run build-dev`.
+This sets the `KIME_ENABLE_WORD` build flag (which Parcel inlines). For other builds, set the env var directly, e.g. `KIME_ENABLE_WORD=true npm run build-dev:chrome`.
 
 #### Debugging in VS Code
 
-`npm run dev` launches Chrome with the DevTools remote debugging port enabled on `localhost:9222`.
+`npm run dev:chrome` launches Chrome with the DevTools remote debugging port enabled on `localhost:9222`.
 
 Press `F5` with one of these configs selected:
 
@@ -110,6 +111,14 @@ See [RELEASING.md](RELEASING.md) for the step-by-step release checklist.
 * ESLint
 * Vue Language Features (Volar)
 * TypeScript Vue Plugin (Volar)
+
+### Pre-commit hook
+
+`npm install` sets up a [husky](https://typicode.github.io/husky/) pre-commit
+hook (via the `prepare` script). On commit it runs ESLint (`--fix`) on staged
+files through [lint-staged](https://github.com/lint-staged/lint-staged), then a
+full type-check (`npm run check`). Bypass with `git commit --no-verify` if you
+ever need to.
 
 ## Contributing
 

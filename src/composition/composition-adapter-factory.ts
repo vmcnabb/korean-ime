@@ -20,7 +20,7 @@ export class CompositionAdapterFactory {
             } else if (isWordForTheWebElement(element)) {
                 // Word for the Web still works via direct DOM editing, but it's on the
                 // same EditContext trajectory as Docs and is fragile, so it's off by
-                // default. Enable it for development with `npm run dev -- --enable-word`
+                // default. Enable it for development with `npm run dev:chrome -- --enable-word`
                 // (sets KIME_ENABLE_WORD, which Parcel inlines at build time).
                 return process.env.KIME_ENABLE_WORD === "true" ? new WordForTheWebAdapter(element) : undefined;
             } else if (element.isContentEditable) {
