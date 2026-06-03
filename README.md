@@ -32,6 +32,32 @@ Allows typing Hangul in Chrome without a Korean IME installed at the OS level. U
 npm install
 ```
 
+### Building the Firefox add-on (for AMO reviewers)
+
+Step-by-step instructions to reproduce an exact copy of the submitted add-on.
+
+**Environment requirements**
+- Operating system: any (Windows, macOS, or Linux) — the build is pure
+  Node.js/Parcel with no OS-specific or native steps.
+- Node.js **24** (the version in [`.nvmrc`](.nvmrc)) and npm (bundled with
+  Node.js). Install Node from <https://nodejs.org/>, or with
+  [nvm](https://github.com/nvm-sh/nvm): `nvm install 24 && nvm use 24`.
+- No other globally installed programs are required; all build tools are
+  project-local dependencies installed by `npm ci`.
+
+**Build steps**
+```sh
+npm ci                   # install exact dependencies from package-lock.json
+npm run package:firefox  # produces korean-ime-<version>-firefox.zip
+```
+
+`package:firefox` runs every step needed to produce the add-on: generate the
+Firefox manifest from `src/manifest.base.json` (`scripts/build-manifest.mjs`) →
+type-check → lint → translation check → Parcel production build into
+`dist-firefox/` → patch the emitted manifest's background key
+(`scripts/patch-firefox-manifest.mjs`) → `web-ext lint` → zip the contents of
+`dist-firefox/`. The contents of the resulting zip match the submitted add-on.
+
 ### Build
 
 | Command | Description |
@@ -75,32 +101,6 @@ Press `F5` with one of these configs selected:
 Stopping any of those debug sessions from VS Code also shuts down the matching Chrome/dev task.
 
 If VS Code auto-attaches to `scripts/dev.mjs`, change the terminal's **Auto Attach** mode to **Only With Flag** or turn it off for that terminal. Auto Attach only targets the Node launcher; Chrome debugging uses the workspace launch configuration above.
-
-### Building the Firefox add-on (for AMO reviewers)
-
-Step-by-step instructions to reproduce an exact copy of the submitted add-on.
-
-**Environment requirements**
-- Operating system: any (Windows, macOS, or Linux) — the build is pure
-  Node.js/Parcel with no OS-specific or native steps.
-- Node.js **24** (the version in [`.nvmrc`](.nvmrc)) and npm (bundled with
-  Node.js). Install Node from <https://nodejs.org/>, or with
-  [nvm](https://github.com/nvm-sh/nvm): `nvm install 24 && nvm use 24`.
-- No other globally installed programs are required; all build tools are
-  project-local dependencies installed by `npm ci`.
-
-**Build steps**
-```sh
-npm ci                   # install exact dependencies from package-lock.json
-npm run package:firefox  # produces korean-ime-<version>-firefox.zip
-```
-
-`package:firefox` runs every step needed to produce the add-on: generate the
-Firefox manifest from `src/manifest.base.json` (`scripts/build-manifest.mjs`) →
-type-check → lint → translation check → Parcel production build into
-`dist-firefox/` → patch the emitted manifest's background key
-(`scripts/patch-firefox-manifest.mjs`) → `web-ext lint` → zip the contents of
-`dist-firefox/`. The contents of the resulting zip match the submitted add-on.
 
 ### Releasing
 
