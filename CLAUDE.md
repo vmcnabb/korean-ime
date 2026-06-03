@@ -15,7 +15,8 @@ on-screen keyboard. TypeScript, bundled with **Parcel**; the options page uses
 |---|---|
 | `npm run start:chrome` | Parcel watch mode (Chrome) — rebuilds to `dist-chrome-dev/` on change |
 | `npm run build` | Build **both** targets (Chrome + Firefox) — all-targets sanity build |
-| `npm run build:chrome` | Production Chrome build to `dist-chrome/`: `clean` → `gen-manifest:chrome` → `check` → `lint` → `check-translations` → `parcel build` |
+| `npm run build:chrome` | Production Chrome build to `dist-chrome/`: `clean` → `gen-manifest:chrome` → `parcel build` (no gates — run `validate` separately) |
+| `npm run validate` | `check` + `lint` + `check-translations` + `test` — the full gate (also run by `package:*` and CI) |
 | `npm run build:firefox` | Firefox build to `dist-firefox/` (see Firefox build note below) |
 | `npm run lint:firefox` | `web-ext lint` the Firefox build in `dist-firefox/` |
 | `npm run build-dev:chrome` | Unoptimized dev Chrome build to `dist-chrome-dev/` |

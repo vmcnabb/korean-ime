@@ -22,12 +22,15 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # Tests aren't part of `build`, so run them on their own.
-      - name: Test
-        run: npm test
+      # check + lint + check-translations + test, in one aggregate.
+      - name: Validate
+        run: npm run validate
 
-      # `build` already runs check → lint → check-translations → parcel build,
-      # so we don't repeat those as separate steps. The build log shows which
-      # sub-step failed.
-      - name: Build
+      # Builds are pure (no gates) since validate covers them; build both
+      # targets so a Chrome- or Firefox-specific build regression is caught.
+      - name: Build (Chrome + Firefox)
         run: npm run build
+
+      # web-ext lint needs the built dist-firefox/ from the step above.
+      - name: Lint Firefox build
+        run: npm run lint:firefox

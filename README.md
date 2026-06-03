@@ -51,10 +51,10 @@ npm ci                   # install exact dependencies from package-lock.json
 npm run package:firefox  # produces korean-ime-<version>-firefox.zip
 ```
 
-`package:firefox` runs every step needed to produce the add-on: generate the
-Firefox manifest from `src/manifest.base.json` (`scripts/build-manifest.mjs`) →
-type-check → lint → translation check → Parcel production build into
-`dist-firefox/` → patch the emitted manifest's background key
+`package:firefox` runs every step needed to produce the add-on: validate
+(type-check → lint → translation check → tests) → generate the Firefox manifest
+from `src/manifest.base.json` (`scripts/build-manifest.mjs`) → Parcel production
+build into `dist-firefox/` → patch the emitted manifest's background key
 (`scripts/patch-firefox-manifest.mjs`) → `web-ext lint` → zip the contents of
 `dist-firefox/`. The contents of the resulting zip match the submitted add-on.
 

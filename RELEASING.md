@@ -35,10 +35,16 @@ release.
 npm run build
 ```
 
-This builds **both** Chrome and Firefox (`build:chrome` then `build:firefox`),
-each running `check` (tsc) → `lint` → `check-translations` → `parcel build`, into
-**`dist/`** and **`dist-firefox/`** respectively. If it doesn't pass cleanly,
-stop and fix — don't ship a red build.
+First run the full gate, then build **both** targets:
+
+```sh
+npm run validate   # check (tsc) → lint → check-translations → tests
+```
+
+`npm run build` builds Chrome then Firefox (pure builds — gates live in
+`validate`) into **`dist-chrome/`** and **`dist-firefox/`**. (The
+`package:chrome` / `package:firefox` scripts run `validate` themselves, so step 7
+re-checks anyway — but don't ship a red `validate`.)
 
 ## 5. Smoke-test the build
 
