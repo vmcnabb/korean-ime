@@ -1,6 +1,27 @@
 Install the latest release from the Chrome Web Store:
 [https://chrome.google.com/webstore/detail/korean-ime/cimmbifnciobjhchpimjekibbndgmkfk?hl=en-GB]
 
+# 2.4.0
+2026-06-03
+
+Firefox support is the primary reason for this release.
+
+### Features
+* Added Firefox support
+* Wired up Options page
+    * Runtime now respects the settings from options (before they were ignored)
+    * The wording is easier to understand
+    * Made it localizable and added Korean translations
+
+### Fixes
+* Pasting into the romanization dialog no longer pastes formatting
+* Menus now appear more reliably
+* Fixed race condition opening romanization popup
+
+### Internal
+* Improved project structure
+* Fixed Vue warning
+
 # 2.3.0
 2026-05-31
 

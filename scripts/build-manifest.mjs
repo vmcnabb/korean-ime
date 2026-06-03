@@ -37,8 +37,15 @@ const targets = {
     },
     firefox: {
         browser_specific_settings: {
-            // storage.session (used heavily) requires Firefox 115+.
-            gecko: { id: "korean-ime@vmcnabb", strict_min_version: "115.0" },
+            gecko: {
+                id: "korean-ime@vmcnabb",
+                // storage.session (used heavily) requires Firefox 115+.
+                strict_min_version: "115.0",
+                // AMO requires a data-collection declaration. This extension
+                // collects/transmits no personal data — all storage is local
+                // config/state, and there are no network calls — so "none".
+                data_collection_permissions: { required: ["none"] },
+            },
         },
         background: {
             service_worker: "service-worker/service-worker.ts",
