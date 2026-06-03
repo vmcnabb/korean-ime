@@ -1,0 +1,95 @@
+{
+    "extension_name": {
+        "message": "IME coreano con romanización"
+    },
+    "extension_short_name": {
+        "message": "IME coreano"
+    },
+    "extension_description": {
+        "message": "Permite escribir en hangul coreano e incluye una herramienta de romanización."
+    },
+    "menu_romanizeInPopup": {
+        "message": "&Romanizar en ventana emergente"
+    },
+    "menu_romanizeBeside": {
+        "message": "Romanizar al &lado"
+    },
+    "menu_onScreenKeyboard": {
+        "message": "Teclado en pantalla"
+    },
+    "menu_openOptions": {
+        "message": "Opciones"
+    },
+    "action_title_hangul": {
+        "message": "IME coreano — Hangul"
+    },
+    "action_title_english": {
+        "message": "IME coreano — Inglés"
+    },
+    "romanize_popup_title": {
+        "message": "IME coreano - Romanización"
+    },
+    "romanize_popup_originalTextHeading": {
+        "message": "Texto original"
+    },
+    "romanize_popup_originalTextHeadingHint": {
+        "message": "(puede escribir hangul aquí)"
+    },
+    "romanize_popup_originalTextTextboxHint": {
+        "message": "Escriba su hangul aquí"
+    },
+    "romanize_popup_romanizedTextHeading": {
+        "message": "Texto romanizado"
+    },
+    "romanize_popup_romanizedTextTextboxHint": {
+        "message": "La versión romanizada aparecerá aquí"
+    },
+    "keyboard_key_altRight_tooltip": {
+        "message": "Cambiar entre Yong (inglés) y hangul"
+    },
+    "keyboard_key_controlRight_tooltip": {
+        "message": "Convertir el hangul seleccionado a hanja"
+    },
+    "options_title": {
+        "message": "Opciones de IME coreano"
+    },
+    "options_onScreenKeyboard_heading": {
+        "message": "Teclado en pantalla"
+    },
+    "options_hanYong_heading": {
+        "message": "Alternancia Han/Yong (한/영)"
+    },
+    "options_hanYong_hint": {
+        "message": "Alterna entre la entrada de hangul y la latina."
+    },
+    "options_persistence_label": {
+        "message": "Al iniciar el navegador"
+    },
+    "options_onScreenKeyboard_startOff": {
+        "message": "Iniciar oculto"
+    },
+    "options_onScreenKeyboard_startOn": {
+        "message": "Iniciar visible"
+    },
+    "options_onScreenKeyboard_restore": {
+        "message": "Restaurar el último estado"
+    },
+    "options_hanYong_startOff": {
+        "message": "Iniciar en inglés"
+    },
+    "options_hanYong_startOn": {
+        "message": "Iniciar en hangul"
+    },
+    "options_hanYong_restore": {
+        "message": "Restaurar el último modo"
+    },
+    "options_general_heading": {
+        "message": "General"
+    },
+    "options_shareAcrossTabs_label": {
+        "message": "Compartir el estado entre pestañas"
+    },
+    "options_shareAcrossTabs_description": {
+        "message": "Cuando active o desactive el teclado en pantalla o el modo Han/Yong, se aplicará a todas las pestañas a la vez, no solo a la activa."
+    }
+}
