@@ -13,19 +13,21 @@ on-screen keyboard. TypeScript, bundled with **Parcel**; the options page uses
 
 | Command | Purpose |
 |---|---|
-| `npm start` | Parcel watch mode — rebuilds to `dist-dev/` on change |
-| `npm run build` | Production (Chrome) build to `dist/`: `clean` → `gen-manifest` → `check` → `lint` → `check-translations` → `parcel build` |
+| `npm run start:chrome` | Parcel watch mode (Chrome) — rebuilds to `dist-chrome-dev/` on change |
+| `npm run build` | Build **both** targets (Chrome + Firefox) — all-targets sanity build |
+| `npm run build:chrome` | Production Chrome build to `dist-chrome/`: `clean` → `gen-manifest:chrome` → `check` → `lint` → `check-translations` → `parcel build` |
 | `npm run build:firefox` | Firefox build to `dist-firefox/` (see Firefox build note below) |
 | `npm run lint:firefox` | `web-ext lint` the Firefox build in `dist-firefox/` |
-| `npm run build-dev` | Unoptimized dev build to `dist-dev/` |
-| `npm run dev` | Watch + launch Chrome on a persistent dev profile + test page (see `scripts/dev.mjs`) |
+| `npm run build-dev:chrome` | Unoptimized dev Chrome build to `dist-chrome-dev/` |
+| `npm run dev:chrome` | Watch + launch Chrome on a persistent dev profile + test page (see `scripts/dev.mjs`) |
 | `npm run check` | Type-check only (`tsc --noEmit`) |
 | `npm run lint` / `lint:fix` | ESLint (flat config in `eslint.config.mjs`) |
 | `npm test` | Jest unit tests (ts-jest + jsdom) |
-| `npm run package` | Chrome build + zip `dist/` into `korean-ime-<version>.zip` (Web Store upload) |
+| `npm run package` | Prints guidance — packaging is per-browser (run `package:chrome` or `package:firefox`) |
+| `npm run package:chrome` | Chrome build + zip `dist-chrome/` into `korean-ime-<version>-chrome.zip` (Web Store upload) |
 | `npm run package:firefox` | Firefox build + `web-ext lint` + zip `dist-firefox/` into `korean-ime-<version>-firefox.zip` (AMO upload) |
 
-Load `dist/` as an unpacked extension at `chrome://extensions` (Developer mode → Load unpacked).
+Load `dist-chrome/` as an unpacked extension at `chrome://extensions` (Developer mode → Load unpacked).
 
 ## Architecture
 
@@ -67,8 +69,9 @@ Core domain logic (mostly pure, well unit-tested):
   `invalid type: unit value, expected a sequence`. The Node version is pinned in
   `.nvmrc` (used by CI) instead.
 - **`src/manifest.json` is generated — do not edit it.** It's produced from
-  `src/manifest.base.json` by `scripts/build-manifest.mjs` (run as `gen-manifest`
-  before every build) and is gitignored. Edit `manifest.base.json` for shared
+  `src/manifest.base.json` by `scripts/build-manifest.mjs` (run as
+  `gen-manifest:chrome` before a Chrome build, and inline in `build:firefox`)
+  and is gitignored. Edit `manifest.base.json` for shared
   fields; `version` comes from `package.json` (so **bump the version there**) and
   the per-browser `background` key + browser-specific settings come from the
   target overrides in `build-manifest.mjs`. Parcel requires the generated file to
@@ -89,15 +92,15 @@ Core domain logic (mostly pure, well unit-tested):
   EditContext the page owns, not the DOM), so it's unsupported — the factory
   returns no adapter for it. Word still works via direct DOM editing but is on
   the same path, so it's disabled by default behind `KIME_ENABLE_WORD`
-  (`npm run dev -- --enable-word`). Don't waste time trying to drive Docs with
+  (`npm run dev:chrome -- --enable-word`). Don't waste time trying to drive Docs with
   synthetic events; that door is closed (Google Input Tools only works via a
   private main-world bridge into Docs' internal `kix` editor).
 - **`--load-extension` is dead in current Chrome.** Chrome 137+ removed the
   command-line switch (anti-malware), and by Chrome 148 the
   `--disable-features=DisableLoadExtensionCommandLineSwitch` opt-out no longer
-  works either. So `npm run dev` can't auto-load into a throwaway profile — it
-  uses a persistent `.chrome-profile/` where you "Load unpacked" once (from
-  `dist-dev/`; dev builds are kept out of the production `dist/`).
+  works either. So `npm run dev:chrome` can't auto-load into a throwaway profile
+  — it uses a persistent `.chrome-profile/` where you "Load unpacked" once (from
+  `dist-chrome-dev/`; dev builds are kept out of the production `dist-chrome/`).
 - ESLint uses **flat config** (`eslint.config.mjs`). There is no `.eslintrc`.
 - `tsc` is type-check only (`--noEmit`); Parcel does the actual bundling.
 - Tracing decorator (`src/decorators/trace.ts`) is a no-op in production and

@@ -6,7 +6,9 @@ import globals from "globals";
 export default tseslint.config(
     {
         ignores: [
-            "dist/",
+            "dist-chrome/",
+            "dist-chrome-dev/",
+            "dist-firefox/",
             "obj/",
             "coverage/",
             ".parcel-cache/",

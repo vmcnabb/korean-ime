@@ -1,5 +1,5 @@
-dist/
-dist-dev/
+dist-chrome/
+dist-chrome-dev/
 dist-firefox/
 obj/
 # Generated from manifest.base.json by scripts/build-manifest.mjs

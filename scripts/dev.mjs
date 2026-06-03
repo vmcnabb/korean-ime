@@ -9,8 +9,9 @@
 // works. So we can't auto-load into a throwaway profile any more. Instead we use
 // a *persistent* dev profile: you "Load unpacked" once, and every later run
 // reuses the profile with the extension still installed. Because the unpacked
-// extension is read from dist/ on each launch (and Parcel keeps rebuilding into
-// the same dir, with HMR auto-reload during the session), it stays current.
+// extension is read from dist-chrome-dev/ on each launch (and Parcel keeps
+// rebuilding into the same dir, with HMR auto-reload during the session), it
+// stays current.
 //
 // chrome-launcher is used only to locate the Chrome binary. Close the Chrome
 // window or press Ctrl+C to stop everything.
@@ -23,14 +24,14 @@ import * as ChromeLauncher from "chrome-launcher";
 
 const root = process.cwd();
 const DEFAULT_CHROME_DEBUG_PORT = 9222;
-// Dev builds go to dist-dev/ so they can never be mistaken for, or clobber, the
-// production dist/ that `npm run package` ships. Keep this in sync with the
-// --dist-dir in the "start" npm script.
-const distDir = resolve(root, "dist-dev");
+// Dev builds go to dist-chrome-dev/ so they can never be mistaken for, or
+// clobber, the production dist-chrome/ that `npm run package:chrome` ships. Keep
+// this in sync with the --dist-dir in the "start:chrome" npm script.
+const distDir = resolve(root, "dist-chrome-dev");
 
 // The Word for the Web adapter is disabled by default (see the factory). Turn it
-// on for this dev session with `npm run dev -- --enable-word` (flag reaches argv)
-// or `npm run dev --enable-word` (npm exposes it as npm_config_enable_word). The
+// on for this dev session with `npm run dev:chrome -- --enable-word` (flag reaches argv)
+// or `npm run dev:chrome --enable-word` (npm exposes it as npm_config_enable_word). The
 // build reads KIME_ENABLE_WORD, which we set on the spawned Parcel process below.
 function wordAdapterRequested() {
     if (process.argv.slice(2).includes("--enable-word")) return true;
@@ -135,8 +136,8 @@ function writeSessionFile(chromePid) {
     );
 }
 
-// child.kill() only kills the immediate process. `npm start` runs through a
-// shell and spawns Parcel underneath, so on Windows we must kill the whole tree
+// child.kill() only kills the immediate process. `npm run start:chrome` runs
+// through a shell and spawns Parcel underneath, so on Windows we must kill the whole tree
 // or Parcel keeps holding the HMR port (1234) after we exit.
 function killTree(proc) {
     if (!proc || proc.pid === undefined || proc.killed) return;
@@ -176,10 +177,10 @@ server = createServer((_req, res) => {
 await new Promise((r) => server.listen(0, "127.0.0.1", r));
 const testUrl = `http://localhost:${server.address().port}/`;
 
-// 2. Start Parcel watch (via `npm start`) and wait for the first completed build.
+// 2. Start Parcel watch (via `npm run start:chrome`) and wait for the first completed build.
 const enableWord = wordAdapterRequested();
 console.log(`[dev] Word for the Web adapter: ${enableWord ? "enabled" : "disabled"} (Google Docs is unsupported)`);
-watch = spawn("npm", ["start"], {
+watch = spawn("npm", ["run", "start:chrome"], {
     shell: true,
     stdio: ["inherit", "pipe", "inherit"],
     env: { ...process.env, NODE_ENV: "development", KIME_ENABLE_WORD: enableWord ? "true" : "" },
@@ -254,7 +255,7 @@ if (firstRun) {
     console.log("[dev]   1. On the chrome://extensions tab, turn on \"Developer mode\" (top right).");
     console.log('[dev]   2. Click "Load unpacked" and select:');
     console.log(`[dev]        ${distDir}`);
-    console.log("[dev]   It stays loaded for future `npm run dev` runs (Parcel still auto-reloads it).");
+    console.log("[dev]   It stays loaded for future `npm run dev:chrome` runs (Parcel still auto-reloads it).");
 }
 console.log(`\n[dev] Dev profile:  ${profileDir}`);
 console.log(`[dev] Extension:    ${distDir}`);
