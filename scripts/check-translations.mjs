@@ -17,14 +17,16 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
 
+// Strip a leading BOM (U+FEFF) if present, so JSON.parse doesn't choke on it.
+const stripBom = (text) => (text.charCodeAt(0) === 0xfeff ? text.slice(1) : text);
+
+function readJson(path) {
+    return JSON.parse(stripBom(readFileSync(path, "utf8")));
+}
+
 const root = process.cwd();
 const config = readJson(resolve(root, "scripts/translations.config.json"));
 const localesRoot = resolve(root, config.localesDir);
-
-function readJson(path) {
-    // Strip a leading BOM; some message files are saved with one.
-    return JSON.parse(readFileSync(path, "utf8").replace(/^\uFEFF/, ""));
-}
 
 function messageKeys(locale) {
     return Object.keys(readJson(resolve(localesRoot, locale, "messages.json")));
