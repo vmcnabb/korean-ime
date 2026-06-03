@@ -20,6 +20,12 @@
     "menu_openOptions": {
         "message": "Options"
     },
+    "action_title_hangul": {
+        "message": "Korean IME — Hangul"
+    },
+    "action_title_english": {
+        "message": "Korean IME — English"
+    },
     "romanize_popup_title": {
         "message": "Korean IME - Romanization"
     },

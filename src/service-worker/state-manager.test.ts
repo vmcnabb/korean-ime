@@ -63,8 +63,9 @@ beforeEach(() => {
                     sentMessages.push({ tabId, data: message.data });
                 }),
             },
-            action: { setIcon: jest.fn(async () => {}) },
+            action: { setIcon: jest.fn(async () => {}), setTitle: jest.fn(async () => {}) },
             contextMenus: { update: jest.fn(async () => {}) },
+            i18n: { getMessage: (key: string) => key },
         },
     });
 });
@@ -290,5 +291,37 @@ describe("refreshActiveTabPresentation", () => {
         await manager.refreshActiveTabPresentation();
 
         expect(chrome.contextMenus.update).not.toHaveBeenCalled();
+    });
+});
+
+describe("action title (tooltip)", () => {
+    it("sets the Hangul-mode title when in Hangul mode", async () => {
+        withSettings({});
+        session["tabState-1"] = {
+            koreanKeyboardMode: KoreanKeyboardMode.Hangul,
+            isOnScreenKeyboardEnabled: false,
+        };
+        const manager = new StateManager();
+
+        await manager.sendStateToTab(1);
+
+        expect(chrome.action.setTitle).toHaveBeenCalledWith(
+            expect.objectContaining({ tabId: 1, title: "action_title_hangul" })
+        );
+    });
+
+    it("sets the English-mode title when in English mode", async () => {
+        withSettings({});
+        session["tabState-1"] = {
+            koreanKeyboardMode: KoreanKeyboardMode.English,
+            isOnScreenKeyboardEnabled: false,
+        };
+        const manager = new StateManager();
+
+        await manager.sendStateToTab(1);
+
+        expect(chrome.action.setTitle).toHaveBeenCalledWith(
+            expect.objectContaining({ tabId: 1, title: "action_title_english" })
+        );
     });
 });
