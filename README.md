@@ -63,7 +63,7 @@ build into `dist-firefox/` → patch the emitted manifest's background key
 | Command | Description |
 |---|---|
 | `npm run build` | Build **both** targets (Chrome + Firefox) — an all-targets sanity build |
-| `npm run build:chrome` | Production Chrome build to `/dist-chrome` (type check + lint + bundle) |
+| `npm run build:chrome` | Production Chrome build to `/dist-chrome` (bundle only — run `validate` for gates) |
 | `npm run build:firefox` | Production Firefox build to `/dist-firefox` |
 | `npm run build-dev:chrome` | Development Chrome build to `/dist-chrome-dev` (no optimisation) |
 | `npm run start:chrome` | Watch mode (to `/dist-chrome-dev`) — rebuilds on file changes |
