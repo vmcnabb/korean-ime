@@ -1,10 +1,11 @@
-# Korean IME Chrome Extension
+# Korean IME Browser Extension
 
-## Introduction
+A free, open-source browser extension for typing Hangul (Korean) without a
+Korean IME installed at the OS level — handy when you can't install the system
+IME (e.g. a locked-down work machine) — plus a romanization tool and a floating
+on-screen keyboard. Works in Chrome and Firefox.
 
-Allows typing Hangul in Chrome without a Korean IME installed at the OS level. Useful for people who want to type Korean on a computer where they don't have rights to install the Microsoft IME.
-
-[Install Korean IME from the Chrome Web Store](https://chromewebstore.google.com/detail/korean-ime/cimmbifnciobjhchpimjekibbndgmkfk)
+[Install from the Chrome Web Store](https://chromewebstore.google.com/detail/korean-ime/cimmbifnciobjhchpimjekibbndgmkfk) · Firefox (AMO) listing coming soon.
 
 ## Features
 
@@ -26,37 +27,11 @@ Allows typing Hangul in Chrome without a Korean IME installed at the OS level. U
 
 ## Development
 
-### Setup
+Requires Node.js 24 (see [`.nvmrc`](.nvmrc)) and npm.
 
 ```sh
 npm install
 ```
-
-### Building the Firefox add-on (for AMO reviewers)
-
-Step-by-step instructions to reproduce an exact copy of the submitted add-on.
-
-**Environment requirements**
-- Operating system: any (Windows, macOS, or Linux) — the build is pure
-  Node.js/Parcel with no OS-specific or native steps.
-- Node.js **24** (the version in [`.nvmrc`](.nvmrc)) and npm (bundled with
-  Node.js). Install Node from <https://nodejs.org/>, or with
-  [nvm](https://github.com/nvm-sh/nvm): `nvm install 24 && nvm use 24`.
-- No other globally installed programs are required; all build tools are
-  project-local dependencies installed by `npm ci`.
-
-**Build steps**
-```sh
-npm ci                   # install exact dependencies from package-lock.json
-npm run package:firefox  # produces korean-ime-<version>-firefox.zip
-```
-
-`package:firefox` runs every step needed to produce the add-on: validate
-(type-check → lint → translation check → tests) → generate the Firefox manifest
-from `src/manifest.base.json` (`scripts/build-manifest.mjs`) → Parcel production
-build into `dist-firefox/` → patch the emitted manifest's background key
-(`scripts/patch-firefox-manifest.mjs`) → `web-ext lint` → zip the contents of
-`dist-firefox/`. The contents of the resulting zip match the submitted add-on.
 
 ### Build
 
@@ -109,13 +84,11 @@ Press `F5` with one of these configs selected:
 2. **Debug Options Page in Dev Chrome** for the extension settings page
 3. **Debug Popup Converter in Dev Chrome** for the popup converter window
 
-Stopping any of those debug sessions from VS Code also shuts down the matching Chrome/dev task.
-
-If VS Code auto-attaches to `scripts/dev.mjs`, change the terminal's **Auto Attach** mode to **Only With Flag** or turn it off for that terminal. Auto Attach only targets the Node launcher; Chrome debugging uses the workspace launch configuration above.
+Stopping any of those debug sessions from VS Code also shuts down the matching Chrome/dev task. (If VS Code keeps auto-attaching to `scripts/dev.mjs`, set the terminal's **Auto Attach** to **Only With Flag** — it only targets the Node launcher, not Chrome.)
 
 ### Releasing
 
-See [RELEASING.md](RELEASING.md) for the step-by-step release checklist.
+See [RELEASING.md](RELEASING.md) for the release checklist. Building the Firefox add-on for AMO source review is documented in [AMO-SOURCE-SUBMISSION.md](AMO-SOURCE-SUBMISSION.md).
 
 ### Recommended VS Code Extensions
 * ESLint
@@ -136,4 +109,4 @@ Contributions are welcome — please open an issue or pull request on [GitHub](h
 
 ## License
 
-MIT
+[MIT](LICENSE)

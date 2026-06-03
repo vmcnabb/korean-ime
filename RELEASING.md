@@ -111,7 +111,8 @@ just prints a reminder to pick one.)
 2. Upload `korean-ime-<version>-firefox.zip` as a new version.
 3. AMO requires the **source code** for review (the extension is bundled). Submit
    a `git archive` of the tagged commit — `git archive --format=zip -o source.zip vX.Y.Z` —
-   the README's "Building the Firefox add-on" section is the reviewer build guide.
+   and paste [`AMO-SOURCE-SUBMISSION.md`](AMO-SOURCE-SUBMISSION.md) into the
+   reviewer-notes / source-instructions field (it's the reviewer build guide).
 
 The version must be higher than the last published one (on each store). Note the
 2.2.0 accident in the changelog — a published version number can never be
