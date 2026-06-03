@@ -25,10 +25,16 @@ export default tseslint.config(
             },
         },
         rules: {
-            "@typescript-eslint/no-unused-vars": [
-                "error",
-                { argsIgnorePattern: "^_" },
-            ],
+            "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
+        },
+    },
+    {
+        // Build/dev scripts run in Node, not the browser.
+        files: ["scripts/**/*.mjs", "*.mjs"],
+        languageOptions: {
+            globals: {
+                ...globals.node,
+            },
         },
     }
 );
