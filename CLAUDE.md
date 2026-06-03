@@ -9,6 +9,18 @@ browser without an OS-level Korean IME, plus romanization tools and a floating
 on-screen keyboard. TypeScript, bundled with **Parcel**; the options page uses
 **Vue 3**.
 
+## Workflow
+
+**`master` is protected — never commit to it directly.** All changes land via
+pull request: branch off `master`, push the branch, open a PR, and merge it
+(GitHub auto-deletes the merged branch). A direct push to `master` will be
+rejected, so don't try it even for a one-line doc fix. Run `npm run validate`
+before pushing so CI passes on the first try. After a merge, **confirm it via the
+PR's merged state** (e.g. `gh pr view <n> --json state`) rather than inferring it
+from local `git` — a local checkout that's behind `origin/master`, or that still
+has the feature branch around, can look merged when it isn't (or vice versa).
+`git checkout master && git pull` first if you do check locally.
+
 ## Commands
 
 | Command | Purpose |

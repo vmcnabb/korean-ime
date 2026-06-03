@@ -4,6 +4,10 @@ A release checklist so this is a routine, not archaeology. Versioning is
 single-source-of-truth from `package.json`; the build propagates it into the
 manifest (see [CLAUDE.md](CLAUDE.md) → *Releases*).
 
+> **`master` is protected — the version bump and changelog go through a PR like
+> any other change** (see CLAUDE.md → *Workflow*). The release tag is created on
+> the *merged* commit, in step 6, not on a local branch.
+
 ## 1. Pre-flight
 
 ```sh
@@ -11,7 +15,7 @@ git checkout master
 git pull
 git status        # working tree should be clean
 npm ci            # match the lockfile
-npm test          # tests green
+git switch -c release/vX.Y.Z   # release prep goes on a branch
 ```
 
 ## 2. Bump the version
@@ -59,18 +63,25 @@ In each:
 3. Toggle the on-screen keyboard from the context menu.
 4. Open the options page and confirm settings apply.
 
-## 6. Commit and tag
+## 6. PR, merge, then tag
+
+`master` is protected, so commit the bump on the release branch, open a PR, and
+merge it — *then* tag the merged commit on `master`.
 
 ```sh
 git add package.json CHANGELOG.md
 git commit -m "Release vX.Y.Z"
-git tag -a vX.Y.Z -m "vX.Y.Z"
-git push
+git push -u origin release/vX.Y.Z
+gh pr create --base master --title "Release vX.Y.Z" --body "..."
+# review + merge the PR (CI must be green), then:
+git checkout master && git pull          # pull the merged commit
+git tag -a vX.Y.Z -m "vX.Y.Z"            # tag the real merged commit
 git push --tags
 ```
 
-(`src/manifest.json` is generated and gitignored, so it isn't committed. Tags
-`v1.0.1`–`v2.2.2` are approximate, reconstructed after the fact. From 2.3.0
+(`src/manifest.json` is generated and gitignored, so it isn't committed. Tag
+**after** the merge so the tag points at the commit that's actually on `master`.
+Tags `v1.0.1`–`v2.2.2` are approximate, reconstructed after the fact. From 2.3.0
 onward, tags are exact — created at release time from the real commit.)
 
 ## 7. Package for the stores

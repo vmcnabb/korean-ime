@@ -132,7 +132,7 @@ ever need to.
 
 ## Contributing
 
-Contributions are welcome — please open an issue or pull request on [GitHub](https://github.com/vmcnabb/korean-ime). It's worth discussing your idea first to make sure it fits the direction of the project.
+Contributions are welcome — please open an issue or pull request on [GitHub](https://github.com/vmcnabb/korean-ime). It's worth discussing your idea first to make sure it fits the direction of the project. `master` is protected, so all changes go through a pull request.
 
 ## License
 
