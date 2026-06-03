@@ -26,6 +26,12 @@ jobs:
       - name: Validate
         run: npm run validate
 
+      # Report coverage (not enforced — no thresholds). Kept separate from the
+      # Validate gate so pass/fail runs on plain, uninstrumented tests; the
+      # text-summary lands in the step log.
+      - name: Coverage report
+        run: npm run test:coverage
+
       # Builds are pure (no gates) since validate covers them; build both
       # targets so a Chrome- or Firefox-specific build regression is caught.
       - name: Build (Chrome + Firefox)
