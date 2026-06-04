@@ -130,6 +130,16 @@ describe("HangulImeController flushes OSK-driven compositions while inactive", (
         expect(blur).toHaveBeenCalled();
     });
 
+    it("flushes an in-progress OSK composition when a physical key is pressed, and lets the key through", () => {
+        const { element, controller, blur } = inactiveController();
+
+        controller.addJamo("ㅂ", KeyCode.KeyQ); // OSK-driven composition begins
+        const keydown = dispatchKeydown(element, "KeyS", "s"); // physical Latin key
+
+        expect(blur).toHaveBeenCalled(); // Korean composition committed/cleared
+        expect(keydown.defaultPrevented).toBe(false); // physical key still types Latin
+    });
+
     it("does nothing on blur when there is no composition", () => {
         const { element, blur } = inactiveController();
 
