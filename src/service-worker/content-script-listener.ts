@@ -56,6 +56,10 @@ export class ContentScriptListener {
                     case ContentScriptRequestAction.SendKey:
                         this.stateManager.routeSendKey(sender.tab.id, (message as SendKeyRequestMessage).data);
                         break;
+
+                    case ContentScriptRequestAction.DisableOnScreenKeyboard:
+                        this.stateManager.setOnScreenKeyboardEnabled(sender.tab.id, false);
+                        break;
                 }
             }
         );

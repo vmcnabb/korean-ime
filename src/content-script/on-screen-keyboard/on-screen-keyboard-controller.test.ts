@@ -225,3 +225,67 @@ describe("OnScreenKeyboardController resize handling", () => {
         expect(el.style.left).toBe("0px");
     });
 });
+
+describe("OnScreenKeyboardController header controls", () => {
+    afterEach(() => jest.restoreAllMocks());
+
+    let sendMessage: jest.Mock;
+
+    beforeEach(() => {
+        document.body.innerHTML = "";
+        sendMessage = jest.fn();
+        Object.assign(globalThis, {
+            chrome: {
+                runtime: { sendMessage },
+                i18n: { getMessage: () => "" },
+            },
+        });
+    });
+
+    const host = () => document.querySelector("[id^='kb-']") as HTMLElement;
+
+    it("collapses and restores the keyboard from the header button", () => {
+        new OnScreenKeyboardController(() => {});
+        const el = host();
+        const collapse = el.querySelector(".kb-collapse") as HTMLButtonElement;
+
+        expect(el.classList.contains("collapsed")).toBe(false);
+        collapse.click();
+        expect(el.classList.contains("collapsed")).toBe(true);
+        collapse.click();
+        expect(el.classList.contains("collapsed")).toBe(false);
+    });
+
+    it("turns the keyboard off via the service worker from the close button", () => {
+        new OnScreenKeyboardController(() => {});
+        (host().querySelector(".kb-close") as HTMLButtonElement).click();
+
+        expect(sendMessage).toHaveBeenCalledWith({
+            type: "contentScriptRequest",
+            action: ContentScriptRequestAction.DisableOnScreenKeyboard,
+        });
+    });
+
+    it("drags only from the header, not from the keys", () => {
+        const controller = new OnScreenKeyboardController(() => {});
+        const el = host();
+        controller.showKeyboard();
+        const place = jest.spyOn(
+            OnScreenKeyboardController.prototype as unknown as { placeKeyboard: () => void },
+            "placeKeyboard"
+        );
+
+        // pressing a key must not move the keyboard
+        const key = document.querySelector("kbd.KeyS") as HTMLElement;
+        key.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, button: 0, screenX: 100, screenY: 100 }));
+        document.dispatchEvent(new MouseEvent("mousemove", { bubbles: true, buttons: 1, screenX: 80, screenY: 100 }));
+        expect(place).not.toHaveBeenCalled();
+
+        // dragging the header bar does
+        (el.querySelector(".kb-handle") as HTMLElement).dispatchEvent(
+            new MouseEvent("mousedown", { bubbles: true, button: 0, screenX: 100, screenY: 100 })
+        );
+        document.dispatchEvent(new MouseEvent("mousemove", { bubbles: true, buttons: 1, screenX: 80, screenY: 100 }));
+        expect(place).toHaveBeenCalled();
+    });
+});

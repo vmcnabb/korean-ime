@@ -30,6 +30,7 @@ export class OnScreenKeyboardController {
     private _isShift = false;
     private _compositionFeatures: SupportedCompositionFeatures | undefined;
     private _keyElements = new Map<KeyCode, HTMLElement>();
+    private _collapseButton?: HTMLButtonElement;
     private _onSendKey: (key: string, keyCode: KeyCode) => void;
 
     constructor(onSendKey: (key: string, keyCode: KeyCode) => void) {
@@ -206,7 +207,13 @@ export class OnScreenKeyboardController {
         const body = document.getElementsByTagName("body")[0];
         body.insertBefore(keyboardElement, body.firstChild);
 
-        this.renderKeyboard(keyboardElement, defaultLayout);
+        // Header bar (drag handle + collapse/close controls); the keys live in a
+        // body wrapper so the header can collapse them away.
+        keyboardElement.appendChild(this.createHeader());
+        const keyboardBody = document.createElement("div");
+        keyboardBody.className = "kb-body";
+        keyboardElement.appendChild(keyboardBody);
+        this.renderKeyboard(keyboardBody, defaultLayout);
 
         keyboardElement.addEventListener("mousedown", (e) => {
             e.preventDefault();
@@ -216,7 +223,8 @@ export class OnScreenKeyboardController {
                 return;
             }
 
-            if (e.target === keyboardElement || e.target.classList.contains("row")) {
+            // Drag only from the header bar, and not from its buttons.
+            if (e.target.closest(".kb-header") && !e.target.closest("button")) {
                 this._keyboardMovement.mouse.down = true;
                 this._keyboardMovement.mouse.startX = e.screenX;
                 this._keyboardMovement.mouse.startY = e.screenY;
@@ -301,6 +309,63 @@ export class OnScreenKeyboardController {
         window.visualViewport?.addEventListener("resize", reclampToViewport);
 
         return keyboardElement;
+    }
+
+    private createHeader(): HTMLDivElement {
+        const header = document.createElement("div");
+        header.className = "kb-header";
+
+        // A flex-grow grab area that also pushes the buttons to the right.
+        const handle = document.createElement("div");
+        handle.className = "kb-handle";
+        header.appendChild(handle);
+
+        this._collapseButton = this.createHeaderButton("kb-collapse", "–", "keyboard_minimise", () =>
+            this.toggleCollapsed()
+        );
+        header.appendChild(this._collapseButton);
+
+        header.appendChild(this.createHeaderButton("kb-close", "×", "keyboard_close", () => this.closeKeyboard()));
+
+        return header;
+    }
+
+    private createHeaderButton(
+        className: string,
+        glyph: string,
+        titleKey: string,
+        onClick: () => void
+    ): HTMLButtonElement {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = `kb-btn ${className}`;
+        button.textContent = glyph;
+        button.title = api.i18n.getMessage(titleKey);
+        button.addEventListener("click", onClick);
+        return button;
+    }
+
+    private toggleCollapsed() {
+        const collapsed = this._keyboardElement.classList.toggle("collapsed");
+
+        if (this._collapseButton) {
+            this._collapseButton.textContent = collapsed ? "□" : "–";
+            this._collapseButton.title = api.i18n.getMessage(collapsed ? "keyboard_restore" : "keyboard_minimise");
+        }
+
+        // The keyboard's size changed, so re-clamp it to stay on-screen (its
+        // anchor is preserved).
+        this.placeKeyboard();
+    }
+
+    private closeKeyboard() {
+        // Turn the on-screen keyboard off via the service worker so the tab
+        // state (and the context-menu checkbox) stays consistent with the
+        // toolbar / menu toggle.
+        api.runtime.sendMessage<ContentScriptRequestMessage>({
+            type: "contentScriptRequest",
+            action: ContentScriptRequestAction.DisableOnScreenKeyboard,
+        });
     }
 
     /**
