@@ -21,6 +21,8 @@ const outPath = resolve(root, "src/manifest.json");
 const pkgPath = resolve(root, "package.json");
 const sourceImageDir = resolve(root, "resources/images");
 const outputImageDir = resolve(root, "src/images");
+const bundledFontFamily = "NanumMyeongjo";
+const bundledFontFiles = [resolve(root, "resources/fonts/Nanum_Myeongjo/NanumMyeongjo-Bold.ttf")];
 const actionIconSizes = [16, 24, 32];
 const actionIconSources = {
     a: resolve(sourceImageDir, "icon_a.svg"),
@@ -97,6 +99,12 @@ function generateActionIcons() {
         for (const size of actionIconSizes) {
             const png = new Resvg(svg, {
                 fitTo: { mode: "width", value: size },
+                font: {
+                    defaultFontFamily: bundledFontFamily,
+                    fontFiles: bundledFontFiles,
+                    loadSystemFonts: false,
+                    serifFamily: bundledFontFamily,
+                },
             })
                 .render()
                 .asPng();
