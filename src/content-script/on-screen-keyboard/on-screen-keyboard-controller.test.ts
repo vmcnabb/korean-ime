@@ -2,11 +2,15 @@ import { OnScreenKeyboardController } from "./on-screen-keyboard-controller";
 import { KeyCode } from "../../keyboard/korean-keyboard-map";
 import { KoreanKeyboardMode } from "../../extension-state/korean-keyboard-mode";
 import { ContentScriptRequestAction } from "../../messaging/content-to-service-messages";
+import { modeIconHangul, modeIconEnglish } from "./mode-icons";
 
-// The controller side-effect-imports its stylesheet; Parcel handles that at
-// build time, so stub it for the test runner (cf. the `url:` asset mocks in
-// state-manager.test / menus.test).
+// The controller side-effect-imports its stylesheet and imports the build-time
+// generated mode-icons module; stub both for the test runner (cf. the `url:`
+// asset mocks in state-manager.test / menus.test).
 jest.mock("./on-screen-keyboard.scss", () => ({}), { virtual: true });
+jest.mock("./mode-icons", () => ({ modeIconHangul: "data:hangul", modeIconEnglish: "data:english" }), {
+    virtual: true,
+});
 
 describe("OnScreenKeyboardController han/yong key", () => {
     let sendMessage: jest.Mock;
@@ -223,5 +227,102 @@ describe("OnScreenKeyboardController resize handling", () => {
         // Left-anchored: keep the left edge on-screen (overflow off the right),
         // not pinned to the right with the left edge pushed off-screen.
         expect(el.style.left).toBe("0px");
+    });
+});
+
+describe("OnScreenKeyboardController header controls", () => {
+    afterEach(() => jest.restoreAllMocks());
+
+    let sendMessage: jest.Mock;
+
+    beforeEach(() => {
+        document.body.innerHTML = "";
+        sendMessage = jest.fn();
+        Object.assign(globalThis, {
+            chrome: {
+                runtime: { sendMessage },
+                i18n: { getMessage: () => "" },
+            },
+        });
+    });
+
+    const host = () => document.querySelector("[id^='kb-']") as HTMLElement;
+
+    it("collapses and restores the keyboard from the header button", () => {
+        new OnScreenKeyboardController(() => {});
+        const el = host();
+        const collapse = el.querySelector(".kb-collapse") as HTMLButtonElement;
+
+        expect(el.classList.contains("collapsed")).toBe(false);
+        collapse.click();
+        expect(el.classList.contains("collapsed")).toBe(true);
+        collapse.click();
+        expect(el.classList.contains("collapsed")).toBe(false);
+    });
+
+    it("turns the keyboard off via the service worker from the close button", () => {
+        new OnScreenKeyboardController(() => {});
+        (host().querySelector(".kb-close") as HTMLButtonElement).click();
+
+        expect(sendMessage).toHaveBeenCalledWith({
+            type: "contentScriptRequest",
+            action: ContentScriptRequestAction.DisableOnScreenKeyboard,
+        });
+    });
+
+    it("toggles the mode when the header mode indicator is clicked", () => {
+        const controller = new OnScreenKeyboardController(() => {});
+        controller.setHanYongEnabled(true);
+
+        (host().querySelector(".kb-mode") as HTMLImageElement).click();
+
+        expect(sendMessage).toHaveBeenCalledWith({
+            type: "contentScriptRequest",
+            action: ContentScriptRequestAction.ToggleHanYongMode,
+        });
+    });
+
+    it("shows the mode indicator only while Hangul typing is enabled, mirroring the mode", () => {
+        const controller = new OnScreenKeyboardController(() => {});
+        const indicator = host().querySelector(".kb-mode") as HTMLImageElement;
+
+        // hidden until Hangul typing is known to be enabled
+        expect(indicator.style.display).toBe("none");
+
+        controller.setHanYongEnabled(true);
+        controller.setMode(KoreanKeyboardMode.Hangul);
+        expect(indicator.style.display).not.toBe("none");
+        expect(indicator.getAttribute("src")).toBe(modeIconHangul);
+
+        controller.setMode(KoreanKeyboardMode.English);
+        expect(indicator.getAttribute("src")).toBe(modeIconEnglish);
+
+        // hidden again once Hangul typing is disabled (its independent OSK mode
+        // is not what the toolbar icon reflects)
+        controller.setHanYongEnabled(false);
+        expect(indicator.style.display).toBe("none");
+    });
+
+    it("drags only from the header, not from the keys", () => {
+        const controller = new OnScreenKeyboardController(() => {});
+        const el = host();
+        controller.showKeyboard();
+        const place = jest.spyOn(
+            OnScreenKeyboardController.prototype as unknown as { placeKeyboard: () => void },
+            "placeKeyboard"
+        );
+
+        // pressing a key must not move the keyboard
+        const key = document.querySelector("kbd.KeyS") as HTMLElement;
+        key.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, button: 0, screenX: 100, screenY: 100 }));
+        document.dispatchEvent(new MouseEvent("mousemove", { bubbles: true, buttons: 1, screenX: 80, screenY: 100 }));
+        expect(place).not.toHaveBeenCalled();
+
+        // dragging the header bar does
+        (el.querySelector(".kb-handle") as HTMLElement).dispatchEvent(
+            new MouseEvent("mousedown", { bubbles: true, button: 0, screenX: 100, screenY: 100 })
+        );
+        document.dispatchEvent(new MouseEvent("mousemove", { bubbles: true, buttons: 1, screenX: 80, screenY: 100 }));
+        expect(place).toHaveBeenCalled();
     });
 });

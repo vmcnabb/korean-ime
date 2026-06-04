@@ -103,6 +103,14 @@ export class StateManager {
         return newTabState.isOnScreenKeyboardEnabled;
     }
 
+    /** Explicitly set the on-screen keyboard on or off (e.g. the OSK's close button). */
+    public async setOnScreenKeyboardEnabled(tabId: number, enabled: boolean): Promise<void> {
+        await this.setTabState(tabId, (tabState) => ({
+            ...tabState,
+            isOnScreenKeyboardEnabled: enabled,
+        }));
+    }
+
     public async updatePresentation(tabId: number, tabState?: TabState) {
         const currentState = tabState ?? (await this.getTabState(tabId));
 

@@ -30,10 +30,67 @@
         margin-right: auto;
         display: block;
         background-color: var(--background-color);
-        padding-top: var(--key-margin);
         width: 100%;
         position: relative;
         box-sizing: border-box;
+    }
+
+    .kb-header {
+        display: flex;
+        align-items: stretch;
+        height: 22px;
+        background-color: var(--key-background-color);
+        border-bottom: 1px solid var(--border-color);
+        cursor: move;
+    }
+
+    .kb-mode {
+        flex: 0 0 auto;
+        align-self: center;
+        width: 16px;
+        height: 16px;
+        margin-left: 5px;
+        cursor: pointer;
+    }
+
+    .kb-handle {
+        flex: 1 1 auto;
+        cursor: move;
+    }
+
+    .kb-btn {
+        flex: 0 0 auto;
+        width: 30px;
+        padding: 0;
+        border: none;
+        background: transparent;
+        color: var(--key-color);
+        font-family: Arial, Helvetica, sans-serif;
+        font-size: 16px;
+        line-height: 1;
+        cursor: pointer;
+
+        &:hover {
+            background-color: var(--key-hover-background-color);
+        }
+    }
+
+    .kb-close:hover {
+        background-color: #a00000;
+    }
+
+    .kb-body {
+        padding-top: var(--key-margin);
+    }
+
+    &.collapsed .kb-body {
+        display: none;
+    }
+
+    // Collapsed, the handle becomes a fixed ~1cm spacer between the mode icon
+    // and the buttons (the bar shrinks to fit — see toggleCollapsed).
+    &.collapsed .kb-handle {
+        flex: 0 0 1cm;
     }
 
     div.row {

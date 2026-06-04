@@ -44,17 +44,32 @@ export class ContentScriptListener {
                     return;
                 }
 
+                // These StateManager calls are async; attach a catch so a failure
+                // (e.g. storage error) is logged rather than becoming an unhandled
+                // rejection that could destabilize the MV3 worker.
                 switch (message.action) {
                     case ContentScriptRequestAction.ToggleHanYongMode:
-                        this.stateManager.toggleHanYongMode(sender.tab.id);
+                        this.stateManager
+                            .toggleHanYongMode(sender.tab.id)
+                            .catch((error) => debugLog("toggleHanYongMode failed:", error));
                         break;
 
                     case ContentScriptRequestAction.RefreshState:
-                        this.stateManager.sendStateToTab(sender.tab.id);
+                        this.stateManager
+                            .sendStateToTab(sender.tab.id)
+                            .catch((error) => debugLog("sendStateToTab failed:", error));
                         break;
 
                     case ContentScriptRequestAction.SendKey:
-                        this.stateManager.routeSendKey(sender.tab.id, (message as SendKeyRequestMessage).data);
+                        this.stateManager
+                            .routeSendKey(sender.tab.id, (message as SendKeyRequestMessage).data)
+                            .catch((error) => debugLog("routeSendKey failed:", error));
+                        break;
+
+                    case ContentScriptRequestAction.DisableOnScreenKeyboard:
+                        this.stateManager
+                            .setOnScreenKeyboardEnabled(sender.tab.id, false)
+                            .catch((error) => debugLog("setOnScreenKeyboardEnabled failed:", error));
                         break;
                 }
             }

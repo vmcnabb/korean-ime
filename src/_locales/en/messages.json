@@ -50,6 +50,15 @@
     "keyboard_key_controlRight_tooltip": {
         "message": "Convert the selected Hangul to Hanja"
     },
+    "keyboard_minimise": {
+        "message": "Minimise"
+    },
+    "keyboard_restore": {
+        "message": "Restore"
+    },
+    "keyboard_close": {
+        "message": "Close"
+    },
     "options_title": {
         "message": "Korean IME Options"
     },

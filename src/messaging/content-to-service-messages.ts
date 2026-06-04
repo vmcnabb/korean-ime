@@ -10,6 +10,8 @@ export enum ContentScriptRequestAction {
     ToggleHanYongMode = "toggleHanYongMode",
     /** request the service script to route a key to the focused frame */
     SendKey = "sendKey",
+    /** request the service script to turn the on-screen keyboard off */
+    DisableOnScreenKeyboard = "disableOnScreenKeyboard",
 }
 
 export type SendKeyRequestMessage = {
@@ -21,7 +23,10 @@ export type SendKeyRequestMessage = {
 export type ContentScriptRequestMessage =
     | {
           type: "contentScriptRequest";
-          action: ContentScriptRequestAction.RefreshState | ContentScriptRequestAction.ToggleHanYongMode;
+          action:
+              | ContentScriptRequestAction.RefreshState
+              | ContentScriptRequestAction.ToggleHanYongMode
+              | ContentScriptRequestAction.DisableOnScreenKeyboard;
       }
     | SendKeyRequestMessage;
 

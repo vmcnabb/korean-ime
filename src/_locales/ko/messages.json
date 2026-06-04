@@ -50,6 +50,15 @@
     "keyboard_key_controlRight_tooltip": {
         "message": "선택한 한글을 한자로 변환하십시오"
     },
+    "keyboard_minimise": {
+        "message": "최소화"
+    },
+    "keyboard_restore": {
+        "message": "복원"
+    },
+    "keyboard_close": {
+        "message": "닫기"
+    },
     "options_title": {
         "message": "한글 입력기 설정"
     },
