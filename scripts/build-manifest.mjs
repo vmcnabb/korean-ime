@@ -1,8 +1,8 @@
 // Generates src/manifest.json from src/manifest.base.json for a given browser
-// target, and regenerates the action icon PNGs from their SVG sources. The
-// generated files are build artifacts (gitignored) — the base manifest, the
-// SVGs, package.json's version, and the per-target overrides below are the
-// real source of truth.
+// target, and regenerates runtime images in src/images from source assets in
+// resources/images. The generated files are build artifacts (gitignored) — the
+// base manifest, the source assets, package.json's version, and the per-target
+// overrides below are the real source of truth.
 //
 // Parcel's webextension transformer requires the manifest to be named exactly
 // `manifest.json` and to sit beside the assets it references (so relative paths
@@ -12,18 +12,21 @@
 // Usage: node scripts/build-manifest.mjs <target>      (default: chrome)
 
 import { Resvg } from "@resvg/resvg-js";
-import { readFileSync, writeFileSync } from "node:fs";
+import { copyFileSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 const root = process.cwd();
 const basePath = resolve(root, "src/manifest.base.json");
 const outPath = resolve(root, "src/manifest.json");
 const pkgPath = resolve(root, "package.json");
+const sourceImageDir = resolve(root, "resources/images");
+const outputImageDir = resolve(root, "src/images");
 const actionIconSizes = [16, 24, 32];
 const actionIconSources = {
-    a: resolve(root, "src/images/icon_a.svg"),
-    h: resolve(root, "src/images/icon_h.svg"),
+    a: resolve(sourceImageDir, "icon_a.svg"),
+    h: resolve(sourceImageDir, "icon_h.svg"),
 };
+const copiedRuntimeImages = ["icon48.png", "icon128.png"];
 
 // Per-target overrides merged onto the base manifest.
 //
@@ -73,6 +76,18 @@ if (!overrides) {
 const stripBom = (text) => (text.charCodeAt(0) === 0xfeff ? text.slice(1) : text);
 const readJson = (path) => JSON.parse(stripBom(readFileSync(path, "utf8")));
 
+function prepareOutputImageDir() {
+    mkdirSync(outputImageDir, { recursive: true });
+}
+
+function copyRuntimeImages() {
+    for (const fileName of copiedRuntimeImages) {
+        copyFileSync(resolve(sourceImageDir, fileName), resolve(outputImageDir, fileName));
+    }
+
+    console.log(`[build-manifest] copied ${copiedRuntimeImages.length} runtime images`);
+}
+
 function generateActionIcons() {
     let generatedCount = 0;
 
@@ -85,7 +100,7 @@ function generateActionIcons() {
             })
                 .render()
                 .asPng();
-            const outputPath = resolve(root, `src/images/icon${size}${suffix}.png`);
+            const outputPath = resolve(outputImageDir, `icon${size}${suffix}.png`);
 
             writeFileSync(outputPath, png);
             generatedCount += 1;
@@ -104,6 +119,8 @@ if (!version) {
 const base = readJson(basePath);
 const manifest = { ...base, version, ...overrides };
 
+prepareOutputImageDir();
+copyRuntimeImages();
 generateActionIcons();
 writeFileSync(outPath, JSON.stringify(manifest, null, 4) + "\n");
 console.log(`[build-manifest] wrote src/manifest.json for ${target} (version ${version})`);

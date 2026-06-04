@@ -4,13 +4,8 @@ dist-firefox/
 obj/
 # Generated from manifest.base.json by scripts/build-manifest.mjs
 src/manifest.json
-# Generated action icons from src/images/icon_{a,h}.svg via scripts/build-manifest.mjs
-src/images/icon16a.png
-src/images/icon16h.png
-src/images/icon24a.png
-src/images/icon24h.png
-src/images/icon32a.png
-src/images/icon32h.png
+# Generated runtime images; source assets live in resources/images
+src/images/
 node_modules
 .parcel-cache
 coverage/
