@@ -1,7 +1,11 @@
 import { TabState } from "../extension-state/tab-state";
 import { KoreanKeyboardMode } from "../extension-state/korean-keyboard-mode";
 import icon16h from "url:../images/icon16h.png";
+import icon24h from "url:../images/icon24h.png";
+import icon32h from "url:../images/icon32h.png";
 import icon16a from "url:../images/icon16a.png";
+import icon24a from "url:../images/icon24a.png";
+import icon32a from "url:../images/icon32a.png";
 import {
     ServiceScriptMessage,
     ServiceScriptMessageAction,
@@ -22,6 +26,8 @@ import { api } from "../platform/browser-api";
 const LIVE_STATE_KEY = "liveState";
 /** Persisted (survives restart) last state, source for KeepLastState seeding. */
 const LAST_STATE_KEY = "lastState";
+const hangulActionIcons = { 16: icon16h, 24: icon24h, 32: icon32h };
+const englishActionIcons = { 16: icon16a, 24: icon24a, 32: icon32a };
 
 /**
  * Manages extension state for all tabs.
@@ -103,7 +109,7 @@ export class StateManager {
         const isHangulMode = currentState.koreanKeyboardMode === KoreanKeyboardMode.Hangul;
         await api.action.setIcon({
             tabId: tabId,
-            path: isHangulMode ? icon16h : icon16a,
+            path: isHangulMode ? hangulActionIcons : englishActionIcons,
         });
         await api.action.setTitle({
             tabId: tabId,

@@ -13,7 +13,11 @@ import { TabState } from "../extension-state/tab-state";
 // `url:` asset imports reached transitively (state-manager → menus →
 // romanize-menu-actions). Parcel resolves these at build time; stub them here.
 jest.mock("url:../images/icon16h.png", () => "icon16h", { virtual: true });
+jest.mock("url:../images/icon24h.png", () => "icon24h", { virtual: true });
+jest.mock("url:../images/icon32h.png", () => "icon32h", { virtual: true });
 jest.mock("url:../images/icon16a.png", () => "icon16a", { virtual: true });
+jest.mock("url:../images/icon24a.png", () => "icon24a", { virtual: true });
+jest.mock("url:../images/icon32a.png", () => "icon32a", { virtual: true });
 jest.mock("url:./popup-converter/popup-converter.html", () => "popup.html", { virtual: true });
 
 // In-memory stand-ins for the three storage areas the manager touches.
@@ -405,6 +409,44 @@ describe("refreshActiveTabPresentation", () => {
         await manager.refreshActiveTabPresentation();
 
         expect(chrome.contextMenus.update).not.toHaveBeenCalled();
+    });
+});
+
+describe("action icon", () => {
+    it("sets the Hangul-mode icon paths for all supported action sizes", async () => {
+        withSettings({});
+        session["tabState-1"] = {
+            koreanKeyboardMode: KoreanKeyboardMode.Hangul,
+            isOnScreenKeyboardEnabled: false,
+        };
+        const manager = new StateManager();
+
+        await manager.sendStateToTab(1);
+
+        expect(chrome.action.setIcon).toHaveBeenCalledWith(
+            expect.objectContaining({
+                tabId: 1,
+                path: { 16: "icon16h", 24: "icon24h", 32: "icon32h" },
+            })
+        );
+    });
+
+    it("sets the English-mode icon paths for all supported action sizes", async () => {
+        withSettings({});
+        session["tabState-1"] = {
+            koreanKeyboardMode: KoreanKeyboardMode.English,
+            isOnScreenKeyboardEnabled: false,
+        };
+        const manager = new StateManager();
+
+        await manager.sendStateToTab(1);
+
+        expect(chrome.action.setIcon).toHaveBeenCalledWith(
+            expect.objectContaining({
+                tabId: 1,
+                path: { 16: "icon16a", 24: "icon24a", 32: "icon32a" },
+            })
+        );
     });
 });
 
