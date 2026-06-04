@@ -17,6 +17,8 @@ import {
 import { api } from "../platform/browser-api";
 
 export class ContentScriptController {
+    private isHanYongEnabled = false;
+    private isHanYongKeyboardKeyEnabled = false;
     private textEntryMode = KoreanKeyboardMode.English;
     private textInputManager = new TextInputManager();
     private keyboardController?: OnScreenKeyboardController;
@@ -72,8 +74,14 @@ export class ContentScriptController {
     }
 
     private handleTabStateMessage(message: TabStateMessage) {
-        if (message.data.koreanKeyboardMode !== this.textEntryMode) {
-            this.setTextEntryMode(message.data.koreanKeyboardMode);
+        this.isHanYongEnabled = message.data.isHanYongEnabled;
+        this.isHanYongKeyboardKeyEnabled = message.data.isHanYongKeyboardKeyEnabled;
+        this.keyboardController?.setHanYongEnabled(message.data.isHanYongEnabled);
+
+        const nextMode = message.data.isHanYongEnabled ? message.data.koreanKeyboardMode : KoreanKeyboardMode.English;
+
+        if (nextMode !== this.textEntryMode) {
+            this.setTextEntryMode(nextMode);
         }
 
         if (message.data.isOnScreenKeyboardEnabled) {
@@ -87,7 +95,12 @@ export class ContentScriptController {
         document.addEventListener(
             "keydown",
             (e) => {
-                if (e.code === KeyCode.AltRight && !e.repeat) {
+                if (
+                    this.isHanYongEnabled &&
+                    this.isHanYongKeyboardKeyEnabled &&
+                    e.code === KeyCode.AltRight &&
+                    !e.repeat
+                ) {
                     api.runtime.sendMessage<ContentScriptRequestMessage>({
                         type: "contentScriptRequest",
                         action: ContentScriptRequestAction.ToggleHanYongMode,
@@ -105,7 +118,7 @@ export class ContentScriptController {
         document.addEventListener(
             "keyup",
             (e) => {
-                if (e.code === KeyCode.AltRight) {
+                if (this.isHanYongEnabled && this.isHanYongKeyboardKeyEnabled && e.code === KeyCode.AltRight) {
                     e.preventDefault();
                 }
             },

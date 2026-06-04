@@ -59,6 +59,18 @@
     "options_hanYong_heading": {
         "message": "한/영 전환"
     },
+    "options_hanYong_enabled_label": {
+        "message": "한글 입력 사용"
+    },
+    "options_hanYong_disabled_hint": {
+        "message": "끄면 모든 한/영 전환이 비활성화되고 오른쪽 Alt/한영 키도 동작하지 않습니다."
+    },
+    "options_hanYong_keyboardKeyEnabled_label": {
+        "message": "오른쪽 Alt/한영 키 전환 사용"
+    },
+    "options_hanYong_keyboardKeyEnabled_description": {
+        "message": "실제 키보드 키에 적용됩니다. 한국어 키보드에서는 스페이스바 오른쪽의 전용 한/영 키가 이에 해당합니다."
+    },
     "options_hanYong_hint": {
         "message": "한글과 로마자 입력을 전환합니다."
     },

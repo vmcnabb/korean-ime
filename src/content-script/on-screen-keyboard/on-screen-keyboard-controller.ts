@@ -24,6 +24,7 @@ export class OnScreenKeyboardController {
     };
 
     private _mode = KoreanKeyboardMode.English;
+    private _isHanYongEnabled = false;
     private _isShift = false;
     private _compositionFeatures: SupportedCompositionFeatures | undefined;
     private _keyElements = new Map<KeyCode, HTMLElement>();
@@ -43,6 +44,11 @@ export class OnScreenKeyboardController {
 
         this._keyboardElement.classList.toggle("hanMode", isHanMode);
         this._keyboardElement.classList.toggle("yongMode", !isHanMode);
+    }
+
+    public setHanYongEnabled(enabled: boolean) {
+        this._isHanYongEnabled = enabled;
+        this._keyElements.get(KeyCode.AltRight)?.classList.toggle("disabled", !enabled);
     }
 
     public setShift(shift: boolean) {
@@ -275,6 +281,9 @@ export class OnScreenKeyboardController {
         } else if (key.label === "Shift") {
             this.setShift(!isShift);
         } else if (keyCode === KeyCode.AltRight) {
+            if (!this._isHanYongEnabled) {
+                return;
+            }
             api.runtime.sendMessage<ContentScriptRequestMessage>({
                 type: "contentScriptRequest",
                 action: ContentScriptRequestAction.ToggleHanYongMode,
@@ -383,5 +392,7 @@ export class OnScreenKeyboardController {
 
             keyboardELement.appendChild(rowElement);
         });
+
+        this.setHanYongEnabled(this._isHanYongEnabled);
     }
 }
