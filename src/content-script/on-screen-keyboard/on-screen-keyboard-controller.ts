@@ -357,7 +357,9 @@ export class OnScreenKeyboardController {
         button.type = "button";
         button.className = `kb-btn ${className}`;
         button.textContent = glyph;
-        button.title = api.i18n.getMessage(titleKey);
+        const label = api.i18n.getMessage(titleKey);
+        button.title = label;
+        button.setAttribute("aria-label", label);
         button.addEventListener("click", onClick);
         return button;
     }
@@ -406,7 +408,11 @@ export class OnScreenKeyboardController {
         // icon doesn't reflect, so showing the icon here would be misleading.
         if (this._isHanYongEnabled === true) {
             indicator.style.display = "";
-            indicator.src = this._mode === KoreanKeyboardMode.Hangul ? modeIconHangul : modeIconEnglish;
+            const isHangul = this._mode === KoreanKeyboardMode.Hangul;
+            indicator.src = isHangul ? modeIconHangul : modeIconEnglish;
+            // Label it like the toolbar icon so it has an accessible name and tooltip.
+            indicator.alt = api.i18n.getMessage(isHangul ? "action_title_hangul" : "action_title_english");
+            indicator.title = indicator.alt;
         } else {
             indicator.style.display = "none";
         }
