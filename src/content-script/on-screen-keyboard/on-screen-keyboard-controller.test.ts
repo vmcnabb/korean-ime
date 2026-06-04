@@ -84,3 +84,37 @@ describe("OnScreenKeyboardController han/yong key", () => {
         expect(keyboard().classList.contains("hanMode")).toBe(true);
     });
 });
+
+describe("OnScreenKeyboardController resize handling", () => {
+    afterEach(() => jest.restoreAllMocks());
+
+    beforeEach(() => {
+        document.body.innerHTML = "";
+        Object.assign(globalThis, {
+            chrome: {
+                runtime: { sendMessage: jest.fn() },
+                i18n: { getMessage: () => "" },
+            },
+        });
+    });
+
+    it("re-clamps to the viewport on window resize, but only while visible", () => {
+        const placeKeyboard = jest.spyOn(
+            OnScreenKeyboardController.prototype as unknown as { placeKeyboard: () => void },
+            "placeKeyboard"
+        );
+
+        const controller = new OnScreenKeyboardController(() => {});
+
+        // Hidden by default: a resize must not reposition. While hidden offsetWidth
+        // is 0, so placement would be meaningless; showKeyboard re-places on show.
+        window.dispatchEvent(new Event("resize"));
+        expect(placeKeyboard).not.toHaveBeenCalled();
+
+        controller.showKeyboard();
+        placeKeyboard.mockClear();
+
+        window.dispatchEvent(new Event("resize"));
+        expect(placeKeyboard).toHaveBeenCalled();
+    });
+});

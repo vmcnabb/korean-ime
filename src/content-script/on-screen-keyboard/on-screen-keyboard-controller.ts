@@ -259,6 +259,18 @@ export class OnScreenKeyboardController {
             this.setShift(e.shiftKey);
         };
 
+        // Re-clamp to the viewport when the window (or the visual viewport, e.g.
+        // on zoom) changes size, so a smaller viewport can't strand the keyboard
+        // off-screen. Only while visible: when hidden, offsetWidth is 0 and
+        // placement would compute garbage (showKeyboard re-places it on show).
+        const reclampToViewport = () => {
+            if (keyboardElement.style.display !== "none") {
+                this.placeKeyboard();
+            }
+        };
+        window.addEventListener("resize", reclampToViewport);
+        window.visualViewport?.addEventListener("resize", reclampToViewport);
+
         return keyboardElement;
     }
 
