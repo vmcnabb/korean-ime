@@ -212,23 +212,23 @@ export class HangulImeController {
             event.stopImmediatePropagation();
             event.stopPropagation();
         },
-        blur: () => {
-            if (!this._isActive) {
-                return;
-            }
-
-            this.compositor.reset();
-            this.compositionAdapter.blur();
-        },
-        mousedown: () => {
-            if (!this._isActive) {
-                return;
-            }
-
-            this.compositor.reset();
-            this.compositionAdapter.blur();
-        },
+        blur: () => this.flushComposition(),
+        mousedown: () => this.flushComposition(),
     };
+
+    // Commit and clear any in-progress composition. Runs when the controller is
+    // active, or when a composition is in progress even though inactive: the
+    // on-screen keyboard can drive composition while the physical keyboard is
+    // inactive (Hangul typing disabled), and a focus/caret change must still
+    // flush it — otherwise the next OSK jamo would attach to a stale block.
+    private flushComposition() {
+        if (!this._isActive && !this.compositor.isCompositing()) {
+            return;
+        }
+
+        this.compositor.reset();
+        this.compositionAdapter.blur();
+    }
 
     /**
      * Add a non-Hangul character to the composition adapter.

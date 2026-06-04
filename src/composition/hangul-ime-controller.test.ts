@@ -1,5 +1,6 @@
 import { HangulImeController } from "./hangul-ime-controller";
 import { InputAdapter } from "./composition-adapters/input-adapter";
+import { KeyCode } from "../keyboard/korean-keyboard-map";
 
 function dispatchKeydown(target: EventTarget, code: string, key: string): KeyboardEvent {
     const event = new KeyboardEvent("keydown", { code, key, bubbles: true, cancelable: true });
@@ -88,5 +89,52 @@ describe("HangulImeController functional keys during composition", () => {
         const r = dispatchKeydown(element, "KeyR", "r");
 
         expect(r.defaultPrevented).toBe(true);
+    });
+});
+
+describe("HangulImeController flushes OSK-driven compositions while inactive", () => {
+    afterEach(() => jest.restoreAllMocks());
+
+    // Mirrors "Hangul typing disabled": the on-screen keyboard drives composition
+    // through the public addJamo() path while the controller is inactive (the
+    // physical keyboard stays Latin). A focus/caret change must still flush the
+    // in-progress composition, otherwise the next OSK jamo attaches to the stale
+    // block. (addJamo is the same entry point enterCharacter / the OSK uses; the
+    // inactive keydown path is intentionally ignored, so we can't go via keydown.)
+    function inactiveController() {
+        jest.spyOn(InputAdapter.prototype, "beginComposition").mockImplementation(() => {});
+        jest.spyOn(InputAdapter.prototype, "updateComposition").mockImplementation(() => {});
+        jest.spyOn(InputAdapter.prototype, "endComposition").mockImplementation(() => {});
+        const blur = jest.spyOn(InputAdapter.prototype, "blur");
+
+        const element = document.createElement("textarea");
+        const controller = new HangulImeController(element); // deliberately NOT activated
+        return { element, controller, blur };
+    }
+
+    it("flushes an in-progress OSK composition on blur", () => {
+        const { element, controller, blur } = inactiveController();
+
+        controller.addJamo("ㅂ", KeyCode.KeyQ); // OSK-driven composition begins
+        element.dispatchEvent(new FocusEvent("blur"));
+
+        expect(blur).toHaveBeenCalled();
+    });
+
+    it("flushes an in-progress OSK composition on mousedown", () => {
+        const { element, controller, blur } = inactiveController();
+
+        controller.addJamo("ㅂ", KeyCode.KeyQ);
+        element.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+
+        expect(blur).toHaveBeenCalled();
+    });
+
+    it("does nothing on blur when there is no composition", () => {
+        const { element, blur } = inactiveController();
+
+        element.dispatchEvent(new FocusEvent("blur"));
+
+        expect(blur).not.toHaveBeenCalled();
     });
 });
