@@ -205,4 +205,23 @@ describe("OnScreenKeyboardController resize handling", () => {
         // It tracked from the rendered 0 (now ~10px), not the stale 200 (~210px).
         expect(parseFloat(el.style.right)).toBeLessThan(50);
     });
+
+    it("keeps the anchored edge on-screen when the keyboard is wider than the viewport", () => {
+        Object.defineProperty(window, "innerWidth", { configurable: true, value: 300 });
+        Object.defineProperty(window, "innerHeight", { configurable: true, value: 800 });
+
+        const controller = new OnScreenKeyboardController(() => {});
+        const el = document.querySelector("[id^='kb-']") as HTMLElement;
+        Object.defineProperty(el, "offsetWidth", { configurable: true, value: 480 }); // wider than the viewport
+        Object.defineProperty(el, "offsetHeight", { configurable: true, value: 250 });
+
+        // Anchor it to the left.
+        (controller as unknown as { _keyboardPlacement: { originX: string } })._keyboardPlacement.originX = "left";
+
+        controller.showKeyboard();
+
+        // Left-anchored: keep the left edge on-screen (overflow off the right),
+        // not pinned to the right with the left edge pushed off-screen.
+        expect(el.style.left).toBe("0px");
+    });
 });

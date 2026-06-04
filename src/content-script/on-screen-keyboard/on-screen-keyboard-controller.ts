@@ -127,12 +127,23 @@ export class OnScreenKeyboardController {
 
         let y = placement.originY === "bottom" ? window.innerHeight - height - placement.y : placement.y;
 
-        // try to make sure keyboard is not partially off screen
-        if (x < 0) x = 0;
-        if (y < 0) y = 0;
+        // Keep the keyboard within the viewport. When it is larger than the
+        // viewport it cannot fit either way, so keep the anchored edge on-screen
+        // (overflowing off the opposite edge) rather than pinning the far edge and
+        // pushing the anchored one off.
+        if (width > window.innerWidth) {
+            x = placement.originX === "right" ? window.innerWidth - width : 0;
+        } else {
+            if (x < 0) x = 0;
+            if (x + width > window.innerWidth) x = window.innerWidth - width;
+        }
 
-        if (x + width > window.innerWidth) x = window.innerWidth - width;
-        if (y + height > window.innerHeight) y = window.innerHeight - height;
+        if (height > window.innerHeight) {
+            y = placement.originY === "bottom" ? window.innerHeight - height : 0;
+        } else {
+            if (y < 0) y = 0;
+            if (y + height > window.innerHeight) y = window.innerHeight - height;
+        }
 
         // Re-derive the anchor corner from the keyboard's quadrant only when the
         // user is moving it. On a resize re-clamp we keep the existing anchor, so
