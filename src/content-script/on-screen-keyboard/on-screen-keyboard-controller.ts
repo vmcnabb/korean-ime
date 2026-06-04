@@ -162,10 +162,15 @@ export class OnScreenKeyboardController {
             keyboardElement.style.bottom = "";
         }
 
-        placement.x = x;
-        placement.y = y;
-        placement.originX = originX;
-        placement.originY = originY;
+        // Only an explicit move updates the remembered position. A resize/show
+        // clamps for display (above) but keeps the intended distance, so the
+        // keyboard returns to where the user put it once there's room again.
+        if (reanchor) {
+            placement.x = x;
+            placement.y = y;
+            placement.originX = originX;
+            placement.originY = originY;
+        }
     }
 
     private createKeyboard() {

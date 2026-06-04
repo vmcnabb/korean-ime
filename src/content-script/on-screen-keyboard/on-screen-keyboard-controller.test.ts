@@ -148,4 +148,37 @@ describe("OnScreenKeyboardController resize handling", () => {
         expect(el.style.left).toBe("");
         expect(el.style.top).toBe("");
     });
+
+    it("remembers the anchor distance across a resize (restores the offset, not flush to the corner)", () => {
+        const setViewport = (w: number, h: number) => {
+            Object.defineProperty(window, "innerWidth", { configurable: true, value: w });
+            Object.defineProperty(window, "innerHeight", { configurable: true, value: h });
+        };
+
+        const controller = new OnScreenKeyboardController(() => {});
+        const el = document.querySelector("[id^='kb-']") as HTMLElement;
+        Object.defineProperty(el, "offsetWidth", { configurable: true, value: 480 });
+        Object.defineProperty(el, "offsetHeight", { configurable: true, value: 250 });
+
+        // Intended position: 100px / 60px in from the default bottom-right corner.
+        const placement = (controller as unknown as { _keyboardPlacement: { x: number; y: number } })
+            ._keyboardPlacement;
+        placement.x = 100;
+        placement.y = 60;
+
+        setViewport(1200, 800);
+        controller.showKeyboard();
+        expect(el.style.right).toBe("100px");
+        expect(el.style.bottom).toBe("60px");
+
+        // Shrink below the keyboard's size (clamps flush to the corner), then restore.
+        setViewport(300, 200);
+        window.dispatchEvent(new Event("resize"));
+        setViewport(1200, 800);
+        window.dispatchEvent(new Event("resize"));
+
+        // The remembered distance is restored, not collapsed to 0.
+        expect(el.style.right).toBe("100px");
+        expect(el.style.bottom).toBe("60px");
+    });
 });
