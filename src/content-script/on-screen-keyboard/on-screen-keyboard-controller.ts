@@ -47,8 +47,17 @@ export class OnScreenKeyboardController {
     }
 
     public setHanYongEnabled(enabled: boolean) {
+        if (enabled === this._isHanYongEnabled) {
+            return;
+        }
+
         this._isHanYongEnabled = enabled;
-        this._keyElements.get(KeyCode.AltRight)?.classList.toggle("disabled", !enabled);
+
+        // Switching regime starts the on-screen keyboard in Latin. When Hangul
+        // typing is enabled the shared mode is pushed in immediately afterwards
+        // (see ContentScriptController); when it is disabled this is the
+        // ephemeral, never-saved OSK-local mode, which resets to Latin here.
+        this.setMode(KoreanKeyboardMode.English);
     }
 
     public setShift(shift: boolean) {
@@ -281,13 +290,21 @@ export class OnScreenKeyboardController {
         } else if (key.label === "Shift") {
             this.setShift(!isShift);
         } else if (keyCode === KeyCode.AltRight) {
-            if (!this._isHanYongEnabled) {
-                return;
+            if (this._isHanYongEnabled) {
+                // Hangul typing is enabled: behave like the toolbar toggle and
+                // the physical Right Alt key — flip the shared per-tab mode.
+                api.runtime.sendMessage<ContentScriptRequestMessage>({
+                    type: "contentScriptRequest",
+                    action: ContentScriptRequestAction.ToggleHanYongMode,
+                });
+            } else {
+                // Hangul typing is disabled: this is an independent, ephemeral,
+                // OSK-only toggle. It never leaves this tab, is never saved, and
+                // does not affect the physical keyboard.
+                this.setMode(
+                    this._mode === KoreanKeyboardMode.Hangul ? KoreanKeyboardMode.English : KoreanKeyboardMode.Hangul
+                );
             }
-            api.runtime.sendMessage<ContentScriptRequestMessage>({
-                type: "contentScriptRequest",
-                action: ContentScriptRequestAction.ToggleHanYongMode,
-            });
         } else if (keyCode === KeyCode.Space) {
             this.sendKey(" ", keyCode);
         } else if (keyCode === KeyCode.Backspace) {
@@ -392,7 +409,5 @@ export class OnScreenKeyboardController {
 
             keyboardELement.appendChild(rowElement);
         });
-
-        this.setHanYongEnabled(this._isHanYongEnabled);
     }
 }
