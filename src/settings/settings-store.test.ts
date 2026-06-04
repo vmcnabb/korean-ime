@@ -47,6 +47,8 @@ describe("loadSettings", () => {
 
         expect(settings.shareAcrossTabs).toBe(true);
         expect(settings.hanYong.persistence).toBe(Persistence.KeepLastState);
+        expect(settings.hanYong.enabled).toBe(true);
+        expect(settings.hanYong.keyboardKeyEnabled).toBe(true);
         expect(settings.onScreenKeyboard.persistence).toBe(Persistence.AlwaysOff);
     });
 
@@ -76,6 +78,13 @@ describe("loadSettings", () => {
         stored({ onScreenKeyboard: "garbage" });
 
         expect((await loadSettings()).onScreenKeyboard).toEqual(defaultSettings.onScreenKeyboard);
+    });
+
+    it("keeps newly added nested defaults when older stored objects omit them", async () => {
+        stored({ hanYong: { persistence: Persistence.KeepLastState } });
+
+        expect((await loadSettings()).hanYong.enabled).toBe(true);
+        expect((await loadSettings()).hanYong.keyboardKeyEnabled).toBe(true);
     });
 });
 

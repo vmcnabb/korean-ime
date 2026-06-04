@@ -65,13 +65,22 @@ export class StateManager {
     }
 
     public async toggleHanYongMode(tabId: number): Promise<void> {
-        await this.setTabState(tabId, (tabState) => ({
-            ...tabState,
-            koreanKeyboardMode:
-                tabState.koreanKeyboardMode === KoreanKeyboardMode.Hangul
-                    ? KoreanKeyboardMode.English
-                    : KoreanKeyboardMode.Hangul,
-        }));
+        const settings = await loadSettings();
+        if (!settings.hanYong.enabled) {
+            return;
+        }
+
+        await this.setTabState(
+            tabId,
+            (tabState) => ({
+                ...tabState,
+                koreanKeyboardMode:
+                    tabState.koreanKeyboardMode === KoreanKeyboardMode.Hangul
+                        ? KoreanKeyboardMode.English
+                        : KoreanKeyboardMode.Hangul,
+            }),
+            settings
+        );
     }
 
     /**
@@ -88,10 +97,10 @@ export class StateManager {
         return newTabState.isOnScreenKeyboardEnabled;
     }
 
-    public async updatePresentation(tabId: number) {
-        const tabState = await this.getTabState(tabId);
+    public async updatePresentation(tabId: number, tabState?: TabState) {
+        const currentState = tabState ?? (await this.getTabState(tabId));
 
-        const isHangulMode = tabState.koreanKeyboardMode === KoreanKeyboardMode.Hangul;
+        const isHangulMode = currentState.koreanKeyboardMode === KoreanKeyboardMode.Hangul;
         await api.action.setIcon({
             tabId: tabId,
             path: isHangulMode ? icon16h : icon16a,
@@ -106,7 +115,7 @@ export class StateManager {
         // than throwing an unhandled rejection into the presentation path.
         try {
             await api.contextMenus.update(menus.onScreenKeyboard.id, {
-                checked: tabState.isOnScreenKeyboardEnabled,
+                checked: currentState.isOnScreenKeyboardEnabled,
             });
         } catch (error) {
             debugLog("Could not update on-screen-keyboard menu item:", error);
@@ -142,16 +151,15 @@ export class StateManager {
      * tracking whatever tab was last active. Persisting the derived state on
      * first sight anchors the tab so it becomes independent. Returns the state.
      */
-    private async anchorTabState(tabId: number): Promise<TabState> {
+    private async anchorTabState(tabId: number, settings?: Settings): Promise<TabState> {
+        const currentSettings = settings ?? (await loadSettings());
         const key = this.tabStateKey(tabId);
-        const existing = (await api.storage.session.get(key))[key] as TabState | undefined;
-        if (existing) {
-            return this.cloneTabState(existing);
-        }
-
-        const derived = await this.deriveInitialState();
-        await api.storage.session.set({ [key]: derived });
-        return derived;
+        const existing = (await api.storage.session.get(key))[key] as Partial<TabState> | undefined;
+        const anchored = existing
+            ? this.hydrateTabState(existing, currentSettings)
+            : await this.deriveInitialState(currentSettings);
+        await api.storage.session.set({ [key]: anchored });
+        return anchored;
     }
 
     /**
@@ -164,17 +172,34 @@ export class StateManager {
      */
     public async onSettingsChanged(): Promise<void> {
         const settings = await loadSettings();
+        const live = await this.getLiveState(settings);
+        if (live) {
+            await this.setLiveState(live);
+        }
+
         if (!settings.shareAcrossTabs) {
+            const tabs = await api.tabs.query({});
+            await Promise.all(
+                tabs.map(async (tab) => {
+                    if (tab.id === undefined) {
+                        return;
+                    }
+                    await this.sendStateToTab(tab.id, settings);
+                })
+            );
             return;
         }
 
-        let live = await this.getLiveState();
-        if (!live) {
+        let shared = live;
+        if (!shared) {
             const [active] = await api.tabs.query({ active: true, lastFocusedWindow: true });
-            live = active?.id !== undefined ? await this.getTabState(active.id) : await this.deriveInitialState();
-            await this.setLiveState(live);
+            shared =
+                active?.id !== undefined
+                    ? await this.getTabState(active.id, settings)
+                    : await this.deriveInitialState(settings);
+            await this.setLiveState(shared);
         }
-        await this.broadcastState(live);
+        await this.broadcastState(shared);
     }
 
     /**
@@ -187,31 +212,37 @@ export class StateManager {
      * @param tabId The ID of the tab for which to update the state
      * @param updateFn function that takes the current tab state and returns the new tab state
      */
-    private async setTabState(tabId: number, updateFn: (tabState: TabState) => TabState): Promise<TabState> {
-        const settings = await loadSettings();
-        const currentTabState = await this.getTabState(tabId);
-        const newTabState = updateFn(currentTabState);
+    private async setTabState(
+        tabId: number,
+        updateFn: (tabState: TabState) => TabState,
+        settings?: Settings
+    ): Promise<TabState> {
+        const currentSettings = settings ?? (await loadSettings());
+        const currentTabState = await this.anchorTabState(tabId, currentSettings);
+        const newTabState = this.hydrateTabState(updateFn(currentTabState), currentSettings);
 
         await api.storage.session.set({ [this.tabStateKey(tabId)]: newTabState });
-        await this.persistLastState(settings, newTabState);
+        await this.persistLastState(currentSettings, newTabState);
         await this.setLiveState(newTabState);
 
-        if (settings.shareAcrossTabs) {
+        if (currentSettings.shareAcrossTabs) {
             await this.broadcastState(newTabState);
         } else {
-            await this.sendStateToTab(tabId);
+            await this.pushState(tabId, newTabState);
+            await this.updatePresentation(tabId, newTabState);
         }
 
         return newTabState;
     }
 
     /** Push a tab's current state to it and refresh its icon / menu presentation. */
-    public async sendStateToTab(tabId: number) {
+    public async sendStateToTab(tabId: number, settings?: Settings) {
+        const currentSettings = settings ?? (await loadSettings());
         // Anchor on the way out so a freshly loaded/cloned tab persists its
         // inherited state and stops tracking the global live value.
-        const state = await this.anchorTabState(tabId);
+        const state = await this.anchorTabState(tabId, currentSettings);
         await this.pushState(tabId, state);
-        await this.updatePresentation(tabId);
+        await this.updatePresentation(tabId, state);
     }
 
     private async pushState(tabId: number, state: TabState) {
@@ -232,7 +263,7 @@ export class StateManager {
                 }
                 await api.storage.session.set({ [this.tabStateKey(tab.id)]: state });
                 await this.pushState(tab.id, state);
-                await this.updatePresentation(tab.id);
+                await this.updatePresentation(tab.id, state);
             })
         );
     }
@@ -255,16 +286,17 @@ export class StateManager {
         return `focusedFrame-${tabId}`;
     }
 
-    private async getTabState(tabId: number): Promise<TabState> {
+    private async getTabState(tabId: number, settings?: Settings): Promise<TabState> {
+        const currentSettings = settings ?? (await loadSettings());
         const storageKey = this.tabStateKey(tabId);
         const result = await api.storage.session.get(storageKey);
-        const tabState = result[storageKey] as TabState | undefined;
+        const tabState = result[storageKey] as Partial<TabState> | undefined;
 
         if (tabState) {
-            return this.cloneTabState(tabState);
+            return this.hydrateTabState(tabState, currentSettings);
         }
 
-        return this.deriveInitialState();
+        return this.deriveInitialState(currentSettings);
     }
 
     /**
@@ -273,8 +305,9 @@ export class StateManager {
      * fresh session — when no live value exists yet — does persistence policy
      * decide the seed, reading `storage.local` for `KeepLastState`.
      */
-    private async deriveInitialState(): Promise<TabState> {
-        const live = await this.getLiveState();
+    private async deriveInitialState(settings?: Settings): Promise<TabState> {
+        const currentSettings = settings ?? (await loadSettings());
+        const live = await this.getLiveState(currentSettings);
         if (live) {
             return live;
         }
@@ -287,19 +320,21 @@ export class StateManager {
         // every tab seeds identically, and the only paths that make a tab differ
         // from that seed (setTabState / broadcast) also set liveState. So by the
         // time inheritance could differ from the seed, liveState is already set.
-        const settings = await loadSettings();
         const last = await this.getLastState();
         const lastHangul = (last.koreanKeyboardMode ?? KoreanKeyboardMode.English) === KoreanKeyboardMode.Hangul;
 
-        return {
-            isOnScreenKeyboardEnabled: this.seedFeature(
-                settings.onScreenKeyboard.persistence,
-                last.isOnScreenKeyboardEnabled ?? false
-            ),
-            koreanKeyboardMode: this.seedFeature(settings.hanYong.persistence, lastHangul)
-                ? KoreanKeyboardMode.Hangul
-                : KoreanKeyboardMode.English,
-        };
+        return this.hydrateTabState(
+            {
+                isOnScreenKeyboardEnabled: this.seedFeature(
+                    currentSettings.onScreenKeyboard.persistence,
+                    last.isOnScreenKeyboardEnabled ?? false
+                ),
+                koreanKeyboardMode: this.seedFeature(currentSettings.hanYong.persistence, lastHangul)
+                    ? KoreanKeyboardMode.Hangul
+                    : KoreanKeyboardMode.English,
+            },
+            currentSettings
+        );
     }
 
     /** How a feature is seeded on a fresh session, given its persistence policy. */
@@ -345,14 +380,29 @@ export class StateManager {
         return (result[LAST_STATE_KEY] as Partial<TabState> | undefined) ?? {};
     }
 
-    private async getLiveState(): Promise<TabState | undefined> {
+    private async getLiveState(settings?: Settings): Promise<TabState | undefined> {
+        const currentSettings = settings ?? (await loadSettings());
         const result = await api.storage.session.get(LIVE_STATE_KEY);
-        const live = result[LIVE_STATE_KEY] as TabState | undefined;
-        return live ? this.cloneTabState(live) : undefined;
+        const live = result[LIVE_STATE_KEY] as Partial<TabState> | undefined;
+        return live ? this.hydrateTabState(live, currentSettings) : undefined;
     }
 
     private async setLiveState(state: TabState) {
         await api.storage.session.set({ [LIVE_STATE_KEY]: this.cloneTabState(state) });
+    }
+
+    private hydrateTabState(tabState: Partial<TabState>, settings: Settings): TabState {
+        const isHanYongEnabled = settings.hanYong.enabled;
+
+        return {
+            isHanYongEnabled,
+            isHanYongKeyboardKeyEnabled: settings.hanYong.keyboardKeyEnabled,
+            isOnScreenKeyboardEnabled: tabState.isOnScreenKeyboardEnabled ?? false,
+            koreanKeyboardMode:
+                isHanYongEnabled && tabState.koreanKeyboardMode === KoreanKeyboardMode.Hangul
+                    ? KoreanKeyboardMode.Hangul
+                    : KoreanKeyboardMode.English,
+        };
     }
 
     private cloneTabState(tabState: TabState): TabState {

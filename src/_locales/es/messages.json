@@ -59,6 +59,18 @@
     "options_hanYong_heading": {
         "message": "Alternancia Han/Yong (한/영)"
     },
+    "options_hanYong_enabled_label": {
+        "message": "Activar escritura coreana (hangul)"
+    },
+    "options_hanYong_disabled_hint": {
+        "message": "Cuando está desactivado, toda la conmutación Han/Yong se deshabilita y la tecla Alt derecha / Han-Yong no hace nada."
+    },
+    "options_hanYong_keyboardKeyEnabled_label": {
+        "message": "Activar alternancia con la tecla Alt derecha / Han-Yong"
+    },
+    "options_hanYong_keyboardKeyEnabled_description": {
+        "message": "Se aplica a la tecla física del teclado. En los teclados coreanos, es la tecla dedicada Han/Yong a la derecha de la barra espaciadora."
+    },
     "options_hanYong_hint": {
         "message": "Alterna entre la entrada de hangul y la latina."
     },

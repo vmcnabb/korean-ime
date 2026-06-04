@@ -10,6 +10,13 @@ export interface FeatureSettings {
     persistence: Persistence;
 }
 
+export interface HanYongSettings extends FeatureSettings {
+    /** Whether Hangul typing is enabled at all. */
+    enabled: boolean;
+    /** Whether the physical Right Alt / Han-Yong key toggles modes. */
+    keyboardKeyEnabled: boolean;
+}
+
 /**
  * The extension's settings. A plain, typed object — persisted to
  * `chrome.storage.sync` (see `settings-store.ts`) and edited by the options
@@ -18,7 +25,7 @@ export interface FeatureSettings {
  */
 export interface Settings {
     onScreenKeyboard: FeatureSettings;
-    hanYong: FeatureSettings;
+    hanYong: HanYongSettings;
     /** Apply changes to every tab at once, not just the focused one. */
     shareAcrossTabs: boolean;
 }
@@ -28,6 +35,8 @@ export const defaultSettings: Settings = {
         persistence: Persistence.AlwaysOff,
     },
     hanYong: {
+        enabled: true,
+        keyboardKeyEnabled: true,
         persistence: Persistence.AlwaysOff,
     },
     shareAcrossTabs: false,

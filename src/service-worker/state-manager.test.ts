@@ -71,7 +71,7 @@ beforeEach(() => {
 });
 
 function withSettings(
-    overrides: Partial<Settings> & {
+    overrides: Omit<Partial<Settings>, "onScreenKeyboard" | "hanYong"> & {
         onScreenKeyboard?: Partial<Settings["onScreenKeyboard"]>;
         hanYong?: Partial<Settings["hanYong"]>;
     }
@@ -92,6 +92,16 @@ function lastSentTo(tabId: number): TabState | undefined {
 // state is seeded from the persistence policy (empty session storage models
 // this).
 describe("fresh-session seeding from persistence", () => {
+    it("enables Han/Yong typing by default", async () => {
+        withSettings({});
+        const manager = new StateManager();
+
+        await manager.sendStateToTab(1);
+
+        expect(lastSentTo(1)?.isHanYongEnabled).toBe(true);
+        expect(lastSentTo(1)?.isHanYongKeyboardKeyEnabled).toBe(true);
+    });
+
     it("AlwaysOff starts the feature off", async () => {
         withSettings({ onScreenKeyboard: { persistence: Persistence.AlwaysOff } });
         const manager = new StateManager();
@@ -117,6 +127,16 @@ describe("fresh-session seeding from persistence", () => {
         await manager.sendStateToTab(1);
 
         expect(lastSentTo(1)?.koreanKeyboardMode).toBe(KoreanKeyboardMode.Hangul);
+    });
+
+    it("forces Han/Yong off when Hangul typing is disabled", async () => {
+        withSettings({ hanYong: { enabled: false, persistence: Persistence.AlwaysOn } });
+        const manager = new StateManager();
+
+        await manager.sendStateToTab(1);
+
+        expect(lastSentTo(1)?.isHanYongEnabled).toBe(false);
+        expect(lastSentTo(1)?.koreanKeyboardMode).toBe(KoreanKeyboardMode.English);
     });
 
     it("KeepLastState restores the remembered value from storage.local", async () => {
@@ -197,6 +217,32 @@ describe("mid-session new-tab inheritance", () => {
 });
 
 describe("KeepLastState persistence", () => {
+    it("ignores Han/Yong toggle requests while typing is disabled", async () => {
+        withSettings({ hanYong: { enabled: false, persistence: Persistence.AlwaysOff } });
+        const manager = new StateManager();
+
+        await manager.sendStateToTab(1);
+        sentMessages = [];
+
+        await manager.toggleHanYongMode(1);
+        await manager.sendStateToTab(1);
+
+        expect(sentMessages).toHaveLength(1);
+        expect(lastSentTo(1)?.koreanKeyboardMode).toBe(KoreanKeyboardMode.English);
+        expect(lastSentTo(1)?.isHanYongEnabled).toBe(false);
+    });
+
+    it("still toggles Han/Yong mode when only the physical-key setting is disabled", async () => {
+        withSettings({ hanYong: { keyboardKeyEnabled: false, persistence: Persistence.AlwaysOff } });
+        const manager = new StateManager();
+
+        await manager.toggleHanYongMode(1);
+
+        expect(lastSentTo(1)?.isHanYongEnabled).toBe(true);
+        expect(lastSentTo(1)?.isHanYongKeyboardKeyEnabled).toBe(false);
+        expect(lastSentTo(1)?.koreanKeyboardMode).toBe(KoreanKeyboardMode.Hangul);
+    });
+
     it("writes the toggled value to storage.local", async () => {
         withSettings({ onScreenKeyboard: { persistence: Persistence.KeepLastState } });
         const manager = new StateManager();
@@ -261,6 +307,57 @@ describe("share across tabs", () => {
 
         expect(lastSentTo(1)?.isOnScreenKeyboardEnabled).toBe(true);
         expect(lastSentTo(2)).toBeUndefined();
+    });
+
+    it("pushes disabled Han/Yong state to open tabs immediately", async () => {
+        withSettings({ shareAcrossTabs: false, hanYong: { persistence: Persistence.AlwaysOn } });
+        tabs = [{ id: 1, active: true }, { id: 2 }];
+        session["tabState-1"] = {
+            koreanKeyboardMode: KoreanKeyboardMode.Hangul,
+            isOnScreenKeyboardEnabled: false,
+        };
+        session["tabState-2"] = {
+            koreanKeyboardMode: KoreanKeyboardMode.Hangul,
+            isOnScreenKeyboardEnabled: true,
+        };
+        const manager = new StateManager();
+
+        withSettings({ shareAcrossTabs: false, hanYong: { enabled: false, persistence: Persistence.AlwaysOn } });
+        await manager.onSettingsChanged();
+
+        expect(lastSentTo(1)?.isHanYongEnabled).toBe(false);
+        expect(lastSentTo(1)?.koreanKeyboardMode).toBe(KoreanKeyboardMode.English);
+        expect(lastSentTo(2)?.isHanYongEnabled).toBe(false);
+        expect(lastSentTo(2)?.koreanKeyboardMode).toBe(KoreanKeyboardMode.English);
+        expect(lastSentTo(2)?.isOnScreenKeyboardEnabled).toBe(true);
+    });
+
+    it("pushes disabled physical-key state to open tabs immediately without changing Hangul mode", async () => {
+        withSettings({ shareAcrossTabs: false, hanYong: { persistence: Persistence.AlwaysOn } });
+        tabs = [{ id: 1, active: true }, { id: 2 }];
+        session["tabState-1"] = {
+            koreanKeyboardMode: KoreanKeyboardMode.Hangul,
+            isOnScreenKeyboardEnabled: false,
+        };
+        session["tabState-2"] = {
+            koreanKeyboardMode: KoreanKeyboardMode.Hangul,
+            isOnScreenKeyboardEnabled: true,
+        };
+        const manager = new StateManager();
+
+        withSettings({
+            shareAcrossTabs: false,
+            hanYong: { enabled: true, keyboardKeyEnabled: false, persistence: Persistence.AlwaysOn },
+        });
+        await manager.onSettingsChanged();
+
+        expect(lastSentTo(1)?.isHanYongEnabled).toBe(true);
+        expect(lastSentTo(1)?.isHanYongKeyboardKeyEnabled).toBe(false);
+        expect(lastSentTo(1)?.koreanKeyboardMode).toBe(KoreanKeyboardMode.Hangul);
+        expect(lastSentTo(2)?.isHanYongEnabled).toBe(true);
+        expect(lastSentTo(2)?.isHanYongKeyboardKeyEnabled).toBe(false);
+        expect(lastSentTo(2)?.koreanKeyboardMode).toBe(KoreanKeyboardMode.Hangul);
+        expect(lastSentTo(2)?.isOnScreenKeyboardEnabled).toBe(true);
     });
 });
 

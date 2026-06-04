@@ -59,6 +59,18 @@
     "options_hanYong_heading": {
         "message": "Han/Yong (한/영) toggle"
     },
+    "options_hanYong_enabled_label": {
+        "message": "Enable Korean (Hangul) typing"
+    },
+    "options_hanYong_disabled_hint": {
+        "message": "When off, all Han/Yong switching is disabled and the Right Alt / Han/Yong key does nothing."
+    },
+    "options_hanYong_keyboardKeyEnabled_label": {
+        "message": "Enable Right Alt / Han/Yong key toggle"
+    },
+    "options_hanYong_keyboardKeyEnabled_description": {
+        "message": "Applies to the physical keyboard key. On Korean keyboards, this is the dedicated Han/Yong key to the right of the spacebar."
+    },
     "options_hanYong_hint": {
         "message": "Switches between Hangul and Latin input."
     },
