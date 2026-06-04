@@ -7,6 +7,8 @@ import { ContentScriptRequestAction } from "../../messaging/content-to-service-m
 // build time, so stub it for the test runner (cf. the `url:` asset mocks in
 // state-manager.test / menus.test).
 jest.mock("./on-screen-keyboard.scss", () => ({}), { virtual: true });
+jest.mock("data-url:../../images/icon16h.png", () => "data:hangul-icon", { virtual: true });
+jest.mock("data-url:../../images/icon16a.png", () => "data:english-icon", { virtual: true });
 
 describe("OnScreenKeyboardController han/yong key", () => {
     let sendMessage: jest.Mock;
@@ -264,6 +266,27 @@ describe("OnScreenKeyboardController header controls", () => {
             type: "contentScriptRequest",
             action: ContentScriptRequestAction.DisableOnScreenKeyboard,
         });
+    });
+
+    it("shows the mode indicator only while Hangul typing is enabled, mirroring the mode", () => {
+        const controller = new OnScreenKeyboardController(() => {});
+        const indicator = host().querySelector(".kb-mode") as HTMLImageElement;
+
+        // hidden until Hangul typing is known to be enabled
+        expect(indicator.style.display).toBe("none");
+
+        controller.setHanYongEnabled(true);
+        controller.setMode(KoreanKeyboardMode.Hangul);
+        expect(indicator.style.display).not.toBe("none");
+        expect(indicator.getAttribute("src")).toContain("hangul");
+
+        controller.setMode(KoreanKeyboardMode.English);
+        expect(indicator.getAttribute("src")).toContain("english");
+
+        // hidden again once Hangul typing is disabled (its independent OSK mode
+        // is not what the toolbar icon reflects)
+        controller.setHanYongEnabled(false);
+        expect(indicator.style.display).toBe("none");
     });
 
     it("drags only from the header, not from the keys", () => {

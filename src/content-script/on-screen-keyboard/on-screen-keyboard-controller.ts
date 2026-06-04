@@ -6,6 +6,13 @@ import "./on-screen-keyboard.scss";
 import { ContentScriptRequestAction, ContentScriptRequestMessage } from "../../messaging/content-to-service-messages";
 import { debugLog } from "../../debug-log";
 import { api } from "../../platform/browser-api";
+// Inlined as data URLs so the content-script <img> needs no web_accessible_resources.
+import modeIconHangul from "data-url:../../images/icon16h.png";
+import modeIconEnglish from "data-url:../../images/icon16a.png";
+
+/** Full keyboard width, and the narrower width used while collapsed. */
+const KEYBOARD_WIDTH_PX = 480;
+const COLLAPSED_WIDTH_PX = 180;
 
 export class OnScreenKeyboardController {
     private _keyboardElement: HTMLDivElement;
@@ -31,6 +38,7 @@ export class OnScreenKeyboardController {
     private _compositionFeatures: SupportedCompositionFeatures | undefined;
     private _keyElements = new Map<KeyCode, HTMLElement>();
     private _collapseButton?: HTMLButtonElement;
+    private _modeIndicator?: HTMLImageElement;
     private _onSendKey: (key: string, keyCode: KeyCode) => void;
 
     constructor(onSendKey: (key: string, keyCode: KeyCode) => void) {
@@ -47,6 +55,8 @@ export class OnScreenKeyboardController {
 
         this._keyboardElement.classList.toggle("hanMode", isHanMode);
         this._keyboardElement.classList.toggle("yongMode", !isHanMode);
+
+        this.updateModeIndicator();
     }
 
     public setHanYongEnabled(enabled: boolean) {
@@ -195,7 +205,7 @@ export class OnScreenKeyboardController {
 
         keyboardElement.id = "kb-73ce1520-9c19-48ad-bf12-f7ec206ab11f";
 
-        keyboardElement.style.width = "480px";
+        keyboardElement.style.width = `${KEYBOARD_WIDTH_PX}px`;
         keyboardElement.style.position = "fixed";
         keyboardElement.style.bottom = "0";
         keyboardElement.style.right = "0";
@@ -315,17 +325,25 @@ export class OnScreenKeyboardController {
         const header = document.createElement("div");
         header.className = "kb-header";
 
+        // Mode indicator: mirrors the extension's toolbar icon, shown only while
+        // Hangul typing is enabled (see updateModeIndicator).
+        this._modeIndicator = document.createElement("img");
+        this._modeIndicator.className = "kb-mode";
+        header.appendChild(this._modeIndicator);
+
         // A flex-grow grab area that also pushes the buttons to the right.
         const handle = document.createElement("div");
         handle.className = "kb-handle";
         header.appendChild(handle);
 
-        this._collapseButton = this.createHeaderButton("kb-collapse", "–", "keyboard_minimise", () =>
+        this._collapseButton = this.createHeaderButton("kb-collapse", "\u{1F5D5}", "keyboard_minimise", () =>
             this.toggleCollapsed()
         );
         header.appendChild(this._collapseButton);
 
-        header.appendChild(this.createHeaderButton("kb-close", "×", "keyboard_close", () => this.closeKeyboard()));
+        header.appendChild(
+            this.createHeaderButton("kb-close", "\u{1F5D9}", "keyboard_close", () => this.closeKeyboard())
+        );
 
         return header;
     }
@@ -348,14 +366,34 @@ export class OnScreenKeyboardController {
     private toggleCollapsed() {
         const collapsed = this._keyboardElement.classList.toggle("collapsed");
 
+        // Collapsed, the keyboard only needs room for its header, so narrow it.
+        this._keyboardElement.style.width = `${collapsed ? COLLAPSED_WIDTH_PX : KEYBOARD_WIDTH_PX}px`;
+
         if (this._collapseButton) {
-            this._collapseButton.textContent = collapsed ? "□" : "–";
+            this._collapseButton.textContent = collapsed ? "\u{1F5D6}" : "\u{1F5D5}";
             this._collapseButton.title = api.i18n.getMessage(collapsed ? "keyboard_restore" : "keyboard_minimise");
         }
 
         // The keyboard's size changed, so re-clamp it to stay on-screen (its
         // anchor is preserved).
         this.placeKeyboard();
+    }
+
+    private updateModeIndicator() {
+        const indicator = this._modeIndicator;
+        if (!indicator) {
+            return;
+        }
+
+        // Mirror the toolbar icon, but only while Hangul typing is enabled: when
+        // it's disabled the OSK runs its own independent mode that the toolbar
+        // icon doesn't reflect, so showing the icon here would be misleading.
+        if (this._isHanYongEnabled === true) {
+            indicator.style.display = "";
+            indicator.src = this._mode === KoreanKeyboardMode.Hangul ? modeIconHangul : modeIconEnglish;
+        } else {
+            indicator.style.display = "none";
+        }
     }
 
     private closeKeyboard() {

@@ -44,6 +44,14 @@
         cursor: move;
     }
 
+    .kb-mode {
+        flex: 0 0 auto;
+        align-self: center;
+        width: 16px;
+        height: 16px;
+        margin-left: 5px;
+    }
+
     .kb-handle {
         flex: 1 1 auto;
         cursor: move;
