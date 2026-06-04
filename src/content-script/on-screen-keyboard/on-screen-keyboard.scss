@@ -313,4 +313,22 @@
         right: 0;
         display: block;
     }
+
+    // Connectors from the keyboard's edge midpoints out to the anchored edges.
+    // Their position and length are set inline (they track the keyboard's rect);
+    // these rules only carry the dotted styling.
+    .kb-connector {
+        position: absolute;
+        border-color: #4da3ff;
+        box-sizing: border-box;
+        filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.6));
+    }
+    .kb-connector-x {
+        height: 0;
+        border-top: 2px dotted #4da3ff;
+    }
+    .kb-connector-y {
+        width: 0;
+        border-left: 2px dotted #4da3ff;
+    }
 }

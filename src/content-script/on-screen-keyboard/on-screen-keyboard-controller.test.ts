@@ -376,6 +376,35 @@ describe("OnScreenKeyboardController anchor guides", () => {
         expect(guideV().classList.contains(originX === "left" ? "right" : "left")).toBe(false);
     });
 
+    it("draw connectors from the keyboard's midpoints to the anchored edges", () => {
+        Object.defineProperty(window, "innerWidth", { configurable: true, value: 1000 });
+        Object.defineProperty(window, "innerHeight", { configurable: true, value: 800 });
+
+        const controller = new OnScreenKeyboardController(() => {});
+        const el = document.querySelector("[id^='kb-']") as HTMLElement;
+        // A keyboard sitting in from the bottom-right corner, with a known rect.
+        setPlacement(controller, "right", "bottom");
+        el.getBoundingClientRect = () =>
+            ({ left: 480, right: 880, top: 500, bottom: 700, width: 400, height: 200 }) as DOMRect;
+
+        (controller as unknown as { updateGuides: () => void }).updateGuides();
+
+        const connectorX = guides().querySelector(".kb-connector-x") as HTMLElement;
+        const connectorY = guides().querySelector(".kb-connector-y") as HTMLElement;
+
+        // Horizontal connector: from the keyboard's right edge to the viewport
+        // right, at the keyboard's vertical midpoint.
+        expect(connectorX.style.left).toBe("880px"); // rect.right
+        expect(connectorX.style.width).toBe("120px"); // innerWidth - rect.right
+        expect(connectorX.style.top).toBe("600px"); // rect.top + height/2
+
+        // Vertical connector: from the keyboard's bottom edge to the viewport
+        // bottom, at the keyboard's horizontal midpoint.
+        expect(connectorY.style.top).toBe("700px"); // rect.bottom
+        expect(connectorY.style.height).toBe("100px"); // innerHeight - rect.bottom
+        expect(connectorY.style.left).toBe("680px"); // rect.left + width/2
+    });
+
     it("appear during a drag and fade out a short time after the drop", () => {
         jest.useFakeTimers();
         try {

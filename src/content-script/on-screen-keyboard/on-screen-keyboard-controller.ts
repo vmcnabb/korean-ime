@@ -44,11 +44,15 @@ export class OnScreenKeyboardController {
     private _keyElements = new Map<KeyCode, HTMLElement>();
     private _collapseButton?: HTMLButtonElement;
     private _modeIndicator?: HTMLImageElement;
-    // Dotted overlays marking the two viewport edges the keyboard is anchored to,
-    // shown only while it's being moved (see GUIDE_LINGER_MS).
+    // Dotted overlays marking how the keyboard is anchored, shown only while it's
+    // being moved (see GUIDE_LINGER_MS): two full-edge lines along the anchored
+    // viewport edges (_guideH/_guideV), plus two connectors running from the
+    // keyboard's midpoints out to those edges (_connectorX/_connectorY).
     private _guidesElement?: HTMLDivElement;
     private _guideH?: HTMLDivElement;
     private _guideV?: HTMLDivElement;
+    private _connectorX?: HTMLDivElement;
+    private _connectorY?: HTMLDivElement;
     private _guideHideTimer?: ReturnType<typeof setTimeout>;
     private _onSendKey: (key: string, keyCode: KeyCode) => void;
 
@@ -330,6 +334,12 @@ export class OnScreenKeyboardController {
             // element has no meaningful on-screen placement to re-clamp.
             if (keyboardElement.isConnected && keyboardElement.style.display !== "none") {
                 this.placeKeyboard();
+                // If the guides are still showing (a resize during the post-drop
+                // linger), re-track them: the anchor is preserved but the
+                // keyboard's rect and the edges have moved.
+                if (this._guidesElement?.classList.contains("visible")) {
+                    this.updateGuides();
+                }
             }
         };
         window.addEventListener("resize", reclampToViewport);
@@ -354,23 +364,71 @@ export class OnScreenKeyboardController {
         const vertical = document.createElement("div");
         vertical.className = "kb-guide kb-guide-v";
 
-        guides.appendChild(horizontal);
-        guides.appendChild(vertical);
+        // Connectors from the keyboard's edge midpoints out to the anchored edges.
+        const connectorX = document.createElement("div");
+        connectorX.className = "kb-connector kb-connector-x";
+
+        const connectorY = document.createElement("div");
+        connectorY.className = "kb-connector kb-connector-y";
+
+        guides.append(horizontal, vertical, connectorX, connectorY);
         document.getElementsByTagName("body")[0].appendChild(guides);
 
         this._guidesElement = guides;
         this._guideH = horizontal;
         this._guideV = vertical;
+        this._connectorX = connectorX;
+        this._connectorY = connectorY;
     }
 
-    // Points each guide line at the keyboard's currently anchored edge. The four
-    // corners are distinguished by which top/bottom + left/right pair is lit.
+    // Points the guides at the keyboard's current anchor: the full-edge lines mark
+    // which two viewport edges it's anchored to (the four corners are distinguished
+    // by which top/bottom + left/right pair is lit), and the connectors run from
+    // the keyboard's edge midpoints out to those same edges.
     private updateGuides() {
         const { originX, originY } = this._keyboardPlacement;
         this._guideH?.classList.toggle("top", originY === "top");
         this._guideH?.classList.toggle("bottom", originY === "bottom");
         this._guideV?.classList.toggle("left", originX === "left");
         this._guideV?.classList.toggle("right", originX === "right");
+
+        this.positionConnectors();
+    }
+
+    // Places the two connector lines from the keyboard's edge midpoints to the
+    // anchored viewport edges. Geometry is pixel-based (it tracks the keyboard's
+    // rendered rect), so it's set inline rather than via CSS. When the keyboard
+    // sits flush against an edge the matching connector has zero length and simply
+    // doesn't show — the full-edge line still marks that side.
+    private positionConnectors() {
+        const connectorX = this._connectorX;
+        const connectorY = this._connectorY;
+        if (!connectorX || !connectorY) {
+            return;
+        }
+
+        const rect = this._keyboardElement.getBoundingClientRect();
+        const { originX, originY } = this._keyboardPlacement;
+
+        // Vertical connector to the top/bottom edge, at the keyboard's horizontal centre.
+        connectorY.style.left = `${rect.left + rect.width / 2}px`;
+        if (originY === "bottom") {
+            connectorY.style.top = `${rect.bottom}px`;
+            connectorY.style.height = `${Math.max(0, window.innerHeight - rect.bottom)}px`;
+        } else {
+            connectorY.style.top = "0px";
+            connectorY.style.height = `${Math.max(0, rect.top)}px`;
+        }
+
+        // Horizontal connector to the left/right edge, at the keyboard's vertical centre.
+        connectorX.style.top = `${rect.top + rect.height / 2}px`;
+        if (originX === "right") {
+            connectorX.style.left = `${rect.right}px`;
+            connectorX.style.width = `${Math.max(0, window.innerWidth - rect.right)}px`;
+        } else {
+            connectorX.style.left = "0px";
+            connectorX.style.width = `${Math.max(0, rect.left)}px`;
+        }
     }
 
     // Reveals the guides for the anchor the keyboard now sits at. Idempotent, so
