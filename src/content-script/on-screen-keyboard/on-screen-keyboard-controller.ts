@@ -6,9 +6,7 @@ import "./on-screen-keyboard.scss";
 import { ContentScriptRequestAction, ContentScriptRequestMessage } from "../../messaging/content-to-service-messages";
 import { debugLog } from "../../debug-log";
 import { api } from "../../platform/browser-api";
-// Inlined as data URLs so the content-script <img> needs no web_accessible_resources.
-import modeIconHangul from "data-url:../../images/icon16h.png";
-import modeIconEnglish from "data-url:../../images/icon16a.png";
+import { modeIconHangul, modeIconEnglish } from "./mode-icons";
 
 /** Full keyboard width, and the narrower width used while collapsed. */
 const KEYBOARD_WIDTH_PX = 480;

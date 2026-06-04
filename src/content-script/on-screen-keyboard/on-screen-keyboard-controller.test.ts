@@ -2,13 +2,12 @@ import { OnScreenKeyboardController } from "./on-screen-keyboard-controller";
 import { KeyCode } from "../../keyboard/korean-keyboard-map";
 import { KoreanKeyboardMode } from "../../extension-state/korean-keyboard-mode";
 import { ContentScriptRequestAction } from "../../messaging/content-to-service-messages";
+import { modeIconHangul, modeIconEnglish } from "./mode-icons";
 
 // The controller side-effect-imports its stylesheet; Parcel handles that at
 // build time, so stub it for the test runner (cf. the `url:` asset mocks in
 // state-manager.test / menus.test).
 jest.mock("./on-screen-keyboard.scss", () => ({}), { virtual: true });
-jest.mock("data-url:../../images/icon16h.png", () => "data:hangul-icon", { virtual: true });
-jest.mock("data-url:../../images/icon16a.png", () => "data:english-icon", { virtual: true });
 
 describe("OnScreenKeyboardController han/yong key", () => {
     let sendMessage: jest.Mock;
@@ -278,10 +277,10 @@ describe("OnScreenKeyboardController header controls", () => {
         controller.setHanYongEnabled(true);
         controller.setMode(KoreanKeyboardMode.Hangul);
         expect(indicator.style.display).not.toBe("none");
-        expect(indicator.getAttribute("src")).toContain("hangul");
+        expect(indicator.getAttribute("src")).toBe(modeIconHangul);
 
         controller.setMode(KoreanKeyboardMode.English);
-        expect(indicator.getAttribute("src")).toContain("english");
+        expect(indicator.getAttribute("src")).toBe(modeIconEnglish);
 
         // hidden again once Hangul typing is disabled (its independent OSK mode
         // is not what the toolbar icon reflects)

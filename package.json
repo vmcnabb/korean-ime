@@ -46,8 +46,6 @@
     "@babel/types": "^7.29.0",
     "@eslint/js": "^10.0.0",
     "@parcel/config-webextension": "^2.16.4",
-    "@parcel/optimizer-data-url": "^2.16.4",
-    "@parcel/transformer-inline-string": "^2.16.4",
     "@parcel/transformer-sass": "^2.16.4",
     "@parcel/transformer-vue": "^2.16.4",
     "@types/chrome": "^0.1.40",
