@@ -270,6 +270,18 @@ describe("OnScreenKeyboardController header controls", () => {
         });
     });
 
+    it("toggles the mode when the header mode indicator is clicked", () => {
+        const controller = new OnScreenKeyboardController(() => {});
+        controller.setHanYongEnabled(true);
+
+        (host().querySelector(".kb-mode") as HTMLImageElement).click();
+
+        expect(sendMessage).toHaveBeenCalledWith({
+            type: "contentScriptRequest",
+            action: ContentScriptRequestAction.ToggleHanYongMode,
+        });
+    });
+
     it("shows the mode indicator only while Hangul typing is enabled, mirroring the mode", () => {
         const controller = new OnScreenKeyboardController(() => {});
         const indicator = host().querySelector(".kb-mode") as HTMLImageElement;

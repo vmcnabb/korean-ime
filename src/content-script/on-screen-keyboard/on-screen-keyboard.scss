@@ -50,6 +50,7 @@
         width: 16px;
         height: 16px;
         margin-left: 5px;
+        cursor: pointer;
     }
 
     .kb-handle {
@@ -84,6 +85,12 @@
 
     &.collapsed .kb-body {
         display: none;
+    }
+
+    // Collapsed, the handle becomes a fixed ~1cm spacer between the mode icon
+    // and the buttons (the bar shrinks to fit — see toggleCollapsed).
+    &.collapsed .kb-handle {
+        flex: 0 0 1cm;
     }
 
     div.row {
