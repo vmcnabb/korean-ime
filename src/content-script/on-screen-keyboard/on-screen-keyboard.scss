@@ -249,3 +249,68 @@
         }
     }
 }
+
+// Anchor guides: dotted lines along the two viewport edges the keyboard is
+// anchored to, shown only while it's being moved (toggled by .visible). They
+// live in <body> rather than inside the keyboard so they can span the viewport,
+// hence the separate top-level rule.
+#kb-guides-3f2a9c7e-7b1d-4e8a-9c2f-1a6b5d4e3c20 {
+    position: fixed;
+    inset: 0;
+    margin: 0;
+    padding: 0;
+    // Never intercept clicks or page interaction — the keyboard's drag relies on
+    // document-level mousemove, and the page underneath must stay usable.
+    pointer-events: none;
+    // Just below the keyboard (which sits at max int).
+    z-index: 2147483646;
+    opacity: 0;
+    transition: opacity 150ms ease-out;
+
+    &.visible {
+        opacity: 1;
+    }
+
+    .kb-guide {
+        position: absolute;
+        // A bright accent with a dark halo so the dotted line reads on both light
+        // and dark pages without looking like page content or a resize handle.
+        border-color: #4da3ff;
+        box-sizing: border-box;
+        filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.6));
+        // Lit edges opt in via the corner classes below.
+        display: none;
+    }
+
+    // Horizontal guide: spans the full width of the anchored top/bottom edge.
+    .kb-guide-h {
+        left: 0;
+        width: 100%;
+        height: 0;
+        border-top: 3px dotted #4da3ff;
+    }
+    .kb-guide-h.top {
+        top: 0;
+        display: block;
+    }
+    .kb-guide-h.bottom {
+        bottom: 0;
+        display: block;
+    }
+
+    // Vertical guide: spans the full height of the anchored left/right edge.
+    .kb-guide-v {
+        top: 0;
+        height: 100%;
+        width: 0;
+        border-left: 3px dotted #4da3ff;
+    }
+    .kb-guide-v.left {
+        left: 0;
+        display: block;
+    }
+    .kb-guide-v.right {
+        right: 0;
+        display: block;
+    }
+}

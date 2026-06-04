@@ -326,3 +326,85 @@ describe("OnScreenKeyboardController header controls", () => {
         expect(place).toHaveBeenCalled();
     });
 });
+
+describe("OnScreenKeyboardController anchor guides", () => {
+    afterEach(() => jest.restoreAllMocks());
+
+    beforeEach(() => {
+        document.body.innerHTML = "";
+        Object.assign(globalThis, {
+            chrome: {
+                runtime: { sendMessage: jest.fn() },
+                i18n: { getMessage: () => "" },
+            },
+        });
+    });
+
+    const guides = () => document.getElementById("kb-guides-3f2a9c7e-7b1d-4e8a-9c2f-1a6b5d4e3c20") as HTMLElement;
+    const guideH = () => guides().querySelector(".kb-guide-h") as HTMLElement;
+    const guideV = () => guides().querySelector(".kb-guide-v") as HTMLElement;
+
+    const setPlacement = (controller: OnScreenKeyboardController, originX: string, originY: string) => {
+        (
+            controller as unknown as { _keyboardPlacement: { originX: string; originY: string } }
+        )._keyboardPlacement.originX = originX;
+        (
+            controller as unknown as { _keyboardPlacement: { originX: string; originY: string } }
+        )._keyboardPlacement.originY = originY;
+    };
+
+    it("are hidden until the keyboard is moved", () => {
+        new OnScreenKeyboardController(() => {});
+        expect(guides().classList.contains("visible")).toBe(false);
+    });
+
+    it.each([
+        ["bottom", "right"],
+        ["bottom", "left"],
+        ["top", "right"],
+        ["top", "left"],
+    ])("light the anchored edges distinctly for the %s-%s corner", (originY, originX) => {
+        const controller = new OnScreenKeyboardController(() => {});
+        setPlacement(controller, originX, originY);
+
+        // updateGuides maps the anchor onto the two lit edges.
+        (controller as unknown as { updateGuides: () => void }).updateGuides();
+
+        expect(guideH().classList.contains(originY)).toBe(true);
+        expect(guideH().classList.contains(originY === "top" ? "bottom" : "top")).toBe(false);
+        expect(guideV().classList.contains(originX)).toBe(true);
+        expect(guideV().classList.contains(originX === "left" ? "right" : "left")).toBe(false);
+    });
+
+    it("appear during a drag and fade out a short time after the drop", () => {
+        jest.useFakeTimers();
+        try {
+            Object.defineProperty(window, "innerWidth", { configurable: true, value: 1000 });
+            Object.defineProperty(window, "innerHeight", { configurable: true, value: 800 });
+
+            const controller = new OnScreenKeyboardController(() => {});
+            const el = document.querySelector("[id^='kb-']") as HTMLElement;
+            Object.defineProperty(el, "offsetWidth", { configurable: true, value: 480 });
+            Object.defineProperty(el, "offsetHeight", { configurable: true, value: 250 });
+            controller.showKeyboard();
+
+            // Drag from the header: the guides light up.
+            (el.querySelector(".kb-handle") as HTMLElement).dispatchEvent(
+                new MouseEvent("mousedown", { bubbles: true, button: 0, screenX: 100, screenY: 100 })
+            );
+            document.dispatchEvent(
+                new MouseEvent("mousemove", { bubbles: true, buttons: 1, screenX: 90, screenY: 110 })
+            );
+            expect(guides().classList.contains("visible")).toBe(true);
+
+            // On drop they linger briefly, then fade.
+            document.dispatchEvent(new MouseEvent("mouseup", { bubbles: true, button: 0 }));
+            expect(guides().classList.contains("visible")).toBe(true);
+
+            jest.advanceTimersByTime(700);
+            expect(guides().classList.contains("visible")).toBe(false);
+        } finally {
+            jest.useRealTimers();
+        }
+    });
+});

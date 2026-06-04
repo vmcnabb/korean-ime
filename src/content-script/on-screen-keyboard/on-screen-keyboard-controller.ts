@@ -11,6 +11,14 @@ import { modeIconHangul, modeIconEnglish } from "./mode-icons";
 /** Full keyboard width, and the narrower width used while collapsed. */
 const KEYBOARD_WIDTH_PX = 480;
 
+/**
+ * How long the anchor guides linger after a drag ends before fading out. The
+ * anchor only matters while the user is repositioning the keyboard, so the
+ * guides are shown during a drag and for this short moment afterwards (long
+ * enough to confirm where it landed), then disappear.
+ */
+const GUIDE_LINGER_MS = 700;
+
 export class OnScreenKeyboardController {
     private _keyboardElement: HTMLDivElement;
     private _keyboardPlacement = {
@@ -36,6 +44,12 @@ export class OnScreenKeyboardController {
     private _keyElements = new Map<KeyCode, HTMLElement>();
     private _collapseButton?: HTMLButtonElement;
     private _modeIndicator?: HTMLImageElement;
+    // Dotted overlays marking the two viewport edges the keyboard is anchored to,
+    // shown only while it's being moved (see GUIDE_LINGER_MS).
+    private _guidesElement?: HTMLDivElement;
+    private _guideH?: HTMLDivElement;
+    private _guideV?: HTMLDivElement;
+    private _guideHideTimer?: ReturnType<typeof setTimeout>;
     private _onSendKey: (key: string, keyCode: KeyCode) => void;
 
     constructor(onSendKey: (key: string, keyCode: KeyCode) => void) {
@@ -114,6 +128,10 @@ export class OnScreenKeyboardController {
 
         // A drag is an explicit move, so re-anchor to the corner it lands in.
         this.placeKeyboard(true);
+
+        // Surface which two edges it's now anchored to (placeKeyboard has just
+        // resolved them) for as long as the drag continues.
+        this.showGuides();
     }
 
     hideKeyboard() {
@@ -243,12 +261,14 @@ export class OnScreenKeyboardController {
         document.addEventListener("mouseup", (e) => {
             if (e.button === 0) {
                 this._keyboardMovement.mouse.down = false;
+                this.hideGuidesAfterDrop();
             }
         });
 
         document.addEventListener("mousemove", (e) => {
             if ((e.buttons & 1) === 0) {
                 this._keyboardMovement.mouse.down = false;
+                this.hideGuidesAfterDrop();
             }
 
             if (this._keyboardMovement.mouse.down) {
@@ -315,7 +335,68 @@ export class OnScreenKeyboardController {
         window.addEventListener("resize", reclampToViewport);
         window.visualViewport?.addEventListener("resize", reclampToViewport);
 
+        this.createGuides();
+
         return keyboardElement;
+    }
+
+    // Builds the anchor-guide overlay: two dotted lines pinned to the viewport
+    // edges, hidden until a drag shows them (see showGuides). Appended after the
+    // keyboard so the keyboard stays the body's first child (tests and the
+    // initial insert rely on that ordering).
+    private createGuides() {
+        const guides = document.createElement("div");
+        guides.id = "kb-guides-3f2a9c7e-7b1d-4e8a-9c2f-1a6b5d4e3c20";
+
+        const horizontal = document.createElement("div");
+        horizontal.className = "kb-guide kb-guide-h";
+
+        const vertical = document.createElement("div");
+        vertical.className = "kb-guide kb-guide-v";
+
+        guides.appendChild(horizontal);
+        guides.appendChild(vertical);
+        document.getElementsByTagName("body")[0].appendChild(guides);
+
+        this._guidesElement = guides;
+        this._guideH = horizontal;
+        this._guideV = vertical;
+    }
+
+    // Points each guide line at the keyboard's currently anchored edge. The four
+    // corners are distinguished by which top/bottom + left/right pair is lit.
+    private updateGuides() {
+        const { originX, originY } = this._keyboardPlacement;
+        this._guideH?.classList.toggle("top", originY === "top");
+        this._guideH?.classList.toggle("bottom", originY === "bottom");
+        this._guideV?.classList.toggle("left", originX === "left");
+        this._guideV?.classList.toggle("right", originX === "right");
+    }
+
+    // Reveals the guides for the anchor the keyboard now sits at. Idempotent, so
+    // it's safe to call on every drag frame; it also cancels any pending fade-out
+    // from a previous drop.
+    private showGuides() {
+        if (this._guideHideTimer) {
+            clearTimeout(this._guideHideTimer);
+            this._guideHideTimer = undefined;
+        }
+
+        this.updateGuides();
+        this._guidesElement?.classList.add("visible");
+    }
+
+    // Fades the guides out a short moment after a drag ends. A no-op if they
+    // aren't showing (e.g. a header click that never became a drag).
+    private hideGuidesAfterDrop() {
+        if (!this._guidesElement?.classList.contains("visible") || this._guideHideTimer) {
+            return;
+        }
+
+        this._guideHideTimer = setTimeout(() => {
+            this._guidesElement?.classList.remove("visible");
+            this._guideHideTimer = undefined;
+        }, GUIDE_LINGER_MS);
     }
 
     private createHeader(): HTMLDivElement {
