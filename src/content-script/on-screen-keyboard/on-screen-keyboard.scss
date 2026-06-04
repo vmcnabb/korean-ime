@@ -265,30 +265,31 @@
     // Just below the keyboard (which sits at max int).
     z-index: 2147483646;
     opacity: 0;
-    transition: opacity 150ms ease-out;
+    transition: opacity 250ms ease-out;
 
+    // Shown at a calm level during a drag, then briefly brightened on drop to
+    // confirm the position was saved before fading out (see hideGuidesAfterDrop).
     &.visible {
+        opacity: 0.65;
+    }
+    &.visible.flash {
         opacity: 1;
     }
 
     .kb-guide {
         position: absolute;
-        // A bright accent with a dark halo so the dotted line reads on both light
+        // Solid translucent highlight with a dark halo so it reads on both light
         // and dark pages without looking like page content or a resize handle.
-        border-color: #4da3ff;
+        // Size and midpoint position are set inline (in/mm units, centred via a
+        // -50% translate); the lit edges opt in via the corner classes below.
+        background-color: rgba(77, 163, 255, 0.55);
+        border-radius: 2px;
         box-sizing: border-box;
-        filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.6));
-        // Lit edges opt in via the corner classes below.
+        filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.5));
         display: none;
     }
 
-    // Horizontal guide: spans the full width of the anchored top/bottom edge.
-    .kb-guide-h {
-        left: 0;
-        width: 100%;
-        height: 0;
-        border-top: 3px dotted #4da3ff;
-    }
+    // Horizontal bar: sits against the anchored top/bottom edge.
     .kb-guide-h.top {
         top: 0;
         display: block;
@@ -298,13 +299,7 @@
         display: block;
     }
 
-    // Vertical guide: spans the full height of the anchored left/right edge.
-    .kb-guide-v {
-        top: 0;
-        height: 100%;
-        width: 0;
-        border-left: 3px dotted #4da3ff;
-    }
+    // Vertical bar: sits against the anchored left/right edge.
     .kb-guide-v.left {
         left: 0;
         display: block;

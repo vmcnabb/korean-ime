@@ -403,6 +403,17 @@ describe("OnScreenKeyboardController anchor guides", () => {
         expect(connectorY.style.top).toBe("700px"); // rect.bottom
         expect(connectorY.style.height).toBe("100px"); // innerHeight - rect.bottom
         expect(connectorY.style.left).toBe("680px"); // rect.left + width/2
+
+        // The edge bars line up with the connectors: centred on the same midpoints
+        // (a -50% translate does the centring), sized 1in along the edge by 4mm.
+        expect(guideH().style.left).toBe("680px"); // centreX, == connectorY
+        expect(guideH().style.transform).toBe("translateX(-50%)");
+        expect(guideH().style.width).toBe("1in");
+        expect(guideH().style.height).toBe("4mm");
+        expect(guideV().style.top).toBe("600px"); // centreY, == connectorX
+        expect(guideV().style.transform).toBe("translateY(-50%)");
+        expect(guideV().style.width).toBe("4mm");
+        expect(guideV().style.height).toBe("1in");
     });
 
     it("appear during a drag and fade out a short time after the drop", () => {
@@ -426,12 +437,14 @@ describe("OnScreenKeyboardController anchor guides", () => {
             );
             expect(guides().classList.contains("visible")).toBe(true);
 
-            // On drop they linger briefly, then fade.
+            // On drop they brighten (the "saved" flash) and linger, then fade.
             document.dispatchEvent(new MouseEvent("mouseup", { bubbles: true, button: 0 }));
             expect(guides().classList.contains("visible")).toBe(true);
+            expect(guides().classList.contains("flash")).toBe(true);
 
             jest.advanceTimersByTime(700);
             expect(guides().classList.contains("visible")).toBe(false);
+            expect(guides().classList.contains("flash")).toBe(false);
         } finally {
             jest.useRealTimers();
         }
