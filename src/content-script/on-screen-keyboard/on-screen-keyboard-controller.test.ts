@@ -4,10 +4,13 @@ import { KoreanKeyboardMode } from "../../extension-state/korean-keyboard-mode";
 import { ContentScriptRequestAction } from "../../messaging/content-to-service-messages";
 import { modeIconHangul, modeIconEnglish } from "./mode-icons";
 
-// The controller side-effect-imports its stylesheet; Parcel handles that at
-// build time, so stub it for the test runner (cf. the `url:` asset mocks in
-// state-manager.test / menus.test).
+// The controller side-effect-imports its stylesheet and imports the build-time
+// generated mode-icons module; stub both for the test runner (cf. the `url:`
+// asset mocks in state-manager.test / menus.test).
 jest.mock("./on-screen-keyboard.scss", () => ({}), { virtual: true });
+jest.mock("./mode-icons", () => ({ modeIconHangul: "data:hangul", modeIconEnglish: "data:english" }), {
+    virtual: true,
+});
 
 describe("OnScreenKeyboardController han/yong key", () => {
     let sendMessage: jest.Mock;
