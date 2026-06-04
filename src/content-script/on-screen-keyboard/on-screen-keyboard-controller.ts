@@ -84,9 +84,14 @@ export class OnScreenKeyboardController {
 
     private moveKeyboard(dx: number, dy: number) {
         const placement = this._keyboardPlacement;
+        const style = this._keyboardElement.style;
 
-        const kx = ~~placement.x;
-        const ky = ~~placement.y;
+        // Begin from where the keyboard is actually rendered. While it's clamped
+        // into a small viewport the remembered offset is kept (so it can be
+        // restored when there's room again) and can differ from the rendered one;
+        // starting a drag from the stale offset would make the first frame jump.
+        const kx = ~~(parseFloat(placement.originX === "right" ? style.right : style.left) || 0);
+        const ky = ~~(parseFloat(placement.originY === "bottom" ? style.bottom : style.top) || 0);
 
         if (placement.originX === "right") {
             dx = -dx;
@@ -99,7 +104,8 @@ export class OnScreenKeyboardController {
         placement.x = kx + dx;
         placement.y = ky + dy;
 
-        this.placeKeyboard();
+        // A drag is an explicit move, so re-anchor to the corner it lands in.
+        this.placeKeyboard(true);
     }
 
     hideKeyboard() {
@@ -111,7 +117,7 @@ export class OnScreenKeyboardController {
         this.placeKeyboard();
     }
 
-    private placeKeyboard() {
+    private placeKeyboard(reanchor = false) {
         // get x,y coordinates of keyboard based on an origin of Top Left
         const placement = this._keyboardPlacement;
         const width = this._keyboardElement.offsetWidth;
@@ -121,20 +127,36 @@ export class OnScreenKeyboardController {
 
         let y = placement.originY === "bottom" ? window.innerHeight - height - placement.y : placement.y;
 
-        // try to make sure keyboard is not partially off screen
-        if (x < 0) x = 0;
-        if (y < 0) y = 0;
+        // Keep the keyboard within the viewport. When it is larger than the
+        // viewport it cannot fit either way, so keep the anchored edge on-screen
+        // (overflowing off the opposite edge) rather than pinning the far edge and
+        // pushing the anchored one off.
+        if (width > window.innerWidth) {
+            x = placement.originX === "right" ? window.innerWidth - width : 0;
+        } else {
+            if (x < 0) x = 0;
+            if (x + width > window.innerWidth) x = window.innerWidth - width;
+        }
 
-        if (x + width > window.innerWidth) x = window.innerWidth - width;
-        if (y + height > window.innerHeight) y = window.innerHeight - height;
+        if (height > window.innerHeight) {
+            y = placement.originY === "bottom" ? window.innerHeight - height : 0;
+        } else {
+            if (y < 0) y = 0;
+            if (y + height > window.innerHeight) y = window.innerHeight - height;
+        }
 
-        // find out which quadrant keyboard is in and set appropriate origin
-        const cx = ~~(x + width / 2);
-        const cy = ~~(y + height / 2);
-
-        const originX = cx > window.innerWidth / 2 ? "right" : "left";
-
-        const originY = cy > window.innerHeight / 2 ? "bottom" : "top";
+        // Re-derive the anchor corner from the keyboard's quadrant only when the
+        // user is moving it. On a resize re-clamp we keep the existing anchor, so
+        // the keyboard returns to the same corner instead of flipping when a small
+        // viewport forces it across a midline.
+        let originX = placement.originX;
+        let originY = placement.originY;
+        if (reanchor) {
+            const cx = ~~(x + width / 2);
+            const cy = ~~(y + height / 2);
+            originX = cx > window.innerWidth / 2 ? "right" : "left";
+            originY = cy > window.innerHeight / 2 ? "bottom" : "top";
+        }
 
         // set x and y based on new origin
         const keyboardElement = this._keyboardElement;
@@ -156,10 +178,15 @@ export class OnScreenKeyboardController {
             keyboardElement.style.bottom = "";
         }
 
-        placement.x = x;
-        placement.y = y;
-        placement.originX = originX;
-        placement.originY = originY;
+        // Only an explicit move updates the remembered position. A resize/show
+        // clamps for display (above) but keeps the intended distance, so the
+        // keyboard returns to where the user put it once there's room again.
+        if (reanchor) {
+            placement.x = x;
+            placement.y = y;
+            placement.originX = originX;
+            placement.originY = originY;
+        }
     }
 
     private createKeyboard() {
@@ -258,6 +285,20 @@ export class OnScreenKeyboardController {
         const updateShiftState = (e: KeyboardEvent) => {
             this.setShift(e.shiftKey);
         };
+
+        // Re-clamp to the viewport when the window (or the visual viewport, e.g.
+        // on zoom) changes size, so a smaller viewport can't strand the keyboard
+        // off-screen. Only while visible: when hidden, offsetWidth is 0 and
+        // placement would compute garbage (showKeyboard re-places it on show).
+        const reclampToViewport = () => {
+            // Skip if the keyboard isn't in the page or is hidden: a detached
+            // element has no meaningful on-screen placement to re-clamp.
+            if (keyboardElement.isConnected && keyboardElement.style.display !== "none") {
+                this.placeKeyboard();
+            }
+        };
+        window.addEventListener("resize", reclampToViewport);
+        window.visualViewport?.addEventListener("resize", reclampToViewport);
 
         return keyboardElement;
     }
