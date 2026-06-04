@@ -24,7 +24,9 @@ export class OnScreenKeyboardController {
     };
 
     private _mode = KoreanKeyboardMode.English;
-    private _isHanYongEnabled = false;
+    // `undefined` until the first state update, so the first call to
+    // setHanYongEnabled always counts as entering a regime and seeds the mode.
+    private _isHanYongEnabled?: boolean;
     private _isShift = false;
     private _compositionFeatures: SupportedCompositionFeatures | undefined;
     private _keyElements = new Map<KeyCode, HTMLElement>();
@@ -47,8 +49,19 @@ export class OnScreenKeyboardController {
     }
 
     public setHanYongEnabled(enabled: boolean) {
+        if (enabled === this._isHanYongEnabled) {
+            return;
+        }
+
         this._isHanYongEnabled = enabled;
-        this._keyElements.get(KeyCode.AltRight)?.classList.toggle("disabled", !enabled);
+
+        // Seed the on-screen keyboard's mode when entering a regime:
+        //  - Hangul typing off: the OSK is the only way to type Korean, so start
+        //    in Hangul. The mode is ephemeral (tab-local, never saved) — the user
+        //    can still flip it, and it re-seeds to Hangul on the next page load.
+        //  - Hangul typing on: start in Latin; ContentScriptController mirrors the
+        //    shared mode in immediately afterwards, so this is a transient seed.
+        this.setMode(enabled ? KoreanKeyboardMode.English : KoreanKeyboardMode.Hangul);
     }
 
     public setShift(shift: boolean) {
@@ -281,13 +294,21 @@ export class OnScreenKeyboardController {
         } else if (key.label === "Shift") {
             this.setShift(!isShift);
         } else if (keyCode === KeyCode.AltRight) {
-            if (!this._isHanYongEnabled) {
-                return;
+            if (this._isHanYongEnabled) {
+                // Hangul typing is enabled: behave like the toolbar toggle and
+                // the physical Right Alt key — flip the shared per-tab mode.
+                api.runtime.sendMessage<ContentScriptRequestMessage>({
+                    type: "contentScriptRequest",
+                    action: ContentScriptRequestAction.ToggleHanYongMode,
+                });
+            } else {
+                // Hangul typing is disabled: this is an independent, ephemeral,
+                // OSK-only toggle. It never leaves this tab, is never saved, and
+                // does not affect the physical keyboard.
+                this.setMode(
+                    this._mode === KoreanKeyboardMode.Hangul ? KoreanKeyboardMode.English : KoreanKeyboardMode.Hangul
+                );
             }
-            api.runtime.sendMessage<ContentScriptRequestMessage>({
-                type: "contentScriptRequest",
-                action: ContentScriptRequestAction.ToggleHanYongMode,
-            });
         } else if (keyCode === KeyCode.Space) {
             this.sendKey(" ", keyCode);
         } else if (keyCode === KeyCode.Backspace) {
@@ -392,7 +413,5 @@ export class OnScreenKeyboardController {
 
             keyboardELement.appendChild(rowElement);
         });
-
-        this.setHanYongEnabled(this._isHanYongEnabled);
     }
 }

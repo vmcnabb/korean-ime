@@ -76,12 +76,26 @@ export class ContentScriptController {
     private handleTabStateMessage(message: TabStateMessage) {
         this.isHanYongEnabled = message.data.isHanYongEnabled;
         this.isHanYongKeyboardKeyEnabled = message.data.isHanYongKeyboardKeyEnabled;
+
+        // Tell the on-screen keyboard about the master state first, so it can
+        // reset its independent (master-off) mode when the regime changes.
         this.keyboardController?.setHanYongEnabled(message.data.isHanYongEnabled);
 
-        const nextMode = message.data.isHanYongEnabled ? message.data.koreanKeyboardMode : KoreanKeyboardMode.English;
+        // The physical keyboard follows the shared mode only while Hangul typing
+        // is enabled; otherwise it is locked to Latin.
+        const physicalMode = message.data.isHanYongEnabled
+            ? message.data.koreanKeyboardMode
+            : KoreanKeyboardMode.English;
 
-        if (nextMode !== this.textEntryMode) {
-            this.setTextEntryMode(nextMode);
+        if (physicalMode !== this.textEntryMode) {
+            this.setTextEntryMode(physicalMode);
+        }
+
+        // Mirror the shared mode onto the on-screen keyboard only while Hangul
+        // typing is enabled. While it is disabled the OSK owns its own mode (an
+        // ephemeral, tab-local toggle), so we must not overwrite it here.
+        if (message.data.isHanYongEnabled) {
+            this.keyboardController?.setMode(message.data.koreanKeyboardMode);
         }
 
         if (message.data.isOnScreenKeyboardEnabled) {
@@ -147,6 +161,10 @@ export class ContentScriptController {
         );
     }
 
+    // Drives only the physical keyboard's composition mode. The on-screen
+    // keyboard's mode is handled separately in handleTabStateMessage, because
+    // while Hangul typing is disabled the OSK runs an independent local mode
+    // that the physical keyboard must not share.
     private setTextEntryMode(mode: KoreanKeyboardMode) {
         if (mode == this.textEntryMode) {
             return;
@@ -155,6 +173,5 @@ export class ContentScriptController {
         this.textEntryMode = mode;
 
         this.textInputManager.setMode(mode);
-        this.keyboardController?.setMode(mode);
     }
 }
