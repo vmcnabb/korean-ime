@@ -357,7 +357,8 @@ export class StateManager {
     /** Persist the new value to `storage.local`, but only for KeepLastState features. */
     private async persistLastState(settings: Settings, next: TabState) {
         const oskKeepsState = settings.onScreenKeyboard.persistence === Persistence.KeepLastState;
-        const hanYongKeepsState = settings.hanYong.persistence === Persistence.KeepLastState;
+        const hanYongKeepsState =
+            settings.hanYong.enabled && settings.hanYong.persistence === Persistence.KeepLastState;
 
         if (!oskKeepsState && !hanYongKeepsState) {
             return;

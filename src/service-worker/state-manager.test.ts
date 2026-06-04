@@ -252,6 +252,23 @@ describe("KeepLastState persistence", () => {
         expect((local.lastState as Partial<TabState>).isOnScreenKeyboardEnabled).toBe(true);
     });
 
+    it("does not overwrite the remembered Han/Yong mode while typing is disabled", async () => {
+        withSettings({
+            onScreenKeyboard: { persistence: Persistence.KeepLastState },
+            hanYong: { enabled: false, persistence: Persistence.KeepLastState },
+        });
+        local.lastState = {
+            isOnScreenKeyboardEnabled: false,
+            koreanKeyboardMode: KoreanKeyboardMode.Hangul,
+        };
+        const manager = new StateManager();
+
+        await manager.toggleOnScreenKeyboard(1);
+
+        expect((local.lastState as Partial<TabState>).isOnScreenKeyboardEnabled).toBe(true);
+        expect((local.lastState as Partial<TabState>).koreanKeyboardMode).toBe(KoreanKeyboardMode.Hangul);
+    });
+
     it("does NOT persist when the feature is AlwaysOff", async () => {
         withSettings({ onScreenKeyboard: { persistence: Persistence.AlwaysOff } });
         const manager = new StateManager();
