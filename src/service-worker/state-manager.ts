@@ -166,9 +166,17 @@ export class StateManager {
      * React to a settings change (the service worker's top-level
      * `storage.onChanged` listener calls this — see #25/#26).
      *
-     * Persistence changes are restart-only, so they don't disturb open tabs.
-     * The one live effect is enabling "share across tabs": that should converge
-     * the currently-open tabs onto the shared live value immediately.
+     * Some settings affect open tabs immediately and so must be propagated:
+     *  - Enabling/disabling Hangul typing (or the Right Alt / Han-Yong key)
+     *    is re-derived for every tab by `hydrateTabState`, so each open tab is
+     *    re-sent its state to reflect the change.
+     *  - Enabling "share across tabs" converges the currently-open tabs onto
+     *    the shared live value.
+     *
+     * Persistence changes remain restart-only (they only seed a fresh session),
+     * so re-sending state is a harmless no-op for them. When not sharing, each
+     * tab is pushed its own re-hydrated state; when sharing, the single shared
+     * value is broadcast instead.
      */
     public async onSettingsChanged(): Promise<void> {
         const settings = await loadSettings();
