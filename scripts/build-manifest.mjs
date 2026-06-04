@@ -1,6 +1,7 @@
 // Generates src/manifest.json from src/manifest.base.json for a given browser
-// target. The generated manifest is a build artifact (gitignored) — the base
-// file plus package.json's version plus the per-target overrides below are the
+// target, and regenerates the action icon PNGs from their SVG sources. The
+// generated files are build artifacts (gitignored) — the base manifest, the
+// SVGs, package.json's version, and the per-target overrides below are the
 // real source of truth.
 //
 // Parcel's webextension transformer requires the manifest to be named exactly
@@ -10,6 +11,7 @@
 //
 // Usage: node scripts/build-manifest.mjs <target>      (default: chrome)
 
+import { Resvg } from "@resvg/resvg-js";
 import { readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 
@@ -17,6 +19,11 @@ const root = process.cwd();
 const basePath = resolve(root, "src/manifest.base.json");
 const outPath = resolve(root, "src/manifest.json");
 const pkgPath = resolve(root, "package.json");
+const actionIconSizes = [16, 24, 32];
+const actionIconSources = {
+    a: resolve(root, "src/images/icon_a.svg"),
+    h: resolve(root, "src/images/icon_h.svg"),
+};
 
 // Per-target overrides merged onto the base manifest.
 //
@@ -66,6 +73,28 @@ if (!overrides) {
 const stripBom = (text) => (text.charCodeAt(0) === 0xfeff ? text.slice(1) : text);
 const readJson = (path) => JSON.parse(stripBom(readFileSync(path, "utf8")));
 
+function generateActionIcons() {
+    let generatedCount = 0;
+
+    for (const [suffix, sourcePath] of Object.entries(actionIconSources)) {
+        const svg = readFileSync(sourcePath, "utf8");
+
+        for (const size of actionIconSizes) {
+            const png = new Resvg(svg, {
+                fitTo: { mode: "width", value: size },
+            })
+                .render()
+                .asPng();
+            const outputPath = resolve(root, `src/images/icon${size}${suffix}.png`);
+
+            writeFileSync(outputPath, png);
+            generatedCount += 1;
+        }
+    }
+
+    console.log(`[build-manifest] wrote ${generatedCount} generated action icons`);
+}
+
 const version = readJson(pkgPath).version;
 if (!version) {
     console.error("[build-manifest] package.json has no version field");
@@ -75,5 +104,6 @@ if (!version) {
 const base = readJson(basePath);
 const manifest = { ...base, version, ...overrides };
 
+generateActionIcons();
 writeFileSync(outPath, JSON.stringify(manifest, null, 4) + "\n");
 console.log(`[build-manifest] wrote src/manifest.json for ${target} (version ${version})`);
