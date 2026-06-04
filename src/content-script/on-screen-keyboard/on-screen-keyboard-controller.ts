@@ -84,9 +84,14 @@ export class OnScreenKeyboardController {
 
     private moveKeyboard(dx: number, dy: number) {
         const placement = this._keyboardPlacement;
+        const style = this._keyboardElement.style;
 
-        const kx = ~~placement.x;
-        const ky = ~~placement.y;
+        // Begin from where the keyboard is actually rendered. While it's clamped
+        // into a small viewport the remembered offset is kept (so it can be
+        // restored when there's room again) and can differ from the rendered one;
+        // starting a drag from the stale offset would make the first frame jump.
+        const kx = ~~(parseFloat(placement.originX === "right" ? style.right : style.left) || 0);
+        const ky = ~~(parseFloat(placement.originY === "bottom" ? style.bottom : style.top) || 0);
 
         if (placement.originX === "right") {
             dx = -dx;
@@ -275,7 +280,9 @@ export class OnScreenKeyboardController {
         // off-screen. Only while visible: when hidden, offsetWidth is 0 and
         // placement would compute garbage (showKeyboard re-places it on show).
         const reclampToViewport = () => {
-            if (keyboardElement.style.display !== "none") {
+            // Skip if the keyboard isn't in the page or is hidden: a detached
+            // element has no meaningful on-screen placement to re-clamp.
+            if (keyboardElement.isConnected && keyboardElement.style.display !== "none") {
                 this.placeKeyboard();
             }
         };

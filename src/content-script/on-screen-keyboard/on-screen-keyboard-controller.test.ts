@@ -181,4 +181,28 @@ describe("OnScreenKeyboardController resize handling", () => {
         expect(el.style.right).toBe("100px");
         expect(el.style.bottom).toBe("60px");
     });
+
+    it("begins a drag from the keyboard's rendered position, not a diverged remembered offset", () => {
+        Object.defineProperty(window, "innerWidth", { configurable: true, value: 1000 });
+        Object.defineProperty(window, "innerHeight", { configurable: true, value: 800 });
+
+        const controller = new OnScreenKeyboardController(() => {});
+        const el = document.querySelector("[id^='kb-']") as HTMLElement;
+        Object.defineProperty(el, "offsetWidth", { configurable: true, value: 480 });
+        Object.defineProperty(el, "offsetHeight", { configurable: true, value: 250 });
+
+        controller.showKeyboard(); // default bottom-right -> rendered flush (right: 0px)
+        expect(el.style.right).toBe("0px");
+
+        // Simulate the clamped state a resize leaves behind: the remembered offset
+        // diverges from what is rendered.
+        (controller as unknown as { _keyboardPlacement: { x: number } })._keyboardPlacement.x = 200;
+
+        // Drag 10px left (anchored right, that increases the right offset).
+        el.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, button: 0, screenX: 100, screenY: 100 }));
+        document.dispatchEvent(new MouseEvent("mousemove", { bubbles: true, buttons: 1, screenX: 90, screenY: 100 }));
+
+        // It tracked from the rendered 0 (now ~10px), not the stale 200 (~210px).
+        expect(parseFloat(el.style.right)).toBeLessThan(50);
+    });
 });
