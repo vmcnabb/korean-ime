@@ -262,8 +262,8 @@
     // Never intercept clicks or page interaction — the keyboard's drag relies on
     // document-level mousemove, and the page underneath must stay usable.
     pointer-events: none;
-    // Just below the keyboard (which sits at max int).
-    z-index: 2147483646;
+    // Same as the keyboard (which sits at max int).
+    z-index: 2147483647;
     opacity: 0;
     transition: opacity 250ms ease-out;
 

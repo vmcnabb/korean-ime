@@ -392,16 +392,20 @@ describe("OnScreenKeyboardController anchor guides", () => {
         const connectorX = guides().querySelector(".kb-connector-x") as HTMLElement;
         const connectorY = guides().querySelector(".kb-connector-y") as HTMLElement;
 
-        // Horizontal connector: from the keyboard's right edge to the viewport
-        // right, at the keyboard's vertical midpoint.
+        // The connectors stop one bar-thickness (4mm) short of the viewport edge,
+        // so they meet the inner edge of the edge bars rather than the edge itself.
+        const barPx = (4 * 96) / 25.4; // 4mm in CSS px
+
+        // Horizontal connector: from the keyboard's right edge toward the viewport
+        // right (less the bar), at the keyboard's vertical midpoint.
         expect(connectorX.style.left).toBe("880px"); // rect.right
-        expect(connectorX.style.width).toBe("120px"); // innerWidth - rect.right
+        expect(parseFloat(connectorX.style.width)).toBeCloseTo(120 - barPx, 3); // innerWidth - rect.right - bar
         expect(connectorX.style.top).toBe("600px"); // rect.top + height/2
 
-        // Vertical connector: from the keyboard's bottom edge to the viewport
-        // bottom, at the keyboard's horizontal midpoint.
+        // Vertical connector: from the keyboard's bottom edge toward the viewport
+        // bottom (less the bar), at the keyboard's horizontal midpoint.
         expect(connectorY.style.top).toBe("700px"); // rect.bottom
-        expect(connectorY.style.height).toBe("100px"); // innerHeight - rect.bottom
+        expect(parseFloat(connectorY.style.height)).toBeCloseTo(100 - barPx, 3); // innerHeight - rect.bottom - bar
         expect(connectorY.style.left).toBe("680px"); // rect.left + width/2
 
         // The edge bars line up with the connectors: centred on the same midpoints

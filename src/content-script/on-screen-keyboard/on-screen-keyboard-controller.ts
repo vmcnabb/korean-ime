@@ -17,7 +17,7 @@ const KEYBOARD_WIDTH_PX = 480;
  * guides are shown during a drag and for this short moment afterwards (long
  * enough to confirm where it landed), then disappear.
  */
-const GUIDE_LINGER_MS = 700;
+const GUIDE_LINGER_MS = 600;
 
 /**
  * The anchored-edge highlight is a short, fat solid bar centred where the
@@ -26,7 +26,12 @@ const GUIDE_LINGER_MS = 700;
  * displays.
  */
 const GUIDE_EDGE_LENGTH = "1in";
-const GUIDE_EDGE_THICKNESS = "4mm";
+const GUIDE_EDGE_THICKNESS_MM = 4;
+const GUIDE_EDGE_THICKNESS = `${GUIDE_EDGE_THICKNESS_MM}mm`;
+// CSS fixes 1in = 96px regardless of device DPI, so 1mm = 96/25.4 px. Used to
+// stop the connectors at the inner edge of the (mm-sized) edge bars rather than
+// running them the whole way to the viewport edge.
+const GUIDE_EDGE_THICKNESS_PX = (GUIDE_EDGE_THICKNESS_MM * 96) / 25.4;
 
 export class OnScreenKeyboardController {
     private _keyboardElement: HTMLDivElement;
@@ -241,9 +246,9 @@ export class OnScreenKeyboardController {
         keyboardElement.style.border = "none";
         keyboardElement.style.zIndex = "2147483647"; // max int
 
-        // insert the keyboard as the first child of the BODY tag
+        // insert the keyboard as the last child of the BODY tag
         const body = document.getElementsByTagName("body")[0];
-        body.insertBefore(keyboardElement, body.firstChild);
+        body.appendChild(keyboardElement);
 
         // Header bar (drag handle + collapse/close controls); the keys live in a
         // body wrapper so the header can collapse them away.
@@ -436,24 +441,27 @@ export class OnScreenKeyboardController {
         if (this._guideH) this._guideH.style.left = `${centerX}px`;
         if (this._guideV) this._guideV.style.top = `${centerY}px`;
 
-        // Vertical connector to the top/bottom edge, at the keyboard's horizontal centre.
+        // Vertical connector to the top/bottom edge, at the keyboard's horizontal
+        // centre. It stops at the inner edge of the edge bar (one bar-thickness off
+        // the viewport edge) rather than running all the way to the edge.
         connectorY.style.left = `${centerX}px`;
         if (originY === "bottom") {
             connectorY.style.top = `${rect.bottom}px`;
-            connectorY.style.height = `${Math.max(0, window.innerHeight - rect.bottom)}px`;
+            connectorY.style.height = `${Math.max(0, window.innerHeight - rect.bottom - GUIDE_EDGE_THICKNESS_PX)}px`;
         } else {
-            connectorY.style.top = "0px";
-            connectorY.style.height = `${Math.max(0, rect.top)}px`;
+            connectorY.style.top = `${GUIDE_EDGE_THICKNESS_PX}px`;
+            connectorY.style.height = `${Math.max(0, rect.top - GUIDE_EDGE_THICKNESS_PX)}px`;
         }
 
-        // Horizontal connector to the left/right edge, at the keyboard's vertical centre.
+        // Horizontal connector to the left/right edge, at the keyboard's vertical
+        // centre. Likewise stops at the inner edge of the bar.
         connectorX.style.top = `${centerY}px`;
         if (originX === "right") {
             connectorX.style.left = `${rect.right}px`;
-            connectorX.style.width = `${Math.max(0, window.innerWidth - rect.right)}px`;
+            connectorX.style.width = `${Math.max(0, window.innerWidth - rect.right - GUIDE_EDGE_THICKNESS_PX)}px`;
         } else {
-            connectorX.style.left = "0px";
-            connectorX.style.width = `${Math.max(0, rect.left)}px`;
+            connectorX.style.left = `${GUIDE_EDGE_THICKNESS_PX}px`;
+            connectorX.style.width = `${Math.max(0, rect.left - GUIDE_EDGE_THICKNESS_PX)}px`;
         }
     }
 
