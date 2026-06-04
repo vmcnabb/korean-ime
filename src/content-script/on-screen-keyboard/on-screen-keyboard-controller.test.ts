@@ -1,5 +1,6 @@
 import { OnScreenKeyboardController } from "./on-screen-keyboard-controller";
 import { KeyCode } from "../../keyboard/korean-keyboard-map";
+import { KoreanKeyboardMode } from "../../extension-state/korean-keyboard-mode";
 import { ContentScriptRequestAction } from "../../messaging/content-to-service-messages";
 
 // The controller side-effect-imports its stylesheet; Parcel handles that at
@@ -45,32 +46,41 @@ describe("OnScreenKeyboardController han/yong key", () => {
         });
     });
 
-    it("toggles an independent OSK-only mode without messaging the service worker when Hangul typing is disabled", () => {
+    it("starts in Hangul and toggles an independent OSK-only mode when Hangul typing is disabled", () => {
         const controller = new OnScreenKeyboardController(onSendKey);
         controller.setHanYongEnabled(false);
 
-        // starts in Latin
-        expect(keyboard().classList.contains("yongMode")).toBe(true);
-
-        clickKey(KeyCode.AltRight);
-
-        // flipped locally to Hangul; nothing sent to the service worker
+        // the OSK is the only way to type Korean here, so it starts in Hangul
         expect(keyboard().classList.contains("hanMode")).toBe(true);
-        expect(sendMessage).not.toHaveBeenCalled();
 
-        // and clicking a jamo key now emits a jamo
+        // clicking a jamo emits a jamo, without messaging the service worker
         clickKey(KeyCode.KeyQ);
         expect(onSendKey).toHaveBeenCalledWith("ㅂ", KeyCode.KeyQ);
+        expect(sendMessage).not.toHaveBeenCalled();
+
+        // the 한/영 key flips it locally to Latin, still without messaging
+        clickKey(KeyCode.AltRight);
+        expect(keyboard().classList.contains("yongMode")).toBe(true);
+        expect(sendMessage).not.toHaveBeenCalled();
     });
 
-    it("resets the OSK-local mode to Latin when the master regime changes", () => {
+    it("keeps the OSK-local mode across redundant state updates", () => {
         const controller = new OnScreenKeyboardController(onSendKey);
-        controller.setHanYongEnabled(false);
+        controller.setHanYongEnabled(false); // starts in Hangul
 
-        clickKey(KeyCode.AltRight);
-        expect(keyboard().classList.contains("hanMode")).toBe(true);
-
-        controller.setHanYongEnabled(true);
+        clickKey(KeyCode.AltRight); // user flips to Latin
         expect(keyboard().classList.contains("yongMode")).toBe(true);
+
+        controller.setHanYongEnabled(false); // redundant push must not re-seed it
+        expect(keyboard().classList.contains("yongMode")).toBe(true);
+    });
+
+    it("re-seeds the OSK to Hangul when Hangul typing is turned off", () => {
+        const controller = new OnScreenKeyboardController(onSendKey);
+        controller.setHanYongEnabled(true);
+        controller.setMode(KoreanKeyboardMode.English); // content script mirrors the shared Latin mode
+
+        controller.setHanYongEnabled(false); // regime change -> default to Hangul
+        expect(keyboard().classList.contains("hanMode")).toBe(true);
     });
 });

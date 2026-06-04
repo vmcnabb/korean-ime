@@ -24,7 +24,9 @@ export class OnScreenKeyboardController {
     };
 
     private _mode = KoreanKeyboardMode.English;
-    private _isHanYongEnabled = false;
+    // `undefined` until the first state update, so the first call to
+    // setHanYongEnabled always counts as entering a regime and seeds the mode.
+    private _isHanYongEnabled?: boolean;
     private _isShift = false;
     private _compositionFeatures: SupportedCompositionFeatures | undefined;
     private _keyElements = new Map<KeyCode, HTMLElement>();
@@ -53,11 +55,13 @@ export class OnScreenKeyboardController {
 
         this._isHanYongEnabled = enabled;
 
-        // Switching regime starts the on-screen keyboard in Latin. When Hangul
-        // typing is enabled the shared mode is pushed in immediately afterwards
-        // (see ContentScriptController); when it is disabled this is the
-        // ephemeral, never-saved OSK-local mode, which resets to Latin here.
-        this.setMode(KoreanKeyboardMode.English);
+        // Seed the on-screen keyboard's mode when entering a regime:
+        //  - Hangul typing off: the OSK is the only way to type Korean, so start
+        //    in Hangul. The mode is ephemeral (tab-local, never saved) — the user
+        //    can still flip it, and it re-seeds to Hangul on the next page load.
+        //  - Hangul typing on: start in Latin; ContentScriptController mirrors the
+        //    shared mode in immediately afterwards, so this is a transient seed.
+        this.setMode(enabled ? KoreanKeyboardMode.English : KoreanKeyboardMode.Hangul);
     }
 
     public setShift(shift: boolean) {
