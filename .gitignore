@@ -4,6 +4,8 @@ dist-firefox/
 obj/
 # Generated from manifest.base.json by scripts/build-manifest.mjs
 src/manifest.json
+# Generated runtime images; source assets live in resources/images
+src/images/
 node_modules
 .parcel-cache
 coverage/
