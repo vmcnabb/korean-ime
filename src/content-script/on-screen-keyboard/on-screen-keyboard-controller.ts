@@ -99,7 +99,8 @@ export class OnScreenKeyboardController {
         placement.x = kx + dx;
         placement.y = ky + dy;
 
-        this.placeKeyboard();
+        // A drag is an explicit move, so re-anchor to the corner it lands in.
+        this.placeKeyboard(true);
     }
 
     hideKeyboard() {
@@ -111,7 +112,7 @@ export class OnScreenKeyboardController {
         this.placeKeyboard();
     }
 
-    private placeKeyboard() {
+    private placeKeyboard(reanchor = false) {
         // get x,y coordinates of keyboard based on an origin of Top Left
         const placement = this._keyboardPlacement;
         const width = this._keyboardElement.offsetWidth;
@@ -128,13 +129,18 @@ export class OnScreenKeyboardController {
         if (x + width > window.innerWidth) x = window.innerWidth - width;
         if (y + height > window.innerHeight) y = window.innerHeight - height;
 
-        // find out which quadrant keyboard is in and set appropriate origin
-        const cx = ~~(x + width / 2);
-        const cy = ~~(y + height / 2);
-
-        const originX = cx > window.innerWidth / 2 ? "right" : "left";
-
-        const originY = cy > window.innerHeight / 2 ? "bottom" : "top";
+        // Re-derive the anchor corner from the keyboard's quadrant only when the
+        // user is moving it. On a resize re-clamp we keep the existing anchor, so
+        // the keyboard returns to the same corner instead of flipping when a small
+        // viewport forces it across a midline.
+        let originX = placement.originX;
+        let originY = placement.originY;
+        if (reanchor) {
+            const cx = ~~(x + width / 2);
+            const cy = ~~(y + height / 2);
+            originX = cx > window.innerWidth / 2 ? "right" : "left";
+            originY = cy > window.innerHeight / 2 ? "bottom" : "top";
+        }
 
         // set x and y based on new origin
         const keyboardElement = this._keyboardElement;

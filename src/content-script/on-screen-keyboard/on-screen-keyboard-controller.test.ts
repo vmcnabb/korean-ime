@@ -117,4 +117,35 @@ describe("OnScreenKeyboardController resize handling", () => {
         window.dispatchEvent(new Event("resize"));
         expect(placeKeyboard).toHaveBeenCalled();
     });
+
+    it("keeps its corner anchor across a resize (re-anchors only on an explicit move)", () => {
+        const setViewport = (w: number, h: number) => {
+            Object.defineProperty(window, "innerWidth", { configurable: true, value: w });
+            Object.defineProperty(window, "innerHeight", { configurable: true, value: h });
+        };
+
+        const controller = new OnScreenKeyboardController(() => {});
+        const el = document.querySelector("[id^='kb-']") as HTMLElement;
+        // jsdom has no layout, so give the keyboard a real size; otherwise it is a
+        // zero-size point and clamping can never push it across a midline.
+        Object.defineProperty(el, "offsetWidth", { configurable: true, value: 480 });
+        Object.defineProperty(el, "offsetHeight", { configurable: true, value: 250 });
+
+        setViewport(1200, 800);
+        controller.showKeyboard(); // default anchor: bottom-right
+        expect(el.style.right).not.toBe("");
+        expect(el.style.bottom).not.toBe("");
+
+        // Shrink the viewport below the keyboard's size, then restore it.
+        setViewport(300, 200);
+        window.dispatchEvent(new Event("resize"));
+        setViewport(1200, 800);
+        window.dispatchEvent(new Event("resize"));
+
+        // Still anchored bottom-right, not flipped to top-left.
+        expect(el.style.right).not.toBe("");
+        expect(el.style.bottom).not.toBe("");
+        expect(el.style.left).toBe("");
+        expect(el.style.top).toBe("");
+    });
 });
