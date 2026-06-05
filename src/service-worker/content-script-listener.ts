@@ -1,8 +1,5 @@
-import {
-    ContentScriptRequestMessage,
-    ContentScriptRequestAction,
-    SendKeyRequestMessage,
-} from "../messaging/content-to-service-messages";
+import { ContentScriptRequestMessage, ContentScriptRequestAction } from "../messaging/content-to-service-messages";
+import { routeByAction } from "../messaging/route-message";
 import { StateManager } from "./state-manager";
 import { sendMessageToTab } from "./send-message-to-tab";
 import { debugLog } from "../debug-log";
@@ -35,43 +32,32 @@ export class ContentScriptListener {
                 if (!sender.tab?.id) {
                     return;
                 }
+                const tabId = sender.tab.id;
 
                 if (isContentScriptBroadcastMessage(message)) {
                     if (sender.frameId !== undefined) {
-                        this.stateManager.setFocusedFrame(sender.tab.id, sender.frameId);
+                        this.stateManager.setFocusedFrame(tabId, sender.frameId);
                     }
-                    sendMessageToTab(sender.tab.id, message);
+                    sendMessageToTab(tabId, message);
                     return;
                 }
 
-                // These StateManager calls are async; attach a catch so a failure
-                // (e.g. storage error) is logged rather than becoming an unhandled
-                // rejection that could destabilize the MV3 worker.
-                switch (message.action) {
-                    case ContentScriptRequestAction.ToggleHanYongMode:
-                        this.stateManager
-                            .toggleHanYongMode(sender.tab.id)
-                            .catch((error) => debugLog("toggleHanYongMode failed:", error));
-                        break;
+                // The StateManager calls are async; log a failure rather than
+                // letting it become an unhandled rejection that could destabilize
+                // the MV3 worker.
+                const run = (label: string, work: Promise<unknown>) =>
+                    void work.catch((error) => debugLog(`${label} failed:`, error));
 
-                    case ContentScriptRequestAction.RefreshState:
-                        this.stateManager
-                            .sendStateToTab(sender.tab.id)
-                            .catch((error) => debugLog("sendStateToTab failed:", error));
-                        break;
-
-                    case ContentScriptRequestAction.SendKey:
-                        this.stateManager
-                            .routeSendKey(sender.tab.id, (message as SendKeyRequestMessage).data)
-                            .catch((error) => debugLog("routeSendKey failed:", error));
-                        break;
-
-                    case ContentScriptRequestAction.DisableOnScreenKeyboard:
-                        this.stateManager
-                            .setOnScreenKeyboardEnabled(sender.tab.id, false)
-                            .catch((error) => debugLog("setOnScreenKeyboardEnabled failed:", error));
-                        break;
-                }
+                routeByAction(message, {
+                    [ContentScriptRequestAction.ToggleHanYongMode]: () =>
+                        run("toggleHanYongMode", this.stateManager.toggleHanYongMode(tabId)),
+                    [ContentScriptRequestAction.RefreshState]: () =>
+                        run("sendStateToTab", this.stateManager.sendStateToTab(tabId)),
+                    [ContentScriptRequestAction.SendKey]: (m) =>
+                        run("routeSendKey", this.stateManager.routeSendKey(tabId, m.data)),
+                    [ContentScriptRequestAction.DisableOnScreenKeyboard]: () =>
+                        run("setOnScreenKeyboardEnabled", this.stateManager.setOnScreenKeyboardEnabled(tabId, false)),
+                });
             }
         );
 
