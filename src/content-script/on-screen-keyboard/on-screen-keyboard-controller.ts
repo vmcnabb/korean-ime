@@ -7,6 +7,8 @@ import { ContentScriptRequestAction, ContentScriptRequestMessage } from "../../m
 import { debugLog } from "../../debug-log";
 import { api } from "../../platform/browser-api";
 import { modeIconHangul, modeIconEnglish } from "./mode-icons";
+import { KeyboardPlacement, OnScreenKeyboardLayout } from "../../extension-state/osk-layout";
+import { currentOskSite } from "../osk-site";
 
 /** Full keyboard width, and the narrower width used while collapsed. */
 const KEYBOARD_WIDTH_PX = 480;
@@ -35,9 +37,9 @@ const GUIDE_EDGE_THICKNESS_PX = (GUIDE_EDGE_THICKNESS_MM * 96) / 25.4;
 
 export class OnScreenKeyboardController {
     private _keyboardElement: HTMLDivElement;
-    private _keyboardPlacement = {
-        originX: "right" as "right" | "left",
-        originY: "bottom" as "bottom" | "top",
+    private _keyboardPlacement: KeyboardPlacement = {
+        originX: "right",
+        originY: "bottom",
         x: 0,
         y: 0,
     };
@@ -48,6 +50,9 @@ export class OnScreenKeyboardController {
             startY: 0,
         },
     };
+    // Whether the keyboard actually moved during the current drag, so a drop
+    // persists the new position only after a real move (not a bare header click).
+    private _movedDuringDrag = false;
 
     private _mode = KoreanKeyboardMode.English;
     // `undefined` until the first state update, so the first call to
@@ -146,10 +151,60 @@ export class OnScreenKeyboardController {
 
         // A drag is an explicit move, so re-anchor to the corner it lands in.
         this.placeKeyboard(true);
+        this._movedDuringDrag = true;
 
         // Surface which two edges it's now anchored to (placeKeyboard has just
         // resolved them) for as long as the drag continues.
         this.showGuides();
+    }
+
+    private endDrag() {
+        this._keyboardMovement.mouse.down = false;
+        this.hideGuidesAfterDrop();
+
+        // Persist the landing spot only after an actual move, so a bare header
+        // click doesn't rewrite the saved position.
+        if (this._movedDuringDrag) {
+            this._movedDuringDrag = false;
+            this.persistLayout({ position: this._keyboardPlacement });
+        }
+    }
+
+    /**
+     * Apply a persisted layout before the keyboard is first shown: the per-site
+     * position (when one was saved) and the global collapsed state. The content
+     * script gates the first show on this, so there's no default-then-jump.
+     */
+    public applyPersistedLayout(layout: OnScreenKeyboardLayout) {
+        if (layout.position) {
+            this._keyboardPlacement = { ...layout.position };
+        }
+        this.setCollapsed(layout.collapsed);
+    }
+
+    // Ask the service worker to persist whichever layout fields changed. A
+    // position needs a site key; the collapsed state is global. Failures are
+    // logged, not surfaced — persistence is best-effort.
+    private persistLayout(update: { position?: KeyboardPlacement; collapsed?: boolean }) {
+        const data: { site?: string; position?: KeyboardPlacement; collapsed?: boolean } = {
+            collapsed: update.collapsed,
+        };
+
+        if (update.position) {
+            const site = currentOskSite();
+            // Nothing meaningful to key a position on (e.g. file://) — skip it.
+            if (!site) {
+                return;
+            }
+            data.site = site;
+            data.position = update.position;
+        }
+
+        api.runtime.sendMessage<ContentScriptRequestMessage>({
+            type: "contentScriptRequest",
+            action: ContentScriptRequestAction.PersistOnScreenKeyboardLayout,
+            data,
+        });
     }
 
     hideKeyboard() {
@@ -269,6 +324,7 @@ export class OnScreenKeyboardController {
             // Drag only from the header bar, and not from its buttons.
             if (e.target.closest(".kb-header") && !e.target.closest("button") && !e.target.closest(".kb-mode")) {
                 this._keyboardMovement.mouse.down = true;
+                this._movedDuringDrag = false;
                 // clientX/Y (CSS px, viewport-relative), not screenX/Y (device px):
                 // the placement math is in CSS px, so a device-px delta would move
                 // the keyboard at the wrong rate under page zoom (e.g. 2x at 200%).
@@ -281,15 +337,13 @@ export class OnScreenKeyboardController {
 
         document.addEventListener("mouseup", (e) => {
             if (e.button === 0) {
-                this._keyboardMovement.mouse.down = false;
-                this.hideGuidesAfterDrop();
+                this.endDrag();
             }
         });
 
         document.addEventListener("mousemove", (e) => {
             if ((e.buttons & 1) === 0) {
-                this._keyboardMovement.mouse.down = false;
-                this.hideGuidesAfterDrop();
+                this.endDrag();
             }
 
             if (this._keyboardMovement.mouse.down) {
@@ -547,7 +601,22 @@ export class OnScreenKeyboardController {
     }
 
     private toggleCollapsed() {
-        const collapsed = this._keyboardElement.classList.toggle("collapsed");
+        const collapsed = !this._keyboardElement.classList.contains("collapsed");
+        this.setCollapsed(collapsed);
+
+        // The keyboard's size changed, so re-clamp it to stay on-screen (its
+        // anchor is preserved).
+        this.placeKeyboard();
+
+        // The collapsed state is remembered globally (not per-site).
+        this.persistLayout({ collapsed });
+    }
+
+    // Apply the collapsed/expanded visual state without re-clamping or
+    // persisting — shared by the user toggle and by restoring a saved layout
+    // (which runs before the keyboard is shown, so placement happens on show).
+    private setCollapsed(collapsed: boolean) {
+        this._keyboardElement.classList.toggle("collapsed", collapsed);
 
         // Collapsed, only the header shows (the keys are hidden), so shrink the
         // keyboard to fit its header contents; expanded, restore the full width.
@@ -557,10 +626,6 @@ export class OnScreenKeyboardController {
             this._collapseButton.textContent = collapsed ? "\u{1F5D6}" : "\u{1F5D5}";
             this._collapseButton.title = api.i18n.getMessage(collapsed ? "keyboard_restore" : "keyboard_minimise");
         }
-
-        // The keyboard's size changed, so re-clamp it to stay on-screen (its
-        // anchor is preserved).
-        this.placeKeyboard();
     }
 
     // Toggles Hangul/Latin: the shared per-tab mode when Hangul typing is enabled

@@ -1,7 +1,9 @@
 import { ContentScriptRequestMessage, ContentScriptRequestAction } from "../messaging/content-to-service-messages";
+import { ServiceScriptMessage, ServiceScriptMessageAction } from "../messaging/service-to-content-messages";
 import { routeByAction } from "../messaging/route-message";
 import { StateManager } from "./state-manager";
 import { sendMessageToTab } from "./send-message-to-tab";
+import { getOnScreenKeyboardLayout, saveOnScreenKeyboardLayout } from "./osk-layout-store";
 import { debugLog } from "../debug-log";
 import {
     ContentScriptBroadcastMessage,
@@ -57,6 +59,13 @@ export class ContentScriptListener {
                         run("routeSendKey", this.stateManager.routeSendKey(tabId, m.data)),
                     [ContentScriptRequestAction.DisableOnScreenKeyboard]: () =>
                         run("setOnScreenKeyboardEnabled", this.stateManager.setOnScreenKeyboardEnabled(tabId, false)),
+                    [ContentScriptRequestAction.RequestOnScreenKeyboardLayout]: (m) =>
+                        run(
+                            "sendOnScreenKeyboardLayout",
+                            this.sendOnScreenKeyboardLayout(tabId, sender.frameId, m.data.site)
+                        ),
+                    [ContentScriptRequestAction.PersistOnScreenKeyboardLayout]: (m) =>
+                        run("saveOnScreenKeyboardLayout", saveOnScreenKeyboardLayout(m.data)),
                 });
             }
         );
@@ -77,5 +86,19 @@ export class ContentScriptListener {
         api.tabs.onRemoved.addListener((tabId) => {
             this.stateManager.clearTabState(tabId).catch((error) => debugLog("clearTabState failed:", error));
         });
+    }
+
+    /** Reply to the requesting frame with the saved layout for its site. */
+    private async sendOnScreenKeyboardLayout(tabId: number, frameId: number | undefined, site?: string) {
+        const layout = await getOnScreenKeyboardLayout(site);
+        await sendMessageToTab<ServiceScriptMessage>(
+            tabId,
+            {
+                type: "serviceScriptMessage",
+                action: ServiceScriptMessageAction.OnScreenKeyboardLayout,
+                data: layout,
+            },
+            frameId !== undefined ? { frameId } : undefined
+        );
     }
 }

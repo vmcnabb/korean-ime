@@ -482,3 +482,102 @@ describe("OnScreenKeyboardController anchor guides", () => {
         }
     });
 });
+
+describe("OnScreenKeyboardController persisted layout", () => {
+    let sendMessage: jest.Mock;
+
+    beforeEach(() => {
+        document.body.innerHTML = "";
+        sendMessage = jest.fn();
+        Object.assign(globalThis, {
+            chrome: { runtime: { sendMessage }, i18n: { getMessage: () => "" } },
+        });
+        Object.defineProperty(window, "innerWidth", { configurable: true, value: 1200 });
+        Object.defineProperty(window, "innerHeight", { configurable: true, value: 800 });
+    });
+
+    const host = () => document.querySelector("[id^='kb-']") as HTMLElement;
+
+    const sizedKeyboard = () => {
+        const el = host();
+        // jsdom has no layout; give the keyboard a real size so placement clamps.
+        Object.defineProperty(el, "offsetWidth", { configurable: true, value: 480 });
+        Object.defineProperty(el, "offsetHeight", { configurable: true, value: 250 });
+        return el;
+    };
+
+    const persistCalls = () =>
+        sendMessage.mock.calls
+            .map((call) => call[0])
+            .filter((m) => m.action === ContentScriptRequestAction.PersistOnScreenKeyboardLayout);
+
+    it("applies a restored position and collapsed state, used on the next show", () => {
+        const controller = new OnScreenKeyboardController(() => {});
+        const el = sizedKeyboard();
+
+        controller.applyPersistedLayout({
+            position: { originX: "left", originY: "top", x: 30, y: 40 },
+            collapsed: true,
+        });
+        expect(el.classList.contains("collapsed")).toBe(true);
+
+        controller.showKeyboard();
+
+        // Restored to the saved top-left anchor, not the default bottom-right.
+        expect(el.style.left).toBe("30px");
+        expect(el.style.top).toBe("40px");
+        expect(el.style.right).toBe("");
+        expect(el.style.bottom).toBe("");
+    });
+
+    it("persists the new position (with the site key) on drag-drop", () => {
+        const controller = new OnScreenKeyboardController(() => {});
+        const el = sizedKeyboard();
+        controller.showKeyboard();
+        sendMessage.mockClear();
+
+        (el.querySelector(".kb-handle") as HTMLElement).dispatchEvent(
+            new MouseEvent("mousedown", { bubbles: true, button: 0, clientX: 600, clientY: 400 })
+        );
+        document.dispatchEvent(new MouseEvent("mousemove", { bubbles: true, buttons: 1, clientX: 560, clientY: 360 }));
+        document.dispatchEvent(new MouseEvent("mouseup", { bubbles: true, button: 0 }));
+
+        const calls = persistCalls();
+        expect(calls).toHaveLength(1);
+        expect(calls[0].data.site).toBe("localhost"); // jsdom default hostname
+        expect(calls[0].data.position).toMatchObject({
+            originX: expect.any(String),
+            originY: expect.any(String),
+            x: expect.any(Number),
+            y: expect.any(Number),
+        });
+    });
+
+    it("does not persist on a bare header click with no movement", () => {
+        const controller = new OnScreenKeyboardController(() => {});
+        const el = sizedKeyboard();
+        controller.showKeyboard();
+        sendMessage.mockClear();
+
+        (el.querySelector(".kb-handle") as HTMLElement).dispatchEvent(
+            new MouseEvent("mousedown", { bubbles: true, button: 0, clientX: 600, clientY: 400 })
+        );
+        document.dispatchEvent(new MouseEvent("mouseup", { bubbles: true, button: 0 }));
+
+        expect(persistCalls()).toHaveLength(0);
+    });
+
+    it("persists the collapsed state globally (no site) when toggled", () => {
+        const controller = new OnScreenKeyboardController(() => {});
+        const el = sizedKeyboard();
+        controller.showKeyboard();
+        sendMessage.mockClear();
+
+        (el.querySelector(".kb-collapse") as HTMLButtonElement).click();
+
+        const calls = persistCalls();
+        expect(calls).toHaveLength(1);
+        expect(calls[0].data.collapsed).toBe(true);
+        expect(calls[0].data.site).toBeUndefined();
+    });
+});
