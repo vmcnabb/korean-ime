@@ -79,7 +79,10 @@ const fullUpperRows: KeyboardLayout = [
         key(KeyCode.Backspace, 2),
     ],
     [
-        key(KeyCode.Tab, 1.5),
+        // Tab/Enter are inert for now; real newline/indent behaviour across the
+        // editor adapters is a follow-up (they'd otherwise look clickable but do
+        // nothing).
+        dead(KeyCode.Tab, 1.5),
         key(KeyCode.KeyQ),
         key(KeyCode.KeyW),
         key(KeyCode.KeyE),
@@ -107,7 +110,7 @@ const fullUpperRows: KeyboardLayout = [
         key(KeyCode.KeyL),
         key(KeyCode.Semicolon),
         key(KeyCode.Quote),
-        key(KeyCode.Enter, 2.25),
+        dead(KeyCode.Enter, 2.25),
     ],
     [
         key(KeyCode.ShiftLeft, 2.25),
