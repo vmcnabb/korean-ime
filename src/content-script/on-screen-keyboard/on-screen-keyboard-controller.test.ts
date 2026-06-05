@@ -203,11 +203,39 @@ describe("OnScreenKeyboardController resize handling", () => {
         (controller as unknown as { _keyboardPlacement: { x: number } })._keyboardPlacement.x = 200;
 
         // Drag 10px left (anchored right, that increases the right offset).
-        el.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, button: 0, screenX: 100, screenY: 100 }));
-        document.dispatchEvent(new MouseEvent("mousemove", { bubbles: true, buttons: 1, screenX: 90, screenY: 100 }));
+        el.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, button: 0, clientX: 100, clientY: 100 }));
+        document.dispatchEvent(new MouseEvent("mousemove", { bubbles: true, buttons: 1, clientX: 90, clientY: 100 }));
 
         // It tracked from the rendered 0 (now ~10px), not the stale 200 (~210px).
         expect(parseFloat(el.style.right)).toBeLessThan(50);
+    });
+
+    it("tracks the drag in CSS pixels (clientX/Y), not device pixels, so it follows the cursor under zoom", () => {
+        Object.defineProperty(window, "innerWidth", { configurable: true, value: 1000 });
+        Object.defineProperty(window, "innerHeight", { configurable: true, value: 800 });
+
+        const controller = new OnScreenKeyboardController(() => {});
+        const el = document.querySelector("[id^='kb-']") as HTMLElement;
+        Object.defineProperty(el, "offsetWidth", { configurable: true, value: 480 });
+        Object.defineProperty(el, "offsetHeight", { configurable: true, value: 250 });
+
+        controller.showKeyboard(); // default bottom-right -> flush (right: 0px)
+
+        // Drag 30 CSS px left. screenX moves twice as far (as at 200% zoom, where
+        // device px = 2x CSS px); the keyboard must follow clientX, not screenX.
+        (el.querySelector(".kb-handle") as HTMLElement).dispatchEvent(
+            new MouseEvent("mousedown", { bubbles: true, button: 0, clientX: 500, clientY: 100, screenX: 1000 })
+        );
+        document.dispatchEvent(
+            new MouseEvent("mousemove", { bubbles: true, buttons: 1, clientX: 470, clientY: 100, screenX: 940 })
+        );
+
+        // 30 CSS px left, anchored right -> ~30px right offset (not ~60px).
+        expect(parseFloat(el.style.right)).toBeCloseTo(30, 0);
+
+        // Release the drag so this controller's persistent document listeners
+        // don't stay armed and move the keyboard during a later test.
+        document.dispatchEvent(new MouseEvent("mouseup", { bubbles: true, button: 0 }));
     });
 
     it("keeps the anchored edge on-screen when the keyboard is wider than the viewport", () => {
@@ -314,15 +342,143 @@ describe("OnScreenKeyboardController header controls", () => {
 
         // pressing a key must not move the keyboard
         const key = document.querySelector("kbd.KeyS") as HTMLElement;
-        key.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, button: 0, screenX: 100, screenY: 100 }));
-        document.dispatchEvent(new MouseEvent("mousemove", { bubbles: true, buttons: 1, screenX: 80, screenY: 100 }));
+        key.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, button: 0, clientX: 100, clientY: 100 }));
+        document.dispatchEvent(new MouseEvent("mousemove", { bubbles: true, buttons: 1, clientX: 80, clientY: 100 }));
         expect(place).not.toHaveBeenCalled();
 
         // dragging the header bar does
         (el.querySelector(".kb-handle") as HTMLElement).dispatchEvent(
-            new MouseEvent("mousedown", { bubbles: true, button: 0, screenX: 100, screenY: 100 })
+            new MouseEvent("mousedown", { bubbles: true, button: 0, clientX: 100, clientY: 100 })
         );
-        document.dispatchEvent(new MouseEvent("mousemove", { bubbles: true, buttons: 1, screenX: 80, screenY: 100 }));
+        document.dispatchEvent(new MouseEvent("mousemove", { bubbles: true, buttons: 1, clientX: 80, clientY: 100 }));
         expect(place).toHaveBeenCalled();
+    });
+});
+
+describe("OnScreenKeyboardController anchor guides", () => {
+    afterEach(() => jest.restoreAllMocks());
+
+    beforeEach(() => {
+        document.body.innerHTML = "";
+        Object.assign(globalThis, {
+            chrome: {
+                runtime: { sendMessage: jest.fn() },
+                i18n: { getMessage: () => "" },
+            },
+        });
+    });
+
+    const guides = () => document.getElementById("kb-guides-3f2a9c7e-7b1d-4e8a-9c2f-1a6b5d4e3c20") as HTMLElement;
+    const guideH = () => guides().querySelector(".kb-guide-h") as HTMLElement;
+    const guideV = () => guides().querySelector(".kb-guide-v") as HTMLElement;
+
+    const setPlacement = (controller: OnScreenKeyboardController, originX: string, originY: string) => {
+        (
+            controller as unknown as { _keyboardPlacement: { originX: string; originY: string } }
+        )._keyboardPlacement.originX = originX;
+        (
+            controller as unknown as { _keyboardPlacement: { originX: string; originY: string } }
+        )._keyboardPlacement.originY = originY;
+    };
+
+    it("are hidden until the keyboard is moved", () => {
+        new OnScreenKeyboardController(() => {});
+        expect(guides().classList.contains("visible")).toBe(false);
+    });
+
+    it.each([
+        ["bottom", "right"],
+        ["bottom", "left"],
+        ["top", "right"],
+        ["top", "left"],
+    ])("light the anchored edges distinctly for the %s-%s corner", (originY, originX) => {
+        const controller = new OnScreenKeyboardController(() => {});
+        setPlacement(controller, originX, originY);
+
+        // updateGuides maps the anchor onto the two lit edges.
+        (controller as unknown as { updateGuides: () => void }).updateGuides();
+
+        expect(guideH().classList.contains(originY)).toBe(true);
+        expect(guideH().classList.contains(originY === "top" ? "bottom" : "top")).toBe(false);
+        expect(guideV().classList.contains(originX)).toBe(true);
+        expect(guideV().classList.contains(originX === "left" ? "right" : "left")).toBe(false);
+    });
+
+    it("draw connectors from the keyboard's midpoints to the anchored edges", () => {
+        Object.defineProperty(window, "innerWidth", { configurable: true, value: 1000 });
+        Object.defineProperty(window, "innerHeight", { configurable: true, value: 800 });
+
+        const controller = new OnScreenKeyboardController(() => {});
+        const el = document.querySelector("[id^='kb-']") as HTMLElement;
+        // A keyboard sitting in from the bottom-right corner, with a known rect.
+        setPlacement(controller, "right", "bottom");
+        el.getBoundingClientRect = () =>
+            ({ left: 480, right: 880, top: 500, bottom: 700, width: 400, height: 200 }) as DOMRect;
+
+        (controller as unknown as { updateGuides: () => void }).updateGuides();
+
+        const connectorX = guides().querySelector(".kb-connector-x") as HTMLElement;
+        const connectorY = guides().querySelector(".kb-connector-y") as HTMLElement;
+
+        // The connectors stop one bar-thickness (4mm) short of the viewport edge,
+        // so they meet the inner edge of the edge bars rather than the edge itself.
+        const barPx = (4 * 96) / 25.4; // 4mm in CSS px
+
+        // Horizontal connector: from the keyboard's right edge toward the viewport
+        // right (less the bar), at the keyboard's vertical midpoint.
+        expect(connectorX.style.left).toBe("880px"); // rect.right
+        expect(parseFloat(connectorX.style.width)).toBeCloseTo(120 - barPx, 3); // innerWidth - rect.right - bar
+        expect(connectorX.style.top).toBe("600px"); // rect.top + height/2
+
+        // Vertical connector: from the keyboard's bottom edge toward the viewport
+        // bottom (less the bar), at the keyboard's horizontal midpoint.
+        expect(connectorY.style.top).toBe("700px"); // rect.bottom
+        expect(parseFloat(connectorY.style.height)).toBeCloseTo(100 - barPx, 3); // innerHeight - rect.bottom - bar
+        expect(connectorY.style.left).toBe("680px"); // rect.left + width/2
+
+        // The edge bars line up with the connectors: centred on the same midpoints
+        // (a -50% translate does the centring), sized 1in along the edge by 4mm.
+        expect(guideH().style.left).toBe("680px"); // centreX, == connectorY
+        expect(guideH().style.transform).toBe("translateX(-50%)");
+        expect(guideH().style.width).toBe("1in");
+        expect(guideH().style.height).toBe("4mm");
+        expect(guideV().style.top).toBe("600px"); // centreY, == connectorX
+        expect(guideV().style.transform).toBe("translateY(-50%)");
+        expect(guideV().style.width).toBe("4mm");
+        expect(guideV().style.height).toBe("1in");
+    });
+
+    it("appear during a drag and fade out a short time after the drop", () => {
+        jest.useFakeTimers();
+        try {
+            Object.defineProperty(window, "innerWidth", { configurable: true, value: 1000 });
+            Object.defineProperty(window, "innerHeight", { configurable: true, value: 800 });
+
+            const controller = new OnScreenKeyboardController(() => {});
+            const el = document.querySelector("[id^='kb-']") as HTMLElement;
+            Object.defineProperty(el, "offsetWidth", { configurable: true, value: 480 });
+            Object.defineProperty(el, "offsetHeight", { configurable: true, value: 250 });
+            controller.showKeyboard();
+
+            // Drag from the header: the guides light up.
+            (el.querySelector(".kb-handle") as HTMLElement).dispatchEvent(
+                new MouseEvent("mousedown", { bubbles: true, button: 0, clientX: 100, clientY: 100 })
+            );
+            document.dispatchEvent(
+                new MouseEvent("mousemove", { bubbles: true, buttons: 1, clientX: 90, clientY: 110 })
+            );
+            expect(guides().classList.contains("visible")).toBe(true);
+
+            // On drop they brighten (the "saved" flash) and linger, then fade.
+            document.dispatchEvent(new MouseEvent("mouseup", { bubbles: true, button: 0 }));
+            expect(guides().classList.contains("visible")).toBe(true);
+            expect(guides().classList.contains("flash")).toBe(true);
+
+            jest.advanceTimersByTime(700);
+            expect(guides().classList.contains("visible")).toBe(false);
+            expect(guides().classList.contains("flash")).toBe(false);
+        } finally {
+            jest.useRealTimers();
+        }
     });
 });

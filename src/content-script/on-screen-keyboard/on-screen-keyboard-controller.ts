@@ -11,6 +11,28 @@ import { modeIconHangul, modeIconEnglish } from "./mode-icons";
 /** Full keyboard width, and the narrower width used while collapsed. */
 const KEYBOARD_WIDTH_PX = 480;
 
+/**
+ * How long the anchor guides linger after a drag ends before fading out. The
+ * anchor only matters while the user is repositioning the keyboard, so the
+ * guides are shown during a drag and for this short moment afterwards (long
+ * enough to confirm where it landed), then disappear.
+ */
+const GUIDE_LINGER_MS = 600;
+
+/**
+ * The anchored-edge highlight is a short, fat solid bar centred where the
+ * connector meets the viewport edge: this long along the edge, this thick across
+ * it. Physical units (in/mm) so it stays a consistent real-world size across
+ * displays.
+ */
+const GUIDE_EDGE_LENGTH = "1in";
+const GUIDE_EDGE_THICKNESS_MM = 4;
+const GUIDE_EDGE_THICKNESS = `${GUIDE_EDGE_THICKNESS_MM}mm`;
+// CSS fixes 1in = 96px regardless of device DPI, so 1mm = 96/25.4 px. Used to
+// stop the connectors at the inner edge of the (mm-sized) edge bars rather than
+// running them the whole way to the viewport edge.
+const GUIDE_EDGE_THICKNESS_PX = (GUIDE_EDGE_THICKNESS_MM * 96) / 25.4;
+
 export class OnScreenKeyboardController {
     private _keyboardElement: HTMLDivElement;
     private _keyboardPlacement = {
@@ -36,6 +58,16 @@ export class OnScreenKeyboardController {
     private _keyElements = new Map<KeyCode, HTMLElement>();
     private _collapseButton?: HTMLButtonElement;
     private _modeIndicator?: HTMLImageElement;
+    // Dotted overlays marking how the keyboard is anchored, shown only while it's
+    // being moved (see GUIDE_LINGER_MS): two full-edge lines along the anchored
+    // viewport edges (_guideH/_guideV), plus two connectors running from the
+    // keyboard's midpoints out to those edges (_connectorX/_connectorY).
+    private _guidesElement?: HTMLDivElement;
+    private _guideH?: HTMLDivElement;
+    private _guideV?: HTMLDivElement;
+    private _connectorX?: HTMLDivElement;
+    private _connectorY?: HTMLDivElement;
+    private _guideHideTimer?: ReturnType<typeof setTimeout>;
     private _onSendKey: (key: string, keyCode: KeyCode) => void;
 
     constructor(onSendKey: (key: string, keyCode: KeyCode) => void) {
@@ -114,6 +146,10 @@ export class OnScreenKeyboardController {
 
         // A drag is an explicit move, so re-anchor to the corner it lands in.
         this.placeKeyboard(true);
+
+        // Surface which two edges it's now anchored to (placeKeyboard has just
+        // resolved them) for as long as the drag continues.
+        this.showGuides();
     }
 
     hideKeyboard() {
@@ -210,9 +246,9 @@ export class OnScreenKeyboardController {
         keyboardElement.style.border = "none";
         keyboardElement.style.zIndex = "2147483647"; // max int
 
-        // insert the keyboard as the first child of the BODY tag
+        // insert the keyboard as the last child of the BODY tag
         const body = document.getElementsByTagName("body")[0];
-        body.insertBefore(keyboardElement, body.firstChild);
+        body.appendChild(keyboardElement);
 
         // Header bar (drag handle + collapse/close controls); the keys live in a
         // body wrapper so the header can collapse them away.
@@ -233,8 +269,11 @@ export class OnScreenKeyboardController {
             // Drag only from the header bar, and not from its buttons.
             if (e.target.closest(".kb-header") && !e.target.closest("button") && !e.target.closest(".kb-mode")) {
                 this._keyboardMovement.mouse.down = true;
-                this._keyboardMovement.mouse.startX = e.screenX;
-                this._keyboardMovement.mouse.startY = e.screenY;
+                // clientX/Y (CSS px, viewport-relative), not screenX/Y (device px):
+                // the placement math is in CSS px, so a device-px delta would move
+                // the keyboard at the wrong rate under page zoom (e.g. 2x at 200%).
+                this._keyboardMovement.mouse.startX = e.clientX;
+                this._keyboardMovement.mouse.startY = e.clientY;
             }
 
             return;
@@ -243,20 +282,22 @@ export class OnScreenKeyboardController {
         document.addEventListener("mouseup", (e) => {
             if (e.button === 0) {
                 this._keyboardMovement.mouse.down = false;
+                this.hideGuidesAfterDrop();
             }
         });
 
         document.addEventListener("mousemove", (e) => {
             if ((e.buttons & 1) === 0) {
                 this._keyboardMovement.mouse.down = false;
+                this.hideGuidesAfterDrop();
             }
 
             if (this._keyboardMovement.mouse.down) {
-                const dx = e.screenX - this._keyboardMovement.mouse.startX;
-                const dy = e.screenY - this._keyboardMovement.mouse.startY;
+                const dx = e.clientX - this._keyboardMovement.mouse.startX;
+                const dy = e.clientY - this._keyboardMovement.mouse.startY;
 
-                this._keyboardMovement.mouse.startX = e.screenX;
-                this._keyboardMovement.mouse.startY = e.screenY;
+                this._keyboardMovement.mouse.startX = e.clientX;
+                this._keyboardMovement.mouse.startY = e.clientY;
 
                 this.moveKeyboard(dx, dy);
             }
@@ -310,12 +351,153 @@ export class OnScreenKeyboardController {
             // element has no meaningful on-screen placement to re-clamp.
             if (keyboardElement.isConnected && keyboardElement.style.display !== "none") {
                 this.placeKeyboard();
+                // If the guides are still showing (a resize during the post-drop
+                // linger), re-track them: the anchor is preserved but the
+                // keyboard's rect and the edges have moved.
+                if (this._guidesElement?.classList.contains("visible")) {
+                    this.updateGuides();
+                }
             }
         };
         window.addEventListener("resize", reclampToViewport);
         window.visualViewport?.addEventListener("resize", reclampToViewport);
 
+        this.createGuides();
+
         return keyboardElement;
+    }
+
+    // Builds the anchor-guide overlay: two dotted lines pinned to the viewport
+    // edges, hidden until a drag shows them (see showGuides). Appended after the
+    // keyboard so the keyboard stays the body's first child (tests and the
+    // initial insert rely on that ordering).
+    private createGuides() {
+        const guides = document.createElement("div");
+        guides.id = "kb-guides-3f2a9c7e-7b1d-4e8a-9c2f-1a6b5d4e3c20";
+
+        // Edge highlights: short fat bars whose length runs along the edge and
+        // whose thickness crosses it. Centred on the keyboard's midpoint via a
+        // -50% translate, with the midpoint coordinate set inline per move.
+        const horizontal = document.createElement("div");
+        horizontal.className = "kb-guide kb-guide-h";
+        horizontal.style.width = GUIDE_EDGE_LENGTH;
+        horizontal.style.height = GUIDE_EDGE_THICKNESS;
+        horizontal.style.transform = "translateX(-50%)";
+
+        const vertical = document.createElement("div");
+        vertical.className = "kb-guide kb-guide-v";
+        vertical.style.width = GUIDE_EDGE_THICKNESS;
+        vertical.style.height = GUIDE_EDGE_LENGTH;
+        vertical.style.transform = "translateY(-50%)";
+
+        // Connectors from the keyboard's edge midpoints out to the anchored edges.
+        const connectorX = document.createElement("div");
+        connectorX.className = "kb-connector kb-connector-x";
+
+        const connectorY = document.createElement("div");
+        connectorY.className = "kb-connector kb-connector-y";
+
+        guides.append(horizontal, vertical, connectorX, connectorY);
+        document.getElementsByTagName("body")[0].appendChild(guides);
+
+        this._guidesElement = guides;
+        this._guideH = horizontal;
+        this._guideV = vertical;
+        this._connectorX = connectorX;
+        this._connectorY = connectorY;
+    }
+
+    // Points the guides at the keyboard's current anchor: the full-edge lines mark
+    // which two viewport edges it's anchored to (the four corners are distinguished
+    // by which top/bottom + left/right pair is lit), and the connectors run from
+    // the keyboard's edge midpoints out to those same edges.
+    private updateGuides() {
+        const { originX, originY } = this._keyboardPlacement;
+        this._guideH?.classList.toggle("top", originY === "top");
+        this._guideH?.classList.toggle("bottom", originY === "bottom");
+        this._guideV?.classList.toggle("left", originX === "left");
+        this._guideV?.classList.toggle("right", originX === "right");
+
+        this.positionGuideGeometry();
+    }
+
+    // Places the pixel-positioned parts of the guides — the edge highlight bars
+    // and the connector lines — from the keyboard's rendered rect. The edge bars
+    // are centred on the keyboard's midpoints (so they line up with the
+    // connectors), and each connector runs from a midpoint out to its edge. When
+    // the keyboard sits flush against an edge the matching connector has zero
+    // length and doesn't show; the edge bar still marks that side.
+    private positionGuideGeometry() {
+        const connectorX = this._connectorX;
+        const connectorY = this._connectorY;
+        if (!connectorX || !connectorY) {
+            return;
+        }
+
+        const rect = this._keyboardElement.getBoundingClientRect();
+        const { originX, originY } = this._keyboardPlacement;
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+
+        // Centre each edge bar on the keyboard's midpoint (a -50% translate set at
+        // creation does the centring; here we just place the midpoint).
+        if (this._guideH) this._guideH.style.left = `${centerX}px`;
+        if (this._guideV) this._guideV.style.top = `${centerY}px`;
+
+        // Vertical connector to the top/bottom edge, at the keyboard's horizontal
+        // centre. It stops at the inner edge of the edge bar (one bar-thickness off
+        // the viewport edge) rather than running all the way to the edge.
+        connectorY.style.left = `${centerX}px`;
+        if (originY === "bottom") {
+            connectorY.style.top = `${rect.bottom}px`;
+            connectorY.style.height = `${Math.max(0, window.innerHeight - rect.bottom - GUIDE_EDGE_THICKNESS_PX)}px`;
+        } else {
+            connectorY.style.top = `${GUIDE_EDGE_THICKNESS_PX}px`;
+            connectorY.style.height = `${Math.max(0, rect.top - GUIDE_EDGE_THICKNESS_PX)}px`;
+        }
+
+        // Horizontal connector to the left/right edge, at the keyboard's vertical
+        // centre. Likewise stops at the inner edge of the bar.
+        connectorX.style.top = `${centerY}px`;
+        if (originX === "right") {
+            connectorX.style.left = `${rect.right}px`;
+            connectorX.style.width = `${Math.max(0, window.innerWidth - rect.right - GUIDE_EDGE_THICKNESS_PX)}px`;
+        } else {
+            connectorX.style.left = `${GUIDE_EDGE_THICKNESS_PX}px`;
+            connectorX.style.width = `${Math.max(0, rect.left - GUIDE_EDGE_THICKNESS_PX)}px`;
+        }
+    }
+
+    // Reveals the guides for the anchor the keyboard now sits at. Idempotent, so
+    // it's safe to call on every drag frame; it also cancels any pending fade-out
+    // from a previous drop.
+    private showGuides() {
+        if (this._guideHideTimer) {
+            clearTimeout(this._guideHideTimer);
+            this._guideHideTimer = undefined;
+        }
+
+        this.updateGuides();
+        // Clear any "saved" flash from a previous drop in case the user re-grabs
+        // mid-fade — this is an active drag again, not a confirmation.
+        this._guidesElement?.classList.remove("flash");
+        this._guidesElement?.classList.add("visible");
+    }
+
+    // Ends the guide display after a drag: a brief brighten to confirm the
+    // position was saved, then a fade-out. A no-op if the guides aren't showing
+    // (e.g. a header click that never became a drag).
+    private hideGuidesAfterDrop() {
+        const guides = this._guidesElement;
+        if (!guides?.classList.contains("visible") || this._guideHideTimer) {
+            return;
+        }
+
+        guides.classList.add("flash");
+        this._guideHideTimer = setTimeout(() => {
+            guides.classList.remove("visible", "flash");
+            this._guideHideTimer = undefined;
+        }, GUIDE_LINGER_MS);
     }
 
     private createHeader(): HTMLDivElement {

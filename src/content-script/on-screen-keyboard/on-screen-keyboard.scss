@@ -249,3 +249,81 @@
         }
     }
 }
+
+// Anchor guides: dotted lines along the two viewport edges the keyboard is
+// anchored to, shown only while it's being moved (toggled by .visible). They
+// live in <body> rather than inside the keyboard so they can span the viewport,
+// hence the separate top-level rule.
+#kb-guides-3f2a9c7e-7b1d-4e8a-9c2f-1a6b5d4e3c20 {
+    position: fixed;
+    inset: 0;
+    margin: 0;
+    padding: 0;
+    // Never intercept clicks or page interaction — the keyboard's drag relies on
+    // document-level mousemove, and the page underneath must stay usable.
+    pointer-events: none;
+    // Same as the keyboard (which sits at max int).
+    z-index: 2147483647;
+    opacity: 0;
+    transition: opacity 250ms ease-out;
+
+    // Shown at a calm level during a drag, then briefly brightened on drop to
+    // confirm the position was saved before fading out (see hideGuidesAfterDrop).
+    &.visible {
+        opacity: 0.65;
+    }
+    &.visible.flash {
+        opacity: 1;
+    }
+
+    .kb-guide {
+        position: absolute;
+        // Solid translucent highlight with a dark halo so it reads on both light
+        // and dark pages without looking like page content or a resize handle.
+        // Size and midpoint position are set inline (in/mm units, centred via a
+        // -50% translate); the lit edges opt in via the corner classes below.
+        background-color: rgba(77, 163, 255, 0.55);
+        border-radius: 2px;
+        box-sizing: border-box;
+        filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.5));
+        display: none;
+    }
+
+    // Horizontal bar: sits against the anchored top/bottom edge.
+    .kb-guide-h.top {
+        top: 0;
+        display: block;
+    }
+    .kb-guide-h.bottom {
+        bottom: 0;
+        display: block;
+    }
+
+    // Vertical bar: sits against the anchored left/right edge.
+    .kb-guide-v.left {
+        left: 0;
+        display: block;
+    }
+    .kb-guide-v.right {
+        right: 0;
+        display: block;
+    }
+
+    // Connectors from the keyboard's edge midpoints out to the anchored edges.
+    // Their position and length are set inline (they track the keyboard's rect);
+    // these rules only carry the dotted styling.
+    .kb-connector {
+        position: absolute;
+        border-color: #4da3ff;
+        box-sizing: border-box;
+        filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.6));
+    }
+    .kb-connector-x {
+        height: 0;
+        border-top: 2px dotted #4da3ff;
+    }
+    .kb-connector-y {
+        width: 0;
+        border-left: 2px dotted #4da3ff;
+    }
+}
