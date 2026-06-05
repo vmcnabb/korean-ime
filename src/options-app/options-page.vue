@@ -26,10 +26,22 @@ onMounted(initSettings);
 </template>
 
 <style>
+:root {
+    color-scheme: light dark;
+
+    --bg-primary: light-dark(white, black);
+    --text-primary: light-dark(#1a1a1a, #e5e5e5);
+
+    --section-bg: light-dark(#f9f9f9, #1e1e1e);
+    --section-border: light-dark(#ddd, #333);
+    --description-color: light-dark(#666, #999);
+}
+
 body {
     margin: 0;
     font-family: Arial, Helvetica, sans-serif;
-    color: #1a1a1a;
+    color: var(--text-primary);
+    background-color: var(--bg-primary);
 }
 
 main {
@@ -49,7 +61,8 @@ h1 {
 section {
     margin-top: 1.5em;
     padding: 1em 1.25em;
-    border: 1px solid #ddd;
+    background-color: var(--section-bg);
+    border: 1px solid var(--section-border);
     border-radius: 8px;
 }
 
@@ -66,6 +79,6 @@ section h2 {
 .description {
     margin: 0.15em 0 0;
     font-size: 0.9em;
-    color: #666;
+    color: var(--description-color);
 }
 </style>

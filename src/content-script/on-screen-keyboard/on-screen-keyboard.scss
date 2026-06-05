@@ -1,17 +1,18 @@
 #kb-73ce1520-9c19-48ad-bf12-f7ec206ab11f {
-    --key-margin: 5px;
-    --text-distance: 3px;
     // The size of one standard (1-unit) square key. Everything scales from this,
     // so resizing the keyboard is just changing this one value. A key spanning N
     // units is N*--key-unit wide plus the --key-gap gaps it bridges.
     --key-unit: 32px;
-    --key-gap: 4px;
+    --key-gap: calc(var(--key-unit) * 0.125);
+    --text-distance: calc(var(--key-unit) * 0.05);
+    --jamo-distance: 0;
+
     // Rounded keyboard corners, and how far the (invisible) corner resize
     // hit-area reaches beyond the edge — a discoverable border zone.
     --kb-radius: 8px;
     --kb-grip-reach: 5px;
 
-    --background-color: #444;
+    --background-color: #2d2d2d;
     --border-color: #000;
 
     --key-color: #fff;
@@ -23,8 +24,8 @@
     --key-mode-disabled-color: #808080;
     --key-mode-disabled-background-color: var(--background-color);
 
-    --key-mode-active-font-size: 1.15em;
-    --key-mode-inactive-font-size: 0.85em;
+    --key-mode-inactive-font-size: calc(var(--key-unit) * 0.38);
+    --key-mode-active-font-size: calc(var(--key-mode-inactive-font-size) * 1.15);
 
     &,
     * {
@@ -230,10 +231,16 @@
         .full,
         .base {
             bottom: var(--text-distance);
+            &.jamo {
+                bottom: var(--jamo-distance);
+            }
         }
 
         .shift {
             top: var(--text-distance);
+            &.jamo {
+                top: var(--jamo-distance);
+            }
         }
 
         .full,
@@ -269,8 +276,11 @@
         }
 
         kbd .shift {
-            bottom: var(--text-distance);
-            top: initial;
+            top: 0;
+            bottom: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         kbd.ShiftLeft,

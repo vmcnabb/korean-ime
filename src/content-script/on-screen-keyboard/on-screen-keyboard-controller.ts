@@ -10,7 +10,7 @@ import {
 } from "../../messaging/content-to-service-messages";
 import { debugLog } from "../../debug-log";
 import { api } from "../../platform/browser-api";
-import { modeIconHangul, modeIconEnglish } from "./mode-icons";
+import { modeIconHangul, modeIconEnglish, modeIconHangulSrcset, modeIconEnglishSrcset } from "./mode-icons";
 import {
     KeyboardPlacement,
     OnScreenKeyboardLayout,
@@ -948,7 +948,11 @@ export class OnScreenKeyboardController {
         if (this._isHanYongEnabled === true) {
             indicator.style.display = "";
             const isHangul = this._mode === KoreanKeyboardMode.Hangul;
+            // src is the 1x fallback; srcset lets the browser pick a pixel-exact
+            // source for the current devicePixelRatio (DPI + page zoom), so the
+            // 16px icon stays crisp instead of being downscaled from one oversized PNG.
             indicator.src = isHangul ? modeIconHangul : modeIconEnglish;
+            indicator.srcset = isHangul ? modeIconHangulSrcset : modeIconEnglishSrcset;
             // Label it like the toolbar icon so it has an accessible name and tooltip.
             indicator.alt = api.i18n.getMessage(isHangul ? "action_title_hangul" : "action_title_english");
             indicator.title = indicator.alt;
