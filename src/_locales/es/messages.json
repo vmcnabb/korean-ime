@@ -102,10 +102,10 @@
         "message": "Mínima (referencia de jamo)"
     },
     "options_onScreenKeyboard_layout_fullUs": {
-        "message": "Completa — US"
+        "message": "Completa - EE. UU. de 101 teclas"
     },
     "options_onScreenKeyboard_layout_fullKorean": {
-        "message": "Completa — coreano"
+        "message": "Completa - Dubeolsik coreano (두벌식)"
     },
     "options_hanYong_startOff": {
         "message": "Iniciar en inglés"
