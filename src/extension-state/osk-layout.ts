@@ -36,4 +36,11 @@ export type OnScreenKeyboardLayout = {
     position?: KeyboardPlacement;
     /** Global minimised/maximised state. */
     collapsed: boolean;
+    /** Global key size in px (the `--key-unit` the board scales from); absent if unset. */
+    keyUnit?: number;
 };
+
+/** The key size (`--key-unit`, px) the keyboard scales from, and its drag bounds. */
+export const DEFAULT_KEY_UNIT_PX = 32;
+export const MIN_KEY_UNIT_PX = 18;
+export const MAX_KEY_UNIT_PX = 64;

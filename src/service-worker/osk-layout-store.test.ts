@@ -11,7 +11,10 @@ describe("osk-layout-store", () => {
                 runtime: { onMessage: {} },
                 storage: {
                     local: {
-                        get: jest.fn(async (key: string) => ({ [key]: store[key] })),
+                        get: jest.fn(async (keys: string | string[]) => {
+                            const wanted = Array.isArray(keys) ? keys : [keys];
+                            return Object.fromEntries(wanted.map((k) => [k, store[k]]));
+                        }),
                         set: jest.fn(async (obj: Record<string, unknown>) => {
                             Object.assign(store, obj);
                         }),
@@ -43,6 +46,14 @@ describe("osk-layout-store", () => {
 
         expect((await getOnScreenKeyboardLayout("anything.com")).collapsed).toBe(true);
         expect((await getOnScreenKeyboardLayout(undefined)).collapsed).toBe(true);
+    });
+
+    it("persists the key size globally and ignores a non-numeric stored value", async () => {
+        await saveOnScreenKeyboardLayout({ keyUnit: 40 });
+        expect((await getOnScreenKeyboardLayout(undefined)).keyUnit).toBe(40);
+
+        store["oskKeyUnit"] = "huge";
+        expect((await getOnScreenKeyboardLayout(undefined)).keyUnit).toBeUndefined();
     });
 
     it("returns no position for an unknown or undefined site", async () => {

@@ -3,11 +3,21 @@ import { KeyCode, KeyRecord, keyMap } from "../../keyboard/korean-keyboard-map";
 import { KeyboardLayout, LayoutKey, LayoutId, layouts, defaultLayoutId } from "./layouts";
 import { SupportedCompositionFeatures } from "../../composition/composition-adapters/composition-adapter-interface";
 import "./on-screen-keyboard.scss";
-import { ContentScriptRequestAction, ContentScriptRequestMessage } from "../../messaging/content-to-service-messages";
+import {
+    ContentScriptRequestAction,
+    ContentScriptRequestMessage,
+    PersistOnScreenKeyboardLayoutMessage,
+} from "../../messaging/content-to-service-messages";
 import { debugLog } from "../../debug-log";
 import { api } from "../../platform/browser-api";
 import { modeIconHangul, modeIconEnglish } from "./mode-icons";
-import { KeyboardPlacement, OnScreenKeyboardLayout } from "../../extension-state/osk-layout";
+import {
+    KeyboardPlacement,
+    OnScreenKeyboardLayout,
+    DEFAULT_KEY_UNIT_PX,
+    MIN_KEY_UNIT_PX,
+    MAX_KEY_UNIT_PX,
+} from "../../extension-state/osk-layout";
 import { currentOskSite } from "../osk-site";
 
 /**
@@ -32,6 +42,11 @@ const GUIDE_EDGE_THICKNESS = `${GUIDE_EDGE_THICKNESS_MM}mm`;
 // running them the whole way to the viewport edge.
 const GUIDE_EDGE_THICKNESS_PX = (GUIDE_EDGE_THICKNESS_MM * 96) / 25.4;
 
+/** Slack kept between the keyboard and the viewport edge when clamping its size. */
+const VIEWPORT_MARGIN_PX = 8;
+
+const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
+
 export class OnScreenKeyboardController {
     private _keyboardElement: HTMLDivElement;
     private _keyboardPlacement: KeyboardPlacement = {
@@ -50,6 +65,14 @@ export class OnScreenKeyboardController {
     // Whether the keyboard actually moved during the current drag, so a drop
     // persists the new position only after a real move (not a bare header click).
     private _movedDuringDrag = false;
+
+    // The user's intended key size (px); the board scales from it. May be
+    // rendered smaller when the viewport can't fit it (clamped in placeKeyboard),
+    // but the intended size is kept so it's restored when there's room again.
+    private _keyUnit = DEFAULT_KEY_UNIT_PX;
+    // Drag-resize state, captured at pointer-down on the grip.
+    private _resize?: { anchorX: number; anchorY: number; startDist: number; startUnit: number; pointerId: number };
+    private _resizeGrip?: HTMLDivElement;
 
     private _mode = KoreanKeyboardMode.English;
     // `undefined` until the first state update, so the first call to
@@ -178,25 +201,47 @@ export class OnScreenKeyboardController {
         if (layout.position) {
             this._keyboardPlacement = { ...layout.position };
         }
+        if (layout.keyUnit !== undefined) {
+            this._keyUnit = clamp(layout.keyUnit, MIN_KEY_UNIT_PX, MAX_KEY_UNIT_PX);
+        }
         this.setCollapsed(layout.collapsed);
     }
 
-    // Ask the service worker to persist whichever layout fields changed. A
-    // position needs a site key; the collapsed state is global. Failures are
-    // logged, not surfaced — persistence is best-effort.
-    private persistLayout(update: { position?: KeyboardPlacement; collapsed?: boolean }) {
-        const data: { site?: string; position?: KeyboardPlacement; collapsed?: boolean } = {
-            collapsed: update.collapsed,
-        };
+    /** Set the intended key size (px), re-render at the new size, and persist it. */
+    private setKeyUnit(keyUnit: number, persist: boolean) {
+        this._keyUnit = clamp(keyUnit, MIN_KEY_UNIT_PX, MAX_KEY_UNIT_PX);
 
+        if (this._keyboardElement.style.display !== "none") {
+            this.placeKeyboard(); // applies the size and re-clamps on-screen
+        }
+
+        if (persist) {
+            this.persistLayout({ keyUnit: this._keyUnit });
+        }
+    }
+
+    // Ask the service worker to persist whichever layout fields changed. A
+    // position needs a site key (skipped where there's none, e.g. file://); the
+    // collapsed state and key size are global. Best-effort — failures are ignored.
+    private persistLayout(update: { position?: KeyboardPlacement; collapsed?: boolean; keyUnit?: number }) {
+        const data: PersistOnScreenKeyboardLayoutMessage["data"] = {};
+
+        if (update.collapsed !== undefined) {
+            data.collapsed = update.collapsed;
+        }
+        if (update.keyUnit !== undefined) {
+            data.keyUnit = update.keyUnit;
+        }
         if (update.position) {
             const site = currentOskSite();
-            // Nothing meaningful to key a position on (e.g. file://) — skip it.
-            if (!site) {
-                return;
+            if (site) {
+                data.site = site;
+                data.position = update.position;
             }
-            data.site = site;
-            data.position = update.position;
+        }
+
+        if (Object.keys(data).length === 0) {
+            return;
         }
 
         api.runtime.sendMessage<ContentScriptRequestMessage>({
@@ -216,6 +261,10 @@ export class OnScreenKeyboardController {
     }
 
     private placeKeyboard(reanchor = false) {
+        // Apply the intended key size, shrinking it if the viewport can't fit it,
+        // before reading offsetWidth/Height below.
+        this.applyKeyUnit();
+
         // get x,y coordinates of keyboard based on an origin of Top Left
         const placement = this._keyboardPlacement;
         const width = this._keyboardElement.offsetWidth;
@@ -285,6 +334,51 @@ export class OnScreenKeyboardController {
             placement.originX = originX;
             placement.originY = originY;
         }
+
+        // Keep the resize grip on the free corner (diagonally opposite the
+        // anchor), so dragging it grows the keyboard from the pinned corner.
+        this.positionResizeGrip(originX, originY);
+    }
+
+    // Set --key-unit to the intended size, then shrink it just enough that the
+    // rendered keyboard fits the viewport (the intended size is kept for restore).
+    private applyKeyUnit() {
+        const el = this._keyboardElement;
+        el.style.setProperty("--key-unit", `${this._keyUnit}px`);
+
+        if (el.style.display === "none") {
+            return; // hidden: offsetWidth is 0, nothing meaningful to clamp
+        }
+
+        const availWidth = window.innerWidth - VIEWPORT_MARGIN_PX;
+        const availHeight = window.innerHeight - VIEWPORT_MARGIN_PX;
+
+        // offsetWidth includes fixed chrome (borders/padding/gaps), so the unit
+        // isn't perfectly proportional to it; a couple of passes converge.
+        for (let i = 0; i < 3; i++) {
+            const scale = Math.min(1, availWidth / el.offsetWidth, availHeight / el.offsetHeight);
+            if (scale >= 1) {
+                break;
+            }
+            const current = parseFloat(getComputedStyle(el).getPropertyValue("--key-unit")) || this._keyUnit;
+            el.style.setProperty("--key-unit", `${Math.max(MIN_KEY_UNIT_PX, current * scale)}px`);
+        }
+    }
+
+    private positionResizeGrip(originX: "left" | "right", originY: "top" | "bottom") {
+        const grip = this._resizeGrip;
+        if (!grip) {
+            return;
+        }
+        // Free corner = opposite the anchor.
+        grip.style.left = originX === "right" ? "0" : "";
+        grip.style.right = originX === "right" ? "" : "0";
+        grip.style.top = originY === "bottom" ? "0" : "";
+        grip.style.bottom = originY === "bottom" ? "" : "0";
+        grip.classList.toggle("kb-grip-tl", originX === "right" && originY === "bottom");
+        grip.classList.toggle("kb-grip-tr", originX === "left" && originY === "bottom");
+        grip.classList.toggle("kb-grip-bl", originX === "right" && originY === "top");
+        grip.classList.toggle("kb-grip-br", originX === "left" && originY === "top");
     }
 
     private createKeyboard() {
@@ -415,9 +509,86 @@ export class OnScreenKeyboardController {
         window.addEventListener("resize", reclampToViewport);
         window.visualViewport?.addEventListener("resize", reclampToViewport);
 
+        keyboardElement.appendChild(this.createResizeGrip());
         this.createGuides();
 
         return keyboardElement;
+    }
+
+    // A corner grip for drag-resizing the keyboard. It scales --key-unit live
+    // (pointer capture during the drag), persists the size on release, and resets
+    // to the default size on double-click. Positioned at the free corner by
+    // positionResizeGrip so the anchored corner stays pinned as it grows.
+    private createResizeGrip(): HTMLDivElement {
+        const grip = document.createElement("div");
+        grip.className = "kb-resize-grip";
+        grip.title = api.i18n.getMessage("keyboard_resize");
+        this._resizeGrip = grip;
+
+        grip.addEventListener("pointerdown", (e) => {
+            if (e.button !== 0) {
+                return;
+            }
+            e.preventDefault();
+            e.stopPropagation();
+
+            const rect = this._keyboardElement.getBoundingClientRect();
+            const { originX, originY } = this._keyboardPlacement;
+            // Pin the anchored corner; the grip (free corner) tracks the cursor.
+            const anchorX = originX === "right" ? rect.right : rect.left;
+            const anchorY = originY === "bottom" ? rect.bottom : rect.top;
+            this._resize = {
+                anchorX,
+                anchorY,
+                startDist: Math.hypot(rect.width, rect.height) || 1,
+                startUnit: this._keyUnit,
+                pointerId: e.pointerId,
+            };
+            // Capture so the drag keeps tracking even if the cursor leaves the
+            // grip. Not critical (and absent in jsdom), so tolerate failure.
+            try {
+                grip.setPointerCapture(e.pointerId);
+            } catch {
+                /* pointer capture unavailable */
+            }
+        });
+
+        grip.addEventListener("pointermove", (e) => {
+            const resize = this._resize;
+            if (!resize) {
+                return;
+            }
+            // Scale the key size by how far the cursor moved from the anchor,
+            // relative to where the free corner started. Aspect ratio is intrinsic.
+            const dist = Math.hypot(e.clientX - resize.anchorX, e.clientY - resize.anchorY);
+            this.setKeyUnit((resize.startUnit * dist) / resize.startDist, false);
+        });
+
+        const endResize = (e: PointerEvent) => {
+            if (!this._resize) {
+                return;
+            }
+            this._resize = undefined;
+            try {
+                if (grip.hasPointerCapture(e.pointerId)) {
+                    grip.releasePointerCapture(e.pointerId);
+                }
+            } catch {
+                /* pointer capture unavailable */
+            }
+            this.persistLayout({ keyUnit: this._keyUnit });
+        };
+        grip.addEventListener("pointerup", endResize);
+        grip.addEventListener("pointercancel", endResize);
+
+        // Double-click resets to the default size.
+        grip.addEventListener("dblclick", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            this.setKeyUnit(DEFAULT_KEY_UNIT_PX, true);
+        });
+
+        return grip;
     }
 
     // Builds the anchor-guide overlay: two dotted lines pinned to the viewport

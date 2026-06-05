@@ -34,7 +34,7 @@ export type RequestOnScreenKeyboardLayoutMessage = {
 export type PersistOnScreenKeyboardLayoutMessage = {
     type: "contentScriptRequest";
     action: ContentScriptRequestAction.PersistOnScreenKeyboardLayout;
-    data: { site?: string; position?: KeyboardPlacement; collapsed?: boolean };
+    data: { site?: string; position?: KeyboardPlacement; collapsed?: boolean; keyUnit?: number };
 };
 
 export type ContentScriptRequestMessage =

@@ -258,6 +258,48 @@
             display: none;
         }
     }
+
+    // Corner grip for drag-resizing. Sits on the free corner (set inline by
+    // positionResizeGrip), scales with the keyboard, and is hatched so it reads
+    // as a grip distinct from the keys and the header drag area.
+    .kb-resize-grip {
+        position: absolute;
+        z-index: 1;
+        width: calc(var(--key-unit) * 0.45);
+        height: calc(var(--key-unit) * 0.45);
+        min-width: 10px;
+        min-height: 10px;
+        opacity: 0.55;
+        background: repeating-linear-gradient(
+            -45deg,
+            var(--key-color) 0,
+            var(--key-color) 1px,
+            transparent 1px,
+            transparent 3px
+        );
+        // Let the grip receive pointer events / capture during a drag.
+        touch-action: none;
+
+        &:hover {
+            opacity: 1;
+        }
+    }
+
+    // Diagonal resize cursor matching the free corner being dragged.
+    .kb-grip-tl,
+    .kb-grip-br {
+        cursor: nwse-resize;
+    }
+    .kb-grip-tr,
+    .kb-grip-bl {
+        cursor: nesw-resize;
+    }
+
+    // The hidden collapsed body still leaves the grip on the header corner; keep
+    // it from overlapping the header controls by tucking it to the very corner.
+    &.collapsed .kb-resize-grip {
+        opacity: 0.35;
+    }
 }
 
 // Anchor guides: dotted lines along the two viewport edges the keyboard is
