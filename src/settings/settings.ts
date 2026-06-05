@@ -10,6 +10,12 @@ export enum Persistence {
 export interface FeatureSettings {
     /** The feature's state when the browser starts (see {@link Persistence}). */
     persistence: Persistence;
+    /**
+     * Keep this feature's live on/off value the same in every tab: toggling it in
+     * one tab fans the change out to all of them. When false, each tab is
+     * independent. Governs only this feature's live state — not layout/size/etc.
+     */
+    syncAcrossTabs: boolean;
 }
 
 export interface OnScreenKeyboardSettings extends FeatureSettings {
@@ -33,21 +39,20 @@ export interface HanYongSettings extends FeatureSettings {
 export interface Settings {
     onScreenKeyboard: OnScreenKeyboardSettings;
     hanYong: HanYongSettings;
-    /** Apply changes to every tab at once, not just the focused one. */
-    shareAcrossTabs: boolean;
 }
 
 export const defaultSettings: Settings = {
     onScreenKeyboard: {
         persistence: Persistence.AlwaysOff,
+        syncAcrossTabs: false,
         layout: defaultLayoutId,
     },
     hanYong: {
         enabled: true,
         keyboardKeyEnabled: true,
         persistence: Persistence.AlwaysOff,
+        syncAcrossTabs: false,
     },
-    shareAcrossTabs: false,
 };
 
 /**

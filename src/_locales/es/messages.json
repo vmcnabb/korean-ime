@@ -86,6 +86,12 @@
     "options_hanYong_keyboardKeyEnabled_description": {
         "message": "Se aplica a la tecla física del teclado. En los teclados coreanos, es la tecla dedicada Han/Yong a la derecha de la barra espaciadora."
     },
+    "options_hanYong_syncAcrossTabs_label": {
+        "message": "Sincronizar el modo entre pestañas"
+    },
+    "options_hanYong_syncAcrossTabs_description": {
+        "message": "Cambie entre hangul e inglés en una pestaña y todas las pestañas seguirán el cambio. Si está desactivado, cada pestaña mantiene su propio modo."
+    },
     "options_hanYong_hint": {
         "message": "Alterna entre la entrada de hangul y la latina."
     },
@@ -113,6 +119,12 @@
     "options_onScreenKeyboard_layout_fullKorean": {
         "message": "Completa - Dubeolsik coreano (두벌식)"
     },
+    "options_onScreenKeyboard_syncAcrossTabs_label": {
+        "message": "Sincronizar la visibilidad entre pestañas"
+    },
+    "options_onScreenKeyboard_syncAcrossTabs_description": {
+        "message": "Muestre u oculte el teclado en pantalla en una pestaña y todas las pestañas seguirán el cambio. Si está desactivado, cada pestaña lo controla por separado."
+    },
     "options_hanYong_startOff": {
         "message": "Iniciar en inglés"
     },
@@ -121,14 +133,5 @@
     },
     "options_hanYong_restore": {
         "message": "Restaurar el último modo"
-    },
-    "options_general_heading": {
-        "message": "General"
-    },
-    "options_shareAcrossTabs_label": {
-        "message": "Compartir el estado entre pestañas"
-    },
-    "options_shareAcrossTabs_description": {
-        "message": "Cuando active o desactive el teclado en pantalla o el modo Han/Yong, se aplicará a todas las pestañas a la vez, no solo a la activa."
     }
 }

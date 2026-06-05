@@ -295,9 +295,9 @@ describe("KeepLastState persistence", () => {
     });
 });
 
-describe("share across tabs", () => {
-    it("fans a toggle out to every open tab", async () => {
-        withSettings({ shareAcrossTabs: true });
+describe("sync across tabs", () => {
+    it("fans a keyboard-visibility toggle out to every open tab when OSK sync is on", async () => {
+        withSettings({ onScreenKeyboard: { syncAcrossTabs: true } });
         tabs = [{ id: 1, active: true }, { id: 2 }, { id: 3 }];
         const manager = new StateManager();
 
@@ -308,8 +308,48 @@ describe("share across tabs", () => {
         expect(lastSentTo(3)?.isOnScreenKeyboardEnabled).toBe(true);
     });
 
-    it("a tab opened later adopts the shared value", async () => {
-        withSettings({ shareAcrossTabs: true });
+    it("fans a Han/Yong mode toggle out to every open tab when mode sync is on", async () => {
+        withSettings({ hanYong: { syncAcrossTabs: true } });
+        tabs = [{ id: 1, active: true }, { id: 2 }, { id: 3 }];
+        const manager = new StateManager();
+
+        await manager.toggleHanYongMode(1);
+
+        expect(lastSentTo(1)?.koreanKeyboardMode).toBe(KoreanKeyboardMode.Hangul);
+        expect(lastSentTo(2)?.koreanKeyboardMode).toBe(KoreanKeyboardMode.Hangul);
+        expect(lastSentTo(3)?.koreanKeyboardMode).toBe(KoreanKeyboardMode.Hangul);
+    });
+
+    it("syncing visibility leaves each tab's Han/Yong mode untouched", async () => {
+        withSettings({ onScreenKeyboard: { syncAcrossTabs: true } }); // mode sync off
+        tabs = [{ id: 1, active: true }, { id: 2 }];
+        session["tabState-1"] = { koreanKeyboardMode: KoreanKeyboardMode.English, isOnScreenKeyboardEnabled: false };
+        session["tabState-2"] = { koreanKeyboardMode: KoreanKeyboardMode.Hangul, isOnScreenKeyboardEnabled: false };
+        const manager = new StateManager();
+
+        await manager.toggleOnScreenKeyboard(1);
+
+        // Tab 2 adopts the shared visibility but keeps its own Hangul mode.
+        expect(lastSentTo(2)?.isOnScreenKeyboardEnabled).toBe(true);
+        expect(lastSentTo(2)?.koreanKeyboardMode).toBe(KoreanKeyboardMode.Hangul);
+    });
+
+    it("syncing Han/Yong mode leaves each tab's keyboard visibility untouched", async () => {
+        withSettings({ hanYong: { syncAcrossTabs: true } }); // visibility sync off
+        tabs = [{ id: 1, active: true }, { id: 2 }];
+        session["tabState-1"] = { koreanKeyboardMode: KoreanKeyboardMode.English, isOnScreenKeyboardEnabled: false };
+        session["tabState-2"] = { koreanKeyboardMode: KoreanKeyboardMode.English, isOnScreenKeyboardEnabled: true };
+        const manager = new StateManager();
+
+        await manager.toggleHanYongMode(1);
+
+        // Tab 2 adopts the shared mode but keeps its own (visible) keyboard.
+        expect(lastSentTo(2)?.koreanKeyboardMode).toBe(KoreanKeyboardMode.Hangul);
+        expect(lastSentTo(2)?.isOnScreenKeyboardEnabled).toBe(true);
+    });
+
+    it("a tab opened later adopts the synced value", async () => {
+        withSettings({ onScreenKeyboard: { syncAcrossTabs: true } });
         const manager = new StateManager();
         await manager.toggleOnScreenKeyboard(1);
 
@@ -319,8 +359,8 @@ describe("share across tabs", () => {
         expect(lastSentTo(9)?.isOnScreenKeyboardEnabled).toBe(true);
     });
 
-    it("does not fan out when sharing is off", async () => {
-        withSettings({ shareAcrossTabs: false });
+    it("does not fan out when sync is off", async () => {
+        withSettings({}); // both syncAcrossTabs flags default off
         tabs = [{ id: 1, active: true }, { id: 2 }];
         const manager = new StateManager();
 
@@ -331,7 +371,7 @@ describe("share across tabs", () => {
     });
 
     it("pushes disabled Han/Yong state to open tabs immediately", async () => {
-        withSettings({ shareAcrossTabs: false, hanYong: { persistence: Persistence.AlwaysOn } });
+        withSettings({ hanYong: { persistence: Persistence.AlwaysOn } });
         tabs = [{ id: 1, active: true }, { id: 2 }];
         session["tabState-1"] = {
             koreanKeyboardMode: KoreanKeyboardMode.Hangul,
@@ -343,7 +383,7 @@ describe("share across tabs", () => {
         };
         const manager = new StateManager();
 
-        withSettings({ shareAcrossTabs: false, hanYong: { enabled: false, persistence: Persistence.AlwaysOn } });
+        withSettings({ hanYong: { enabled: false, persistence: Persistence.AlwaysOn } });
         await manager.onSettingsChanged();
 
         expect(lastSentTo(1)?.isHanYongEnabled).toBe(false);
@@ -354,7 +394,7 @@ describe("share across tabs", () => {
     });
 
     it("pushes disabled physical-key state to open tabs immediately without changing Hangul mode", async () => {
-        withSettings({ shareAcrossTabs: false, hanYong: { persistence: Persistence.AlwaysOn } });
+        withSettings({ hanYong: { persistence: Persistence.AlwaysOn } });
         tabs = [{ id: 1, active: true }, { id: 2 }];
         session["tabState-1"] = {
             koreanKeyboardMode: KoreanKeyboardMode.Hangul,
@@ -367,7 +407,6 @@ describe("share across tabs", () => {
         const manager = new StateManager();
 
         withSettings({
-            shareAcrossTabs: false,
             hanYong: { enabled: true, keyboardKeyEnabled: false, persistence: Persistence.AlwaysOn },
         });
         await manager.onSettingsChanged();

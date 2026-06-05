@@ -4,6 +4,7 @@ import { Persistence } from "../settings/settings";
 import { LayoutId } from "../extension-state/osk-layout";
 import { t } from "./i18n";
 import PersistenceSelect from "./PersistenceSelect.vue";
+import LabeledCheckbox from "./LabeledCheckbox.vue";
 
 const optionLabels: Record<Persistence, string> = {
     [Persistence.AlwaysOff]: t("options_onScreenKeyboard_startOff"),
@@ -25,6 +26,11 @@ const layoutOptions: { value: LayoutId; name: string }[] = [
             v-model="settings.onScreenKeyboard.persistence"
             :label="t('options_persistence_label')"
             :option-labels="optionLabels"
+        />
+        <LabeledCheckbox
+            v-model="settings.onScreenKeyboard.syncAcrossTabs"
+            :label="t('options_onScreenKeyboard_syncAcrossTabs_label')"
+            :description="t('options_onScreenKeyboard_syncAcrossTabs_description')"
         />
         <label class="select">
             <span class="label">{{ t("options_onScreenKeyboard_layout_label") }}</span>
