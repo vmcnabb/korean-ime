@@ -15,20 +15,23 @@
 // NOTE on loading the extension: Chrome 137+ removed the --load-extension
 // command-line switch (anti-malware hardening), and by Chrome 148 even the
 // --disable-features=DisableLoadExtensionCommandLineSwitch opt-out no longer
-// works. So we can't auto-load into a throwaway profile any more. Instead we use
-// a *persistent* dev profile: you "Load unpacked" once, and every later run
-// reuses the profile with the extension still installed. The unpacked extension
-// is read from dist-chrome-dev/ on each launch, which this script rebuilds, so a
-// fresh `npm run dev:chrome` is current (use the extension's reload button, or
-// reload the page, to pick it up if Chrome was already open).
+// works. So we can't load via the command line any more. Instead we drive the
+// DevTools Protocol's Extensions domain: launch Chrome with a fresh throwaway
+// profile, --remote-debugging-pipe and --enable-unsafe-extension-debugging, then
+// call Extensions.loadUnpacked over the pipe to load dist-chrome-dev/ (rebuilt on
+// each run). The Extensions domain is gated to the pipe transport — it returns
+// "Method not available" over --remote-debugging-port. No manual "Load unpacked"
+// step, and the fresh profile carries no stale state (so no uninstall needed)
+// between runs. Requires a recent Chrome (we assume developers run the latest).
 //
 // chrome-launcher is used only to locate the Chrome binary. Close the Chrome
 // window or press Ctrl+C to stop everything.
 
 import { spawn, spawnSync } from "node:child_process";
 import { createServer } from "node:http";
-import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
 import * as ChromeLauncher from "chrome-launcher";
 
 const root = process.cwd();
@@ -106,9 +109,67 @@ async function waitForChromePageTarget(port, url, timeout = 10000) {
     throw new Error(`[dev] Timed out waiting for a Chrome page target at ${endpoint}.`);
 }
 
-const profileDir = resolve(root, ".chrome-profile");
-const sessionFile = resolve(profileDir, "dev-session.json");
+// A minimal CDP client over the DevTools *pipe* (not the WebSocket port). The
+// Extensions domain (loadUnpacked/uninstall) is gated to the pipe transport plus
+// --enable-unsafe-extension-debugging; it returns "Method not available" over
+// --remote-debugging-port. With --remote-debugging-pipe, Chrome reads commands
+// from fd 3 and writes replies/events to fd 4, each message NUL-terminated. We
+// spawn Chrome with those fds piped (see the stdio array at launch).
+function connectCdpPipe(chromeProc) {
+    const writeStream = chromeProc.stdio[3]; // commands → browser (fd 3)
+    const readStream = chromeProc.stdio[4]; // replies/events ← browser (fd 4)
+    const pending = new Map();
+    let nextId = 1;
+    let buffer = Buffer.alloc(0);
+
+    readStream.on("data", (chunk) => {
+        buffer = Buffer.concat([buffer, chunk]);
+        let end;
+        while ((end = buffer.indexOf(0)) !== -1) {
+            const raw = buffer.subarray(0, end).toString("utf8");
+            buffer = buffer.subarray(end + 1);
+            let msg;
+            try {
+                msg = JSON.parse(raw);
+            } catch {
+                continue;
+            }
+            if (msg.id && pending.has(msg.id)) {
+                const { resolve: res, reject: rej } = pending.get(msg.id);
+                pending.delete(msg.id);
+                if (msg.error) rej(new Error(msg.error.message ?? "CDP error"));
+                else res(msg.result);
+            }
+        }
+    });
+
+    return {
+        send(method, params = {}) {
+            const id = nextId++;
+            return new Promise((res, rej) => {
+                pending.set(id, { resolve: res, reject: rej });
+                writeStream.write(`${JSON.stringify({ id, method, params })}\0`);
+            });
+        },
+        close() {
+            try {
+                writeStream.end();
+            } catch {
+                /* already closed */
+            }
+        },
+    };
+}
+
+// The Chrome user-data-dir is now a fresh throwaway dir per run (created at
+// launch, removed on shutdown) — see profileDir below. The session file, which
+// scripts/stop-dev.mjs (the "Stop Dev Chrome" task) reads to find and kill this
+// session, lives in a stable repo-local dir instead so it can be found without
+// knowing the temp path.
+const sessionDir = resolve(root, ".chrome-profile");
+const sessionFile = resolve(sessionDir, "dev-session.json");
 const chromeDebugPort = getChromeDebugPort();
+let profileDir; // assigned to a fresh temp dir just before launch
 
 const TEST_PAGE = `<!DOCTYPE html>
 <html lang="en">
@@ -165,6 +226,7 @@ function writeSessionFile(chromePid) {
                 devPid: process.pid,
                 chromePid,
                 debugPort: chromeDebugPort,
+                profileDir,
                 startedAt: new Date().toISOString(),
                 testUrl,
             },
@@ -198,6 +260,15 @@ function shutdown(code = 0) {
     killTree(chrome);
     killTree(watch);
     server?.close();
+    // Throwaway profile: drop it so runs don't accumulate temp dirs. Chrome may
+    // still hold a lock for a moment after kill, so this is best-effort.
+    if (profileDir) {
+        try {
+            rmSync(profileDir, { recursive: true, force: true });
+        } catch {
+            /* Chrome may not have fully released the profile yet */
+        }
+    }
     process.exit(code);
 }
 
@@ -267,37 +338,45 @@ if (watchMode) {
     }
 }
 
-// 3. Launch Chrome on the persistent dev profile.
+// 3. Launch Chrome on a fresh throwaway profile.
 const chromePath = process.env.CHROME_PATH || ChromeLauncher.Launcher.getFirstInstallation();
 if (!chromePath) {
     console.error("[dev] Could not find Chrome. Set CHROME_PATH to the chrome executable.");
     shutdown(1);
 }
 
-const firstRun = !existsSync(profileDir);
-mkdirSync(profileDir, { recursive: true });
+mkdirSync(sessionDir, { recursive: true });
 removeSessionFile();
+// A new throwaway user-data-dir per run: no stale state, and nothing to "Load
+// unpacked" by hand since we load over CDP below. Cleaned up on shutdown.
+profileDir = mkdtempSync(join(tmpdir(), "kime-dev-"));
 
-// On first run, also open the extensions page so the one-time load is easy.
-const urls = firstRun ? ["chrome://extensions", testUrl] : [testUrl];
 const locale = requestedLocale();
 const args = [
     `--user-data-dir=${profileDir}`,
+    // The port is kept for VS Code debugging and /json polling; the *pipe* (fd
+    // 3/4) is what the Extensions CDP domain requires (the port rejects
+    // loadUnpacked with "Method not available"). --enable-unsafe-extension-debugging
+    // unlocks loadUnpacked/uninstall.
     `--remote-debugging-port=${chromeDebugPort}`,
+    "--remote-debugging-pipe",
+    "--enable-unsafe-extension-debugging",
     "--no-first-run",
     "--no-default-browser-check",
-    // --lang sets the UI locale chrome.i18n resolves against. Note: Chrome
-    // caches the UI language in an existing profile, so a locale change is most
-    // reliable on a fresh .chrome-profile/ (delete it to force a re-read).
+    // --lang sets the UI locale chrome.i18n resolves against. Every run uses a
+    // fresh profile, so a locale change always takes effect.
     ...(locale ? [`--lang=${locale}`] : []),
-    ...urls,
+    // Open a blank page; the test page is opened over CDP after the extension is
+    // loaded, so its content script injects on load.
+    "about:blank",
 ];
 
 if (locale) {
-    console.log(`[dev] UI locale: ${locale} (delete .chrome-profile/ if it doesn't take effect)`);
+    console.log(`[dev] UI locale: ${locale}`);
 }
 
-chrome = spawn(chromePath, args, { stdio: "ignore" });
+// fd 0-2 ignored; fd 3/4 are the CDP pipe (--remote-debugging-pipe).
+chrome = spawn(chromePath, args, { stdio: ["ignore", "ignore", "ignore", "pipe", "pipe"] });
 writeSessionFile(chrome.pid ?? null);
 const launchedAt = Date.now();
 
@@ -309,20 +388,24 @@ chrome.on("exit", () => {
     shutdown(0);
 });
 
+// 4. Load the extension over the DevTools Protocol pipe, then open the test page.
+const cdp = connectCdpPipe(chrome);
 try {
+    const { id } = await cdp.send("Extensions.loadUnpacked", { path: distDir });
+    console.log(`[dev] Loaded unpacked extension: ${id}`);
+
+    // Open the test page after the extension is loaded so its content script
+    // injects on load.
+    await cdp.send("Target.createTarget", { url: testUrl });
+
     await waitForChromePageTarget(chromeDebugPort, testUrl);
 } catch (err) {
-    console.error(err instanceof Error ? err.message : err);
+    console.error(`[dev] ${err instanceof Error ? err.message : err}`);
+    console.error("[dev] Loading the extension over CDP failed. Make sure you're on a recent Chrome");
+    console.error("[dev] (the Extensions DevTools domain + --enable-unsafe-extension-debugging are required).");
     shutdown(1);
 }
 
-if (firstRun) {
-    console.log("\n[dev] First run on this dev profile — load the extension once:");
-    console.log('[dev]   1. On the chrome://extensions tab, turn on "Developer mode" (top right).');
-    console.log('[dev]   2. Click "Load unpacked" and select:');
-    console.log(`[dev]        ${distDir}`);
-    console.log("[dev]   It stays loaded for future `npm run dev:chrome` runs (each run rebuilds it).");
-}
 console.log(`\n[dev] Dev profile:  ${profileDir}`);
 console.log(`[dev] Extension:    ${distDir}`);
 console.log(`[dev] Debug port:   ${chromeDebugPort}`);

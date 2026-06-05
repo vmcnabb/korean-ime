@@ -42,7 +42,7 @@ npm install
 | `npm run build:firefox` | Production Firefox build to `/dist-firefox` |
 | `npm run build-dev:chrome` | Development Chrome build to `/dist-chrome-dev` (no optimisation) |
 | `npm run start:chrome` | Watch mode (to `/dist-chrome-dev`) — rebuilds on file changes |
-| `npm run dev:chrome` | Watch + launch Chrome (persistent dev profile) on a test page; load unpacked once |
+| `npm run dev:chrome` | Build + launch Chrome (fresh throwaway profile), auto-load the extension over CDP, open a test page (add `--watch` for live reload) |
 | `npm run check` | Type-check without emitting output |
 | `npm run lint` | Lint with ESLint (`npm run lint:fix` to auto-fix) |
 | `npm test` | Run unit tests |
@@ -72,7 +72,7 @@ Launch the dev Chrome in a specific UI language to check the `chrome.i18n` strin
 npm run dev:chrome -- --locale=ko
 ```
 
-This passes `--lang=ko` to Chrome. Because Chrome caches the UI language in a profile, the change is most reliable on a fresh profile — delete `.chrome-profile/` if a locale switch doesn't take effect.
+This passes `--lang=ko` to Chrome. Every `dev:chrome` run uses a fresh throwaway profile, so a locale change always takes effect.
 
 #### Debugging in VS Code
 
