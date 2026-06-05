@@ -19,5 +19,8 @@
     },
     "romanize_popup_romanizedTextTextboxHint": {
         "message": "The romanised version will appear here"
+    },
+    "keyboard_minimize": {
+        "message": "Minimise"
     }
 }

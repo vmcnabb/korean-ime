@@ -48,7 +48,7 @@ describe("CompositionAdapterFactory", () => {
             div.classList.add("ck-editor__editable");
             const adapter = CompositionAdapterFactory.createCompositionAdapter(div);
             // CkEditorAdapter extends ContentEditableAdapter, so instanceof CkEditorAdapter
-            // proves the specialised adapter was chosen rather than the generic fallback.
+            // proves the specialized adapter was chosen rather than the generic fallback.
             expect(adapter).toBeInstanceOf(CkEditorAdapter);
         });
 

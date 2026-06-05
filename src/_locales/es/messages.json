@@ -50,7 +50,7 @@
     "keyboard_key_controlRight_tooltip": {
         "message": "Convertir el hangul seleccionado a hanja"
     },
-    "keyboard_minimise": {
+    "keyboard_minimize": {
         "message": "Minimizar"
     },
     "keyboard_restore": {

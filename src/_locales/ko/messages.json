@@ -50,7 +50,7 @@
     "keyboard_key_controlRight_tooltip": {
         "message": "선택한 한글을 한자로 변환하십시오"
     },
-    "keyboard_minimise": {
+    "keyboard_minimize": {
         "message": "최소화"
     },
     "keyboard_restore": {
