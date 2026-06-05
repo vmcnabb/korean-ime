@@ -62,6 +62,9 @@
     "keyboard_resize": {
         "message": "Arrastre para cambiar el tamaño; doble clic para restablecer"
     },
+    "keyboard_layout": {
+        "message": "Distribución del teclado"
+    },
     "options_title": {
         "message": "Opciones de IME coreano"
     },

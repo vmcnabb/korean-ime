@@ -97,6 +97,55 @@
         background-color: #a00000;
     }
 
+    // In-header layout drop-down: a trigger button + an absolutely-positioned
+    // menu that drops below the header over the keys.
+    .kb-layout {
+        position: relative;
+        flex: 0 0 auto;
+        display: flex;
+        align-items: stretch;
+    }
+
+    .kb-layout-menu {
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        z-index: 3; // above the keys and resize grips
+        min-width: max-content;
+        background-color: var(--key-background-color);
+        border: 1px solid var(--border-color);
+
+        &.open {
+            display: block;
+        }
+    }
+
+    .kb-layout-option {
+        display: block;
+        width: 100%;
+        padding: 4px 10px;
+        border: none;
+        background: transparent;
+        color: var(--key-color);
+        font-family: Arial, Helvetica, sans-serif;
+        font-size: 13px;
+        line-height: 1.4;
+        text-align: left;
+        white-space: nowrap;
+        cursor: pointer;
+
+        &:hover {
+            background-color: var(--key-hover-background-color);
+        }
+
+        // Mark the active layout.
+        &.selected {
+            background-color: var(--key-active-background-color);
+            font-weight: bold;
+        }
+    }
+
     .kb-body {
         padding: var(--key-gap) 0;
     }

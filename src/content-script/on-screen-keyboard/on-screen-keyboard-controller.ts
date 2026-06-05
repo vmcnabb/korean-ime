@@ -47,6 +47,13 @@ const VIEWPORT_MARGIN_PX = 8;
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
+/** Layouts shown in the in-header drop-down, with their i18n label keys. */
+const LAYOUT_OPTIONS: { id: LayoutId; messageKey: string }[] = [
+    { id: LayoutId.Minimal, messageKey: "options_onScreenKeyboard_layout_minimal" },
+    { id: LayoutId.FullUs, messageKey: "options_onScreenKeyboard_layout_fullUs" },
+    { id: LayoutId.FullKorean, messageKey: "options_onScreenKeyboard_layout_fullKorean" },
+];
+
 export class OnScreenKeyboardController {
     private _keyboardElement: HTMLDivElement;
     private _keyboardPlacement: KeyboardPlacement = {
@@ -94,6 +101,10 @@ export class OnScreenKeyboardController {
     private _layoutId: LayoutId = defaultLayoutId;
     private _collapseButton?: HTMLButtonElement;
     private _modeIndicator?: HTMLImageElement;
+    // In-header layout drop-down: a custom (focus-preserving) menu of layouts.
+    private _layoutMenu?: HTMLDivElement;
+    private _layoutMenuOpen = false;
+    private _layoutOptionButtons = new Map<LayoutId, HTMLButtonElement>();
     // Dotted overlays marking how the keyboard is anchored, shown only while it's
     // being moved (see GUIDE_LINGER_MS): two full-edge lines along the anchored
     // viewport edges (_guideH/_guideV), plus two connectors running from the
@@ -105,9 +116,17 @@ export class OnScreenKeyboardController {
     private _connectorY?: HTMLDivElement;
     private _guideHideTimer?: ReturnType<typeof setTimeout>;
     private _onSendKey: (key: string, keyCode: KeyCode) => void;
+    // Called when the user picks a layout from the in-header drop-down, so the
+    // (synced) layout setting can be updated — keeping it in step with the
+    // options page.
+    private _onLayoutChange: (layoutId: LayoutId) => void;
 
-    constructor(onSendKey: (key: string, keyCode: KeyCode) => void) {
+    constructor(
+        onSendKey: (key: string, keyCode: KeyCode) => void,
+        onLayoutChange: (layoutId: LayoutId) => void = () => {}
+    ) {
         this._onSendKey = onSendKey;
+        this._onLayoutChange = onLayoutChange;
         this._keyboardElement = this.createKeyboard();
         this.setMode(this._mode);
     }
@@ -430,8 +449,13 @@ export class OnScreenKeyboardController {
                 return;
             }
 
-            // Drag only from the header bar, and not from its buttons.
-            if (e.target.closest(".kb-header") && !e.target.closest("button") && !e.target.closest(".kb-mode")) {
+            // Drag only from the header bar, and not from its controls.
+            if (
+                e.target.closest(".kb-header") &&
+                !e.target.closest("button") &&
+                !e.target.closest(".kb-mode") &&
+                !e.target.closest(".kb-layout")
+            ) {
                 this._keyboardMovement.mouse.down = true;
                 this._movedDuringDrag = false;
                 // clientX/Y (CSS px, viewport-relative), not screenX/Y (device px):
@@ -758,6 +782,8 @@ export class OnScreenKeyboardController {
         this._modeIndicator.addEventListener("click", () => this.toggleHanYong());
         header.appendChild(this._modeIndicator);
 
+        header.appendChild(this.createLayoutControl());
+
         // A flex-grow grab area that also pushes the buttons to the right.
         const handle = document.createElement("div");
         handle.className = "kb-handle";
@@ -790,6 +816,82 @@ export class OnScreenKeyboardController {
         button.setAttribute("aria-label", label);
         button.addEventListener("click", onClick);
         return button;
+    }
+
+    // The in-header layout drop-down. Built from buttons (not a native <select>),
+    // so the keyboard's mousedown-preventDefault keeps page focus — a <select>
+    // would steal it and break typing into the focused field.
+    private createLayoutControl(): HTMLDivElement {
+        const control = document.createElement("div");
+        control.className = "kb-layout";
+
+        const trigger = this.createHeaderButton("kb-layout-trigger", "\u{2328}", "keyboard_layout", () =>
+            this.toggleLayoutMenu()
+        );
+        trigger.setAttribute("aria-haspopup", "true");
+        control.appendChild(trigger);
+
+        const menu = document.createElement("div");
+        menu.className = "kb-layout-menu";
+        this._layoutMenu = menu;
+        this._layoutOptionButtons.clear();
+
+        for (const option of LAYOUT_OPTIONS) {
+            const item = document.createElement("button");
+            item.type = "button";
+            item.className = "kb-layout-option";
+            item.textContent = api.i18n.getMessage(option.messageKey);
+            item.addEventListener("click", () => this.selectLayout(option.id));
+            this._layoutOptionButtons.set(option.id, item);
+            menu.appendChild(item);
+        }
+
+        control.appendChild(menu);
+        this.updateLayoutControl();
+
+        // Close the menu when interacting anywhere outside the control (clicks on
+        // the keyboard's keys/handle are stopPropagated, so this catches the page;
+        // the keyboard mousedown handler closes it for in-keyboard clicks).
+        document.addEventListener("pointerdown", (e) => {
+            if (this._layoutMenuOpen && !(e.target instanceof Element && e.target.closest(".kb-layout"))) {
+                this.closeLayoutMenu();
+            }
+        });
+
+        return control;
+    }
+
+    private toggleLayoutMenu() {
+        if (this._layoutMenuOpen) {
+            this.closeLayoutMenu();
+        } else {
+            this.openLayoutMenu();
+        }
+    }
+
+    private openLayoutMenu() {
+        this._layoutMenuOpen = true;
+        this._layoutMenu?.classList.add("open");
+    }
+
+    private closeLayoutMenu() {
+        this._layoutMenuOpen = false;
+        this._layoutMenu?.classList.remove("open");
+    }
+
+    private selectLayout(layoutId: LayoutId) {
+        this.closeLayoutMenu();
+        this.setLayout(layoutId); // apply immediately
+        this._onLayoutChange(layoutId); // persist the (synced) setting
+    }
+
+    // Reflect the current layout in the drop-down (selected option + trigger title).
+    private updateLayoutControl() {
+        for (const [id, button] of this._layoutOptionButtons) {
+            const selected = id === this._layoutId;
+            button.classList.toggle("selected", selected);
+            button.setAttribute("aria-checked", String(selected));
+        }
     }
 
     private toggleCollapsed() {
@@ -1012,6 +1114,7 @@ export class OnScreenKeyboardController {
         this.renderKeyboard(this._keyboardBody, layout);
         // Re-apply state that the freshly rendered keys need to reflect.
         this.updateKeyVisibility();
+        this.updateLayoutControl();
         // The keyboard's size changed, so re-clamp it (only while shown — hidden,
         // offsetWidth is 0 and showKeyboard re-places it on show).
         if (this._keyboardElement.style.display !== "none") {
