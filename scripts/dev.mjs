@@ -1,17 +1,26 @@
-// Dev loop: starts Parcel in watch mode (which auto-reloads the extension on
-// rebuild) and launches Chrome with the extension available, opening a built-in
-// test page served over http://localhost so the content script actually injects
-// (it won't on data:/about: URLs).
+// Dev launcher: builds the extension and launches Chrome with it available,
+// opening a built-in test page served over http://localhost so the content
+// script actually injects (it won't on data:/about: URLs).
+//
+// Two modes:
+//   - Default: a one-off dev build, then launch. Re-run `npm run dev:chrome`
+//     after changes to rebuild.
+//   - `npm run dev:chrome --watch`: also runs Parcel in watch mode, so edits
+//     auto-rebuild and the extension hot-reloads during the session.
+//
+// The default is the one-off build because a background watcher fights `clean`
+// (from `build`/`package`) over the shared Parcel cache and dev dist dir — only
+// opt into --watch when you actually want live reload.
 //
 // NOTE on loading the extension: Chrome 137+ removed the --load-extension
 // command-line switch (anti-malware hardening), and by Chrome 148 even the
 // --disable-features=DisableLoadExtensionCommandLineSwitch opt-out no longer
 // works. So we can't auto-load into a throwaway profile any more. Instead we use
 // a *persistent* dev profile: you "Load unpacked" once, and every later run
-// reuses the profile with the extension still installed. Because the unpacked
-// extension is read from dist-chrome-dev/ on each launch (and Parcel keeps
-// rebuilding into the same dir, with HMR auto-reload during the session), it
-// stays current.
+// reuses the profile with the extension still installed. The unpacked extension
+// is read from dist-chrome-dev/ on each launch, which this script rebuilds, so a
+// fresh `npm run dev:chrome` is current (use the extension's reload button, or
+// reload the page, to pick it up if Chrome was already open).
 //
 // chrome-launcher is used only to locate the Chrome binary. Close the Chrome
 // window or press Ctrl+C to stop everything.
@@ -38,6 +47,15 @@ function wordAdapterRequested() {
     const cfg = process.env.npm_config_enable_word;
     if (cfg !== undefined && cfg !== "false" && cfg !== "0") return true;
     return process.env.KIME_ENABLE_WORD === "true";
+}
+
+// Watch mode (Parcel watch + hot reload) is opt-in:
+// `npm run dev:chrome -- --watch` (flag reaches argv) or
+// `npm run dev:chrome --watch` (npm exposes it as npm_config_watch).
+function watchRequested() {
+    if (process.argv.slice(2).includes("--watch")) return true;
+    const cfg = process.env.npm_config_watch;
+    return cfg !== undefined && cfg !== "false" && cfg !== "0";
 }
 
 // Optional UI locale for the dev Chrome, for testing chrome.i18n strings.
@@ -124,8 +142,8 @@ const TEST_PAGE = `<!DOCTYPE html>
 </html>`;
 
 let server;
-let watch;
 let chrome;
+let watch; // the Parcel watch process, only in --watch mode
 let shuttingDown = false;
 
 function removeSessionFile() {
@@ -149,9 +167,10 @@ function writeSessionFile(chromePid) {
     );
 }
 
-// child.kill() only kills the immediate process. `npm run start:chrome` runs
-// through a shell and spawns Parcel underneath, so on Windows we must kill the whole tree
-// or Parcel keeps holding the HMR port (1234) after we exit.
+// child.kill() only kills the immediate process. On Windows, killing the whole
+// process tree is the reliable way to take down the spawned Chrome — and, in
+// --watch mode, the Parcel watcher (which runs through a shell) and its HMR
+// server — with us.
 function killTree(proc) {
     if (!proc || proc.pid === undefined || proc.killed) return;
     if (process.platform === "win32") {
@@ -190,38 +209,56 @@ server = createServer((_req, res) => {
 await new Promise((r) => server.listen(0, "127.0.0.1", r));
 const testUrl = `http://localhost:${server.address().port}/`;
 
-// 2. Start Parcel watch (via `npm run start:chrome`) and wait for the first completed build.
+// 2. Build the extension. Default: a one-off build. With --watch: start Parcel
+//    in watch mode (auto-rebuild + hot reload) and wait for the first build.
 const enableWord = wordAdapterRequested();
+const watchMode = watchRequested();
+const buildEnv = { ...process.env, NODE_ENV: "development", KIME_ENABLE_WORD: enableWord ? "true" : "" };
 console.log(`[dev] Word for the Web adapter: ${enableWord ? "enabled" : "disabled"} (Google Docs is unsupported)`);
-watch = spawn("npm", ["run", "start:chrome"], {
-    shell: true,
-    stdio: ["inherit", "pipe", "inherit"],
-    env: { ...process.env, NODE_ENV: "development", KIME_ENABLE_WORD: enableWord ? "true" : "" },
-});
-watch.on("exit", (code) => {
-    if (!shuttingDown) {
-        console.error(`[dev] Parcel watch exited (code ${code}). Shutting down.`);
-        shutdown(1);
-    }
-});
 
-await new Promise((resolveBuild) => {
-    let built = false;
-    const timeout = setTimeout(() => {
-        console.error("[dev] Timed out waiting for the first Parcel build.");
-        shutdown(1);
-    }, 120000);
-    // Permanent listener: always drain + tee Parcel's stdout (detaching it
-    // would stall the pipe and crash Parcel with EPIPE), resolving on a build.
-    watch.stdout.on("data", (chunk) => {
-        process.stdout.write(chunk);
-        if (!built && /Built in/i.test(chunk.toString())) {
-            built = true;
-            clearTimeout(timeout);
-            resolveBuild();
+if (watchMode) {
+    console.log("[dev] Starting Parcel in watch mode…");
+    watch = spawn("npm", ["run", "start:chrome"], {
+        shell: true,
+        stdio: ["inherit", "pipe", "inherit"],
+        env: buildEnv,
+    });
+    watch.on("exit", (code) => {
+        if (!shuttingDown) {
+            console.error(`[dev] Parcel watch exited (code ${code}). Shutting down.`);
+            shutdown(1);
         }
     });
-});
+
+    await new Promise((resolveBuild) => {
+        let built = false;
+        const timeout = setTimeout(() => {
+            console.error("[dev] Timed out waiting for the first Parcel build.");
+            shutdown(1);
+        }, 120000);
+        // Permanent listener: always drain + tee Parcel's stdout (detaching it
+        // would stall the pipe and crash Parcel with EPIPE), resolving on a build.
+        watch.stdout.on("data", (chunk) => {
+            process.stdout.write(chunk);
+            if (!built && /Built in/i.test(chunk.toString())) {
+                built = true;
+                clearTimeout(timeout);
+                resolveBuild();
+            }
+        });
+    });
+} else {
+    console.log("[dev] Building the extension (one-off)…");
+    const build = spawnSync("npm", ["run", "build-dev:chrome"], {
+        shell: true,
+        stdio: "inherit",
+        env: buildEnv,
+    });
+    if (build.status !== 0) {
+        console.error(`[dev] Build failed (code ${build.status}).`);
+        shutdown(1);
+    }
+}
 
 // 3. Launch Chrome on the persistent dev profile.
 const chromePath = process.env.CHROME_PATH || ChromeLauncher.Launcher.getFirstInstallation();
@@ -277,11 +314,15 @@ if (firstRun) {
     console.log('[dev]   1. On the chrome://extensions tab, turn on "Developer mode" (top right).');
     console.log('[dev]   2. Click "Load unpacked" and select:');
     console.log(`[dev]        ${distDir}`);
-    console.log("[dev]   It stays loaded for future `npm run dev:chrome` runs (Parcel still auto-reloads it).");
+    console.log("[dev]   It stays loaded for future `npm run dev:chrome` runs (each run rebuilds it).");
 }
 console.log(`\n[dev] Dev profile:  ${profileDir}`);
 console.log(`[dev] Extension:    ${distDir}`);
 console.log(`[dev] Debug port:   ${chromeDebugPort}`);
 console.log(`[dev] Test page:    ${testUrl}`);
 console.log("[dev] VS Code debugger target ready.");
-console.log("[dev] Edit & save to rebuild (auto-reloads). Close Chrome or press Ctrl+C to stop.\n");
+console.log(
+    watchMode
+        ? "[dev] Watch mode: edit & save to rebuild (auto-reloads). Close Chrome or press Ctrl+C to stop.\n"
+        : "[dev] Re-run `npm run dev:chrome` after changes to rebuild (or add --watch). Close Chrome or press Ctrl+C to stop.\n"
+);
