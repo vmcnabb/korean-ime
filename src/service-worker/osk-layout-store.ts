@@ -12,6 +12,7 @@ import { api } from "../platform/browser-api";
  */
 const POSITIONS_KEY = "oskPositions";
 const COLLAPSED_KEY = "oskCollapsed";
+const KEY_UNIT_KEY = "oskKeyUnit";
 
 type PositionsMap = Record<string, KeyboardPlacement>;
 
@@ -44,18 +45,23 @@ async function getPositions(): Promise<PositionsMap> {
     return result;
 }
 
-/** The layout to restore for a site: its saved position (if any) + the global collapsed state. */
+/** The layout to restore for a site: its saved position (if any) + the global collapsed state and key size. */
 export async function getOnScreenKeyboardLayout(site?: string): Promise<OnScreenKeyboardLayout> {
-    const collapsed = (await api.storage.local.get(COLLAPSED_KEY))[COLLAPSED_KEY] === true;
+    const stored = await api.storage.local.get([COLLAPSED_KEY, KEY_UNIT_KEY]);
+    const collapsed = stored[COLLAPSED_KEY] === true;
+    const rawKeyUnit = stored[KEY_UNIT_KEY];
+    const keyUnit =
+        typeof rawKeyUnit === "number" && Number.isFinite(rawKeyUnit) && rawKeyUnit > 0 ? rawKeyUnit : undefined;
     const position = site ? (await getPositions())[site] : undefined;
-    return { position, collapsed };
+    return { position, collapsed, keyUnit };
 }
 
-/** Persist whichever fields are present: the per-site position and/or the global collapsed state. */
+/** Persist whichever fields are present: the per-site position and/or the global collapsed state / key size. */
 export async function saveOnScreenKeyboardLayout(update: {
     site?: string;
     position?: KeyboardPlacement;
     collapsed?: boolean;
+    keyUnit?: number;
 }): Promise<void> {
     if (update.position && update.site) {
         const positions = await getPositions();
@@ -65,5 +71,9 @@ export async function saveOnScreenKeyboardLayout(update: {
 
     if (update.collapsed !== undefined) {
         await api.storage.local.set({ [COLLAPSED_KEY]: update.collapsed });
+    }
+
+    if (update.keyUnit !== undefined) {
+        await api.storage.local.set({ [KEY_UNIT_KEY]: update.keyUnit });
     }
 }

@@ -59,6 +59,9 @@
     "keyboard_close": {
         "message": "Cerrar"
     },
+    "keyboard_resize": {
+        "message": "Arrastre para cambiar el tamaño; doble clic para restablecer"
+    },
     "options_title": {
         "message": "Opciones de IME coreano"
     },

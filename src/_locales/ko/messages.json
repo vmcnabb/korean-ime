@@ -59,6 +59,9 @@
     "keyboard_close": {
         "message": "닫기"
     },
+    "keyboard_resize": {
+        "message": "드래그하여 크기 조절, 더블클릭하여 기본값으로"
+    },
     "options_title": {
         "message": "한글 입력기 설정"
     },

@@ -635,3 +635,123 @@ describe("OnScreenKeyboardController persisted layout", () => {
         expect(calls[0].data.site).toBeUndefined();
     });
 });
+
+describe("OnScreenKeyboardController resize", () => {
+    let sendMessage: jest.Mock;
+
+    beforeEach(() => {
+        document.body.innerHTML = "";
+        sendMessage = jest.fn();
+        Object.assign(globalThis, {
+            chrome: { runtime: { sendMessage }, i18n: { getMessage: () => "" } },
+        });
+        Object.defineProperty(window, "innerWidth", { configurable: true, value: 2000 });
+        Object.defineProperty(window, "innerHeight", { configurable: true, value: 2000 });
+    });
+
+    const host = () => document.querySelector("[id^='kb-']") as HTMLElement;
+    const grip = () => document.querySelector(".kb-resize-grip") as HTMLElement;
+    const persistedKeyUnit = () =>
+        sendMessage.mock.calls
+            .map((c) => c[0])
+            .filter((m) => m.action === ContentScriptRequestAction.PersistOnScreenKeyboardLayout)
+            .map((m) => m.data.keyUnit)
+            .filter((u) => u !== undefined)
+            .at(-1);
+
+    const sized = () => {
+        const el = host();
+        Object.defineProperty(el, "offsetWidth", { configurable: true, value: 480 });
+        Object.defineProperty(el, "offsetHeight", { configurable: true, value: 250 });
+        return el;
+    };
+
+    it("renders a resize grip on the keyboard", () => {
+        new OnScreenKeyboardController(() => {});
+        expect(grip()).not.toBeNull();
+    });
+
+    it("restores a persisted key size, clamped to the allowed range", () => {
+        const controller = new OnScreenKeyboardController(() => {});
+        const el = sized();
+
+        controller.applyPersistedLayout({ collapsed: false, keyUnit: 999 });
+        controller.showKeyboard();
+
+        // Clamped to the max (64), applied as --key-unit.
+        expect(el.style.getPropertyValue("--key-unit")).toBe("64px");
+    });
+
+    it("scales the key size when the grip is dragged, and persists on release", () => {
+        const controller = new OnScreenKeyboardController(() => {});
+        const el = sized();
+        controller.showKeyboard();
+        // Anchored bottom-right by default: anchor corner at rect.right/bottom.
+        el.getBoundingClientRect = () =>
+            ({ left: 100, top: 100, right: 500, bottom: 400, width: 400, height: 300 }) as DOMRect;
+        sendMessage.mockClear();
+
+        const g = grip();
+        // Start distance (anchor to free corner) = hypot(400,300) = 500.
+        g.dispatchEvent(new MouseEvent("pointerdown", { bubbles: true, button: 0 }));
+        // Cursor at (250,150): dist from anchor (500,400) = hypot(250,250).
+        g.dispatchEvent(new MouseEvent("pointermove", { bubbles: true, clientX: 250, clientY: 150 }));
+        g.dispatchEvent(new MouseEvent("pointerup", { bubbles: true, button: 0 }));
+
+        expect(persistedKeyUnit()).toBeCloseTo((32 * Math.hypot(250, 250)) / 500, 1);
+    });
+
+    it("resizes from any corner, keeping the anchor origin and moving its position", () => {
+        const controller = new OnScreenKeyboardController(() => {});
+        const el = sized();
+        controller.showKeyboard(); // default anchor: bottom-right
+        el.getBoundingClientRect = () =>
+            ({ left: 100, top: 100, right: 500, bottom: 400, width: 400, height: 300 }) as DOMRect;
+        sendMessage.mockClear();
+
+        // Drag the bottom-right grip (the anchored corner); pivot = top-left (100,100).
+        const br = document.querySelector(".kb-grip-br") as HTMLElement;
+        br.dispatchEvent(new MouseEvent("pointerdown", { bubbles: true, button: 0 }));
+        // dist from pivot (100,100) to (700,550) = hypot(600,450) = 750; start = 500.
+        br.dispatchEvent(new MouseEvent("pointermove", { bubbles: true, clientX: 700, clientY: 550 }));
+        br.dispatchEvent(new MouseEvent("pointerup", { bubbles: true, button: 0 }));
+
+        // Origin unchanged (still anchored bottom-right), position updated.
+        expect(el.style.right).not.toBe("");
+        expect(el.style.bottom).not.toBe("");
+        expect(el.style.left).toBe("");
+        expect(el.style.top).toBe("");
+        expect(persistedKeyUnit()).toBeCloseTo((32 * Math.hypot(600, 450)) / 500, 0);
+    });
+
+    it("does not resize while collapsed", () => {
+        const controller = new OnScreenKeyboardController(() => {});
+        const el = sized();
+        controller.showKeyboard();
+        el.getBoundingClientRect = () =>
+            ({ left: 100, top: 100, right: 500, bottom: 400, width: 400, height: 300 }) as DOMRect;
+        (el.querySelector(".kb-collapse") as HTMLButtonElement).click(); // collapse
+        sendMessage.mockClear();
+
+        const g = grip();
+        g.dispatchEvent(new MouseEvent("pointerdown", { bubbles: true, button: 0 }));
+        g.dispatchEvent(new MouseEvent("pointermove", { bubbles: true, clientX: 50, clientY: 50 }));
+        g.dispatchEvent(new MouseEvent("pointerup", { bubbles: true, button: 0 }));
+        g.dispatchEvent(new MouseEvent("dblclick", { bubbles: true }));
+
+        expect(persistedKeyUnit()).toBeUndefined(); // no size persisted
+    });
+
+    it("resets to the default size on double-clicking the grip", () => {
+        const controller = new OnScreenKeyboardController(() => {});
+        const el = sized();
+        controller.applyPersistedLayout({ collapsed: false, keyUnit: 50 });
+        controller.showKeyboard();
+        sendMessage.mockClear();
+
+        grip().dispatchEvent(new MouseEvent("dblclick", { bubbles: true }));
+
+        expect(el.style.getPropertyValue("--key-unit")).toBe("32px");
+        expect(persistedKeyUnit()).toBe(32);
+    });
+});

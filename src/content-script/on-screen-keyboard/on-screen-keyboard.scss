@@ -6,6 +6,10 @@
     // units is N*--key-unit wide plus the --key-gap gaps it bridges.
     --key-unit: 32px;
     --key-gap: 4px;
+    // Rounded keyboard corners, and how far the (invisible) corner resize
+    // hit-area reaches beyond the edge — a discoverable border zone.
+    --kb-radius: 8px;
+    --kb-grip-reach: 5px;
 
     --background-color: #444;
     --border-color: #000;
@@ -38,6 +42,7 @@
         width: fit-content;
         position: relative;
         box-sizing: border-box;
+        border-radius: var(--kb-radius);
     }
 
     .kb-header {
@@ -47,6 +52,14 @@
         background-color: var(--key-background-color);
         border-bottom: 1px solid var(--border-color);
         cursor: move;
+        // Round to match the keyboard's top corners (the header's own background
+        // would otherwise square them off).
+        border-radius: var(--kb-radius) var(--kb-radius) 0 0;
+    }
+
+    // Collapsed, the header is the whole keyboard, so round all of its corners.
+    &.collapsed .kb-header {
+        border-radius: var(--kb-radius);
     }
 
     .kb-mode {
@@ -257,6 +270,47 @@
         .jamo {
             display: none;
         }
+    }
+
+    // Corner grip for drag-resizing: an invisible hit-area hugging the rounded
+    // free corner and reaching --kb-grip-reach beyond the edge (Apple-style
+    // discoverable border), so it doesn't cover any keys. The cursor is the only
+    // hint. The corner class (set by positionResizeGrip) places it on the free
+    // corner and picks the matching diagonal cursor.
+    .kb-resize-grip {
+        position: absolute;
+        z-index: 1;
+        width: calc(var(--kb-radius) + var(--kb-grip-reach));
+        height: calc(var(--kb-radius) + var(--kb-grip-reach));
+        background: transparent;
+        // Receive pointer events / capture during a drag.
+        touch-action: none;
+    }
+
+    .kb-grip-tl {
+        top: calc(-1 * var(--kb-grip-reach));
+        left: calc(-1 * var(--kb-grip-reach));
+        cursor: nwse-resize;
+    }
+    .kb-grip-br {
+        bottom: calc(-1 * var(--kb-grip-reach));
+        right: calc(-1 * var(--kb-grip-reach));
+        cursor: nwse-resize;
+    }
+    .kb-grip-tr {
+        top: calc(-1 * var(--kb-grip-reach));
+        right: calc(-1 * var(--kb-grip-reach));
+        cursor: nesw-resize;
+    }
+    .kb-grip-bl {
+        bottom: calc(-1 * var(--kb-grip-reach));
+        left: calc(-1 * var(--kb-grip-reach));
+        cursor: nesw-resize;
+    }
+
+    // No resizing while collapsed — hide the grip so there's no hit-area or cursor.
+    &.collapsed .kb-resize-grip {
+        display: none;
     }
 }
 
