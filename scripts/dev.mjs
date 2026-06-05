@@ -116,13 +116,20 @@ const TEST_PAGE = `<!DOCTYPE html>
 <meta charset="utf-8" />
 <title>Korean IME — test page</title>
 <style>
+  :root {
+    color-scheme: light dark;
+    --hint-bg: light-dark(#f4f4f4, #333);
+    --hint-color: light-dark(#555, #ccc);
+    --content-editable-border: light-dark(#bbb, #555);
+    --input-bg: light-dark(white, #222);
+  }
   body { font: 16px system-ui, sans-serif; max-width: 720px; margin: 2rem auto; padding: 0 1rem; }
   h1 { font-size: 1.3rem; }
-  .hint { color: #555; background: #f4f4f4; padding: .75rem 1rem; border-radius: 6px; }
+  .hint { color: var(--hint-color); background: var(--hint-bg); padding: .75rem 1rem; border-radius: 6px; }
   label { display: block; margin: 1.25rem 0 .35rem; font-weight: 600; }
-  textarea, input { width: 100%; font-size: 1.1rem; padding: .5rem; box-sizing: border-box; }
+  textarea, input { width: 100%; font-size: 1.1rem; padding: .5rem; box-sizing: border-box; background: var(--input-bg); }
   textarea { height: 6rem; }
-  [contenteditable] { border: 1px solid #bbb; border-radius: 4px; padding: .5rem; min-height: 3rem; font-size: 1.1rem; }
+  [contenteditable] { border: 1px solid var(--content-editable-border); border-radius: 4px; padding: .5rem; min-height: 3rem; font-size: 1.1rem; background: var(--input-bg); }
 </style>
 </head>
 <body>

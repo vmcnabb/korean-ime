@@ -1,3 +1,12 @@
+:root {
+    color-scheme: light dark;
+    --page-bg-color: light-dark(#f0f0f0, #111);
+    --placeholder-color: light-dark(#666, #999);
+    --input-border-color: light-dark(#ccc, #555);
+    --input-bg-color: light-dark(white, #222);
+    --input-shadow-color: light-dark(#ddd, #333);
+}
+
 html,
 body {
     padding: 0;
@@ -6,20 +15,21 @@ body {
 }
 html {
     font-size: 12pt;
+    background-color: var(--page-bg-color);
 }
 
 div[contenteditable] {
-    border: 1px solid #ccc;
+    border: 1px solid var(--input-border-color);
     border-radius: 2px;
     padding: 0.5em;
     overflow: auto;
-    background-color: white;
-    box-shadow: #ddf 2px 2px 3px;
+    background-color: var(--input-bg-color);
+    box-shadow: var(--input-shadow-color) 2px 2px 3px;
 }
 
 div[contenteditable]:empty:before {
     content: attr(data-placeholder);
-    color: #666;
+    color: var(--placeholder-color);
 }
 
 h3 {
@@ -43,7 +53,6 @@ div.flex-container {
     height: 100%;
     padding: 1em;
     box-sizing: border-box;
-    background-color: #f0f0ff;
 }
 
 div.flex-container > div {
