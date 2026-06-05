@@ -32,7 +32,7 @@ has the feature branch around, can look merged when it isn't (or vice versa).
 | `npm run build:firefox` | Firefox build to `dist-firefox/` (see Firefox build note below) |
 | `npm run lint:firefox` | `web-ext lint` the Firefox build in `dist-firefox/` |
 | `npm run build-dev:chrome` | Unoptimized dev Chrome build to `dist-chrome-dev/` |
-| `npm run dev:chrome` | One-off dev build + launch Chrome on a persistent dev profile + test page (no watcher; re-run to rebuild — see `scripts/dev.mjs`). Add `--watch` for a live-reloading Parcel watcher. |
+| `npm run dev:chrome` | One-off dev build + launch Chrome on a fresh throwaway profile, auto-load the extension over CDP, open a test page (no watcher; re-run to rebuild — see `scripts/dev.mjs`). Add `--watch` for a live-reloading Parcel watcher. |
 | `npm run check` | Type-check only (`tsc --noEmit`) |
 | `npm run lint` / `lint:fix` | ESLint (flat config in `eslint.config.mjs`) |
 | `npm test` | Jest unit tests (ts-jest + jsdom) |
@@ -108,12 +108,16 @@ Core domain logic (mostly pure, well unit-tested):
   (`npm run dev:chrome -- --enable-word`). Don't waste time trying to drive Docs with
   synthetic events; that door is closed (Google Input Tools only works via a
   private main-world bridge into Docs' internal `kix` editor).
-- **`--load-extension` is dead in current Chrome.** Chrome 137+ removed the
-  command-line switch (anti-malware), and by Chrome 148 the
-  `--disable-features=DisableLoadExtensionCommandLineSwitch` opt-out no longer
-  works either. So `npm run dev:chrome` can't auto-load into a throwaway profile
-  — it uses a persistent `.chrome-profile/` where you "Load unpacked" once (from
-  `dist-chrome-dev/`; dev builds are kept out of the production `dist-chrome/`).
+- **`--load-extension` is dead in current Chrome, so `dev:chrome` loads over
+  CDP.** Chrome 137+ removed the command-line switch (anti-malware), and by Chrome
+  148 the `--disable-features=DisableLoadExtensionCommandLineSwitch` opt-out no
+  longer works either. So `npm run dev:chrome` instead launches Chrome on a
+  *fresh throwaway profile* with `--enable-unsafe-extension-debugging` and loads
+  `dist-chrome-dev/` over the DevTools Protocol (`Extensions.loadUnpacked`, after
+  `Extensions.uninstall`-ing anything already loaded). No manual "Load unpacked"
+  step. Needs a recent Chrome (we assume the latest). The temp profile is removed
+  on shutdown; `.chrome-profile/` now only holds the stop-dev session file. Dev
+  builds stay out of the production `dist-chrome/`.
 - ESLint uses **flat config** (`eslint.config.mjs`). There is no `.eslintrc`.
 - `tsc` is type-check only (`--noEmit`); Parcel does the actual bundling.
 - A **husky pre-commit hook** (`.husky/pre-commit`, installed via the `prepare`
