@@ -96,9 +96,9 @@ impossible to reduce the version number.
 ### Release Date
 2018-01-17
 ### Features
-* Popup converter now romanises as you type
+* Popup converter now romanizes as you type
 * Popup converter looks prettier
-* You can now choose between romanising inline or romanising into a popup window, when right-clicking selected text in an editor
+* You can now choose between romanizing inline or romanizing into a popup window, when right-clicking selected text in an editor
 
 # 1.1.3
 ### Release Date
@@ -111,7 +111,7 @@ impossible to reduce the version number.
 2018-01-17
 ### Fixes
 * Run extension in offline mode
-* Romanisation now more closely follows romanisation rules (issue #6)
+* Romanization now more closely follows romanization rules (issue #6)
 
 # 1.1.1
 ### Release Date
@@ -128,7 +128,7 @@ Upgraded codebase to use ES6 modules to make moduralisation easier (and give me 
 * Fix inline romanization.
 ### Features
 * Allow user to remove last jamo from an already entered Hangul block by typing Shift+Backspace.
-* UI for the popup romanisation tool is cleaner.
+* UI for the popup romanization tool is cleaner.
 ### Notes
 This release included major structural changes that should make it easier to implement features and fix certain types of bug in future.
 

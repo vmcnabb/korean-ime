@@ -335,7 +335,7 @@ export class StateManager {
         }
 
         // No live value yet, so seed from persistence. This is safe even though
-        // liveState isn't initialised until the first toggle/activation:
+        // liveState isn't initialized until the first toggle/activation:
         // liveState lives in storage.session (survives SW respawns, cleared only
         // on browser close), so the undefined window is just the start of a
         // fresh session. And there, seeding and inheritance are equivalent —
@@ -371,7 +371,7 @@ export class StateManager {
             default:
                 // loadSettings only type-checks via `typeof`, so a stale or
                 // corrupt persistence value in storage.sync can slip through as
-                // a string. Treat anything unrecognised as "off".
+                // a string. Treat anything unrecognized as "off".
                 return false;
         }
     }

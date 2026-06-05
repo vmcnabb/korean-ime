@@ -50,8 +50,8 @@
     "keyboard_key_controlRight_tooltip": {
         "message": "Convert the selected Hangul to Hanja"
     },
-    "keyboard_minimise": {
-        "message": "Minimise"
+    "keyboard_minimize": {
+        "message": "Minimize"
     },
     "keyboard_restore": {
         "message": "Restore"

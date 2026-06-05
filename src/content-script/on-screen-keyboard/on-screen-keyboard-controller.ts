@@ -763,7 +763,7 @@ export class OnScreenKeyboardController {
         handle.className = "kb-handle";
         header.appendChild(handle);
 
-        this._collapseButton = this.createHeaderButton("kb-collapse", "\u{1F5D5}", "keyboard_minimise", () =>
+        this._collapseButton = this.createHeaderButton("kb-collapse", "\u{1F5D5}", "keyboard_minimize", () =>
             this.toggleCollapsed()
         );
         header.appendChild(this._collapseButton);
@@ -814,7 +814,7 @@ export class OnScreenKeyboardController {
 
         if (this._collapseButton) {
             this._collapseButton.textContent = collapsed ? "\u{1F5D6}" : "\u{1F5D5}";
-            this._collapseButton.title = api.i18n.getMessage(collapsed ? "keyboard_restore" : "keyboard_minimise");
+            this._collapseButton.title = api.i18n.getMessage(collapsed ? "keyboard_restore" : "keyboard_minimize");
         }
     }
 
