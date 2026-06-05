@@ -15,6 +15,7 @@ import {
     isServiceScriptMessage,
 } from "../messaging/service-to-content-messages";
 import { api } from "../platform/browser-api";
+import { routeByAction } from "../messaging/route-message";
 
 export class ContentScriptController {
     private isHanYongEnabled = false;
@@ -54,21 +55,18 @@ export class ContentScriptController {
             debugLog("content.js: received message", message);
 
             if (isServiceScriptMessage(message)) {
-                switch (message.action) {
-                    case ServiceScriptMessageAction.UpdateState:
-                        this.handleTabStateMessage(message);
-                        break;
-                }
-            }
-
-            this.textInputManager.handleMessage(message);
-
-            if (isContentScriptBroadcastMessage(message)) {
-                switch (message.action) {
-                    case ContentScriptBroadcastAction.UpdateCompositionFeatures:
-                        this.keyboardController?.setCompositionFeatures(message.data);
-                        break;
-                }
+                routeByAction(message, {
+                    [ServiceScriptMessageAction.UpdateState]: (m) => this.handleTabStateMessage(m),
+                    [ServiceScriptMessageAction.SendKey]: (m) =>
+                        this.textInputManager.enterCharacter(m.data.key, m.data.keyCode),
+                    [ServiceScriptMessageAction.InsertTextAfterSelection]: (m) =>
+                        this.textInputManager.insertTextAfterSelection(m.data),
+                });
+            } else if (isContentScriptBroadcastMessage(message)) {
+                routeByAction(message, {
+                    [ContentScriptBroadcastAction.UpdateCompositionFeatures]: (m) =>
+                        this.keyboardController?.setCompositionFeatures(m.data),
+                });
             }
         });
     }

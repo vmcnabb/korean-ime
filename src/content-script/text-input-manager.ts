@@ -4,13 +4,6 @@ import { CompositionAdapterFactory } from "../composition/composition-adapter-fa
 import { isHangulOrJamo } from "../composition/hangul-maps";
 import { KeyCode } from "../keyboard/korean-keyboard-map";
 import { SupportedCompositionFeatures } from "../composition/composition-adapters/composition-adapter-interface";
-import { ContentScriptBroadcastMessage } from "../messaging/content-to-content-messages";
-import {
-    ServiceScriptMessage,
-    ServiceScriptMessageAction,
-    SendKeyServiceMessage,
-    isServiceScriptMessage,
-} from "../messaging/service-to-content-messages";
 
 const nonTextInputTypes = ["button", "checkbox", "file", "hidden", "image", "radio", "range", "submit", "password"];
 const inputSelector = `input:not(${nonTextInputTypes.map((t) => `[type=${t}]`).join(",")})`;
@@ -24,12 +17,6 @@ export class TextInputManager {
     private imeControllers = new Map<HTMLElement, HangulImeController>();
     private textEntryMode: KoreanKeyboardMode = KoreanKeyboardMode.English;
     private removalObserver?: MutationObserver;
-
-    public handleMessage(message: ContentScriptBroadcastMessage | ServiceScriptMessage) {
-        if (isServiceScriptMessage(message)) {
-            this.handleServiceScriptRequest(message);
-        }
-    }
 
     public setMode(mode: KoreanKeyboardMode) {
         this.textEntryMode = mode;
@@ -51,34 +38,27 @@ export class TextInputManager {
         return;
     }
 
-    private handleServiceScriptRequest(message: ServiceScriptMessage) {
-        switch (message.action) {
-            case ServiceScriptMessageAction.SendKey: {
-                const { key, keyCode } = (message as SendKeyServiceMessage).data;
-                this.enterCharacter(key, keyCode);
-                break;
-            }
-            case ServiceScriptMessageAction.InsertTextAfterSelection: {
-                const element = this.getActiveElement(document);
+    // Insert text at the caret in the active editable, replacing any selection.
+    // Driven by the InsertTextAfterSelection service message (routed from the
+    // content-script controller).
+    public insertTextAfterSelection(text: string) {
+        const element = this.getActiveElement(document);
 
-                if (!element) {
-                    return;
-                }
-
-                const compositionAdapter = CompositionAdapterFactory.createCompositionAdapter(element);
-
-                if (!compositionAdapter) {
-                    return;
-                }
-
-                // todo: implement an insertAfter method in the composition adapter
-                compositionAdapter.collapseSelection();
-                compositionAdapter.beginComposition(message.data, KeyCode.KeyK); // KeyK is arbitrary
-                compositionAdapter.updateComposition(message.data, KeyCode.KeyK); // KeyK is arbitrary
-                compositionAdapter.endComposition(message.data);
-                break;
-            }
+        if (!element) {
+            return;
         }
+
+        const compositionAdapter = CompositionAdapterFactory.createCompositionAdapter(element);
+
+        if (!compositionAdapter) {
+            return;
+        }
+
+        // todo: implement an insertAfter method in the composition adapter
+        compositionAdapter.collapseSelection();
+        compositionAdapter.beginComposition(text, KeyCode.KeyK); // KeyK is arbitrary
+        compositionAdapter.updateComposition(text, KeyCode.KeyK); // KeyK is arbitrary
+        compositionAdapter.endComposition(text);
     }
 
     public enterCharacter(char: string, keyCode: KeyCode): boolean {
