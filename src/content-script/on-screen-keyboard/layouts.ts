@@ -57,13 +57,12 @@ const minimal: KeyboardLayout = [
         KeyCode.KeyL,
     ].map((c) => key(c)),
     [
-        key(KeyCode.ShiftLeft, 1.5),
+        key(KeyCode.ShiftLeft, 1.2),
         ...[KeyCode.KeyZ, KeyCode.KeyX, KeyCode.KeyC, KeyCode.KeyV, KeyCode.KeyB, KeyCode.KeyN, KeyCode.KeyM].map((c) =>
             key(c)
         ),
-        key(KeyCode.Backspace, 1.5),
+        key(KeyCode.AltRight, 1.2),
     ],
-    [key(KeyCode.AltRight, 2), key(KeyCode.Space, 6)],
 ];
 
 // --- Shared rows 1–4 of the full PC keyboard (the two full variants only differ
