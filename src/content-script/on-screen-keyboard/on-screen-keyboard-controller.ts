@@ -370,11 +370,8 @@ export class OnScreenKeyboardController {
         if (!grip) {
             return;
         }
-        // Free corner = opposite the anchor.
-        grip.style.left = originX === "right" ? "0" : "";
-        grip.style.right = originX === "right" ? "" : "0";
-        grip.style.top = originY === "bottom" ? "0" : "";
-        grip.style.bottom = originY === "bottom" ? "" : "0";
+        // The free corner (opposite the anchor) — the corner class carries the
+        // offsets and the matching resize cursor (see the SCSS).
         grip.classList.toggle("kb-grip-tl", originX === "right" && originY === "bottom");
         grip.classList.toggle("kb-grip-tr", originX === "left" && originY === "bottom");
         grip.classList.toggle("kb-grip-bl", originX === "right" && originY === "top");
@@ -522,11 +519,11 @@ export class OnScreenKeyboardController {
     private createResizeGrip(): HTMLDivElement {
         const grip = document.createElement("div");
         grip.className = "kb-resize-grip";
-        grip.title = api.i18n.getMessage("keyboard_resize");
         this._resizeGrip = grip;
 
         grip.addEventListener("pointerdown", (e) => {
-            if (e.button !== 0) {
+            // No resizing while collapsed (the grip is also hidden via CSS then).
+            if (e.button !== 0 || this._keyboardElement.classList.contains("collapsed")) {
                 return;
             }
             e.preventDefault();
@@ -581,8 +578,11 @@ export class OnScreenKeyboardController {
         grip.addEventListener("pointerup", endResize);
         grip.addEventListener("pointercancel", endResize);
 
-        // Double-click resets to the default size.
+        // Double-click resets to the default size (not while collapsed).
         grip.addEventListener("dblclick", (e) => {
+            if (this._keyboardElement.classList.contains("collapsed")) {
+                return;
+            }
             e.preventDefault();
             e.stopPropagation();
             this.setKeyUnit(DEFAULT_KEY_UNIT_PX, true);

@@ -701,6 +701,24 @@ describe("OnScreenKeyboardController resize", () => {
         expect(persistedKeyUnit()).toBeCloseTo((32 * Math.hypot(250, 250)) / 500, 1);
     });
 
+    it("does not resize while collapsed", () => {
+        const controller = new OnScreenKeyboardController(() => {});
+        const el = sized();
+        controller.showKeyboard();
+        el.getBoundingClientRect = () =>
+            ({ left: 100, top: 100, right: 500, bottom: 400, width: 400, height: 300 }) as DOMRect;
+        (el.querySelector(".kb-collapse") as HTMLButtonElement).click(); // collapse
+        sendMessage.mockClear();
+
+        const g = grip();
+        g.dispatchEvent(new MouseEvent("pointerdown", { bubbles: true, button: 0 }));
+        g.dispatchEvent(new MouseEvent("pointermove", { bubbles: true, clientX: 50, clientY: 50 }));
+        g.dispatchEvent(new MouseEvent("pointerup", { bubbles: true, button: 0 }));
+        g.dispatchEvent(new MouseEvent("dblclick", { bubbles: true }));
+
+        expect(persistedKeyUnit()).toBeUndefined(); // no size persisted
+    });
+
     it("resets to the default size on double-clicking the grip", () => {
         const controller = new OnScreenKeyboardController(() => {});
         const el = sized();
