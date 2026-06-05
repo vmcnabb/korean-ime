@@ -95,6 +95,18 @@
     "options_onScreenKeyboard_restore": {
         "message": "Restore last state"
     },
+    "options_onScreenKeyboard_layout_label": {
+        "message": "Keyboard layout"
+    },
+    "options_onScreenKeyboard_layout_minimal": {
+        "message": "Minimal (jamo reference)"
+    },
+    "options_onScreenKeyboard_layout_fullUs": {
+        "message": "Full — US"
+    },
+    "options_onScreenKeyboard_layout_fullKorean": {
+        "message": "Full — Korean"
+    },
     "options_hanYong_startOff": {
         "message": "Start in English"
     },

@@ -2,6 +2,7 @@ import { OnScreenKeyboardController } from "./on-screen-keyboard-controller";
 import { KeyCode } from "../../keyboard/korean-keyboard-map";
 import { KoreanKeyboardMode } from "../../extension-state/korean-keyboard-mode";
 import { ContentScriptRequestAction } from "../../messaging/content-to-service-messages";
+import { LayoutId } from "./layouts";
 import { modeIconHangul, modeIconEnglish } from "./mode-icons";
 
 // The controller side-effect-imports its stylesheet and imports the build-time
@@ -480,6 +481,38 @@ describe("OnScreenKeyboardController anchor guides", () => {
         } finally {
             jest.useRealTimers();
         }
+    });
+});
+
+describe("OnScreenKeyboardController layout switching", () => {
+    beforeEach(() => {
+        document.body.innerHTML = "";
+        Object.assign(globalThis, {
+            chrome: { runtime: { sendMessage: jest.fn() }, i18n: { getMessage: () => "" } },
+        });
+    });
+
+    const host = () => document.querySelector("[id^='kb-']") as HTMLElement;
+
+    it("defaults to the full US layout and switches to minimal", () => {
+        const controller = new OnScreenKeyboardController(() => {});
+        const el = host();
+
+        // Full US has a number row; the minimal layout drops it but keeps letters.
+        expect(el.querySelector("kbd.Digit1")).not.toBeNull();
+
+        controller.setLayout(LayoutId.Minimal);
+
+        expect(el.querySelector("kbd.Digit1")).toBeNull();
+        expect(el.querySelector("kbd.KeyQ")).not.toBeNull();
+    });
+
+    it("ignores an unknown layout id", () => {
+        const controller = new OnScreenKeyboardController(() => {});
+        const el = host();
+
+        expect(() => controller.setLayout("bogus" as LayoutId)).not.toThrow();
+        expect(el.querySelector("kbd.Digit1")).not.toBeNull(); // unchanged (still full US)
     });
 });
 

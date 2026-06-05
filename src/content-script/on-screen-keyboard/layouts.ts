@@ -1,4 +1,8 @@
 import { KeyCode } from "../../keyboard/korean-keyboard-map";
+import { LayoutId } from "../../extension-state/osk-layout";
+
+// Re-exported so layout consumers can import the id alongside the layout data.
+export { LayoutId, defaultLayoutId } from "../../extension-state/osk-layout";
 
 /**
  * One key in a layout: its code, how many key-units wide it is (1 = a standard
@@ -14,17 +18,6 @@ export type LayoutKey = {
 
 export type KeyboardRow = LayoutKey[];
 export type KeyboardLayout = KeyboardRow[];
-
-export enum LayoutId {
-    /** Alphabet keys only (jamo reference) plus Shift/Backspace/Space/한영. */
-    Minimal = "minimal",
-    /** Full PC keyboard, US: 한/영 and 한자 as secondary labels on Right Alt/Ctrl. */
-    FullUs = "full-us",
-    /** Full PC keyboard, Korean: dedicated 한자 / 한영 keys flanking a short space. */
-    FullKorean = "full-korean",
-}
-
-export const defaultLayoutId = LayoutId.FullUs;
 
 // Concise key builders: `key` is interactive, `dead` is inert (de-emphasised).
 const key = (code: KeyCode, width?: number): LayoutKey => (width === undefined ? { code } : { code, width });

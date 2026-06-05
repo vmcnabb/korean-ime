@@ -394,7 +394,7 @@ export const keyMap: Record<KeyCode, KeyRecord> = {
         label: "Ctrl",
     },
     [KeyCode.MetaLeft]: {
-        label: "",
+        label: "⊞ Win",
     },
     [KeyCode.AltLeft]: {
         label: "Alt",
@@ -407,10 +407,10 @@ export const keyMap: Record<KeyCode, KeyRecord> = {
         tooltipResourceKey: "keyboard_key_altRight_tooltip",
     },
     [KeyCode.MetaRight]: {
-        label: "",
+        label: "⊞ Win",
     },
     [KeyCode.ContextMenu]: {
-        label: "",
+        label: "≣ Menu",
     },
     [KeyCode.ControlRight]: {
         label: "Ctrl",

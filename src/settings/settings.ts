@@ -1,3 +1,5 @@
+import { LayoutId, defaultLayoutId } from "../extension-state/osk-layout";
+
 /** What a feature's state should be when the browser starts. */
 export enum Persistence {
     AlwaysOff = "always-off",
@@ -8,6 +10,11 @@ export enum Persistence {
 export interface FeatureSettings {
     /** The feature's state when the browser starts (see {@link Persistence}). */
     persistence: Persistence;
+}
+
+export interface OnScreenKeyboardSettings extends FeatureSettings {
+    /** Which key arrangement the on-screen keyboard shows. */
+    layout: LayoutId;
 }
 
 export interface HanYongSettings extends FeatureSettings {
@@ -24,7 +31,7 @@ export interface HanYongSettings extends FeatureSettings {
  * per-tab dimension here (live per-tab state lives in `StateManager`).
  */
 export interface Settings {
-    onScreenKeyboard: FeatureSettings;
+    onScreenKeyboard: OnScreenKeyboardSettings;
     hanYong: HanYongSettings;
     /** Apply changes to every tab at once, not just the focused one. */
     shareAcrossTabs: boolean;
@@ -33,6 +40,7 @@ export interface Settings {
 export const defaultSettings: Settings = {
     onScreenKeyboard: {
         persistence: Persistence.AlwaysOff,
+        layout: defaultLayoutId,
     },
     hanYong: {
         enabled: true,

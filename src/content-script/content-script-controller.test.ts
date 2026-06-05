@@ -5,11 +5,16 @@ import { KoreanKeyboardMode } from "../extension-state/korean-keyboard-mode";
 import { ServiceScriptMessageAction } from "../messaging/service-to-content-messages";
 import { ContentScriptRequestAction } from "../messaging/content-to-service-messages";
 
+jest.mock("../settings/settings-store", () => ({
+    loadSettings: jest.fn().mockResolvedValue({ onScreenKeyboard: { layout: "full-us" } }),
+}));
+
 jest.mock("./on-screen-keyboard/on-screen-keyboard-controller", () => ({
     OnScreenKeyboardController: jest.fn().mockImplementation(() => ({
         showKeyboard: jest.fn(),
         hideKeyboard: jest.fn(),
         applyPersistedLayout: jest.fn(),
+        setLayout: jest.fn(),
         setHanYongEnabled: jest.fn(),
         setMode: jest.fn(),
         setCompositionFeatures: jest.fn(),
@@ -22,7 +27,10 @@ const lastOsk = () =>
         showKeyboard: jest.Mock;
         hideKeyboard: jest.Mock;
         applyPersistedLayout: jest.Mock;
+        setLayout: jest.Mock;
     };
+
+const flushMicrotasks = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 describe("ContentScriptController AltRight handling", () => {
     it("only intercepts AltRight when Hangul typing and the keyboard-key option are both enabled", () => {
@@ -153,6 +161,8 @@ describe("ContentScriptController on-screen-keyboard layout", () => {
                     sendMessage,
                     onMessage: { addListener: (listener: (message: unknown) => void) => listeners.push(listener) },
                 },
+                // Top-window init watches storage for layout-setting changes.
+                storage: { onChanged: { addListener: jest.fn() } },
             },
         });
     });
@@ -201,5 +211,25 @@ describe("ContentScriptController on-screen-keyboard layout", () => {
         dispatch(updateState(false));
         expect(lastOsk().hideKeyboard).toHaveBeenCalled();
         expect(lastOsk().showKeyboard).not.toHaveBeenCalled();
+    });
+
+    it("applies the layout setting to the keyboard on init", async () => {
+        new ContentScriptController().initialize(true);
+        await flushMicrotasks();
+
+        expect(lastOsk().setLayout).toHaveBeenCalledWith("full-us");
+    });
+
+    it("re-applies the layout when the setting changes in sync storage", async () => {
+        new ContentScriptController().initialize(true);
+        await flushMicrotasks();
+        lastOsk().setLayout.mockClear();
+
+        // Fire the storage.onChanged listener the controller registered.
+        const onChanged = (globalThis.chrome.storage.onChanged.addListener as jest.Mock).mock.calls[0][0];
+        onChanged({ onScreenKeyboard: { newValue: {} } }, "sync");
+        await flushMicrotasks();
+
+        expect(lastOsk().setLayout).toHaveBeenCalledWith("full-us");
     });
 });
