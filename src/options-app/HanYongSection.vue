@@ -4,6 +4,7 @@ import { Persistence } from "../settings/settings";
 import { t } from "./i18n";
 import PersistenceSelect from "./PersistenceSelect.vue";
 import LabeledCheckbox from "./LabeledCheckbox.vue";
+import ToggleSwitch from "./ToggleSwitch.vue";
 
 const optionLabels: Record<Persistence, string> = {
     [Persistence.AlwaysOff]: t("options_hanYong_startOff"),
@@ -14,17 +15,21 @@ const optionLabels: Record<Persistence, string> = {
 
 <template>
     <section>
-        <h2>{{ t("options_hanYong_heading") }}</h2>
-        <LabeledCheckbox
-            v-model="settings.hanYong.enabled"
-            :label="t('options_hanYong_enabled_label')"
-        />
+        <div class="section-header">
+            <ToggleSwitch v-model="settings.hanYong.enabled" :aria-label="t('options_hanYong_heading')" />
+            <h2>{{ t("options_hanYong_heading") }}</h2>
+        </div>
         <template v-if="settings.hanYong.enabled">
             <p class="description section-hint">{{ t("options_hanYong_hint") }}</p>
             <LabeledCheckbox
                 v-model="settings.hanYong.keyboardKeyEnabled"
                 :label="t('options_hanYong_keyboardKeyEnabled_label')"
                 :description="t('options_hanYong_keyboardKeyEnabled_description')"
+            />
+            <LabeledCheckbox
+                v-model="settings.hanYong.syncAcrossTabs"
+                :label="t('options_hanYong_syncAcrossTabs_label')"
+                :description="t('options_hanYong_syncAcrossTabs_description')"
             />
             <PersistenceSelect
                 v-model="settings.hanYong.persistence"
@@ -37,6 +42,18 @@ const optionLabels: Record<Persistence, string> = {
 </template>
 
 <style scoped>
+.section-header {
+    display: flex;
+    align-items: center;
+    gap: 0.6em;
+    margin-bottom: 0.75em;
+}
+
+/* The header row owns the spacing below the heading (see section-header). */
+.section-header h2 {
+    margin: 0;
+}
+
 .section-hint {
     margin-top: -0.25em;
     margin-bottom: 0.75em;

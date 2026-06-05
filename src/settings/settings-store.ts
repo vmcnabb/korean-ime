@@ -12,7 +12,30 @@ export async function loadSettings(): Promise<Settings> {
     const stored = (await api.storage.sync.get(null)) as Record<string, unknown>;
     const result = structuredClone(defaultSettings);
     overlayStored(result as unknown as Record<string, unknown>, stored);
+    migrateLegacyShareAcrossTabs(result, stored);
     return result;
+}
+
+/**
+ * The single top-level `shareAcrossTabs` was split into per-feature
+ * `onScreenKeyboard.syncAcrossTabs` and `hanYong.syncAcrossTabs`. If a user had
+ * the old flag on and hasn't written either new flag yet, carry it onto both so
+ * the behavior is preserved across the upgrade.
+ */
+function migrateLegacyShareAcrossTabs(result: Settings, stored: Record<string, unknown>): void {
+    if (stored.shareAcrossTabs !== true) {
+        return;
+    }
+
+    const oskStored = isPlainObject(stored.onScreenKeyboard) ? stored.onScreenKeyboard : {};
+    const hanYongStored = isPlainObject(stored.hanYong) ? stored.hanYong : {};
+
+    if (!("syncAcrossTabs" in oskStored)) {
+        result.onScreenKeyboard.syncAcrossTabs = true;
+    }
+    if (!("syncAcrossTabs" in hanYongStored)) {
+        result.hanYong.syncAcrossTabs = true;
+    }
 }
 
 export async function saveSettings(settings: Settings): Promise<void> {

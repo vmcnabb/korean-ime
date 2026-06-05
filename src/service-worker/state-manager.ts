@@ -20,8 +20,8 @@ import { api } from "../platform/browser-api";
 
 /**
  * Global current live state (browser-session-lived). New tabs inherit it, and
- * in "share across tabs" mode every tab is kept equal to it. Updated whenever a
- * tab's state changes or a tab becomes active.
+ * any field with `syncAcrossTabs` on is kept equal to it across every open tab.
+ * Updated whenever a tab's state changes or a tab becomes active.
  */
 const LIVE_STATE_KEY = "liveState";
 /** Persisted (survives restart) last state, source for KeepLastState seeding. */
@@ -34,9 +34,8 @@ const englishActionIcons = { 16: icon16a, 24: icon24a, 32: icon32a };
  *
  * Live per-tab state lives in `storage.session` (`tabState-<id>`). Two globals
  * connect it to the user's settings (#26):
- *  - `storage.session[liveState]` — the current value new tabs inherit (and
- *    that all tabs share when "share across tabs" is on). Tracks the last
- *    active tab.
+ *  - `storage.session[liveState]` — the current value new tabs inherit (and the
+ *    source for any field synced across tabs). Tracks the last active tab.
  *  - `storage.local[lastState]` — the value remembered across a browser
  *    restart, used to seed `KeepLastState` features on a fresh session.
  *
@@ -184,13 +183,12 @@ export class StateManager {
      *  - Enabling/disabling Hangul typing (or the Right Alt / Han-Yong key)
      *    is re-derived for every tab by `hydrateTabState`, so each open tab is
      *    re-sent its state to reflect the change.
-     *  - Enabling "share across tabs" converges the currently-open tabs onto
-     *    the shared live value.
+     *  - Turning on a feature's `syncAcrossTabs` converges the currently-open
+     *    tabs onto the shared live value for that feature's field.
      *
      * Persistence changes remain restart-only (they only seed a fresh session),
-     * so re-sending state is a harmless no-op for them. When not sharing, each
-     * tab is pushed its own re-hydrated state; when sharing, the single shared
-     * value is broadcast instead.
+     * so re-sending state is a harmless no-op for them. Each tab is pushed its
+     * own re-hydrated state, with any synced field overlaid from the live value.
      */
     public async onSettingsChanged(): Promise<void> {
         const settings = await loadSettings();
@@ -199,38 +197,32 @@ export class StateManager {
             await this.setLiveState(live);
         }
 
-        if (!settings.shareAcrossTabs) {
-            const tabs = await api.tabs.query({});
-            await Promise.all(
-                tabs.map(async (tab) => {
-                    if (tab.id === undefined) {
-                        return;
-                    }
-                    await this.sendStateToTab(tab.id, settings);
-                })
-            );
-            return;
-        }
-
-        let shared = live;
-        if (!shared) {
-            const [active] = await api.tabs.query({ active: true, lastFocusedWindow: true });
-            shared =
-                active?.id !== undefined
-                    ? await this.getTabState(active.id, settings)
-                    : await this.deriveInitialState(settings);
-            await this.setLiveState(shared);
-        }
-        await this.broadcastState(shared);
+        // Re-send every open tab its own re-hydrated state, overlaying any field
+        // that's now synced so the open tabs converge onto the shared live value
+        // (e.g. when a syncAcrossTabs flag was just turned on).
+        const shared = this.syncedFields(live, settings);
+        const tabs = await api.tabs.query({});
+        await Promise.all(
+            tabs.map(async (tab) => {
+                if (tab.id === undefined) {
+                    return;
+                }
+                const own = await this.anchorTabState(tab.id, settings);
+                const merged = this.hydrateTabState({ ...own, ...shared }, settings);
+                await api.storage.session.set({ [this.tabStateKey(tab.id)]: merged });
+                await this.pushState(tab.id, merged);
+                await this.updatePresentation(tab.id, merged);
+            })
+        );
     }
 
     /**
      * Updates a tab's state and propagates it. Returns the new state.
      *
      * Always updates the global live value (so new tabs inherit it) and, for any
-     * `KeepLastState` feature, the persisted `storage.local` value. When "share
-     * across tabs" is on, mirrors the new state to every open tab instead of
-     * just this one.
+     * `KeepLastState` feature, the persisted `storage.local` value. Any field
+     * whose `syncAcrossTabs` flag is on is also mirrored to every other open tab
+     * (see {@link shareToOtherTabs}).
      * @param tabId The ID of the tab for which to update the state
      * @param updateFn function that takes the current tab state and returns the new tab state
      */
@@ -240,6 +232,9 @@ export class StateManager {
         settings?: Settings
     ): Promise<TabState> {
         const currentSettings = settings ?? (await loadSettings());
+        // Captured before we move the live value, so tabs that are still tracking
+        // it (no own state yet) keep their current un-synced fields below.
+        const previousLive = await this.getLiveState(currentSettings);
         const currentTabState = await this.anchorTabState(tabId, currentSettings);
         const newTabState = this.hydrateTabState(updateFn(currentTabState), currentSettings);
 
@@ -247,14 +242,65 @@ export class StateManager {
         await this.persistLastState(currentSettings, newTabState);
         await this.setLiveState(newTabState);
 
-        if (currentSettings.shareAcrossTabs) {
-            await this.broadcastState(newTabState);
-        } else {
-            await this.pushState(tabId, newTabState);
-            await this.updatePresentation(tabId, newTabState);
-        }
+        await this.pushState(tabId, newTabState);
+        await this.updatePresentation(tabId, newTabState);
+        await this.shareToOtherTabs(tabId, newTabState, previousLive, currentSettings);
 
         return newTabState;
+    }
+
+    /**
+     * Fan the synced fields of one tab's new state out to every *other* open tab.
+     * Only the fields whose `syncAcrossTabs` flag is on are applied; each target
+     * tab keeps its own value for the rest (e.g. syncing keyboard visibility must
+     * not disturb another tab's Han/Yong mode). A tab with no state of its own is
+     * still tracking the previous live value, so that's the base we preserve.
+     */
+    private async shareToOtherTabs(
+        sourceTabId: number,
+        sourceState: TabState,
+        previousLive: TabState | undefined,
+        settings: Settings
+    ): Promise<void> {
+        const shared = this.syncedFields(sourceState, settings);
+        if (Object.keys(shared).length === 0) {
+            return;
+        }
+
+        const tabs = await api.tabs.query({});
+        await Promise.all(
+            tabs.map(async (tab) => {
+                if (tab.id === undefined || tab.id === sourceTabId) {
+                    return;
+                }
+                const key = this.tabStateKey(tab.id);
+                const own = (await api.storage.session.get(key))[key] as Partial<TabState> | undefined;
+                const base = own ?? previousLive ?? sourceState;
+                const merged = this.hydrateTabState({ ...base, ...shared }, settings);
+                await api.storage.session.set({ [key]: merged });
+                await this.pushState(tab.id, merged);
+                await this.updatePresentation(tab.id, merged);
+            })
+        );
+    }
+
+    /**
+     * The subset of a state's live fields that are currently synced across tabs,
+     * per each feature's `syncAcrossTabs` flag. Returns {} when `source` is
+     * undefined (no live value yet) or nothing is synced.
+     */
+    private syncedFields(source: TabState | undefined, settings: Settings): Partial<TabState> {
+        const fields: Partial<TabState> = {};
+        if (!source) {
+            return fields;
+        }
+        if (settings.onScreenKeyboard.syncAcrossTabs) {
+            fields.isOnScreenKeyboardEnabled = source.isOnScreenKeyboardEnabled;
+        }
+        if (settings.hanYong.syncAcrossTabs) {
+            fields.koreanKeyboardMode = source.koreanKeyboardMode;
+        }
+        return fields;
     }
 
     /** Push a tab's current state to it and refresh its icon / menu presentation. */
@@ -273,21 +319,6 @@ export class StateManager {
             action: ServiceScriptMessageAction.UpdateState,
             data: state,
         });
-    }
-
-    /** Apply one state to every open tab (used in "share across tabs" mode). */
-    private async broadcastState(state: TabState) {
-        const tabs = await api.tabs.query({});
-        await Promise.all(
-            tabs.map(async (tab) => {
-                if (tab.id === undefined) {
-                    return;
-                }
-                await api.storage.session.set({ [this.tabStateKey(tab.id)]: state });
-                await this.pushState(tab.id, state);
-                await this.updatePresentation(tab.id, state);
-            })
-        );
     }
 
     /**

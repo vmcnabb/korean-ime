@@ -86,6 +86,12 @@
     "options_hanYong_keyboardKeyEnabled_description": {
         "message": "Applies to the physical keyboard key. On Korean keyboards, this is the dedicated Han/Yong key to the right of the spacebar."
     },
+    "options_hanYong_syncAcrossTabs_label": {
+        "message": "Sync mode across tabs"
+    },
+    "options_hanYong_syncAcrossTabs_description": {
+        "message": "Switch between Hangul and English in one tab and every tab follows. When off, each tab keeps its own mode."
+    },
     "options_hanYong_hint": {
         "message": "Switches between Hangul and Latin input."
     },
@@ -113,6 +119,12 @@
     "options_onScreenKeyboard_layout_fullKorean": {
         "message": "Full - Korean Dubeolsik (두벌식)"
     },
+    "options_onScreenKeyboard_syncAcrossTabs_label": {
+        "message": "Sync visibility across tabs"
+    },
+    "options_onScreenKeyboard_syncAcrossTabs_description": {
+        "message": "Show or hide the on-screen keyboard in one tab and every tab follows. When off, each tab controls its own."
+    },
     "options_hanYong_startOff": {
         "message": "Start in English"
     },
@@ -121,14 +133,5 @@
     },
     "options_hanYong_restore": {
         "message": "Restore last mode"
-    },
-    "options_general_heading": {
-        "message": "General"
-    },
-    "options_shareAcrossTabs_label": {
-        "message": "Share status across tabs"
-    },
-    "options_shareAcrossTabs_description": {
-        "message": "When you turn the on-screen keyboard or Han/Yong mode on or off, apply it to every tab at once, not just the focused one."
     }
 }

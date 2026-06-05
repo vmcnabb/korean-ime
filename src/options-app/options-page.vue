@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import { onMounted } from "vue";
-import { initSettings, settings } from "./use-settings";
+import { initSettings } from "./use-settings";
 import { t } from "./i18n";
 import OnScreenKeyboardSection from "./OnScreenKeyboardSection.vue";
 import HanYongSection from "./HanYongSection.vue";
-import LabeledCheckbox from "./LabeledCheckbox.vue";
 
 onMounted(initSettings);
 </script>
@@ -12,16 +11,8 @@ onMounted(initSettings);
 <template>
     <main>
         <h1>{{ t("options_title") }}</h1>
-        <OnScreenKeyboardSection />
         <HanYongSection />
-        <section>
-            <h2>{{ t("options_general_heading") }}</h2>
-            <LabeledCheckbox
-                v-model="settings.shareAcrossTabs"
-                :label="t('options_shareAcrossTabs_label')"
-                :description="t('options_shareAcrossTabs_description')"
-            />
-        </section>
+        <OnScreenKeyboardSection />
     </main>
 </template>
 
@@ -35,6 +26,9 @@ onMounted(initSettings);
     --section-bg: light-dark(#f9f9f9, #1e1e1e);
     --section-border: light-dark(#ddd, #333);
     --description-color: light-dark(#666, #999);
+
+    --toggle-off-bg: light-dark(#ccc, #555);
+    --toggle-on-bg: light-dark(#2563eb, #3b82f6);
 }
 
 body {

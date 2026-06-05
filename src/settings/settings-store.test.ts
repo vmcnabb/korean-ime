@@ -39,23 +39,41 @@ describe("loadSettings", () => {
 
     it("overlays stored values, keeping defaults for untouched keys", async () => {
         stored({
-            shareAcrossTabs: true,
-            hanYong: { persistence: Persistence.KeepLastState },
+            hanYong: { persistence: Persistence.KeepLastState, syncAcrossTabs: true },
         });
 
         const settings = await loadSettings();
 
-        expect(settings.shareAcrossTabs).toBe(true);
         expect(settings.hanYong.persistence).toBe(Persistence.KeepLastState);
+        expect(settings.hanYong.syncAcrossTabs).toBe(true);
         expect(settings.hanYong.enabled).toBe(true);
         expect(settings.hanYong.keyboardKeyEnabled).toBe(true);
         expect(settings.onScreenKeyboard.persistence).toBe(Persistence.AlwaysOff);
     });
 
     it("keeps the default when a stored value has the wrong type", async () => {
-        stored({ shareAcrossTabs: "yes please" });
+        stored({ hanYong: { syncAcrossTabs: "yes please" } });
 
-        expect((await loadSettings()).shareAcrossTabs).toBe(false);
+        expect((await loadSettings()).hanYong.syncAcrossTabs).toBe(false);
+    });
+
+    it("migrates the legacy top-level shareAcrossTabs onto both feature flags", async () => {
+        stored({ shareAcrossTabs: true });
+
+        const settings = await loadSettings();
+
+        expect(settings.hanYong.syncAcrossTabs).toBe(true);
+        expect(settings.onScreenKeyboard.syncAcrossTabs).toBe(true);
+        expect(settings).not.toHaveProperty("shareAcrossTabs");
+    });
+
+    it("lets an explicit feature sync flag win over the legacy shareAcrossTabs", async () => {
+        stored({ shareAcrossTabs: true, hanYong: { syncAcrossTabs: false } });
+
+        const settings = await loadSettings();
+
+        expect(settings.hanYong.syncAcrossTabs).toBe(false);
+        expect(settings.onScreenKeyboard.syncAcrossTabs).toBe(true);
     });
 
     it("ignores keys that are not part of the settings", async () => {
@@ -90,7 +108,8 @@ describe("loadSettings", () => {
 
 describe("saveSettings", () => {
     it("writes the whole settings object to storage.sync", async () => {
-        const settings: Settings = { ...defaultSettings, shareAcrossTabs: true };
+        const settings: Settings = structuredClone(defaultSettings);
+        settings.hanYong.syncAcrossTabs = true;
 
         await saveSettings(settings);
 
