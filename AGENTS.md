@@ -112,12 +112,15 @@ Core domain logic (mostly pure, well unit-tested):
   CDP.** Chrome 137+ removed the command-line switch (anti-malware), and by Chrome
   148 the `--disable-features=DisableLoadExtensionCommandLineSwitch` opt-out no
   longer works either. So `npm run dev:chrome` instead launches Chrome on a
-  *fresh throwaway profile* with `--enable-unsafe-extension-debugging` and loads
-  `dist-chrome-dev/` over the DevTools Protocol (`Extensions.loadUnpacked`, after
-  `Extensions.uninstall`-ing anything already loaded). No manual "Load unpacked"
-  step. Needs a recent Chrome (we assume the latest). The temp profile is removed
-  on shutdown; `.chrome-profile/` now only holds the stop-dev session file. Dev
-  builds stay out of the production `dist-chrome/`.
+  *fresh throwaway profile* with `--enable-unsafe-extension-debugging` +
+  `--remote-debugging-pipe` and loads `dist-chrome-dev/` over the DevTools
+  Protocol (`Extensions.loadUnpacked`). The Extensions domain is gated to the
+  **pipe** transport (fd 3/4) — over `--remote-debugging-port` it returns "Method
+  not available", so the port is kept only for VS Code debugging + `/json`
+  polling. No manual "Load unpacked" step, and the throwaway profile means no
+  stale extension to uninstall. Needs a recent Chrome (we assume the latest). The
+  temp profile is removed on shutdown; `.chrome-profile/` now only holds the
+  stop-dev session file. Dev builds stay out of the production `dist-chrome/`.
 - ESLint uses **flat config** (`eslint.config.mjs`). There is no `.eslintrc`.
 - `tsc` is type-check only (`--noEmit`); Parcel does the actual bundling.
 - A **husky pre-commit hook** (`.husky/pre-commit`, installed via the `prepare`

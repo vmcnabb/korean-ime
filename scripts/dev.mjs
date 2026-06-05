@@ -20,11 +20,9 @@
 // profile, --remote-debugging-pipe and --enable-unsafe-extension-debugging, then
 // call Extensions.loadUnpacked over the pipe to load dist-chrome-dev/ (rebuilt on
 // each run). The Extensions domain is gated to the pipe transport — it returns
-// "Method not available" over --remote-debugging-port. Existing unpacked
-// extensions are uninstalled first via Extensions.uninstall — with a throwaway
-// profile that's a no-op, but it keeps the load idempotent. No manual "Load
-// unpacked" step, and no persistent profile to carry stale state between runs.
-// Requires a recent Chrome (we assume developers run the latest).
+// "Method not available" over --remote-debugging-port. No manual "Load unpacked"
+// step, and the fresh profile carries no stale state (so no uninstall needed)
+// between runs. Requires a recent Chrome (we assume developers run the latest).
 //
 // chrome-launcher is used only to locate the Chrome binary. Close the Chrome
 // window or press Ctrl+C to stop everything.
@@ -161,25 +159,6 @@ function connectCdpPipe(chromeProc) {
             }
         },
     };
-}
-
-// Find any already-loaded extensions by scanning the debug targets for
-// chrome-extension:// origins. On a fresh throwaway profile this is empty; it
-// only matters if a previous session left extensions behind.
-async function discoverLoadedExtensionIds(port) {
-    try {
-        const response = await fetch(`http://127.0.0.1:${port}/json/list`);
-        if (!response.ok) return [];
-        const targets = await response.json();
-        const ids = new Set();
-        for (const target of targets ?? []) {
-            const match = /^chrome-extension:\/\/([a-p]{32})\//.exec(target?.url ?? "");
-            if (match) ids.add(match[1]);
-        }
-        return [...ids];
-    } catch {
-        return [];
-    }
 }
 
 // The Chrome user-data-dir is now a fresh throwaway dir per run (created at
@@ -412,19 +391,6 @@ chrome.on("exit", () => {
 // 4. Load the extension over the DevTools Protocol pipe, then open the test page.
 const cdp = connectCdpPipe(chrome);
 try {
-    // Uninstall any extensions already loaded before loading ours. On a fresh
-    // throwaway profile the only matches are Chrome's built-in component
-    // extensions, which can't be uninstalled — those failures are expected and
-    // swallowed. This only removes anything on a reused profile.
-    for (const id of await discoverLoadedExtensionIds(chromeDebugPort)) {
-        try {
-            await cdp.send("Extensions.uninstall", { id });
-            console.log(`[dev] Uninstalled existing extension: ${id}`);
-        } catch {
-            /* component extensions can't be uninstalled — expected */
-        }
-    }
-
     const { id } = await cdp.send("Extensions.loadUnpacked", { path: distDir });
     console.log(`[dev] Loaded unpacked extension: ${id}`);
 
