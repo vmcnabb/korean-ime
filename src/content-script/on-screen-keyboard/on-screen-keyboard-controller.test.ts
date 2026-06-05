@@ -755,3 +755,61 @@ describe("OnScreenKeyboardController resize", () => {
         expect(persistedKeyUnit()).toBe(32);
     });
 });
+
+describe("OnScreenKeyboardController layout drop-down", () => {
+    beforeEach(() => {
+        document.body.innerHTML = "";
+        Object.assign(globalThis, {
+            chrome: { runtime: { sendMessage: jest.fn() }, i18n: { getMessage: () => "" } },
+        });
+    });
+
+    const host = () => document.querySelector("[id^='kb-']") as HTMLElement;
+    const options = () => Array.from(host().querySelectorAll(".kb-layout-option")) as HTMLButtonElement[];
+    const menu = () => host().querySelector(".kb-layout-menu") as HTMLElement;
+    const trigger = () => host().querySelector(".kb-layout-trigger") as HTMLButtonElement;
+
+    it("lists the three layouts and marks the current one", () => {
+        new OnScreenKeyboardController(() => {});
+
+        // Order matches LAYOUT_OPTIONS: minimal, full US, full Korean.
+        expect(options()).toHaveLength(3);
+        // Default layout is full US (index 1).
+        expect(options()[1].classList.contains("selected")).toBe(true);
+        expect(options()[0].classList.contains("selected")).toBe(false);
+    });
+
+    it("toggles the menu open and closed from the trigger", () => {
+        new OnScreenKeyboardController(() => {});
+
+        expect(menu().classList.contains("open")).toBe(false);
+        trigger().click();
+        expect(menu().classList.contains("open")).toBe(true);
+        trigger().click();
+        expect(menu().classList.contains("open")).toBe(false);
+    });
+
+    it("applies the picked layout, reports the change, and closes the menu", () => {
+        const onLayoutChange = jest.fn();
+        new OnScreenKeyboardController(() => {}, onLayoutChange);
+        const el = host();
+
+        trigger().click();
+        options()[0].click(); // minimal
+
+        expect(onLayoutChange).toHaveBeenCalledWith("minimal");
+        expect(menu().classList.contains("open")).toBe(false);
+        // Switched to minimal (no number row) and reflected as selected.
+        expect(el.querySelector("kbd.Digit1")).toBeNull();
+        expect(options()[0].classList.contains("selected")).toBe(true);
+    });
+
+    it("reflects an externally-set layout (e.g. from the options page)", () => {
+        const controller = new OnScreenKeyboardController(() => {});
+
+        controller.setLayout(LayoutId.FullKorean);
+
+        expect(options()[2].classList.contains("selected")).toBe(true);
+        expect(options()[1].classList.contains("selected")).toBe(false);
+    });
+});

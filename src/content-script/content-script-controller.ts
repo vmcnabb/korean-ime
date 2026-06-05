@@ -17,7 +17,8 @@ import {
 import { api } from "../platform/browser-api";
 import { routeByAction } from "../messaging/route-message";
 import { currentOskSite } from "./osk-site";
-import { loadSettings } from "../settings/settings-store";
+import { loadSettings, saveSettings } from "../settings/settings-store";
+import { LayoutId } from "../extension-state/osk-layout";
 
 export class ContentScriptController {
     private isHanYongEnabled = false;
@@ -32,16 +33,19 @@ export class ContentScriptController {
 
     public initialize(isTopWindow: boolean) {
         this.keyboardController = isTopWindow
-            ? new OnScreenKeyboardController((key, keyCode) => {
-                  const handled = this.textInputManager.enterCharacter(key, keyCode);
-                  if (!handled) {
-                      api.runtime.sendMessage<ContentScriptRequestMessage>({
-                          type: "contentScriptRequest",
-                          action: ContentScriptRequestAction.SendKey,
-                          data: { key, keyCode },
-                      });
-                  }
-              })
+            ? new OnScreenKeyboardController(
+                  (key, keyCode) => {
+                      const handled = this.textInputManager.enterCharacter(key, keyCode);
+                      if (!handled) {
+                          api.runtime.sendMessage<ContentScriptRequestMessage>({
+                              type: "contentScriptRequest",
+                              action: ContentScriptRequestAction.SendKey,
+                              data: { key, keyCode },
+                          });
+                      }
+                  },
+                  (layoutId) => void this.saveLayoutSetting(layoutId)
+              )
             : undefined;
 
         this.setupMessageListener();
@@ -69,6 +73,14 @@ export class ContentScriptController {
     private async applyLayoutSetting() {
         const settings = await loadSettings();
         this.keyboardController?.setLayout(settings.onScreenKeyboard.layout);
+    }
+
+    /** Persist the layout chosen from the keyboard's drop-down (the synced setting,
+     *  shared with the options page; the storage.onChanged watcher re-applies it). */
+    private async saveLayoutSetting(layoutId: LayoutId) {
+        const settings = await loadSettings();
+        settings.onScreenKeyboard.layout = layoutId;
+        await saveSettings(settings);
     }
 
     /** Re-apply the layout when the setting changes (the options page writes it). */
