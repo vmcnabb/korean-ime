@@ -203,11 +203,39 @@ describe("OnScreenKeyboardController resize handling", () => {
         (controller as unknown as { _keyboardPlacement: { x: number } })._keyboardPlacement.x = 200;
 
         // Drag 10px left (anchored right, that increases the right offset).
-        el.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, button: 0, screenX: 100, screenY: 100 }));
-        document.dispatchEvent(new MouseEvent("mousemove", { bubbles: true, buttons: 1, screenX: 90, screenY: 100 }));
+        el.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, button: 0, clientX: 100, clientY: 100 }));
+        document.dispatchEvent(new MouseEvent("mousemove", { bubbles: true, buttons: 1, clientX: 90, clientY: 100 }));
 
         // It tracked from the rendered 0 (now ~10px), not the stale 200 (~210px).
         expect(parseFloat(el.style.right)).toBeLessThan(50);
+    });
+
+    it("tracks the drag in CSS pixels (clientX/Y), not device pixels, so it follows the cursor under zoom", () => {
+        Object.defineProperty(window, "innerWidth", { configurable: true, value: 1000 });
+        Object.defineProperty(window, "innerHeight", { configurable: true, value: 800 });
+
+        const controller = new OnScreenKeyboardController(() => {});
+        const el = document.querySelector("[id^='kb-']") as HTMLElement;
+        Object.defineProperty(el, "offsetWidth", { configurable: true, value: 480 });
+        Object.defineProperty(el, "offsetHeight", { configurable: true, value: 250 });
+
+        controller.showKeyboard(); // default bottom-right -> flush (right: 0px)
+
+        // Drag 30 CSS px left. screenX moves twice as far (as at 200% zoom, where
+        // device px = 2x CSS px); the keyboard must follow clientX, not screenX.
+        (el.querySelector(".kb-handle") as HTMLElement).dispatchEvent(
+            new MouseEvent("mousedown", { bubbles: true, button: 0, clientX: 500, clientY: 100, screenX: 1000 })
+        );
+        document.dispatchEvent(
+            new MouseEvent("mousemove", { bubbles: true, buttons: 1, clientX: 470, clientY: 100, screenX: 940 })
+        );
+
+        // 30 CSS px left, anchored right -> ~30px right offset (not ~60px).
+        expect(parseFloat(el.style.right)).toBeCloseTo(30, 0);
+
+        // Release the drag so this controller's persistent document listeners
+        // don't stay armed and move the keyboard during a later test.
+        document.dispatchEvent(new MouseEvent("mouseup", { bubbles: true, button: 0 }));
     });
 
     it("keeps the anchored edge on-screen when the keyboard is wider than the viewport", () => {
@@ -314,15 +342,15 @@ describe("OnScreenKeyboardController header controls", () => {
 
         // pressing a key must not move the keyboard
         const key = document.querySelector("kbd.KeyS") as HTMLElement;
-        key.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, button: 0, screenX: 100, screenY: 100 }));
-        document.dispatchEvent(new MouseEvent("mousemove", { bubbles: true, buttons: 1, screenX: 80, screenY: 100 }));
+        key.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, button: 0, clientX: 100, clientY: 100 }));
+        document.dispatchEvent(new MouseEvent("mousemove", { bubbles: true, buttons: 1, clientX: 80, clientY: 100 }));
         expect(place).not.toHaveBeenCalled();
 
         // dragging the header bar does
         (el.querySelector(".kb-handle") as HTMLElement).dispatchEvent(
-            new MouseEvent("mousedown", { bubbles: true, button: 0, screenX: 100, screenY: 100 })
+            new MouseEvent("mousedown", { bubbles: true, button: 0, clientX: 100, clientY: 100 })
         );
-        document.dispatchEvent(new MouseEvent("mousemove", { bubbles: true, buttons: 1, screenX: 80, screenY: 100 }));
+        document.dispatchEvent(new MouseEvent("mousemove", { bubbles: true, buttons: 1, clientX: 80, clientY: 100 }));
         expect(place).toHaveBeenCalled();
     });
 });
@@ -434,10 +462,10 @@ describe("OnScreenKeyboardController anchor guides", () => {
 
             // Drag from the header: the guides light up.
             (el.querySelector(".kb-handle") as HTMLElement).dispatchEvent(
-                new MouseEvent("mousedown", { bubbles: true, button: 0, screenX: 100, screenY: 100 })
+                new MouseEvent("mousedown", { bubbles: true, button: 0, clientX: 100, clientY: 100 })
             );
             document.dispatchEvent(
-                new MouseEvent("mousemove", { bubbles: true, buttons: 1, screenX: 90, screenY: 110 })
+                new MouseEvent("mousemove", { bubbles: true, buttons: 1, clientX: 90, clientY: 110 })
             );
             expect(guides().classList.contains("visible")).toBe(true);
 

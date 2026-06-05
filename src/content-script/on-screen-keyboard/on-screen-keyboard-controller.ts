@@ -269,8 +269,11 @@ export class OnScreenKeyboardController {
             // Drag only from the header bar, and not from its buttons.
             if (e.target.closest(".kb-header") && !e.target.closest("button") && !e.target.closest(".kb-mode")) {
                 this._keyboardMovement.mouse.down = true;
-                this._keyboardMovement.mouse.startX = e.screenX;
-                this._keyboardMovement.mouse.startY = e.screenY;
+                // clientX/Y (CSS px, viewport-relative), not screenX/Y (device px):
+                // the placement math is in CSS px, so a device-px delta would move
+                // the keyboard at the wrong rate under page zoom (e.g. 2x at 200%).
+                this._keyboardMovement.mouse.startX = e.clientX;
+                this._keyboardMovement.mouse.startY = e.clientY;
             }
 
             return;
@@ -290,11 +293,11 @@ export class OnScreenKeyboardController {
             }
 
             if (this._keyboardMovement.mouse.down) {
-                const dx = e.screenX - this._keyboardMovement.mouse.startX;
-                const dy = e.screenY - this._keyboardMovement.mouse.startY;
+                const dx = e.clientX - this._keyboardMovement.mouse.startX;
+                const dy = e.clientY - this._keyboardMovement.mouse.startY;
 
-                this._keyboardMovement.mouse.startX = e.screenX;
-                this._keyboardMovement.mouse.startY = e.screenY;
+                this._keyboardMovement.mouse.startX = e.clientX;
+                this._keyboardMovement.mouse.startY = e.clientY;
 
                 this.moveKeyboard(dx, dy);
             }
