@@ -21,7 +21,7 @@
 // close Firefox or press Ctrl+C to stop everything.
 
 import { spawn, spawnSync } from "node:child_process";
-import { resolve } from "node:path";
+import { basename, resolve } from "node:path";
 import webExt from "web-ext";
 import { killTree, requestedLocale, startTestPageServer, watchRequested, wordAdapterRequested } from "./dev-shared.mjs";
 
@@ -34,15 +34,44 @@ const patchScript = resolve(root, "scripts/patch-firefox-manifest.mjs");
 let server;
 let watch; // the Parcel watch process, only in --watch mode
 let runner; // the web-ext extension runner
+let firefoxProfileDirs = []; // throwaway profile dir(s) web-ext created, for teardown
 let shuttingDown = false;
+
+// Force-close the dev Firefox. web-ext's runner.exit() only kill()s the single
+// process it spawned — but on Windows the launcher process detaches the real
+// browser from that PID (and the launcher can't be disabled via a fresh-profile
+// pref), so that kill misses the window. Instead we match firefox processes by
+// our unique throwaway profile dir name and tree-kill them. Scoped to this dev
+// session's profile, so it never touches the user's own Firefox.
+function killDevFirefox() {
+    for (const dir of firefoxProfileDirs) {
+        const needle = basename(dir);
+        if (!needle) continue;
+        if (process.platform === "win32") {
+            const escaped = needle.replace(/'/g, "''");
+            spawnSync(
+                "powershell.exe",
+                [
+                    "-NoProfile",
+                    "-Command",
+                    `Get-CimInstance Win32_Process -Filter "Name='firefox.exe'" | Where-Object { $_.CommandLine -like '*${escaped}*' } | ForEach-Object { taskkill /PID $_.ProcessId /T /F }`,
+                ],
+                { stdio: "ignore" }
+            );
+        } else {
+            spawnSync("pkill", ["-f", needle], { stdio: "ignore" });
+        }
+    }
+}
 
 async function shutdown(code = 0) {
     if (shuttingDown) return;
     shuttingDown = true;
     killTree(watch);
     server?.close();
-    // web-ext closes Firefox and removes its throwaway profile on exit; cap the
-    // wait so a hung teardown can't keep us alive.
+    killDevFirefox();
+    // runner.exit() also removes the throwaway profile dir; cap the wait so a
+    // hung teardown can't keep us alive.
     try {
         await Promise.race([runner?.exit?.() ?? Promise.resolve(), new Promise((r) => setTimeout(r, 3000))]);
     } catch {
@@ -154,6 +183,17 @@ try {
     console.error("[dev] Could not launch Firefox. Install Firefox or set FIREFOX_PATH to its executable.");
     shutdown(1);
 }
+// Capture the throwaway profile dir(s) web-ext created so shutdown can find and
+// kill the matching Firefox process tree (see killDevFirefox).
+firefoxProfileDirs = (runner.extensionRunners ?? [])
+    .map((r) => {
+        try {
+            return r?.profile?.path?.();
+        } catch {
+            return undefined;
+        }
+    })
+    .filter(Boolean);
 // Stop the dev session when Firefox is closed.
 runner.registerCleanup(() => shutdown(0));
 
