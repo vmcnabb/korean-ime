@@ -327,6 +327,9 @@ export class ContentEditableAdapter extends CompositionAdapter {
 
         const characterRect = span.getBoundingClientRect();
         const selectionStyle = this.getAssignableStyles(span);
+        // Capture the effective text color at the caret while the span is still in
+        // the DOM, so the box reuses the page's own color-on-background pairing.
+        const textColor = window.getComputedStyle(span).color;
 
         span.parentNode?.removeChild(span);
 
@@ -343,20 +346,31 @@ export class ContentEditableAdapter extends CompositionAdapter {
         const borderLeftWidth = 1;
         const borderTopWidth = 1;
 
+        // The box is drawn on top of the already-inserted glyph, so it needs an
+        // opaque background to occlude it. Rather than hardcode one (which clashed
+        // with dark pages and could match the text color), reuse the page's own
+        // background + text color so the composing text is always as legible as the
+        // page's normal text, on light and dark alike. The blue stays as a
+        // scheme-agnostic accent: a translucent border plus a faint tint overlay
+        // (a 1px-wide solid-color gradient painted over the background) so the box
+        // still reads as an active composition.
+        const accent = "68, 136, 255";
         const style: Partial<CSSStyleDeclaration> = {
             ...selectionStyle,
+            color: textColor,
             display: "inline-block",
             position: "absolute",
             top: `${top - borderTopWidth}px`,
             left: `${left - borderLeftWidth}px`,
             width: `${characterRect.width}px`,
             height: `${characterRect.height}px`,
-            backgroundColor: "#CDF",
+            backgroundColor: this.resolveOpaqueBackground(),
+            backgroundImage: `linear-gradient(rgba(${accent}, 0.18), rgba(${accent}, 0.18))`,
             zIndex: "2147483647",
-            borderLeft: `${borderLeftWidth}px solid #48F`,
-            borderTop: `${borderTopWidth}px solid #48F`,
-            borderRight: "1px solid #48F",
-            borderBottom: "1px solid #48F",
+            borderLeft: `${borderLeftWidth}px solid rgba(${accent}, 0.9)`,
+            borderTop: `${borderTopWidth}px solid rgba(${accent}, 0.9)`,
+            borderRight: `1px solid rgba(${accent}, 0.9)`,
+            borderBottom: `1px solid rgba(${accent}, 0.9)`,
         };
 
         const characterBox = document.createElement("div");
@@ -365,6 +379,25 @@ export class ContentEditableAdapter extends CompositionAdapter {
         document.body.appendChild(characterBox);
 
         this.compositingBox = characterBox;
+    }
+
+    // Find the background the composing glyph actually sits on: the first opaque
+    // background-color walking up from the editor. A transparent (alpha < 1)
+    // background lets what's behind it show through, so it can't occlude the glyph
+    // on its own — keep walking. If nothing opaque is found, fall back to the
+    // `Canvas` system color, which tracks the user's light/dark color scheme.
+    private resolveOpaqueBackground(): string {
+        let element: Element | null = this.element;
+
+        while (element) {
+            const backgroundColor = window.getComputedStyle(element).backgroundColor;
+            if (isOpaqueColor(backgroundColor)) {
+                return backgroundColor;
+            }
+            element = element.parentElement;
+        }
+
+        return "Canvas";
     }
 
     private getAssignableStyles(sourceElement: Element): Partial<CSSStyleDeclaration> {
@@ -422,6 +455,20 @@ type StringStyleKeys<T> = {
 }[keyof T];
 
 type CSSStringKey = Extract<StringStyleKeys<CSSStyleDeclaration>, string>;
+
+// True only for a fully opaque color. getComputedStyle normalizes background-color
+// to "rgb(...)"/"rgba(...)", or "rgba(0, 0, 0, 0)" / "transparent" when unset; we
+// treat anything with alpha < 1 (or unparseable) as see-through.
+function isOpaqueColor(color: string): boolean {
+    const channels = color.match(/^rgba?\(([^)]+)\)/);
+    if (!channels) {
+        return false;
+    }
+
+    const parts = channels[1].split(",");
+    const alpha = parts.length >= 4 ? parseFloat(parts[3]) : 1;
+    return alpha === 1;
+}
 
 export function updateSelectionToIncludePreviousCharacter(topContainer: Element): Range | undefined {
     const selection = document.getSelection();
