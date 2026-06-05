@@ -701,6 +701,29 @@ describe("OnScreenKeyboardController resize", () => {
         expect(persistedKeyUnit()).toBeCloseTo((32 * Math.hypot(250, 250)) / 500, 1);
     });
 
+    it("resizes from any corner, keeping the anchor origin and moving its position", () => {
+        const controller = new OnScreenKeyboardController(() => {});
+        const el = sized();
+        controller.showKeyboard(); // default anchor: bottom-right
+        el.getBoundingClientRect = () =>
+            ({ left: 100, top: 100, right: 500, bottom: 400, width: 400, height: 300 }) as DOMRect;
+        sendMessage.mockClear();
+
+        // Drag the bottom-right grip (the anchored corner); pivot = top-left (100,100).
+        const br = document.querySelector(".kb-grip-br") as HTMLElement;
+        br.dispatchEvent(new MouseEvent("pointerdown", { bubbles: true, button: 0 }));
+        // dist from pivot (100,100) to (700,550) = hypot(600,450) = 750; start = 500.
+        br.dispatchEvent(new MouseEvent("pointermove", { bubbles: true, clientX: 700, clientY: 550 }));
+        br.dispatchEvent(new MouseEvent("pointerup", { bubbles: true, button: 0 }));
+
+        // Origin unchanged (still anchored bottom-right), position updated.
+        expect(el.style.right).not.toBe("");
+        expect(el.style.bottom).not.toBe("");
+        expect(el.style.left).toBe("");
+        expect(el.style.top).toBe("");
+        expect(persistedKeyUnit()).toBeCloseTo((32 * Math.hypot(600, 450)) / 500, 0);
+    });
+
     it("does not resize while collapsed", () => {
         const controller = new OnScreenKeyboardController(() => {});
         const el = sized();

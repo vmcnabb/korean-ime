@@ -70,9 +70,18 @@ export class OnScreenKeyboardController {
     // rendered smaller when the viewport can't fit it (clamped in placeKeyboard),
     // but the intended size is kept so it's restored when there's room again.
     private _keyUnit = DEFAULT_KEY_UNIT_PX;
-    // Drag-resize state, captured at pointer-down on the grip.
-    private _resize?: { anchorX: number; anchorY: number; startDist: number; startUnit: number; pointerId: number };
-    private _resizeGrip?: HTMLDivElement;
+    // Drag-resize state, captured at pointer-down on a corner grip. The pivot is
+    // the corner opposite the dragged one; it stays fixed while the keyboard
+    // scales, and the anchor offset is updated to keep it there.
+    private _resize?: {
+        pivotX: number;
+        pivotY: number;
+        pivotIsLeft: boolean;
+        pivotIsTop: boolean;
+        startDist: number;
+        startUnit: number;
+        pointerId: number;
+    };
 
     private _mode = KoreanKeyboardMode.English;
     // `undefined` until the first state update, so the first call to
@@ -334,10 +343,6 @@ export class OnScreenKeyboardController {
             placement.originX = originX;
             placement.originY = originY;
         }
-
-        // Keep the resize grip on the free corner (diagonally opposite the
-        // anchor), so dragging it grows the keyboard from the pinned corner.
-        this.positionResizeGrip(originX, originY);
     }
 
     // Set --key-unit to the intended size, then shrink it just enough that the
@@ -365,17 +370,31 @@ export class OnScreenKeyboardController {
         }
     }
 
-    private positionResizeGrip(originX: "left" | "right", originY: "top" | "bottom") {
-        const grip = this._resizeGrip;
-        if (!grip) {
+    // Resize the keyboard around the drag's fixed pivot corner: scale to the new
+    // key size, then update the anchor offset so the pivot stays put. The anchor
+    // origin is unchanged — only its distance from the origin edges moves.
+    private applyResize(keyUnit: number) {
+        const resize = this._resize;
+        if (!resize) {
             return;
         }
-        // The free corner (opposite the anchor) — the corner class carries the
-        // offsets and the matching resize cursor (see the SCSS).
-        grip.classList.toggle("kb-grip-tl", originX === "right" && originY === "bottom");
-        grip.classList.toggle("kb-grip-tr", originX === "left" && originY === "bottom");
-        grip.classList.toggle("kb-grip-bl", originX === "right" && originY === "top");
-        grip.classList.toggle("kb-grip-br", originX === "left" && originY === "top");
+
+        this._keyUnit = clamp(keyUnit, MIN_KEY_UNIT_PX, MAX_KEY_UNIT_PX);
+
+        const el = this._keyboardElement;
+        el.style.setProperty("--key-unit", `${this._keyUnit}px`);
+        const width = el.offsetWidth;
+        const height = el.offsetHeight;
+
+        // Place the box so the pivot corner stays at its captured viewport point.
+        const left = resize.pivotIsLeft ? resize.pivotX : resize.pivotX - width;
+        const top = resize.pivotIsTop ? resize.pivotY : resize.pivotY - height;
+
+        const placement = this._keyboardPlacement;
+        placement.x = placement.originX === "left" ? left : window.innerWidth - (left + width);
+        placement.y = placement.originY === "bottom" ? window.innerHeight - (top + height) : top;
+
+        this.placeKeyboard();
     }
 
     private createKeyboard() {
@@ -506,23 +525,27 @@ export class OnScreenKeyboardController {
         window.addEventListener("resize", reclampToViewport);
         window.visualViewport?.addEventListener("resize", reclampToViewport);
 
-        keyboardElement.appendChild(this.createResizeGrip());
+        for (const corner of ["tl", "tr", "bl", "br"] as const) {
+            keyboardElement.appendChild(this.createResizeGrip(corner));
+        }
         this.createGuides();
 
         return keyboardElement;
     }
 
-    // A corner grip for drag-resizing the keyboard. It scales --key-unit live
-    // (pointer capture during the drag), persists the size on release, and resets
-    // to the default size on double-click. Positioned at the free corner by
-    // positionResizeGrip so the anchored corner stays pinned as it grows.
-    private createResizeGrip(): HTMLDivElement {
+    // A corner grip for drag-resizing the keyboard. Any of the four corners works:
+    // the dragged corner tracks the cursor while the opposite (pivot) corner stays
+    // put; applyResize updates the anchor offset to keep it there. Scales
+    // --key-unit live (pointer capture during the drag), persists on release, and
+    // resets to the default size on double-click.
+    private createResizeGrip(corner: "tl" | "tr" | "bl" | "br"): HTMLDivElement {
         const grip = document.createElement("div");
-        grip.className = "kb-resize-grip";
-        this._resizeGrip = grip;
+        grip.className = `kb-resize-grip kb-grip-${corner}`;
+        const cornerIsLeft = corner === "tl" || corner === "bl";
+        const cornerIsTop = corner === "tl" || corner === "tr";
 
         grip.addEventListener("pointerdown", (e) => {
-            // No resizing while collapsed (the grip is also hidden via CSS then).
+            // No resizing while collapsed (the grips are also hidden via CSS then).
             if (e.button !== 0 || this._keyboardElement.classList.contains("collapsed")) {
                 return;
             }
@@ -530,13 +553,12 @@ export class OnScreenKeyboardController {
             e.stopPropagation();
 
             const rect = this._keyboardElement.getBoundingClientRect();
-            const { originX, originY } = this._keyboardPlacement;
-            // Pin the anchored corner; the grip (free corner) tracks the cursor.
-            const anchorX = originX === "right" ? rect.right : rect.left;
-            const anchorY = originY === "bottom" ? rect.bottom : rect.top;
+            // The pivot is the corner opposite the one being dragged; it stays put.
             this._resize = {
-                anchorX,
-                anchorY,
+                pivotX: cornerIsLeft ? rect.right : rect.left,
+                pivotY: cornerIsTop ? rect.bottom : rect.top,
+                pivotIsLeft: !cornerIsLeft,
+                pivotIsTop: !cornerIsTop,
                 startDist: Math.hypot(rect.width, rect.height) || 1,
                 startUnit: this._keyUnit,
                 pointerId: e.pointerId,
@@ -555,10 +577,10 @@ export class OnScreenKeyboardController {
             if (!resize) {
                 return;
             }
-            // Scale the key size by how far the cursor moved from the anchor,
-            // relative to where the free corner started. Aspect ratio is intrinsic.
-            const dist = Math.hypot(e.clientX - resize.anchorX, e.clientY - resize.anchorY);
-            this.setKeyUnit((resize.startUnit * dist) / resize.startDist, false);
+            // Scale the key size by how far the cursor is from the pivot, relative
+            // to where the dragged corner started. Aspect ratio is intrinsic.
+            const dist = Math.hypot(e.clientX - resize.pivotX, e.clientY - resize.pivotY);
+            this.applyResize((resize.startUnit * dist) / resize.startDist);
         });
 
         const endResize = (e: PointerEvent) => {
