@@ -16,6 +16,7 @@ import {
 } from "../messaging/service-to-content-messages";
 import { api } from "../platform/browser-api";
 import { routeByAction } from "../messaging/route-message";
+import { currentOskSite } from "./osk-site";
 
 export class ContentScriptController {
     private isHanYongEnabled = false;
@@ -23,6 +24,10 @@ export class ContentScriptController {
     private textEntryMode = KoreanKeyboardMode.English;
     private textInputManager = new TextInputManager();
     private keyboardController?: OnScreenKeyboardController;
+    // The keyboard's first show is gated on its saved layout arriving, so a
+    // restored position never appears at the default corner and then jumps.
+    private isOskLayoutApplied = false;
+    private shouldShowOsk = false;
 
     public initialize(isTopWindow: boolean) {
         this.keyboardController = isTopWindow
@@ -41,12 +46,26 @@ export class ContentScriptController {
         this.setupMessageListener();
         this.setupDocumentListeners();
         this.requestState();
+
+        // Only the top window hosts the keyboard, so only it needs the saved
+        // layout. The reply gates the first show (see updateOskVisibility).
+        if (isTopWindow) {
+            this.requestOnScreenKeyboardLayout();
+        }
     }
 
     private requestState() {
         api.runtime.sendMessage<ContentScriptRequestMessage>({
             type: "contentScriptRequest",
             action: ContentScriptRequestAction.RefreshState,
+        });
+    }
+
+    private requestOnScreenKeyboardLayout() {
+        api.runtime.sendMessage<ContentScriptRequestMessage>({
+            type: "contentScriptRequest",
+            action: ContentScriptRequestAction.RequestOnScreenKeyboardLayout,
+            data: { site: currentOskSite() },
         });
     }
 
@@ -61,6 +80,11 @@ export class ContentScriptController {
                         this.textInputManager.enterCharacter(m.data.key, m.data.keyCode),
                     [ServiceScriptMessageAction.InsertTextAfterSelection]: (m) =>
                         this.textInputManager.insertTextAfterSelection(m.data),
+                    [ServiceScriptMessageAction.OnScreenKeyboardLayout]: (m) => {
+                        this.keyboardController?.applyPersistedLayout(m.data);
+                        this.isOskLayoutApplied = true;
+                        this.updateOskVisibility();
+                    },
                 });
             } else if (isContentScriptBroadcastMessage(message)) {
                 routeByAction(message, {
@@ -96,10 +120,18 @@ export class ContentScriptController {
             this.keyboardController?.setMode(message.data.koreanKeyboardMode);
         }
 
-        if (message.data.isOnScreenKeyboardEnabled) {
-            this.keyboardController?.showKeyboard();
-        } else {
+        this.shouldShowOsk = message.data.isOnScreenKeyboardEnabled;
+        this.updateOskVisibility();
+    }
+
+    // Show the keyboard only once it's both wanted and its saved layout has been
+    // applied, so a restored position isn't shown at the default corner first.
+    // Hiding needs no layout and happens immediately.
+    private updateOskVisibility() {
+        if (!this.shouldShowOsk) {
             this.keyboardController?.hideKeyboard();
+        } else if (this.isOskLayoutApplied) {
+            this.keyboardController?.showKeyboard();
         }
     }
 

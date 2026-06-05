@@ -1,11 +1,13 @@
 import { KeyCode } from "../keyboard/korean-keyboard-map";
 import { hasProperties } from "../types/objects";
 import { TabState } from "../extension-state/tab-state";
+import { OnScreenKeyboardLayout } from "../extension-state/osk-layout";
 
 export enum ServiceScriptMessageAction {
     InsertTextAfterSelection = "insertTextAfterSelection",
     UpdateState = "updateState",
     SendKey = "sendKey",
+    OnScreenKeyboardLayout = "onScreenKeyboardLayout",
 }
 
 export type TabStateMessage = {
@@ -26,7 +28,17 @@ export type SendKeyServiceMessage = {
     data: { key: string; keyCode: KeyCode };
 };
 
-export type ServiceScriptMessage = TabStateMessage | InsertTextAfterSelectionMessage | SendKeyServiceMessage;
+export type OnScreenKeyboardLayoutMessage = {
+    type: "serviceScriptMessage";
+    action: ServiceScriptMessageAction.OnScreenKeyboardLayout;
+    data: OnScreenKeyboardLayout;
+};
+
+export type ServiceScriptMessage =
+    | TabStateMessage
+    | InsertTextAfterSelectionMessage
+    | SendKeyServiceMessage
+    | OnScreenKeyboardLayoutMessage;
 
 export function isServiceScriptMessage(message: unknown): message is ServiceScriptMessage {
     return (
