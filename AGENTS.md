@@ -32,7 +32,7 @@ has the feature branch around, can look merged when it isn't (or vice versa).
 | `npm run build:firefox` | Firefox build to `dist-firefox/` (see Firefox build note below) |
 | `npm run lint:firefox` | `web-ext lint` the Firefox build in `dist-firefox/` |
 | `npm run build-dev:chrome` | Unoptimized dev Chrome build to `dist-chrome-dev/` |
-| `npm run dev:chrome` | One-off dev build + launch Chrome on a persistent dev profile + test page (no watcher; re-run to rebuild — see `scripts/dev.mjs`) |
+| `npm run dev:chrome` | One-off dev build + launch Chrome on a persistent dev profile + test page (no watcher; re-run to rebuild — see `scripts/dev.mjs`). Add `--watch` for a live-reloading Parcel watcher. |
 | `npm run check` | Type-check only (`tsc --noEmit`) |
 | `npm run lint` / `lint:fix` | ESLint (flat config in `eslint.config.mjs`) |
 | `npm test` | Jest unit tests (ts-jest + jsdom) |
