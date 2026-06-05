@@ -1,6 +1,6 @@
 import { KoreanKeyboardMode } from "../../extension-state/korean-keyboard-mode";
 import { KeyCode, KeyRecord, keyMap } from "../../keyboard/korean-keyboard-map";
-import { KeyboardLayout, defaultLayout } from "./layouts";
+import { KeyboardLayout, LayoutKey, LayoutId, layouts, defaultLayoutId } from "./layouts";
 import { SupportedCompositionFeatures } from "../../composition/composition-adapters/composition-adapter-interface";
 import "./on-screen-keyboard.scss";
 import { ContentScriptRequestAction, ContentScriptRequestMessage } from "../../messaging/content-to-service-messages";
@@ -9,9 +9,6 @@ import { api } from "../../platform/browser-api";
 import { modeIconHangul, modeIconEnglish } from "./mode-icons";
 import { KeyboardPlacement, OnScreenKeyboardLayout } from "../../extension-state/osk-layout";
 import { currentOskSite } from "../osk-site";
-
-/** Full keyboard width, and the narrower width used while collapsed. */
-const KEYBOARD_WIDTH_PX = 480;
 
 /**
  * How long the anchor guides linger after a drag ends before fading out. The
@@ -61,6 +58,8 @@ export class OnScreenKeyboardController {
     private _isShift = false;
     private _compositionFeatures: SupportedCompositionFeatures | undefined;
     private _keyElements = new Map<KeyCode, HTMLElement>();
+    private _keyboardBody?: HTMLDivElement;
+    private _layoutId: LayoutId = defaultLayoutId;
     private _collapseButton?: HTMLButtonElement;
     private _modeIndicator?: HTMLImageElement;
     // Dotted overlays marking how the keyboard is anchored, shown only while it's
@@ -293,7 +292,6 @@ export class OnScreenKeyboardController {
 
         keyboardElement.id = "kb-73ce1520-9c19-48ad-bf12-f7ec206ab11f";
 
-        keyboardElement.style.width = `${KEYBOARD_WIDTH_PX}px`;
         keyboardElement.style.position = "fixed";
         keyboardElement.style.bottom = "0";
         keyboardElement.style.right = "0";
@@ -311,7 +309,8 @@ export class OnScreenKeyboardController {
         const keyboardBody = document.createElement("div");
         keyboardBody.className = "kb-body";
         keyboardElement.appendChild(keyboardBody);
-        this.renderKeyboard(keyboardBody, defaultLayout);
+        this._keyboardBody = keyboardBody;
+        this.renderKeyboard(keyboardBody, layouts[this._layoutId]);
 
         keyboardElement.addEventListener("mousedown", (e) => {
             e.preventDefault();
@@ -618,9 +617,7 @@ export class OnScreenKeyboardController {
     private setCollapsed(collapsed: boolean) {
         this._keyboardElement.classList.toggle("collapsed", collapsed);
 
-        // Collapsed, only the header shows (the keys are hidden), so shrink the
-        // keyboard to fit its header contents; expanded, restore the full width.
-        this._keyboardElement.style.width = collapsed ? "auto" : `${KEYBOARD_WIDTH_PX}px`;
+        // Collapsed, only the header shows (the keys are hidden)
 
         if (this._collapseButton) {
             this._collapseButton.textContent = collapsed ? "\u{1F5D6}" : "\u{1F5D5}";
@@ -706,7 +703,7 @@ export class OnScreenKeyboardController {
             this.sendKey(keyToSend, keyCode);
         } else if (key.label === "Shift") {
             this.setShift(!isShift);
-        } else if (keyCode === KeyCode.AltRight) {
+        } else if (keyCode === KeyCode.AltRight || keyCode === KeyCode.Lang1) {
             this.toggleHanYong();
         } else if (keyCode === KeyCode.Space) {
             this.sendKey(" ", keyCode);
@@ -754,7 +751,7 @@ export class OnScreenKeyboardController {
     }
 
     private renderSpecialKeyLabels(keyElement: HTMLElement, key: KeyRecord, keyCode: KeyCode): void {
-        if (keyCode === KeyCode.ShiftLeft) {
+        if (keyCode === KeyCode.ShiftLeft || keyCode === KeyCode.ShiftRight) {
             const label = this.createLabelElement("full", "⇧");
             keyElement.appendChild(label);
         } else if (keyCode === KeyCode.AltRight) {
@@ -774,19 +771,36 @@ export class OnScreenKeyboardController {
         }
     }
 
-    private renderKey(rowElement: HTMLDivElement, keyCode: KeyCode) {
+    private renderKey(rowElement: HTMLDivElement, layoutKey: LayoutKey) {
+        const { code, width, inert, label } = layoutKey;
         const keyElement = document.createElement("kbd");
-        const key = keyMap[keyCode];
+        const key = keyMap[code];
 
-        keyElement.className = keyCode;
-        keyElement.addEventListener("mousedown", (e) => this.handleKbdMouseDown(e, key, keyCode));
+        keyElement.className = code;
+        if (width !== undefined) {
+            // Width in key-units; the CSS turns it into px via --key-unit.
+            keyElement.style.setProperty("--key-span", String(width));
+        }
 
-        this.renderNormalKeyLabels(keyElement, key);
-        this.renderJamoKeyLabels(keyElement, key);
-        this.renderSpecialKeyLabels(keyElement, key, keyCode);
+        if (inert) {
+            // Shown for keyboard fidelity but de-emphasised and non-interactive.
+            keyElement.classList.add("inert");
+        } else {
+            keyElement.addEventListener("mousedown", (e) => this.handleKbdMouseDown(e, key, code));
+        }
 
-        if (key.tooltipResourceKey) {
-            keyElement.title = api.i18n.getMessage(key.tooltipResourceKey);
+        if (label !== undefined) {
+            // The layout overrides the label (e.g. the Korean layout's plain
+            // right Alt/Ctrl), so skip this keycode's default/special labels.
+            keyElement.appendChild(this.createLabelElement("full", label));
+        } else {
+            this.renderNormalKeyLabels(keyElement, key);
+            this.renderJamoKeyLabels(keyElement, key);
+            this.renderSpecialKeyLabels(keyElement, key, code);
+
+            if (key.tooltipResourceKey) {
+                keyElement.title = api.i18n.getMessage(key.tooltipResourceKey);
+            }
         }
 
         rowElement.appendChild(keyElement);
@@ -794,23 +808,42 @@ export class OnScreenKeyboardController {
         return keyElement;
     }
 
+    /** Swap the rendered layout (e.g. when the layout setting changes). */
+    public setLayout(layoutId: LayoutId) {
+        // Tolerate a stale/corrupt stored id: only known layouts are applied.
+        const layout = (layouts as Record<string, KeyboardLayout | undefined>)[layoutId];
+        if (!layout || layoutId === this._layoutId || !this._keyboardBody) {
+            return;
+        }
+        this._layoutId = layoutId;
+        this.renderKeyboard(this._keyboardBody, layout);
+        // Re-apply state that the freshly rendered keys need to reflect.
+        this.updateKeyVisibility();
+        // The keyboard's size changed, so re-clamp it (only while shown — hidden,
+        // offsetWidth is 0 and showKeyboard re-places it on show).
+        if (this._keyboardElement.style.display !== "none") {
+            this.placeKeyboard();
+        }
+    }
+
     /**
-     * Creates keys and handlers then adds them to the keyboard
-     * @param keyboard the keyboard element to be rendered
+     * Renders the layout's keys into the keyboard body, replacing any existing
+     * ones (so it can be called again to switch layouts).
      */
-    private renderKeyboard(keyboardELement: HTMLDivElement, layout: KeyboardLayout): void {
+    private renderKeyboard(keyboardElement: HTMLDivElement, layout: KeyboardLayout): void {
         this._keyElements.clear();
+        keyboardElement.replaceChildren();
 
         layout.forEach((row) => {
             const rowElement = document.createElement("div");
             rowElement.className = "row";
 
-            for (const keyCode of row) {
-                const keyElement = this.renderKey(rowElement, keyCode);
-                this._keyElements.set(keyCode, keyElement);
+            for (const layoutKey of row) {
+                const keyElement = this.renderKey(rowElement, layoutKey);
+                this._keyElements.set(layoutKey.code, keyElement);
             }
 
-            keyboardELement.appendChild(rowElement);
+            keyboardElement.appendChild(rowElement);
         });
     }
 }

@@ -95,6 +95,18 @@
     "options_onScreenKeyboard_restore": {
         "message": "Restaurar el último estado"
     },
+    "options_onScreenKeyboard_layout_label": {
+        "message": "Distribución del teclado"
+    },
+    "options_onScreenKeyboard_layout_minimal": {
+        "message": "Mínima (referencia de jamo)"
+    },
+    "options_onScreenKeyboard_layout_fullUs": {
+        "message": "Completa - EE. UU."
+    },
+    "options_onScreenKeyboard_layout_fullKorean": {
+        "message": "Completa - Dubeolsik coreano (두벌식)"
+    },
     "options_hanYong_startOff": {
         "message": "Iniciar en inglés"
     },

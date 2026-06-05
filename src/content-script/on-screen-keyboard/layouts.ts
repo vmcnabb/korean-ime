@@ -1,24 +1,38 @@
 import { KeyCode } from "../../keyboard/korean-keyboard-map";
+import { LayoutId } from "../../extension-state/osk-layout";
 
-export type KeyboardLayout = KeyCode[][];
+// Re-exported so layout consumers can import the id alongside the layout data.
+export { LayoutId, defaultLayoutId } from "../../extension-state/osk-layout";
 
-export const defaultLayout: KeyboardLayout = [
-    [
-        KeyCode.Backquote,
-        KeyCode.Digit1,
-        KeyCode.Digit2,
-        KeyCode.Digit3,
-        KeyCode.Digit4,
-        KeyCode.Digit5,
-        KeyCode.Digit6,
-        KeyCode.Digit7,
-        KeyCode.Digit8,
-        KeyCode.Digit9,
-        KeyCode.Digit0,
-        KeyCode.Minus,
-        KeyCode.Equals,
-        KeyCode.Backspace,
-    ],
+/**
+ * One key in a layout: its code, how many key-units wide it is (1 = a standard
+ * square key), and whether it's inert — shown for keyboard fidelity but
+ * de-emphasised and non-interactive (e.g. CapsLock, Ctrl, the not-yet-supported
+ * 한자 key).
+ */
+export type LayoutKey = {
+    code: KeyCode;
+    width?: number;
+    inert?: boolean;
+    /**
+     * Overrides the key's rendered label. Used where a keycode's default labels
+     * are for another layout's duty — e.g. the Korean layout's plain right
+     * Alt/Ctrl reuse AltRight/ControlRight, which otherwise render as 한/영 and
+     * Ctrl·한자 for the US layout.
+     */
+    label?: string;
+};
+
+export type KeyboardRow = LayoutKey[];
+export type KeyboardLayout = KeyboardRow[];
+
+// Concise key builders: `key` is interactive, `dead` is inert (de-emphasised).
+const key = (code: KeyCode, width?: number): LayoutKey => (width === undefined ? { code } : { code, width });
+const dead = (code: KeyCode, width?: number): LayoutKey =>
+    width === undefined ? { code, inert: true } : { code, width, inert: true };
+
+// --- The minimal layout: just the jamo keys, plus the essentials to actually type.
+const minimal: KeyboardLayout = [
     [
         KeyCode.KeyQ,
         KeyCode.KeyW,
@@ -30,10 +44,7 @@ export const defaultLayout: KeyboardLayout = [
         KeyCode.KeyI,
         KeyCode.KeyO,
         KeyCode.KeyP,
-        KeyCode.BracketLeft,
-        KeyCode.BracketRight,
-        KeyCode.Backslash,
-    ],
+    ].map((c) => key(c)),
     [
         KeyCode.KeyA,
         KeyCode.KeyS,
@@ -44,21 +55,120 @@ export const defaultLayout: KeyboardLayout = [
         KeyCode.KeyJ,
         KeyCode.KeyK,
         KeyCode.KeyL,
-        KeyCode.Semicolon,
-        KeyCode.Quote,
+    ].map((c) => key(c)),
+    [
+        key(KeyCode.ShiftLeft, 1.2),
+        ...[KeyCode.KeyZ, KeyCode.KeyX, KeyCode.KeyC, KeyCode.KeyV, KeyCode.KeyB, KeyCode.KeyN, KeyCode.KeyM].map((c) =>
+            key(c)
+        ),
+        key(KeyCode.AltRight, 1.2),
+    ],
+];
+
+// --- Shared rows 1–4 of the full PC keyboard (the two full variants only differ
+//     in the bottom row).
+const fullUpperRows: KeyboardLayout = [
+    [
+        key(KeyCode.Backquote),
+        key(KeyCode.Digit1),
+        key(KeyCode.Digit2),
+        key(KeyCode.Digit3),
+        key(KeyCode.Digit4),
+        key(KeyCode.Digit5),
+        key(KeyCode.Digit6),
+        key(KeyCode.Digit7),
+        key(KeyCode.Digit8),
+        key(KeyCode.Digit9),
+        key(KeyCode.Digit0),
+        key(KeyCode.Minus),
+        key(KeyCode.Equals),
+        key(KeyCode.Backspace, 2),
     ],
     [
-        KeyCode.ShiftLeft,
-        KeyCode.KeyZ,
-        KeyCode.KeyX,
-        KeyCode.KeyC,
-        KeyCode.KeyV,
-        KeyCode.KeyB,
-        KeyCode.KeyN,
-        KeyCode.KeyM,
-        KeyCode.Comma,
-        KeyCode.Period,
-        KeyCode.Slash,
+        // Tab/Enter are inert for now; real newline/indent behaviour across the
+        // editor adapters is a follow-up (they'd otherwise look clickable but do
+        // nothing).
+        dead(KeyCode.Tab, 1.5),
+        key(KeyCode.KeyQ),
+        key(KeyCode.KeyW),
+        key(KeyCode.KeyE),
+        key(KeyCode.KeyR),
+        key(KeyCode.KeyT),
+        key(KeyCode.KeyY),
+        key(KeyCode.KeyU),
+        key(KeyCode.KeyI),
+        key(KeyCode.KeyO),
+        key(KeyCode.KeyP),
+        key(KeyCode.BracketLeft),
+        key(KeyCode.BracketRight),
+        key(KeyCode.Backslash, 1.5),
     ],
-    [KeyCode.Space, KeyCode.AltRight, KeyCode.ControlRight],
+    [
+        dead(KeyCode.CapsLock, 1.75),
+        key(KeyCode.KeyA),
+        key(KeyCode.KeyS),
+        key(KeyCode.KeyD),
+        key(KeyCode.KeyF),
+        key(KeyCode.KeyG),
+        key(KeyCode.KeyH),
+        key(KeyCode.KeyJ),
+        key(KeyCode.KeyK),
+        key(KeyCode.KeyL),
+        key(KeyCode.Semicolon),
+        key(KeyCode.Quote),
+        dead(KeyCode.Enter, 2.25),
+    ],
+    [
+        key(KeyCode.ShiftLeft, 2.25),
+        key(KeyCode.KeyZ),
+        key(KeyCode.KeyX),
+        key(KeyCode.KeyC),
+        key(KeyCode.KeyV),
+        key(KeyCode.KeyB),
+        key(KeyCode.KeyN),
+        key(KeyCode.KeyM),
+        key(KeyCode.Comma),
+        key(KeyCode.Period),
+        key(KeyCode.Slash),
+        key(KeyCode.ShiftRight, 2.75),
+    ],
 ];
+
+const fullUs: KeyboardLayout = [
+    ...fullUpperRows,
+    [
+        dead(KeyCode.ControlLeft, 1.5),
+        dead(KeyCode.MetaLeft, 1.25),
+        dead(KeyCode.AltLeft, 1.25),
+        key(KeyCode.Space, 5.75),
+        key(KeyCode.AltRight, 1.25), // 한/영
+        dead(KeyCode.MetaRight, 1.25),
+        dead(KeyCode.ContextMenu, 1.25),
+        dead(KeyCode.ControlRight, 1.5), // Ctrl · 한자 (Hanja not yet supported)
+    ],
+];
+
+const fullKorean: KeyboardLayout = [
+    ...fullUpperRows,
+    [
+        dead(KeyCode.ControlLeft, 1.5),
+        dead(KeyCode.MetaLeft, 1.25),
+        dead(KeyCode.AltLeft, 1.25),
+        dead(KeyCode.Lang2, 1.25), // 한자 (Hanja not yet supported)
+        key(KeyCode.Space, 3.5),
+        key(KeyCode.Lang1, 1.25), // 한/영
+        // Plain right Alt/Ctrl sit alongside the dedicated 한영/한자 keys, as on a
+        // real Korean board. They reuse AltRight/ControlRight, so override the
+        // labels these keycodes carry for the US layout (한/영, Ctrl·한자).
+        { code: KeyCode.AltRight, width: 1.25, inert: true, label: "Alt" },
+        dead(KeyCode.MetaRight, 1.25),
+        dead(KeyCode.ContextMenu, 1.25),
+        { code: KeyCode.ControlRight, width: 1.25, inert: true, label: "Ctrl" },
+    ],
+];
+
+export const layouts: Record<LayoutId, KeyboardLayout> = {
+    [LayoutId.Minimal]: minimal,
+    [LayoutId.FullUs]: fullUs,
+    [LayoutId.FullKorean]: fullKorean,
+};

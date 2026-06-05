@@ -2,6 +2,7 @@ import { OnScreenKeyboardController } from "./on-screen-keyboard-controller";
 import { KeyCode } from "../../keyboard/korean-keyboard-map";
 import { KoreanKeyboardMode } from "../../extension-state/korean-keyboard-mode";
 import { ContentScriptRequestAction } from "../../messaging/content-to-service-messages";
+import { LayoutId } from "./layouts";
 import { modeIconHangul, modeIconEnglish } from "./mode-icons";
 
 // The controller side-effect-imports its stylesheet and imports the build-time
@@ -480,6 +481,59 @@ describe("OnScreenKeyboardController anchor guides", () => {
         } finally {
             jest.useRealTimers();
         }
+    });
+});
+
+describe("OnScreenKeyboardController layout switching", () => {
+    beforeEach(() => {
+        document.body.innerHTML = "";
+        Object.assign(globalThis, {
+            chrome: { runtime: { sendMessage: jest.fn() }, i18n: { getMessage: () => "" } },
+        });
+    });
+
+    const host = () => document.querySelector("[id^='kb-']") as HTMLElement;
+
+    it("defaults to the full US layout and switches to minimal", () => {
+        const controller = new OnScreenKeyboardController(() => {});
+        const el = host();
+
+        // Full US has a number row; the minimal layout drops it but keeps letters.
+        expect(el.querySelector("kbd.Digit1")).not.toBeNull();
+
+        controller.setLayout(LayoutId.Minimal);
+
+        expect(el.querySelector("kbd.Digit1")).toBeNull();
+        expect(el.querySelector("kbd.KeyQ")).not.toBeNull();
+    });
+
+    it("ignores an unknown layout id", () => {
+        const controller = new OnScreenKeyboardController(() => {});
+        const el = host();
+
+        expect(() => controller.setLayout("bogus" as LayoutId)).not.toThrow();
+        expect(el.querySelector("kbd.Digit1")).not.toBeNull(); // unchanged (still full US)
+    });
+
+    it("gives the Korean layout dedicated 한영/한자 keys plus plain right Alt/Ctrl", () => {
+        const controller = new OnScreenKeyboardController(() => {});
+        const el = host();
+
+        controller.setLayout(LayoutId.FullKorean);
+
+        // Dedicated han/yong + hanja keys.
+        expect(el.querySelector("kbd.Lang1")).not.toBeNull();
+        expect(el.querySelector("kbd.Lang2")).not.toBeNull();
+
+        // Right Alt/Ctrl are present and inert, with their labels overridden to
+        // plain modifiers — not the 한/영 / Ctrl·한자 rendering of the US layout
+        // (jsdom doesn't populate innerText, so assert structurally).
+        const altRight = el.querySelector("kbd.AltRight") as HTMLElement;
+        const controlRight = el.querySelector("kbd.ControlRight") as HTMLElement;
+        expect(altRight.classList.contains("inert")).toBe(true);
+        expect(altRight.querySelector(".hanMode, .yongMode")).toBeNull(); // not the 한/영 key
+        expect(controlRight.classList.contains("inert")).toBe(true);
+        expect(controlRight.querySelector(".jamo")).toBeNull(); // not the Ctrl·한자 key
     });
 });
 

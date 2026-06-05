@@ -17,6 +17,7 @@ import {
 import { api } from "../platform/browser-api";
 import { routeByAction } from "../messaging/route-message";
 import { currentOskSite } from "./osk-site";
+import { loadSettings } from "../settings/settings-store";
 
 export class ContentScriptController {
     private isHanYongEnabled = false;
@@ -48,9 +49,12 @@ export class ContentScriptController {
         this.requestState();
 
         // Only the top window hosts the keyboard, so only it needs the saved
-        // layout. The reply gates the first show (see updateOskVisibility).
+        // position layout (the reply gates the first show — see
+        // updateOskVisibility) and the layout-arrangement setting.
         if (isTopWindow) {
             this.requestOnScreenKeyboardLayout();
+            void this.applyLayoutSetting();
+            this.watchLayoutSetting();
         }
     }
 
@@ -58,6 +62,21 @@ export class ContentScriptController {
         api.runtime.sendMessage<ContentScriptRequestMessage>({
             type: "contentScriptRequest",
             action: ContentScriptRequestAction.RefreshState,
+        });
+    }
+
+    /** Apply the chosen key arrangement (a synced setting) to the keyboard. */
+    private async applyLayoutSetting() {
+        const settings = await loadSettings();
+        this.keyboardController?.setLayout(settings.onScreenKeyboard.layout);
+    }
+
+    /** Re-apply the layout when the setting changes (the options page writes it). */
+    private watchLayoutSetting() {
+        api.storage.onChanged.addListener((changes, area) => {
+            if (area === "sync" && "onScreenKeyboard" in changes) {
+                this.applyLayoutSetting().catch((error) => debugLog("applyLayoutSetting failed:", error));
+            }
         });
     }
 

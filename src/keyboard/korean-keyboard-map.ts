@@ -60,6 +60,11 @@ export enum KeyCode {
     MetaRight = "MetaRight",
     ContextMenu = "ContextMenu",
     ControlRight = "ControlRight",
+    // Dedicated Korean-keyboard keys (real DOM `code` values): Lang1 = 한/영,
+    // Lang2 = 한자. Used by the Korean full layout, where they're distinct keys
+    // rather than the US layout's secondary labels on Right Alt / Right Ctrl.
+    Lang1 = "Lang1",
+    Lang2 = "Lang2",
 }
 
 export type KeyRecord = {
@@ -389,7 +394,7 @@ export const keyMap: Record<KeyCode, KeyRecord> = {
         label: "Ctrl",
     },
     [KeyCode.MetaLeft]: {
-        label: "",
+        label: "⊞ Win",
     },
     [KeyCode.AltLeft]: {
         label: "Alt",
@@ -402,14 +407,22 @@ export const keyMap: Record<KeyCode, KeyRecord> = {
         tooltipResourceKey: "keyboard_key_altRight_tooltip",
     },
     [KeyCode.MetaRight]: {
-        label: "",
+        label: "⊞ Win",
     },
     [KeyCode.ContextMenu]: {
-        label: "",
+        label: "≣ Menu",
     },
     [KeyCode.ControlRight]: {
         label: "Ctrl",
         koreanLabel: "한자",
+        tooltipResourceKey: "keyboard_key_controlRight_tooltip",
+    },
+    [KeyCode.Lang1]: {
+        label: "한/영",
+        tooltipResourceKey: "keyboard_key_altRight_tooltip",
+    },
+    [KeyCode.Lang2]: {
+        label: "한자",
         tooltipResourceKey: "keyboard_key_controlRight_tooltip",
     },
 };

@@ -1,8 +1,11 @@
 #kb-73ce1520-9c19-48ad-bf12-f7ec206ab11f {
     --key-margin: 5px;
     --text-distance: 3px;
-    --keys-per-row: 10;
-    --key-length: calc((100% - var(--key-margin) * 11) / 10);
+    // The size of one standard (1-unit) square key. Everything scales from this,
+    // so resizing the keyboard is just changing this one value. A key spanning N
+    // units is N*--key-unit wide plus the --key-gap gaps it bridges.
+    --key-unit: 32px;
+    --key-gap: 4px;
 
     --background-color: #444;
     --border-color: #000;
@@ -30,7 +33,9 @@
         margin-right: auto;
         display: block;
         background-color: var(--background-color);
-        width: 100%;
+        // Sized by its keys (which scale from --key-unit), not stretched to a
+        // fixed width — so each layout is as wide as it needs to be.
+        width: fit-content;
         position: relative;
         box-sizing: border-box;
     }
@@ -80,7 +85,7 @@
     }
 
     .kb-body {
-        padding-top: var(--key-margin);
+        padding: var(--key-gap) 0;
     }
 
     &.collapsed .kb-body {
@@ -96,26 +101,30 @@
     div.row {
         display: flex;
         justify-content: center;
+        gap: var(--key-gap);
+        padding: 0 var(--key-gap);
+    }
+
+    div.row + div.row {
+        margin-top: var(--key-gap);
     }
 
     kbd {
         font-family: Arial, Helvetica, sans-serif;
         border: 1px solid var(--border-color);
-        margin: var(--key-margin);
-        margin-top: 0;
         display: inline-block;
         background-color: var(--key-background-color);
         color: var(--key-color);
+        // Labels scale with the key so resizing keeps them proportional.
+        font-size: calc(var(--key-unit) * 0.38);
 
-        /* Set the desired width of the key. The key will be squashed if there are too many keys to fit as it is
-           contained in a flexbox (the row) */
-        width: var(--key-length);
-
-        /* Set the height equal to the width of the element. This is possible because --key-length is calculated
-           based on the width of the container. This value will be the same for all keys as it is calculated on
-           desired standard width, not the actual width of a key. */
-        height: 0;
-        padding-bottom: var(--key-length);
+        /* Width is the key's unit span turned into px: N unit cells plus the
+           --key-gap gaps they bridge. Height is one unit, so 1-unit keys are
+           square. Spans wider than 1 are set per-key via --key-span. */
+        --key-span: 1;
+        width: calc(var(--key-unit) * var(--key-span) + var(--key-gap) * (var(--key-span) - 1));
+        height: var(--key-unit);
+        flex: 0 0 auto;
 
         position: relative;
         box-sizing: border-box;
@@ -131,8 +140,16 @@
             background-color: var(--key-active-background-color);
         }
 
-        & + kbd {
-            margin-left: 0;
+        // Inert keys (CapsLock, Ctrl, the not-yet-supported 한자, …) are shown for
+        // keyboard fidelity but greyed out and do nothing.
+        &.inert {
+            cursor: default;
+            color: var(--key-mode-inactive-color);
+            opacity: 0.55;
+
+            &:hover {
+                background-color: var(--key-background-color);
+            }
         }
 
         div {
@@ -163,10 +180,6 @@
             left: 0;
             width: 100%;
             text-align: center;
-        }
-
-        &.AltRight {
-            width: calc(var(--key-length) * 1.3);
         }
 
         &.disabled {
@@ -204,12 +217,9 @@
         }
     }
 
-    kbd.Space {
-        width: calc(var(--key-length) * 5 + var(--key-margin) * 4);
-    }
-
-    /* line dividing 한 and 영 on han/yong key (AltRight). */
-    kbd.AltRight::before {
+    /* line dividing 한 and 영 on the han/yong key (the interactive AltRight in the
+       US layout). Not the Korean layout's inert plain Alt, which reuses AltRight. */
+    kbd.AltRight:not(.inert)::before {
         content: "";
         position: absolute;
         width: 1px;
