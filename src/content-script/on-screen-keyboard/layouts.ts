@@ -14,6 +14,13 @@ export type LayoutKey = {
     code: KeyCode;
     width?: number;
     inert?: boolean;
+    /**
+     * Overrides the key's rendered label. Used where a keycode's default labels
+     * are for another layout's duty — e.g. the Korean layout's plain right
+     * Alt/Ctrl reuse AltRight/ControlRight, which otherwise render as 한/영 and
+     * Ctrl·한자 for the US layout.
+     */
+    label?: string;
 };
 
 export type KeyboardRow = LayoutKey[];
@@ -149,10 +156,15 @@ const fullKorean: KeyboardLayout = [
         dead(KeyCode.MetaLeft, 1.25),
         dead(KeyCode.AltLeft, 1.25),
         dead(KeyCode.Lang2, 1.25), // 한자 (Hanja not yet supported)
-        key(KeyCode.Space, 5.75),
+        key(KeyCode.Space, 3.5),
         key(KeyCode.Lang1, 1.25), // 한/영
+        // Plain right Alt/Ctrl sit alongside the dedicated 한영/한자 keys, as on a
+        // real Korean board. They reuse AltRight/ControlRight, so override the
+        // labels these keycodes carry for the US layout (한/영, Ctrl·한자).
+        { code: KeyCode.AltRight, width: 1.25, inert: true, label: "Alt" },
         dead(KeyCode.MetaRight, 1.25),
-        dead(KeyCode.ContextMenu, 1.5),
+        dead(KeyCode.ContextMenu, 1.25),
+        { code: KeyCode.ControlRight, width: 1.25, inert: true, label: "Ctrl" },
     ],
 ];
 

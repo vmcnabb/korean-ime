@@ -217,8 +217,9 @@
         }
     }
 
-    /* line dividing 한 and 영 on han/yong key (AltRight). */
-    kbd.AltRight::before {
+    /* line dividing 한 and 영 on the han/yong key (the interactive AltRight in the
+       US layout). Not the Korean layout's inert plain Alt, which reuses AltRight. */
+    kbd.AltRight:not(.inert)::before {
         content: "";
         position: absolute;
         width: 1px;

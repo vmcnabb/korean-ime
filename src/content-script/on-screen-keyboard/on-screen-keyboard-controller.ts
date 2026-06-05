@@ -772,7 +772,7 @@ export class OnScreenKeyboardController {
     }
 
     private renderKey(rowElement: HTMLDivElement, layoutKey: LayoutKey) {
-        const { code, width, inert } = layoutKey;
+        const { code, width, inert, label } = layoutKey;
         const keyElement = document.createElement("kbd");
         const key = keyMap[code];
 
@@ -789,12 +789,18 @@ export class OnScreenKeyboardController {
             keyElement.addEventListener("mousedown", (e) => this.handleKbdMouseDown(e, key, code));
         }
 
-        this.renderNormalKeyLabels(keyElement, key);
-        this.renderJamoKeyLabels(keyElement, key);
-        this.renderSpecialKeyLabels(keyElement, key, code);
+        if (label !== undefined) {
+            // The layout overrides the label (e.g. the Korean layout's plain
+            // right Alt/Ctrl), so skip this keycode's default/special labels.
+            keyElement.appendChild(this.createLabelElement("full", label));
+        } else {
+            this.renderNormalKeyLabels(keyElement, key);
+            this.renderJamoKeyLabels(keyElement, key);
+            this.renderSpecialKeyLabels(keyElement, key, code);
 
-        if (key.tooltipResourceKey) {
-            keyElement.title = api.i18n.getMessage(key.tooltipResourceKey);
+            if (key.tooltipResourceKey) {
+                keyElement.title = api.i18n.getMessage(key.tooltipResourceKey);
+            }
         }
 
         rowElement.appendChild(keyElement);
