@@ -20,6 +20,20 @@ jest.mock(
     { virtual: true }
 );
 
+// The controller reads its viewport from the OSK container's clientWidth/clientHeight
+// (deliberately, so the scrollbar is excluded). jsdom performs no layout, so those are
+// 0 — point them at window.inner*, which the tests stub, so placement and clamping math
+// runs as it would in a real browser. Call after the controller (and so the container)
+// exists; the getters track later window.inner* changes (e.g. resize tests).
+function mirrorViewportToContainer() {
+    const container = document.querySelector("[id^='osk-container-']");
+    if (!container) {
+        throw new Error("OSK container not found; create the controller first");
+    }
+    Object.defineProperty(container, "clientWidth", { configurable: true, get: () => window.innerWidth });
+    Object.defineProperty(container, "clientHeight", { configurable: true, get: () => window.innerHeight });
+}
+
 describe("OnScreenKeyboardController han/yong key", () => {
     let sendMessage: jest.Mock;
     let onSendKey: jest.Mock;
@@ -168,6 +182,7 @@ describe("OnScreenKeyboardController resize handling", () => {
         };
 
         const controller = new OnScreenKeyboardController(() => {});
+        mirrorViewportToContainer();
         const el = document.querySelector("[id^='kb-']") as HTMLElement;
         Object.defineProperty(el, "offsetWidth", { configurable: true, value: 480 });
         Object.defineProperty(el, "offsetHeight", { configurable: true, value: 250 });
@@ -223,6 +238,7 @@ describe("OnScreenKeyboardController resize handling", () => {
         Object.defineProperty(window, "innerHeight", { configurable: true, value: 800 });
 
         const controller = new OnScreenKeyboardController(() => {});
+        mirrorViewportToContainer();
         const el = document.querySelector("[id^='kb-']") as HTMLElement;
         Object.defineProperty(el, "offsetWidth", { configurable: true, value: 480 });
         Object.defineProperty(el, "offsetHeight", { configurable: true, value: 250 });
@@ -343,6 +359,7 @@ describe("OnScreenKeyboardController header controls", () => {
 
     it("drags only from the header, not from the keys", () => {
         const controller = new OnScreenKeyboardController(() => {});
+        mirrorViewportToContainer();
         const el = host();
         controller.showKeyboard();
         const place = jest.spyOn(
@@ -419,6 +436,7 @@ describe("OnScreenKeyboardController anchor guides", () => {
         Object.defineProperty(window, "innerHeight", { configurable: true, value: 800 });
 
         const controller = new OnScreenKeyboardController(() => {});
+        mirrorViewportToContainer();
         const el = document.querySelector("[id^='kb-']") as HTMLElement;
         // A keyboard sitting in from the bottom-right corner, with a known rect.
         setPlacement(controller, "right", "bottom");
@@ -576,6 +594,7 @@ describe("OnScreenKeyboardController persisted layout", () => {
 
     it("applies a restored position and collapsed state, used on the next show", () => {
         const controller = new OnScreenKeyboardController(() => {});
+        mirrorViewportToContainer();
         const el = sizedKeyboard();
 
         controller.applyPersistedLayout({
@@ -682,6 +701,7 @@ describe("OnScreenKeyboardController resize", () => {
 
     it("restores a persisted key size, clamped to the allowed range", () => {
         const controller = new OnScreenKeyboardController(() => {});
+        mirrorViewportToContainer();
         const el = sized();
 
         controller.applyPersistedLayout({ collapsed: false, keyUnit: 999 });
@@ -753,6 +773,7 @@ describe("OnScreenKeyboardController resize", () => {
 
     it("resets to the default size on double-clicking the grip", () => {
         const controller = new OnScreenKeyboardController(() => {});
+        mirrorViewportToContainer();
         const el = sized();
         controller.applyPersistedLayout({ collapsed: false, keyUnit: 50 });
         controller.showKeyboard();

@@ -43,7 +43,7 @@ const GUIDE_EDGE_THICKNESS = `${GUIDE_EDGE_THICKNESS_MM}mm`;
 const GUIDE_EDGE_THICKNESS_PX = (GUIDE_EDGE_THICKNESS_MM * 96) / 25.4;
 
 /** Slack kept between the keyboard and the viewport edge when clamping its size. */
-const VIEWPORT_MARGIN_PX = 8;
+const VIEWPORT_MARGIN_PX = 0;
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
@@ -55,6 +55,7 @@ const LAYOUT_OPTIONS: { id: LayoutId; messageKey: string }[] = [
 ];
 
 export class OnScreenKeyboardController {
+    private _keyboardContainer: HTMLDivElement;
     private _keyboardElement: HTMLDivElement;
     private _keyboardPlacement: KeyboardPlacement = {
         originX: "right",
@@ -127,7 +128,17 @@ export class OnScreenKeyboardController {
     ) {
         this._onSendKey = onSendKey;
         this._onLayoutChange = onLayoutChange;
+        this._keyboardContainer = document.createElement("div");
+        this._keyboardContainer.id = "osk-container-67064f11-f376-47ac-abac-ce5e08ed5f45";
         this._keyboardElement = this.createKeyboard();
+
+        // insert the keyboard as the last child of the BODY tag
+        const body = document.getElementsByTagName("body")[0];
+        body.appendChild(this._keyboardContainer);
+        this._keyboardContainer.appendChild(this._keyboardElement);
+        const guides = this.createGuides();
+        this._keyboardContainer.appendChild(guides);
+
         this.setMode(this._mode);
     }
 
@@ -298,26 +309,27 @@ export class OnScreenKeyboardController {
         const width = this._keyboardElement.offsetWidth;
         const height = this._keyboardElement.offsetHeight;
 
-        let x = placement.originX === "right" ? window.innerWidth - width - placement.x : placement.x;
+        let x = placement.originX === "right" ? this._keyboardContainer.clientWidth - width - placement.x : placement.x;
 
-        let y = placement.originY === "bottom" ? window.innerHeight - height - placement.y : placement.y;
+        let y =
+            placement.originY === "bottom" ? this._keyboardContainer.clientHeight - height - placement.y : placement.y;
 
         // Keep the keyboard within the viewport. When it is larger than the
         // viewport it cannot fit either way, so keep the anchored edge on-screen
         // (overflowing off the opposite edge) rather than pinning the far edge and
         // pushing the anchored one off.
-        if (width > window.innerWidth) {
-            x = placement.originX === "right" ? window.innerWidth - width : 0;
+        if (width > this._keyboardContainer.clientWidth) {
+            x = placement.originX === "right" ? this._keyboardContainer.clientWidth - width : 0;
         } else {
             if (x < 0) x = 0;
-            if (x + width > window.innerWidth) x = window.innerWidth - width;
+            if (x + width > this._keyboardContainer.clientWidth) x = this._keyboardContainer.clientWidth - width;
         }
 
-        if (height > window.innerHeight) {
-            y = placement.originY === "bottom" ? window.innerHeight - height : 0;
+        if (height > this._keyboardContainer.clientHeight) {
+            y = placement.originY === "bottom" ? this._keyboardContainer.clientHeight - height : 0;
         } else {
             if (y < 0) y = 0;
-            if (y + height > window.innerHeight) y = window.innerHeight - height;
+            if (y + height > this._keyboardContainer.clientHeight) y = this._keyboardContainer.clientHeight - height;
         }
 
         // Re-derive the anchor corner from the keyboard's quadrant only when the
@@ -329,14 +341,14 @@ export class OnScreenKeyboardController {
         if (reanchor) {
             const cx = ~~(x + width / 2);
             const cy = ~~(y + height / 2);
-            originX = cx > window.innerWidth / 2 ? "right" : "left";
-            originY = cy > window.innerHeight / 2 ? "bottom" : "top";
+            originX = cx > this._keyboardContainer.clientWidth / 2 ? "right" : "left";
+            originY = cy > this._keyboardContainer.clientHeight / 2 ? "bottom" : "top";
         }
 
         // set x and y based on new origin
         const keyboardElement = this._keyboardElement;
         if (originX === "right") {
-            x = window.innerWidth - x - width;
+            x = this._keyboardContainer.clientWidth - x - width;
             keyboardElement.style.left = "";
             keyboardElement.style.right = `${x}px`;
         } else {
@@ -345,7 +357,7 @@ export class OnScreenKeyboardController {
         }
 
         if (originY === "bottom") {
-            y = window.innerHeight - y - height;
+            y = this._keyboardContainer.clientHeight - y - height;
             keyboardElement.style.top = "";
             keyboardElement.style.bottom = `${y}px`;
         } else {
@@ -374,8 +386,8 @@ export class OnScreenKeyboardController {
             return; // hidden: offsetWidth is 0, nothing meaningful to clamp
         }
 
-        const availWidth = window.innerWidth - VIEWPORT_MARGIN_PX;
-        const availHeight = window.innerHeight - VIEWPORT_MARGIN_PX;
+        const availWidth = this._keyboardContainer.clientWidth - VIEWPORT_MARGIN_PX;
+        const availHeight = this._keyboardContainer.clientHeight - VIEWPORT_MARGIN_PX;
 
         // offsetWidth includes fixed chrome (borders/padding/gaps), so the unit
         // isn't perfectly proportional to it; a couple of passes converge.
@@ -410,8 +422,8 @@ export class OnScreenKeyboardController {
         const top = resize.pivotIsTop ? resize.pivotY : resize.pivotY - height;
 
         const placement = this._keyboardPlacement;
-        placement.x = placement.originX === "left" ? left : window.innerWidth - (left + width);
-        placement.y = placement.originY === "bottom" ? window.innerHeight - (top + height) : top;
+        placement.x = placement.originX === "left" ? left : this._keyboardContainer.clientWidth - (left + width);
+        placement.y = placement.originY === "bottom" ? this._keyboardContainer.clientHeight - (top + height) : top;
 
         this.placeKeyboard();
     }
@@ -421,16 +433,11 @@ export class OnScreenKeyboardController {
 
         keyboardElement.id = "kb-73ce1520-9c19-48ad-bf12-f7ec206ab11f";
 
-        keyboardElement.style.position = "fixed";
+        keyboardElement.style.position = "absolute";
         keyboardElement.style.bottom = "0";
         keyboardElement.style.right = "0";
         keyboardElement.style.display = "none";
         keyboardElement.style.border = "none";
-        keyboardElement.style.zIndex = "2147483647"; // max int
-
-        // insert the keyboard as the last child of the BODY tag
-        const body = document.getElementsByTagName("body")[0];
-        body.appendChild(keyboardElement);
 
         // Header bar (drag handle + collapse/close controls); the keys live in a
         // body wrapper so the header can collapse them away.
@@ -552,7 +559,6 @@ export class OnScreenKeyboardController {
         for (const corner of ["tl", "tr", "bl", "br"] as const) {
             keyboardElement.appendChild(this.createResizeGrip(corner));
         }
-        this.createGuides();
 
         return keyboardElement;
     }
@@ -638,10 +644,8 @@ export class OnScreenKeyboardController {
     }
 
     // Builds the anchor-guide overlay: two dotted lines pinned to the viewport
-    // edges, hidden until a drag shows them (see showGuides). Appended after the
-    // keyboard so the keyboard stays the body's first child (tests and the
-    // initial insert rely on that ordering).
-    private createGuides() {
+    // edges, hidden until a drag shows them (see showGuides).
+    private createGuides(): HTMLDivElement {
         const guides = document.createElement("div");
         guides.id = "kb-guides-3f2a9c7e-7b1d-4e8a-9c2f-1a6b5d4e3c20";
 
@@ -668,13 +672,13 @@ export class OnScreenKeyboardController {
         connectorY.className = "kb-connector kb-connector-y";
 
         guides.append(horizontal, vertical, connectorX, connectorY);
-        document.getElementsByTagName("body")[0].appendChild(guides);
 
         this._guidesElement = guides;
         this._guideH = horizontal;
         this._guideV = vertical;
         this._connectorX = connectorX;
         this._connectorY = connectorY;
+        return guides;
     }
 
     // Points the guides at the keyboard's current anchor: the full-edge lines mark
@@ -720,7 +724,7 @@ export class OnScreenKeyboardController {
         connectorY.style.left = `${centerX}px`;
         if (originY === "bottom") {
             connectorY.style.top = `${rect.bottom}px`;
-            connectorY.style.height = `${Math.max(0, window.innerHeight - rect.bottom - GUIDE_EDGE_THICKNESS_PX)}px`;
+            connectorY.style.height = `${Math.max(0, this._keyboardContainer.clientHeight - rect.bottom - GUIDE_EDGE_THICKNESS_PX)}px`;
         } else {
             connectorY.style.top = `${GUIDE_EDGE_THICKNESS_PX}px`;
             connectorY.style.height = `${Math.max(0, rect.top - GUIDE_EDGE_THICKNESS_PX)}px`;
@@ -731,7 +735,7 @@ export class OnScreenKeyboardController {
         connectorX.style.top = `${centerY}px`;
         if (originX === "right") {
             connectorX.style.left = `${rect.right}px`;
-            connectorX.style.width = `${Math.max(0, window.innerWidth - rect.right - GUIDE_EDGE_THICKNESS_PX)}px`;
+            connectorX.style.width = `${Math.max(0, this._keyboardContainer.clientWidth - rect.right - GUIDE_EDGE_THICKNESS_PX)}px`;
         } else {
             connectorX.style.left = `${GUIDE_EDGE_THICKNESS_PX}px`;
             connectorX.style.width = `${Math.max(0, rect.left - GUIDE_EDGE_THICKNESS_PX)}px`;
