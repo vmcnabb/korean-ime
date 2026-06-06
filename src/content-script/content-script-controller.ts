@@ -48,6 +48,7 @@ export class ContentScriptController {
               )
             : undefined;
 
+        this.setActiveElement(document.activeElement as HTMLElement);
         this.setupMessageListener();
         this.setupDocumentListeners();
         this.requestState();
@@ -205,21 +206,25 @@ export class ContentScriptController {
             "focus",
             (e) => {
                 const element = e.target as HTMLElement;
-                const compositionFeatures = this.textInputManager.setActiveElement(element);
-
-                if (!compositionFeatures) {
-                    // todo: notify everyone that there is no active element
-                    return;
-                }
-
-                api.runtime.sendMessage<ContentScriptBroadcastMessage>({
-                    type: "broadcast",
-                    action: ContentScriptBroadcastAction.UpdateCompositionFeatures,
-                    data: compositionFeatures,
-                });
+                this.setActiveElement(element);
             },
             true
         );
+    }
+
+    private setActiveElement(element: HTMLElement) {
+        const compositionFeatures = this.textInputManager.setActiveElement(element);
+
+        if (!compositionFeatures) {
+            // todo: notify everyone that there is no active element
+            return;
+        }
+
+        api.runtime.sendMessage<ContentScriptBroadcastMessage>({
+            type: "broadcast",
+            action: ContentScriptBroadcastAction.UpdateCompositionFeatures,
+            data: compositionFeatures,
+        });
     }
 
     // Drives only the physical keyboard's composition mode. The on-screen
