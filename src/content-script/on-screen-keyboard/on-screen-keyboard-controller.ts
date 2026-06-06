@@ -217,14 +217,14 @@ export class OnScreenKeyboardController {
         // frame. clientX/Y (CSS px, viewport-relative), not screenX/Y (device px):
         // the math is in CSS px, so a device-px delta would move the keyboard at the
         // wrong rate under page zoom (e.g. 2x at 200%).
-        const { px, py } = this.currentTranslate();
+        const { x, y } = this.currentVisualPosition();
         this._drag = {
             pointerX: clientX,
             pointerY: clientY,
             latestX: clientX,
             latestY: clientY,
-            baseX: px,
-            baseY: py,
+            baseX: x,
+            baseY: y,
             width: this._keyboardElement.offsetWidth,
             height: this._keyboardElement.offsetHeight,
         };
@@ -254,7 +254,7 @@ export class OnScreenKeyboardController {
         // no layout and no left/top hand-off on drop. Clamp live, so it can't be
         // dragged off-screen (and so there's nothing to snap back on release).
         const { px, py } = this.clampDragPosition(drag);
-        this.applyTransform(px, py);
+        this.setPosition(px, py);
         this._movedDuringDrag = true;
         // Surface the corner it would snap to right now, without committing it.
         this.showGuides(this.anchorFor(px, py, drag.width, drag.height));
@@ -300,7 +300,7 @@ export class OnScreenKeyboardController {
             // flash, no jump. The transform we re-apply equals what's on screen.
             const { px, py } = this.clampDragPosition(drag);
             this.reanchorTo(px, py, drag.width, drag.height);
-            this.applyTransform(px, py);
+            this.setPosition(px, py);
             this._movedDuringDrag = false;
             this.persistLayout({ position: this._keyboardPlacement });
         }
@@ -381,7 +381,7 @@ export class OnScreenKeyboardController {
         // before resolvePosition reads offsetWidth/Height.
         this.applyKeyUnit();
         const { px, py } = this.resolvePosition(reanchor);
-        this.applyTransform(px, py);
+        this.setPosition(px, py);
     }
 
     // Resolve the keyboard's clamped top-left (container coords) from the stored
@@ -430,16 +430,30 @@ export class OnScreenKeyboardController {
         placement.y = originY === "bottom" ? containerH - py - height : py;
     }
 
-    private applyTransform(px: number, py: number) {
-        // The keyboard sits at left:0/top:0 (see createKeyboard); its on-screen
-        // position is entirely this transform, so moving it never touches layout.
-        this._keyboardElement.style.transform = `translate(${px}px, ${py}px)`;
+    // Move the keyboard to a viewport-space top-left, changing *only* the transform.
+    // The keyboard's position is (left/top base) + transform; the base is normally 0
+    // but a resize parks a non-zero base on it (see endResize). Writing through the
+    // transform alone keeps every move a pure compositor change — no layout touched,
+    // so nothing can desync or flash.
+    private setPosition(x: number, y: number) {
+        const style = this._keyboardElement.style;
+        const baseX = parseFloat(style.left) || 0;
+        const baseY = parseFloat(style.top) || 0;
+        style.transform = `translate(${x - baseX}px, ${y - baseY}px)`;
     }
 
-    // The keyboard's current rendered top-left, parsed back from its transform.
+    // The transform's translate, parsed back from the style.
     private currentTranslate(): { px: number; py: number } {
         const match = /translate\(\s*(-?[\d.]+)px\s*,\s*(-?[\d.]+)px\s*\)/.exec(this._keyboardElement.style.transform);
         return match ? { px: parseFloat(match[1]), py: parseFloat(match[2]) } : { px: 0, py: 0 };
+    }
+
+    // The keyboard's rendered top-left (viewport space): the left/top base plus the
+    // transform. Equals the transform when the base is 0 (the usual case).
+    private currentVisualPosition(): { x: number; y: number } {
+        const { px, py } = this.currentTranslate();
+        const style = this._keyboardElement.style;
+        return { x: (parseFloat(style.left) || 0) + px, y: (parseFloat(style.top) || 0) + py };
     }
 
     // Set --key-unit to the intended size, then shrink it just enough that the
@@ -479,10 +493,15 @@ export class OnScreenKeyboardController {
         });
     }
 
-    // Resize the keyboard for real (relayout to the new --key-unit) once per frame,
-    // keeping the pivot corner fixed. Crisp every frame — no scale, so nothing to
-    // snap on release. The page beneath still doesn't repaint: the keyboard is on
-    // its own compositor layer.
+    // Resize the keyboard for real (relayout to the new --key-unit) once per frame.
+    // *Only* the size changes here — the pivot corner is held fixed by a CSS layout
+    // anchor pinned on pointer-down (see anchorResizePivot), so there's no per-frame
+    // position update. That matters because the keyboard is on its own compositor
+    // layer: a size change re-rasters the layer (main thread) while any position
+    // change (transform *or* left/top) is a layer placement the compositor applies a
+    // frame later on heavy pages — so repositioning each frame makes the pivot drift.
+    // With the anchor doing the work, the layer just grows in place. Crisp every
+    // frame, and the page beneath still doesn't repaint.
     private renderResizeFrame() {
         const resize = this._resize;
         if (!resize) {
@@ -490,22 +509,38 @@ export class OnScreenKeyboardController {
         }
         const dist = Math.hypot(resize.latestX - resize.pivotX, resize.latestY - resize.pivotY);
         this._keyUnit = clamp((resize.startUnit * dist) / resize.startDist, MIN_KEY_UNIT_PX, MAX_KEY_UNIT_PX);
+        this._keyboardElement.style.setProperty("--key-unit", `${this._keyUnit}px`);
+    }
 
-        const el = this._keyboardElement;
-        el.style.setProperty("--key-unit", `${this._keyUnit}px`);
-        const width = el.offsetWidth;
-        const height = el.offsetHeight;
+    // Pin the pivot corner (the one opposite the dragged grip) with CSS layout edges,
+    // keeping the resting transform unchanged. While the keyboard then resizes, the
+    // anchored edges stay put, so the pivot is held without any per-frame
+    // repositioning. transformX/Y are the resting transform (currentTranslate); the
+    // anchor edge in layout space is the pivot minus that, so anchor + transform lands
+    // the pivot back on its captured viewport point.
+    private anchorResizePivot(transformX: number, transformY: number) {
+        const resize = this._resize;
+        if (!resize) {
+            return;
+        }
+        const style = this._keyboardElement.style;
+        const edgeX = resize.pivotX - transformX;
+        const edgeY = resize.pivotY - transformY;
 
-        // Keep the pivot corner at its captured viewport point, recording that as the
-        // placement offset (the anchor corner is unchanged by a resize). placeKeyboard
-        // re-applies the size (viewport-fit) and renders the new transform.
-        const left = resize.pivotIsLeft ? resize.pivotX : resize.pivotX - width;
-        const top = resize.pivotIsTop ? resize.pivotY : resize.pivotY - height;
-        const placement = this._keyboardPlacement;
-        placement.x = placement.originX === "left" ? left : this._keyboardContainer.clientWidth - (left + width);
-        placement.y = placement.originY === "bottom" ? this._keyboardContainer.clientHeight - (top + height) : top;
-
-        this.placeKeyboard();
+        if (resize.pivotIsLeft) {
+            style.left = `${edgeX}px`;
+            style.right = "auto";
+        } else {
+            style.left = "auto";
+            style.right = `${this._keyboardContainer.clientWidth - edgeX}px`;
+        }
+        if (resize.pivotIsTop) {
+            style.top = `${edgeY}px`;
+            style.bottom = "auto";
+        } else {
+            style.top = "auto";
+            style.bottom = `${this._keyboardContainer.clientHeight - edgeY}px`;
+        }
     }
 
     private createKeyboard() {
@@ -514,10 +549,11 @@ export class OnScreenKeyboardController {
         keyboardElement.id = "kb-73ce1520-9c19-48ad-bf12-f7ec206ab11f";
 
         keyboardElement.style.position = "absolute";
-        // Positioned entirely by a transform from this fixed top-left origin (see
-        // applyTransform). will-change keeps it on its own compositor layer for the
-        // whole session, so dragging is a GPU composite and there's never a
-        // layer promote/teardown — which is what caused the on-drop jump.
+        // Positioned by (left/top base) + transform (see setPosition); the base is 0
+        // here and stays 0 except for a resize's residual offset. will-change keeps it
+        // on its own compositor layer for the whole session, so moving it is a GPU
+        // composite and there's never a layer promote/teardown — which caused the
+        // on-drop jump.
         keyboardElement.style.left = "0";
         keyboardElement.style.top = "0";
         keyboardElement.style.willChange = "transform";
@@ -665,6 +701,7 @@ export class OnScreenKeyboardController {
             e.stopPropagation();
 
             const rect = this._keyboardElement.getBoundingClientRect();
+            const { px, py } = this.currentTranslate();
             // The pivot is the corner opposite the one being dragged; it stays put.
             this._resize = {
                 pivotX: cornerIsLeft ? rect.right : rect.left,
@@ -677,6 +714,8 @@ export class OnScreenKeyboardController {
                 latestX: e.clientX,
                 latestY: e.clientY,
             };
+            // Pin the pivot via layout edges, so resizing alone holds it fixed.
+            this.anchorResizePivot(px, py);
             // Capture so the drag keeps tracking even if the cursor leaves the
             // grip. Not critical (and absent in jsdom), so tolerate failure.
             try {
@@ -710,8 +749,26 @@ export class OnScreenKeyboardController {
                 /* pointer capture unavailable */
             }
 
-            // The last frame already applied the real --key-unit and position, so a
-            // drop just persists the size (a bare grip click is a harmless re-save).
+            // Convert the pivot anchor back to a plain left/top base, KEEPING the
+            // transform unchanged. A transform change here would flash on the
+            // compositor layer (the swap we avoid for drag); a pure left/top change at
+            // the same position does not. The base just becomes the resize's residual
+            // offset, which setPosition/currentVisualPosition account for thereafter.
+            const el = this._keyboardElement;
+            const width = el.offsetWidth;
+            const height = el.offsetHeight;
+            const finalX = resize.pivotIsLeft ? resize.pivotX : resize.pivotX - width;
+            const finalY = resize.pivotIsTop ? resize.pivotY : resize.pivotY - height;
+            const { px, py } = this.currentTranslate();
+            el.style.left = `${finalX - px}px`; // base + transform = finalX/Y (visual unchanged)
+            el.style.top = `${finalY - py}px`;
+            el.style.right = "auto";
+            el.style.bottom = "auto";
+
+            const placement = this._keyboardPlacement;
+            placement.x = placement.originX === "right" ? this._keyboardContainer.clientWidth - finalX - width : finalX;
+            placement.y =
+                placement.originY === "bottom" ? this._keyboardContainer.clientHeight - finalY - height : finalY;
             this.persistLayout({ keyUnit: this._keyUnit });
         };
         grip.addEventListener("pointerup", endResize);
