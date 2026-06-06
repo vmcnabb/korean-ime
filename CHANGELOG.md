@@ -1,6 +1,33 @@
 Install the latest release from the Chrome Web Store:
 [https://chrome.google.com/webstore/detail/korean-ime/cimmbifnciobjhchpimjekibbndgmkfk?hl=en-GB]
 
+# 2.5.0
+2026-06-06
+
+The previous release, 2.4.0, went out for Firefox only and was not released to
+Chrome. This release catches Chrome up and includes the changes below.
+
+### Features
+* Added Spanish localization
+* Added controls to enable Hangul typing and physical-key handling separately
+* Added an independent on-screen keyboard Han/Yong toggle while Hangul typing is off
+* Added selectable on-screen keyboard layouts
+* Added resizing, anchored positioning, and saved position/collapsed state for the on-screen keyboard
+* Added a clickable on-screen keyboard mode indicator
+
+### Fixes
+* The toolbar icon tooltip now reflects the current mode
+* The on-screen keyboard now stays clamped to the viewport more reliably
+* The on-screen keyboard follows the cursor correctly when dragging under browser zoom
+* The on-screen keyboard flushes unfinished composition when focus changes or physical typing resumes
+* Popup converter, contentEditable composition, and the development test page now respect dark mode
+
+### Internal
+* Improved Chrome and Firefox development launch workflows
+* Added Firefox CI/build quality-of-life updates
+* Refined on-screen keyboard styling and icon generation
+* Updated development dependencies
+
 # 2.4.0
 2026-06-03
 
