@@ -21,55 +21,37 @@
 // close Firefox or press Ctrl+C to stop everything.
 
 import { spawn, spawnSync } from "node:child_process";
-import { basename, resolve } from "node:path";
+import { resolve } from "node:path";
 import webExt from "web-ext";
-import { killTree, requestedLocale, startTestPageServer, watchRequested, wordAdapterRequested } from "./dev-shared.mjs";
+import {
+    killFirefoxByProfile,
+    killTree,
+    requestedLocale,
+    startTestPageServer,
+    watchRequested,
+    wordAdapterRequested,
+} from "./dev-shared.mjs";
 
 const root = process.cwd();
 // Dev builds go to dist-firefox-dev/ so they can never be mistaken for, or
 // clobber, the production dist-firefox/ that `npm run package:firefox` ships.
 const distDir = resolve(root, "dist-firefox-dev");
 const patchScript = resolve(root, "scripts/patch-firefox-manifest.mjs");
+const reaperScript = resolve(root, "scripts/firefox-reaper.mjs");
 
 let server;
 let watch; // the Parcel watch process, only in --watch mode
 let runner; // the web-ext extension runner
+let reaper; // detached watchdog that closes Firefox if we're killed before cleanup
 let firefoxProfileDirs = []; // throwaway profile dir(s) web-ext created, for teardown
 let shuttingDown = false;
-
-// Force-close the dev Firefox. web-ext's runner.exit() only kill()s the single
-// process it spawned — but on Windows the launcher process detaches the real
-// browser from that PID (and the launcher can't be disabled via a fresh-profile
-// pref), so that kill misses the window. Instead we match firefox processes by
-// our unique throwaway profile dir name and tree-kill them. Scoped to this dev
-// session's profile, so it never touches the user's own Firefox.
-function killDevFirefox() {
-    for (const dir of firefoxProfileDirs) {
-        const needle = basename(dir);
-        if (!needle) continue;
-        if (process.platform === "win32") {
-            const escaped = needle.replace(/'/g, "''");
-            spawnSync(
-                "powershell.exe",
-                [
-                    "-NoProfile",
-                    "-Command",
-                    `Get-CimInstance Win32_Process -Filter "Name='firefox.exe'" | Where-Object { $_.CommandLine -like '*${escaped}*' } | ForEach-Object { taskkill /PID $_.ProcessId /T /F }`,
-                ],
-                { stdio: "ignore" }
-            );
-        } else {
-            spawnSync("pkill", ["-f", needle], { stdio: "ignore" });
-        }
-    }
-}
 
 async function shutdown(code = 0) {
     if (shuttingDown) return;
     shuttingDown = true;
     killTree(watch);
     server?.close();
-    killDevFirefox();
+    killFirefoxByProfile(firefoxProfileDirs);
     // runner.exit() also removes the throwaway profile dir; cap the wait so a
     // hung teardown can't keep us alive.
     try {
@@ -183,8 +165,8 @@ try {
     console.error("[dev] Could not launch Firefox. Install Firefox or set FIREFOX_PATH to its executable.");
     shutdown(1);
 }
-// Capture the throwaway profile dir(s) web-ext created so shutdown can find and
-// kill the matching Firefox process tree (see killDevFirefox).
+// Capture the throwaway profile dir(s) web-ext created so shutdown and the reaper
+// can find and kill the matching Firefox process tree (see killFirefoxByProfile).
 firefoxProfileDirs = (runner.extensionRunners ?? [])
     .map((r) => {
         try {
@@ -194,6 +176,19 @@ firefoxProfileDirs = (runner.extensionRunners ?? [])
         }
     })
     .filter(Boolean);
+
+// Spawn the detached reaper: it closes Firefox if we're killed before our own
+// shutdown can run (Ctrl+C through npm/cmd on Windows can preempt us). Detached
+// + its own process group so the same Ctrl+C doesn't take it down too.
+if (firefoxProfileDirs.length > 0) {
+    reaper = spawn(process.execPath, [reaperScript, String(process.pid), ...firefoxProfileDirs], {
+        detached: true,
+        stdio: "ignore",
+        windowsHide: true,
+    });
+    reaper.unref();
+}
+
 // Stop the dev session when Firefox is closed.
 runner.registerCleanup(() => shutdown(0));
 

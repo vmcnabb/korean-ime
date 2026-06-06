@@ -3,6 +3,7 @@
 
 import { createServer } from "node:http";
 import { spawnSync } from "node:child_process";
+import { basename } from "node:path";
 
 // The Word for the Web adapter is disabled by default (see the factory). Turn it
 // on for a dev session with `npm run dev:<browser> -- --enable-word` (flag reaches
@@ -47,6 +48,33 @@ export function killTree(proc) {
             proc.kill("SIGTERM");
         } catch {
             /* already gone */
+        }
+    }
+}
+
+// Force-close the dev Firefox by matching processes whose command line contains
+// our unique throwaway profile dir name and tree-killing them. web-ext's own
+// teardown only kill()s the single PID it spawned, which on Windows is a launcher
+// process that detaches the real browser — so that kill misses the window.
+// Matching on the throwaway profile name is scoped to this dev session, so it
+// never touches the user's own Firefox.
+export function killFirefoxByProfile(profileDirs) {
+    for (const dir of profileDirs) {
+        const needle = basename(dir);
+        if (!needle) continue;
+        if (process.platform === "win32") {
+            const escaped = needle.replace(/'/g, "''");
+            spawnSync(
+                "powershell.exe",
+                [
+                    "-NoProfile",
+                    "-Command",
+                    `Get-CimInstance Win32_Process -Filter "Name='firefox.exe'" | Where-Object { $_.CommandLine -like '*${escaped}*' } | ForEach-Object { taskkill /PID $_.ProcessId /T /F }`,
+                ],
+                { stdio: "ignore" }
+            );
+        } else {
+            spawnSync("pkill", ["-f", needle], { stdio: "ignore" });
         }
     }
 }

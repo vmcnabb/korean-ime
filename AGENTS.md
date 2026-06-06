@@ -105,6 +105,14 @@ Core domain logic (mostly pure, well unit-tested):
   (Parcel re-emits the `service_worker`-only manifest each time), and the Firefox
   reload must fire only after the patch — `scripts/dev-firefox.mjs` drives that
   `rebuild → patch → reload` sequence (web-ext's own auto-reload is disabled).
+- **`dev:firefox` needs a detached reaper to close Firefox on Ctrl+C.** Firefox's
+  Windows launcher process detaches the real browser from the PID web-ext
+  spawned, so web-ext's `runner.exit()` can't kill it; worse, Ctrl+C through
+  npm/cmd can kill the launcher node before its SIGINT cleanup runs at all. So
+  `dev-firefox.mjs` spawns `scripts/firefox-reaper.mjs` *detached* (its own
+  process group, immune to the same Ctrl+C); it waits for the launcher PID to
+  die, then tree-kills the Firefox matching our throwaway profile dir name
+  (scoped so it never touches the user's own Firefox).
 - **Google Docs & Word for the Web use canvas + the EditContext API.** Docs
   ignores synthetic composition events entirely (input goes through an
   EditContext the page owns, not the DOM), so it's unsupported — the factory
