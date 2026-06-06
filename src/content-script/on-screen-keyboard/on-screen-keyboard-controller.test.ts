@@ -34,6 +34,28 @@ function mirrorViewportToContainer() {
     Object.defineProperty(container, "clientHeight", { configurable: true, get: () => window.innerHeight });
 }
 
+// The keyboard is positioned entirely by its transform now, with the logical
+// anchor/offset kept in the private _keyboardPlacement. Reach into it to assert the
+// committed anchor and offsets (the rendered position is asserted via style.transform).
+function placementOf(controller: OnScreenKeyboardController) {
+    return (
+        controller as unknown as {
+            _keyboardPlacement: { originX: string; originY: string; x: number; y: number };
+        }
+    )._keyboardPlacement;
+}
+
+// The drag path coalesces pointer moves into a requestAnimationFrame callback.
+// Run that callback synchronously so a simulated drag applies within the dispatched
+// event, keeping these tests free of async timing. (The one fake-timer test opts rAF
+// out of faking so this stays in effect — see "appear during a drag".)
+beforeEach(() => {
+    jest.spyOn(window, "requestAnimationFrame").mockImplementation((cb: FrameRequestCallback): number => {
+        cb(0);
+        return 0;
+    });
+});
+
 describe("OnScreenKeyboardController han/yong key", () => {
     let sendMessage: jest.Mock;
     let onSendKey: jest.Mock;
@@ -151,6 +173,7 @@ describe("OnScreenKeyboardController resize handling", () => {
         };
 
         const controller = new OnScreenKeyboardController(() => {});
+        mirrorViewportToContainer();
         const el = document.querySelector("[id^='kb-']") as HTMLElement;
         // jsdom has no layout, so give the keyboard a real size; otherwise it is a
         // zero-size point and clamping can never push it across a midline.
@@ -159,8 +182,9 @@ describe("OnScreenKeyboardController resize handling", () => {
 
         setViewport(1200, 800);
         controller.showKeyboard(); // default anchor: bottom-right
-        expect(el.style.right).not.toBe("");
-        expect(el.style.bottom).not.toBe("");
+        const placement = placementOf(controller);
+        expect(placement.originX).toBe("right");
+        expect(placement.originY).toBe("bottom");
 
         // Shrink the viewport below the keyboard's size, then restore it.
         setViewport(300, 200);
@@ -168,11 +192,10 @@ describe("OnScreenKeyboardController resize handling", () => {
         setViewport(1200, 800);
         window.dispatchEvent(new Event("resize"));
 
-        // Still anchored bottom-right, not flipped to top-left.
-        expect(el.style.right).not.toBe("");
-        expect(el.style.bottom).not.toBe("");
-        expect(el.style.left).toBe("");
-        expect(el.style.top).toBe("");
+        // Still anchored bottom-right, not flipped to top-left (a resize re-clamps
+        // but never re-anchors).
+        expect(placement.originX).toBe("right");
+        expect(placement.originY).toBe("bottom");
     });
 
     it("remembers the anchor distance across a resize (restores the offset, not flush to the corner)", () => {
@@ -195,8 +218,8 @@ describe("OnScreenKeyboardController resize handling", () => {
 
         setViewport(1200, 800);
         controller.showKeyboard();
-        expect(el.style.right).toBe("100px");
-        expect(el.style.bottom).toBe("60px");
+        // 100/60 in from the bottom-right corner: top-left = (1200-480-100, 800-250-60).
+        expect(el.style.transform).toBe("translate(620px, 490px)");
 
         // Shrink below the keyboard's size (clamps flush to the corner), then restore.
         setViewport(300, 200);
@@ -204,9 +227,8 @@ describe("OnScreenKeyboardController resize handling", () => {
         setViewport(1200, 800);
         window.dispatchEvent(new Event("resize"));
 
-        // The remembered distance is restored, not collapsed to 0.
-        expect(el.style.right).toBe("100px");
-        expect(el.style.bottom).toBe("60px");
+        // The remembered distance is restored, not collapsed flush to the corner.
+        expect(el.style.transform).toBe("translate(620px, 490px)");
     });
 
     it("begins a drag from the keyboard's rendered position, not a diverged remembered offset", () => {
@@ -214,23 +236,30 @@ describe("OnScreenKeyboardController resize handling", () => {
         Object.defineProperty(window, "innerHeight", { configurable: true, value: 800 });
 
         const controller = new OnScreenKeyboardController(() => {});
+        mirrorViewportToContainer();
         const el = document.querySelector("[id^='kb-']") as HTMLElement;
         Object.defineProperty(el, "offsetWidth", { configurable: true, value: 480 });
         Object.defineProperty(el, "offsetHeight", { configurable: true, value: 250 });
 
-        controller.showKeyboard(); // default bottom-right -> rendered flush (right: 0px)
-        expect(el.style.right).toBe("0px");
+        controller.showKeyboard(); // default bottom-right -> rendered flush at (520, 550)
+        expect(el.style.transform).toBe("translate(520px, 550px)");
 
         // Simulate the clamped state a resize leaves behind: the remembered offset
         // diverges from what is rendered.
-        (controller as unknown as { _keyboardPlacement: { x: number } })._keyboardPlacement.x = 200;
+        const placement = placementOf(controller);
+        placement.x = 200;
 
-        // Drag 10px left (anchored right, that increases the right offset).
-        el.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, button: 0, clientX: 100, clientY: 100 }));
+        // Drag 10px left from the header and drop (anchored right, so moving left
+        // increases the right offset).
+        (el.querySelector(".kb-handle") as HTMLElement).dispatchEvent(
+            new MouseEvent("mousedown", { bubbles: true, button: 0, clientX: 100, clientY: 100 })
+        );
         document.dispatchEvent(new MouseEvent("mousemove", { bubbles: true, buttons: 1, clientX: 90, clientY: 100 }));
+        document.dispatchEvent(new MouseEvent("mouseup", { bubbles: true, button: 0 }));
 
-        // It tracked from the rendered 0 (now ~10px), not the stale 200 (~210px).
-        expect(parseFloat(el.style.right)).toBeLessThan(50);
+        // It committed from the rendered position (~10px right offset), not the
+        // stale remembered 200.
+        expect(placement.x).toBeCloseTo(10, 0);
     });
 
     it("tracks the drag in CSS pixels (clientX/Y), not device pixels, so it follows the cursor under zoom", () => {
@@ -254,12 +283,15 @@ describe("OnScreenKeyboardController resize handling", () => {
             new MouseEvent("mousemove", { bubbles: true, buttons: 1, clientX: 470, clientY: 100, screenX: 940 })
         );
 
-        // 30 CSS px left, anchored right -> ~30px right offset (not ~60px).
-        expect(parseFloat(el.style.right)).toBeCloseTo(30, 0);
+        // The keyboard tracks clientX (30 CSS px left from the flush 520), not
+        // screenX (60): 520 - 30 = 490.
+        expect(el.style.transform).toBe("translate(490px, 550px)");
 
-        // Release the drag so this controller's persistent document listeners
-        // don't stay armed and move the keyboard during a later test.
+        // On release the transform stays exactly where the drag left it — no
+        // transform→left/top hand-off — and the committed right offset is 30.
         document.dispatchEvent(new MouseEvent("mouseup", { bubbles: true, button: 0 }));
+        expect(el.style.transform).toBe("translate(490px, 550px)");
+        expect(placementOf(controller).x).toBeCloseTo(30, 0);
     });
 
     it("keeps the anchored edge on-screen when the keyboard is wider than the viewport", () => {
@@ -267,6 +299,7 @@ describe("OnScreenKeyboardController resize handling", () => {
         Object.defineProperty(window, "innerHeight", { configurable: true, value: 800 });
 
         const controller = new OnScreenKeyboardController(() => {});
+        mirrorViewportToContainer();
         const el = document.querySelector("[id^='kb-']") as HTMLElement;
         Object.defineProperty(el, "offsetWidth", { configurable: true, value: 480 }); // wider than the viewport
         Object.defineProperty(el, "offsetHeight", { configurable: true, value: 250 });
@@ -277,8 +310,9 @@ describe("OnScreenKeyboardController resize handling", () => {
         controller.showKeyboard();
 
         // Left-anchored: keep the left edge on-screen (overflow off the right),
-        // not pinned to the right with the left edge pushed off-screen.
-        expect(el.style.left).toBe("0px");
+        // not pinned to the right with the left edge pushed off-screen. Bottom
+        // origin with height 250 in an 800-tall viewport -> top at 550.
+        expect(el.style.transform).toBe("translate(0px, 550px)");
     });
 });
 
@@ -362,23 +396,22 @@ describe("OnScreenKeyboardController header controls", () => {
         mirrorViewportToContainer();
         const el = host();
         controller.showKeyboard();
-        const place = jest.spyOn(
-            OnScreenKeyboardController.prototype as unknown as { placeKeyboard: () => void },
-            "placeKeyboard"
-        );
+        const resting = el.style.transform; // the keyboard is positioned by transform
 
-        // pressing a key must not move the keyboard
+        // pressing a key must not move the keyboard (transform unchanged)
         const key = document.querySelector("kbd.KeyS") as HTMLElement;
         key.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, button: 0, clientX: 100, clientY: 100 }));
         document.dispatchEvent(new MouseEvent("mousemove", { bubbles: true, buttons: 1, clientX: 80, clientY: 100 }));
-        expect(place).not.toHaveBeenCalled();
+        expect(el.style.transform).toBe(resting);
 
-        // dragging the header bar does
+        // dragging the header bar does (transform changes)
         (el.querySelector(".kb-handle") as HTMLElement).dispatchEvent(
             new MouseEvent("mousedown", { bubbles: true, button: 0, clientX: 100, clientY: 100 })
         );
         document.dispatchEvent(new MouseEvent("mousemove", { bubbles: true, buttons: 1, clientX: 80, clientY: 100 }));
-        expect(place).toHaveBeenCalled();
+        expect(el.style.transform).not.toBe(resting);
+
+        document.dispatchEvent(new MouseEvent("mouseup", { bubbles: true, button: 0 }));
     });
 });
 
@@ -477,7 +510,9 @@ describe("OnScreenKeyboardController anchor guides", () => {
     });
 
     it("appear during a drag and fade out a short time after the drop", () => {
-        jest.useFakeTimers();
+        // Fake setTimeout for the guide fade, but keep requestAnimationFrame real so
+        // the synchronous rAF stub (top-level beforeEach) still applies the drag frame.
+        jest.useFakeTimers({ doNotFake: ["requestAnimationFrame"] });
         try {
             Object.defineProperty(window, "innerWidth", { configurable: true, value: 1000 });
             Object.defineProperty(window, "innerHeight", { configurable: true, value: 800 });
@@ -605,11 +640,11 @@ describe("OnScreenKeyboardController persisted layout", () => {
 
         controller.showKeyboard();
 
-        // Restored to the saved top-left anchor, not the default bottom-right.
-        expect(el.style.left).toBe("30px");
-        expect(el.style.top).toBe("40px");
-        expect(el.style.right).toBe("");
-        expect(el.style.bottom).toBe("");
+        // Restored to the saved top-left anchor (30/40 in), not the default
+        // bottom-right.
+        expect(el.style.transform).toBe("translate(30px, 40px)");
+        expect(placementOf(controller).originX).toBe("left");
+        expect(placementOf(controller).originY).toBe("top");
     });
 
     it("persists the new position (with the site key) on drag-drop", () => {
@@ -745,11 +780,9 @@ describe("OnScreenKeyboardController resize", () => {
         br.dispatchEvent(new MouseEvent("pointermove", { bubbles: true, clientX: 700, clientY: 550 }));
         br.dispatchEvent(new MouseEvent("pointerup", { bubbles: true, button: 0 }));
 
-        // Origin unchanged (still anchored bottom-right), position updated.
-        expect(el.style.right).not.toBe("");
-        expect(el.style.bottom).not.toBe("");
-        expect(el.style.left).toBe("");
-        expect(el.style.top).toBe("");
+        // Origin unchanged (still anchored bottom-right), key size updated.
+        expect(placementOf(controller).originX).toBe("right");
+        expect(placementOf(controller).originY).toBe("bottom");
         expect(persistedKeyUnit()).toBeCloseTo((32 * Math.hypot(600, 450)) / 500, 0);
     });
 
