@@ -33,6 +33,7 @@ has the feature branch around, can look merged when it isn't (or vice versa).
 | `npm run lint:firefox` | `web-ext lint` the Firefox build in `dist-firefox/` |
 | `npm run build-dev:chrome` | Unoptimized dev Chrome build to `dist-chrome-dev/` |
 | `npm run dev:chrome` | One-off dev build + launch Chrome on a fresh throwaway profile, auto-load the extension over CDP, open a test page (no watcher; re-run to rebuild — see `scripts/dev.mjs`). Add `--watch` for a live-reloading Parcel watcher. |
+| `npm run dev:firefox` | One-off dev build (to `dist-firefox-dev/`, patched) + launch Firefox via `web-ext` with the extension as a temporary add-on on a throwaway profile, open a test page (see `scripts/dev-firefox.mjs`). Add `--watch` to rebuild → re-patch → reload on change. Set `FIREFOX_PATH` to override the binary. |
 | `npm run check` | Type-check only (`tsc --noEmit`) |
 | `npm run lint` / `lint:fix` | ESLint (flat config in `eslint.config.mjs`) |
 | `npm test` | Jest unit tests (ts-jest + jsdom) |
@@ -99,7 +100,19 @@ Core domain logic (mostly pure, well unit-tested):
   adds `background.scripts` to the *emitted* `dist-firefox/manifest.json` — the
   dual-key form Mozilla recommends, assembled after Parcel because it won't pass
   it through pre-build. `lint:firefox` (`web-ext lint`) validates the result;
-  `BACKGROUND_SERVICE_WORKER_IGNORED` is the expected, correct warning.
+  `BACKGROUND_SERVICE_WORKER_IGNORED` is the expected, correct warning. In
+  `dev:firefox --watch` this patch must re-run after *every* Parcel rebuild
+  (Parcel re-emits the `service_worker`-only manifest each time), and the Firefox
+  reload must fire only after the patch — `scripts/dev-firefox.mjs` drives that
+  `rebuild → patch → reload` sequence (web-ext's own auto-reload is disabled).
+- **`dev:firefox` needs a detached reaper to close Firefox on Ctrl+C.** Firefox's
+  Windows launcher process detaches the real browser from the PID web-ext
+  spawned, so web-ext's `runner.exit()` can't kill it; worse, Ctrl+C through
+  npm/cmd can kill the launcher node before its SIGINT cleanup runs at all. So
+  `dev-firefox.mjs` spawns `scripts/firefox-reaper.mjs` *detached* (its own
+  process group, immune to the same Ctrl+C); it waits for the launcher PID to
+  die, then tree-kills the Firefox matching our throwaway profile dir name
+  (scoped so it never touches the user's own Firefox).
 - **Google Docs & Word for the Web use canvas + the EditContext API.** Docs
   ignores synthetic composition events entirely (input goes through an
   EditContext the page owns, not the DOM), so it's unsupported — the factory

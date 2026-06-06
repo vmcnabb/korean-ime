@@ -28,11 +28,11 @@
 // window or press Ctrl+C to stop everything.
 
 import { spawn, spawnSync } from "node:child_process";
-import { createServer } from "node:http";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import * as ChromeLauncher from "chrome-launcher";
+import { killTree, requestedLocale, startTestPageServer, watchRequested, wordAdapterRequested } from "./dev-shared.mjs";
 
 const root = process.cwd();
 const DEFAULT_CHROME_DEBUG_PORT = 9222;
@@ -40,36 +40,6 @@ const DEFAULT_CHROME_DEBUG_PORT = 9222;
 // clobber, the production dist-chrome/ that `npm run package:chrome` ships. Keep
 // this in sync with the --dist-dir in the "start:chrome" npm script.
 const distDir = resolve(root, "dist-chrome-dev");
-
-// The Word for the Web adapter is disabled by default (see the factory). Turn it
-// on for this dev session with `npm run dev:chrome -- --enable-word` (flag reaches argv)
-// or `npm run dev:chrome --enable-word` (npm exposes it as npm_config_enable_word). The
-// build reads KIME_ENABLE_WORD, which we set on the spawned Parcel process below.
-function wordAdapterRequested() {
-    if (process.argv.slice(2).includes("--enable-word")) return true;
-    const cfg = process.env.npm_config_enable_word;
-    if (cfg !== undefined && cfg !== "false" && cfg !== "0") return true;
-    return process.env.KIME_ENABLE_WORD === "true";
-}
-
-// Watch mode (Parcel watch + hot reload) is opt-in:
-// `npm run dev:chrome -- --watch` (flag reaches argv) or
-// `npm run dev:chrome --watch` (npm exposes it as npm_config_watch).
-function watchRequested() {
-    if (process.argv.slice(2).includes("--watch")) return true;
-    const cfg = process.env.npm_config_watch;
-    return cfg !== undefined && cfg !== "false" && cfg !== "0";
-}
-
-// Optional UI locale for the dev Chrome, for testing chrome.i18n strings.
-// `npm run dev:chrome -- --locale=ko` (flag reaches argv) or
-// `npm run dev:chrome --locale=ko` (npm exposes it as npm_config_locale).
-// Passed to Chrome as --lang, which sets the locale chrome.i18n resolves against.
-function requestedLocale() {
-    const fromArgv = process.argv.slice(2).find((a) => a.startsWith("--locale="));
-    if (fromArgv) return fromArgv.slice("--locale=".length);
-    return process.env.npm_config_locale || undefined;
-}
 
 function getChromeDebugPort() {
     const rawPort = process.env.KIME_CHROME_DEBUG_PORT ?? process.env.CHROME_DEBUG_PORT;
@@ -171,45 +141,6 @@ const sessionFile = resolve(sessionDir, "dev-session.json");
 const chromeDebugPort = getChromeDebugPort();
 let profileDir; // assigned to a fresh temp dir just before launch
 
-const TEST_PAGE = `<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8" />
-<title>Korean IME — test page</title>
-<style>
-  :root {
-    color-scheme: light dark;
-    --hint-bg: light-dark(#f4f4f4, #333);
-    --hint-color: light-dark(#555, #ccc);
-    --content-editable-border: light-dark(#bbb, #555);
-    --input-bg: light-dark(white, #222);
-  }
-  body { font: 16px system-ui, sans-serif; max-width: 720px; margin: 2rem auto; padding: 0 1rem; }
-  h1 { font-size: 1.3rem; }
-  .hint { color: var(--hint-color); background: var(--hint-bg); padding: .75rem 1rem; border-radius: 6px; }
-  label { display: block; margin: 1.25rem 0 .35rem; font-weight: 600; }
-  textarea, input { width: 100%; font-size: 1.1rem; padding: .5rem; box-sizing: border-box; background: var(--input-bg); }
-  textarea { height: 6rem; }
-  [contenteditable] { border: 1px solid var(--content-editable-border); border-radius: 4px; padding: .5rem; min-height: 3rem; font-size: 1.1rem; background: var(--input-bg); }
-</style>
-</head>
-<body>
-  <h1>Korean IME — test page</h1>
-  <p class="hint">Toggle Hangul with the right-hand <b>Alt</b> key (or click the extension icon).
-  Try <code>dkssudgktpdy</code> → 안녕하세요.</p>
-
-  <label for="ta">textarea</label>
-  <textarea id="ta" placeholder="Type here…"></textarea>
-
-  <label for="ti">input[type=text]</label>
-  <input id="ti" type="text" placeholder="Type here…" />
-
-  <label>contenteditable</label>
-  <div contenteditable></div>
-</body>
-</html>`;
-
-let server;
 let chrome;
 let watch; // the Parcel watch process, only in --watch mode
 let shuttingDown = false;
@@ -234,23 +165,6 @@ function writeSessionFile(chromePid) {
             2
         )
     );
-}
-
-// child.kill() only kills the immediate process. On Windows, killing the whole
-// process tree is the reliable way to take down the spawned Chrome — and, in
-// --watch mode, the Parcel watcher (which runs through a shell) and its HMR
-// server — with us.
-function killTree(proc) {
-    if (!proc || proc.pid === undefined || proc.killed) return;
-    if (process.platform === "win32") {
-        spawnSync("taskkill", ["/pid", String(proc.pid), "/T", "/F"], { stdio: "ignore" });
-    } else {
-        try {
-            proc.kill("SIGTERM");
-        } catch {
-            /* already gone */
-        }
-    }
 }
 
 function shutdown(code = 0) {
@@ -280,12 +194,7 @@ process.on("SIGINT", () => shutdown(0));
 process.on("SIGTERM", () => shutdown(0));
 
 // 1. Serve the test page on a random localhost port.
-server = createServer((_req, res) => {
-    res.writeHead(200, { "content-type": "text/html; charset=utf-8" });
-    res.end(TEST_PAGE);
-});
-await new Promise((r) => server.listen(0, "127.0.0.1", r));
-const testUrl = `http://localhost:${server.address().port}/`;
+const { server, testUrl } = await startTestPageServer();
 
 // 2. Build the extension. Default: a one-off build. With --watch: start Parcel
 //    in watch mode (auto-rebuild + hot reload) and wait for the first build.

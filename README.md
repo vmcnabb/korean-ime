@@ -43,6 +43,7 @@ npm install
 | `npm run build-dev:chrome` | Development Chrome build to `/dist-chrome-dev` (no optimisation) |
 | `npm run start:chrome` | Watch mode (to `/dist-chrome-dev`) — rebuilds on file changes |
 | `npm run dev:chrome` | Build + launch Chrome (fresh throwaway profile), auto-load the extension over CDP, open a test page (add `--watch` for live reload) |
+| `npm run dev:firefox` | Build + launch Firefox (via `web-ext`, temporary add-on on a throwaway profile), open a test page (add `--watch` to rebuild + reload on change) |
 | `npm run check` | Type-check without emitting output |
 | `npm run lint` | Lint with ESLint (`npm run lint:fix` to auto-fix) |
 | `npm test` | Run unit tests |
@@ -53,6 +54,10 @@ The Chrome production build (`npm run build:chrome`) outputs to `/dist-chrome` (
 1. Open `chrome://extensions`
 2. Enable **Developer mode**
 3. Click **Load unpacked** and select the `/dist-chrome` folder
+
+#### Firefox development
+
+`npm run dev:firefox` builds to `/dist-firefox-dev` and uses [`web-ext`](https://github.com/mozilla/web-ext) to launch Firefox with the extension installed as a temporary add-on on a throwaway profile — no manual loading. Add `--watch` to rebuild, re-patch the manifest, and reload the extension on every change. Set `FIREFOX_PATH` if Firefox isn't found automatically. The `--enable-word` and `--locale` flags below work the same as for `dev:chrome`.
 
 #### Enabling the Word for the Web adapter
 
