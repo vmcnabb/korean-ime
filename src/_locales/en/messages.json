@@ -6,7 +6,7 @@
         "message": "Korean IME"
     },
     "extension_description": {
-        "message": "Allows one to type in Korean Hangul and includes a romanization tool."
+        "message": "Type in Korean (Hangul) in your browser. Includes a romanization tool and an on-screen keyboard."
     },
     "menu_romanizeInPopup": {
         "message": "&Romanize in Popup"
