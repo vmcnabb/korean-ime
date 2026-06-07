@@ -2,7 +2,7 @@ Install the latest release from the Chrome Web Store:
 [https://chrome.google.com/webstore/detail/korean-ime/cimmbifnciobjhchpimjekibbndgmkfk?hl=en-GB]
 
 # 2.5.0
-2026-06-06
+2026-06-07
 
 The previous release, 2.4.0, went out for Firefox only and was not released to
 Chrome. This release catches Chrome up and includes the changes below.
@@ -14,9 +14,10 @@ Chrome. This release catches Chrome up and includes the changes below.
 * Added selectable on-screen keyboard layouts
 * Added resizing, anchored positioning, and saved position/collapsed state for the on-screen keyboard
 * Added a clickable on-screen keyboard mode indicator
+* The toolbar icon _tooltip_ now reflects the current mode
 
 ### Fixes
-* The toolbar icon tooltip now reflects the current mode
+* When pages (like google.com) set the input focus before the content script ran, IME would not be initialized for that input
 * The on-screen keyboard now stays clamped to the viewport more reliably
 * The on-screen keyboard follows the cursor correctly when dragging under browser zoom
 * The on-screen keyboard flushes unfinished composition when focus changes or physical typing resumes
