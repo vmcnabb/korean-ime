@@ -168,16 +168,16 @@
         "message": "확장 프로그램 아이콘 표시"
     },
     "gettingStarted_showIcon_chrome": {
-        "message": "보이는 버튼을 선호하시나요? Chrome에서는 퍼즐 조각 모양의 확장 프로그램 아이콘을 클릭하고 Korean IME를 찾은 다음 핀 아이콘을 클릭하세요. 확장 프로그램 아이콘을 클릭하면 영어와 한글을 전환할 수 있습니다."
+        "message": "보이는 버튼을 선호하시나요? Chrome에서는 퍼즐 조각 모양의 확장 프로그램 아이콘을 클릭하고 한글 입력기를 찾은 다음 핀 아이콘을 클릭하세요. 확장 프로그램 아이콘을 클릭하면 영어와 한글을 전환할 수 있습니다."
     },
     "gettingStarted_showIcon_firefox": {
-        "message": "보이는 버튼을 선호하시나요? Firefox에서는 확장 프로그램 버튼을 클릭하고 Korean IME를 찾은 다음 메뉴에서 도구 모음에 고정하세요. 확장 프로그램 아이콘을 클릭하면 영어와 한글을 전환할 수 있습니다."
+        "message": "보이는 버튼을 선호하시나요? Firefox에서는 확장 프로그램 버튼을 클릭하고 한글 입력기를 찾은 다음 메뉴에서 도구 모음에 고정하세요. 확장 프로그램 아이콘을 클릭하면 영어와 한글을 전환할 수 있습니다."
     },
     "gettingStarted_showIcon_showVideo": {
         "message": "고정 방법 보기"
     },
     "gettingStarted_showIcon_videoLabel": {
-        "message": "Korean IME 확장 프로그램 아이콘을 고정하는 방법을 보여 주는 동영상"
+        "message": "한글 입력기 확장 프로그램 아이콘을 고정하는 방법을 보여 주는 동영상"
     },
     "gettingStarted_about_heading": {
         "message": "한국어 입력 정보"

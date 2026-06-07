@@ -1,36 +1,36 @@
-Escribe en coreano (Hangul) en tu navegador — sin necesidad de un IME de todo el sistema ni de permisos de administrador.
+Escriba en coreano (hangul) en su navegador — sin necesidad de un IME de todo el sistema ni de permisos de administrador.
 
-IME coreano te permite escribir Hangul en cualquier equipo, incluso en uno donde no puedes instalar el método de entrada coreano del sistema operativo (en el trabajo, la escuela o un equipo compartido). Usa la distribución coreana estándar 2-Beolsik y funciona sin importar la configuración de tu teclado físico (QWERTY, Dvorak, AZERTY, ruso, etc.).
+IME coreano le permite escribir hangul en cualquier equipo, incluso en uno donde no puede instalar el método de entrada coreano del sistema operativo (en el trabajo, la escuela o un equipo compartido). Usa la distribución coreana estándar Dubeolsik (두벌식) y funciona sin importar la configuración de su teclado físico (QWERTY, Dvorak, AZERTY, ruso, etc.).
 
 
 CÓMO USARLO
 
-• Haz clic en el icono de la extensión (el botón "a / 한") o pulsa la tecla Alt derecha para alternar entre la entrada en alfabeto latino y en Hangul.
-• Empieza a escribir — por ejemplo, "dkssudgktpdy" se convierte en "안녕하세요".
+• Haga clic en el icono de la extensión (el botón "a / 한") o pulse la tecla Alt derecha para alternar entre la entrada en alfabeto latino y en hangul.
+• Empiece a escribir — por ejemplo, "dkssudgktpdy" se convierte en "안녕하세요".
 
 
 FUNCIONES
 
-• Escribe Hangul en cuadros de texto estándar, áreas de texto y muchos editores de texto enriquecido en línea (como CKEditor).
-• Teclado en pantalla — un teclado flotante que muestra las teclas en alfabeto latino y en Hangul. Actívalo o desactívalo desde el menú contextual de la extensión.
-• Romanizar — selecciona texto en Hangul, haz clic derecho y elige "Romanizar" para convertirlo al alfabeto latino (Romanización Revisada; no se contemplan algunos casos excepcionales).
-• Volver a editar una sílaba terminada — coloca el cursor justo después de ella y pulsa Mayús+Retroceso para reanudar la composición de ese bloque.
+• Escriba hangul en cuadros de texto estándar, áreas de texto y muchos editores de texto enriquecido en línea (como CKEditor).
+• Teclado en pantalla — un teclado flotante que muestra las teclas en alfabeto latino y en hangul. Actívelo o desactívelo desde el menú contextual de la extensión.
+• Romanizar — seleccione texto en hangul, haga clic derecho y elija "Romanizar" para convertirlo al alfabeto latino (Romanización Revisada; no se contemplan algunos casos excepcionales).
+• Volver a editar una sílaba terminada — coloque el cursor justo después de ella y pulse Mayús+Retroceso para reanudar la composición de ese bloque.
 
 
 DISTRIBUCIÓN DEL TECLADO
 
-Esta es la distribución coreana estándar 2-Beolsik, la misma que la de un teclado coreano físico — por ejemplo, la tecla "A" de QWERTY produce "ㅁ". Si la distribución es nueva para ti, busca "distribución del teclado coreano" para ver un mapa.
+Esta es la distribución coreana estándar Dubeolsik (두벌식), la misma que la de un teclado coreano físico — por ejemplo, la tecla "A" de QWERTY produce "ㅁ". Si la distribución es nueva para usted, busque "distribución del teclado coreano" para ver un mapa.
 
 
 QUÉ NO ES COMPATIBLE
 
-• Google Docs — representa el texto en un lienzo (canvas) y usa un editor privado que no acepta la entrada de extensiones como esta, así que la escritura en Hangul no funcionará allí.
+• Google Docs — representa el texto en un lienzo (canvas) y usa un editor privado que no acepta la entrada de extensiones como esta, así que la escritura en hangul no funcionará allí.
 • Microsoft Word para la Web — por los mismos motivos.
-• Las páginas internas de tu navegador (chrome://…, about:…), la tienda de extensiones/complementos y las páginas de otras extensiones — los navegadores impiden que cualquier extensión se ejecute en ellas.
+• Las páginas internas de su navegador (chrome://…, about:…), la tienda de extensiones/complementos y las páginas de otras extensiones — los navegadores impiden que cualquier extensión se ejecute en ellas.
 
 
 PRIVACIDAD
 
-Funciona completamente sin conexión y no recopila, almacena ni transmite ninguno de tus datos.
+Funciona completamente sin conexión y no recopila, almacena ni transmite ninguno de sus datos.
 
-Código abierto — informa de problemas o contribuye en https://github.com/vmcnabb/korean-ime
+Código abierto — informe de problemas o contribuya en https://github.com/vmcnabb/korean-ime

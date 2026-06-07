@@ -1,6 +1,6 @@
 Type Korean (Hangul) in your browser — no system-wide IME or admin rights needed.
 
-Korean IME lets you type Hangul on any computer, even one where you can't install the operating system's Korean input method (a work, school, or shared machine). It uses the standard Korean 2-Beolsik layout and works no matter what your physical keyboard is set to (QWERTY, Dvorak, AZERTY, Russian, and so on).
+Korean IME lets you type Hangul on any computer, even one where you can't install the operating system's Korean input method (a work, school, or shared machine). It uses the standard Korean Dubeolsik (두벌식) layout and works no matter what your physical keyboard is set to (QWERTY, Dvorak, AZERTY, Russian, and so on).
 
 
 HOW TO USE
@@ -19,7 +19,7 @@ FEATURES
 
 KEYBOARD LAYOUT
 
-This is the standard Korean 2-Beolsik layout, the same as a physical Korean keyboard — for example, the QWERTY "A" key produces "ㅁ". If you're new to the layout, search "Korean keyboard layout" for a map.
+This is the standard Korean Dubeolsik (두벌식) layout, the same as a physical Korean keyboard — for example, the QWERTY "A" key produces "ㅁ". If you're new to the layout, search "Korean keyboard layout" for a map.
 
 
 WHAT'S NOT SUPPORTED
