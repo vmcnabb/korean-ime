@@ -1,0 +1,36 @@
+Type Korean (Hangul) in your browser — no system-wide IME or admin rights needed.
+
+Korean IME lets you type Hangul on any computer, even one where you can't install the operating system's Korean input method (a work, school, or shared machine). It uses the standard Korean Dubeolsik (두벌식) layout and works no matter what your physical keyboard is set to (QWERTY, Dvorak, AZERTY, Russian, and so on).
+
+
+HOW TO USE
+
+• Click the extension icon (the "a / 한" button) or press the right-hand Alt key to switch between Latin and Hangul input.
+• Start typing — for example, "dkssudgktpdy" becomes "안녕하세요".
+
+
+FEATURES
+
+• Type Hangul in standard text boxes, text areas, and many online rich-text editors.
+• On-screen keyboard — a floating keyboard showing both the Latin and Hangul keys. Turn it on or off from the extension's right-click menu.
+• Romanize — select Hangul text, right-click, and choose "Romanize" to convert it to the Latin alphabet (Revised Romanization; a few rare edge cases aren't handled).
+• Re-edit a finished syllable — put the cursor immediately after it and press Shift+Backspace to resume composing that block.
+
+
+KEYBOARD LAYOUT
+
+This is the standard Korean Dubeolsik (두벌식) layout, the same as a physical Korean keyboard — for example, the QWERTY "A" key produces "ㅁ". If you're new to the layout, search "Korean keyboard layout" for a map.
+
+
+WHAT'S NOT SUPPORTED
+
+• Google Docs — it renders text on a canvas and uses a private editor that doesn't accept input from extensions like this one, so Hangul typing won't work there.
+• Microsoft Word for the Web — for the same reasons.
+• Your browser's own pages (chrome://…, about:…), the extension/add-on store, and other extensions' pages — browsers block every extension from running on these.
+
+
+PRIVACY
+
+Works entirely offline and does not collect, store, or transmit any of your data.
+
+Open source — report issues or contribute at https://github.com/vmcnabb/korean-ime

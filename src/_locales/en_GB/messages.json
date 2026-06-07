@@ -3,7 +3,7 @@
         "message": "Korean IME with Romanisation Tool"
     },
     "extension_description": {
-        "message": "Allows one to type in Korean Hangul and includes a romanisation tool."
+        "message": "Type in Korean (Hangul) in your browser. Includes a romanisation tool and an on-screen keyboard."
     },
     "menu_romanizeInPopup": {
         "message": "&Romanise in Popup"
@@ -81,7 +81,7 @@
         "message": "annyeonghaseyo will not become 안녕하세요."
     },
     "gettingStarted_about_layoutExample": {
-        "message": "With the Korean 2-set keyboard layout, dkssudgktpdy produces 안녕하세요."
+        "message": "With the Korean Dubeolsik (두벌식) keyboard layout, dkssudgktpdy produces 안녕하세요."
     },
     "gettingStarted_openOptions": {
         "message": "Open Options"

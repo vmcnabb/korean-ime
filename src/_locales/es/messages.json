@@ -6,7 +6,7 @@
         "message": "IME coreano"
     },
     "extension_description": {
-        "message": "Permite escribir en hangul coreano e incluye una herramienta de romanización."
+        "message": "Escribe en coreano (Hangul) en tu navegador. Incluye romanización y teclado en pantalla."
     },
     "menu_romanizeInPopup": {
         "message": "&Romanizar en ventana emergente"
@@ -177,7 +177,7 @@
         "message": "Mostrar cómo anclarlo"
     },
     "gettingStarted_showIcon_videoLabel": {
-        "message": "Video que muestra cómo anclar el icono de la extensión Korean IME"
+        "message": "Video que muestra cómo anclar el icono de la extensión IME coreano"
     },
     "gettingStarted_about_heading": {
         "message": "Acerca de la escritura coreana"
@@ -192,7 +192,7 @@
         "message": "annyeonghaseyo no se convertirá en 안녕하세요."
     },
     "gettingStarted_about_layoutExample": {
-        "message": "Con la distribución de teclado coreana 2-set, dkssudgktpdy produce 안녕하세요."
+        "message": "Con la distribución de teclado coreana Dubeolsik (두벌식), dkssudgktpdy produce 안녕하세요."
     },
     "gettingStarted_openOptions": {
         "message": "Abrir Opciones"
