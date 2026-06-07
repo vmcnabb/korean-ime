@@ -133,5 +133,68 @@
     },
     "options_hanYong_restore": {
         "message": "Restore last mode"
+    },
+    "gettingStarted_title": {
+        "message": "Korean IME is ready"
+    },
+    "gettingStarted_intro": {
+        "message": "Choose whether this extension should type Hangul in web pages, or stay out of the way while you use the other tools."
+    },
+    "gettingStarted_question": {
+        "message": "How will you use this extension?"
+    },
+    "gettingStarted_choiceTypeHangul_label": {
+        "message": "Type Hangul in web pages with this extension"
+    },
+    "gettingStarted_choiceTypeHangul_description": {
+        "message": "Enables Korean typing mode so the extension turns typed keys into Hangul in web pages."
+    },
+    "gettingStarted_choiceOtherTools_label": {
+        "message": "Use the other tools only"
+    },
+    "gettingStarted_choiceOtherTools_description": {
+        "message": "Disables Korean typing mode so the extension will not unexpectedly switch web-page typing into Hangul."
+    },
+    "gettingStarted_noticeOtherTools": {
+        "message": "Korean typing mode is off. The extension will not switch web-page typing into Hangul. You can still use the other tools, and you can turn Korean typing back on later in Options."
+    },
+    "gettingStarted_notice": {
+        "message": "Korean typing mode is enabled. Press Right Alt to turn Hangul typing on or off in the current tab. You can also click the extension icon."
+    },
+    "gettingStarted_errorLoad": {
+        "message": "Settings could not be loaded. Open Options and try again."
+    },
+    "gettingStarted_showIcon_heading": {
+        "message": "Show the extension icon"
+    },
+    "gettingStarted_showIcon_chrome": {
+        "message": "Prefer a visible button? In Chrome, click the Extensions puzzle-piece icon, find Korean IME, then click the pin icon. Click the extension icon to switch between English and Hangul."
+    },
+    "gettingStarted_showIcon_firefox": {
+        "message": "Prefer a visible button? In Firefox, click the extensions button, find Korean IME, then use its menu to pin it to the toolbar. Click the extension icon to switch between English and Hangul."
+    },
+    "gettingStarted_showIcon_showVideo": {
+        "message": "Show me how to pin it"
+    },
+    "gettingStarted_showIcon_videoLabel": {
+        "message": "Video showing how to pin the Korean IME extension icon"
+    },
+    "gettingStarted_about_heading": {
+        "message": "About Korean typing"
+    },
+    "gettingStarted_about_typingMode": {
+        "message": "Korean typing mode turns keyboard-layout input into Hangul."
+    },
+    "gettingStarted_about_romanization": {
+        "message": "Romanization tools convert existing Hangul to Latin letters."
+    },
+    "gettingStarted_about_notPhonetic": {
+        "message": "annyeonghaseyo will not become 안녕하세요."
+    },
+    "gettingStarted_about_layoutExample": {
+        "message": "With the Korean 2-set keyboard layout, dkssudgktpdy produces 안녕하세요."
+    },
+    "gettingStarted_openOptions": {
+        "message": "Open Options"
     }
 }
