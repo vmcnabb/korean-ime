@@ -10,6 +10,10 @@ import { api } from "../platform/browser-api";
  */
 export async function loadSettings(): Promise<Settings> {
     const stored = (await api.storage.sync.get(null)) as Record<string, unknown>;
+    return settingsFromStoredValues(stored);
+}
+
+export function settingsFromStoredValues(stored: Record<string, unknown>): Settings {
     const result = structuredClone(defaultSettings);
     overlayStored(result as unknown as Record<string, unknown>, stored);
     migrateLegacyShareAcrossTabs(result, stored);

@@ -12,7 +12,7 @@
 // Usage: node scripts/build-manifest.mjs <target>      (default: chrome)
 
 import { Resvg } from "@resvg/resvg-js";
-import { copyFileSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { copyFileSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 const root = process.cwd();
@@ -21,6 +21,8 @@ const outPath = resolve(root, "src/manifest.json");
 const pkgPath = resolve(root, "package.json");
 const sourceImageDir = resolve(root, "resources/images");
 const outputImageDir = resolve(root, "src/images");
+const sourceVideoDir = resolve(root, "resources/videos");
+const outputVideoDir = resolve(root, "src/videos");
 const bundledFontFamily = "NanumMyeongjo";
 const bundledFontFiles = [resolve(root, "resources/fonts/Nanum_Myeongjo/NanumMyeongjo-Bold.ttf")];
 const actionIconSizes = [16, 24, 32];
@@ -29,6 +31,16 @@ const actionIconSources = {
     h: resolve(sourceImageDir, "icon_h.svg"),
 };
 const copiedRuntimeImages = ["icon48.png", "icon128.png"];
+const copiedRuntimeVideos = {
+    chrome: {
+        "pin-light.mp4": "chrome-lightmode-pin.mp4",
+        "pin-dark.mp4": "chrome-darkmode-pin.mp4",
+    },
+    firefox: {
+        "pin-light.mp4": "firefox-lightmode-pin.mp4",
+        "pin-dark.mp4": "firefox-darkmode-pin.mp4",
+    },
+};
 // The OSK header mode indicator inlines these icons as data URLs. It's displayed
 // at modeIconDisplaySize px; we render a set of multiples so an <img srcset> can
 // hand the browser a pixel-exact source for the current devicePixelRatio (covers
@@ -90,12 +102,28 @@ function prepareOutputImageDir() {
     mkdirSync(outputImageDir, { recursive: true });
 }
 
+function prepareOutputVideoDir() {
+    rmSync(outputVideoDir, { recursive: true, force: true });
+    mkdirSync(outputVideoDir, { recursive: true });
+}
+
 function copyRuntimeImages() {
     for (const fileName of copiedRuntimeImages) {
         copyFileSync(resolve(sourceImageDir, fileName), resolve(outputImageDir, fileName));
     }
 
     console.log(`[build-manifest] copied ${copiedRuntimeImages.length} runtime images`);
+}
+
+function copyRuntimeVideos() {
+    let copiedCount = 0;
+
+    for (const [outputFileName, sourceFileName] of Object.entries(copiedRuntimeVideos[target])) {
+        copyFileSync(resolve(sourceVideoDir, sourceFileName), resolve(outputVideoDir, outputFileName));
+        copiedCount += 1;
+    }
+
+    console.log(`[build-manifest] copied ${copiedCount} ${target} runtime videos`);
 }
 
 function renderIconPng(sourcePath, size) {
@@ -159,7 +187,9 @@ const base = readJson(basePath);
 const manifest = { ...base, version, ...overrides };
 
 prepareOutputImageDir();
+prepareOutputVideoDir();
 copyRuntimeImages();
+copyRuntimeVideos();
 generateActionIcons();
 generateModeIcons();
 writeFileSync(outPath, JSON.stringify(manifest, null, 4) + "\n");
