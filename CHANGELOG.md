@@ -8,6 +8,7 @@ The previous release, 2.4.0, went out for Firefox only and was not released to
 Chrome. This release catches Chrome up and includes the changes below.
 
 ### Features
+* Added getting started page
 * Added Spanish localization
 * Added controls to enable Hangul typing and physical-key handling separately
 * Added an independent on-screen keyboard Han/Yong toggle while Hangul typing is off

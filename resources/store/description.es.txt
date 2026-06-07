@@ -11,7 +11,7 @@ CÓMO USARLO
 
 FUNCIONES
 
-• Escriba hangul en cuadros de texto estándar, áreas de texto y muchos editores de texto enriquecido en línea (como CKEditor).
+• Escriba hangul en cuadros de texto estándar, áreas de texto y muchos editores de texto enriquecido en línea.
 • Teclado en pantalla — un teclado flotante que muestra las teclas en alfabeto latino y en hangul. Actívelo o desactívelo desde el menú contextual de la extensión.
 • Romanizar — seleccione texto en hangul, haga clic derecho y elija "Romanizar" para convertirlo al alfabeto latino (Romanización Revisada; no se contemplan algunos casos excepcionales).
 • Volver a editar una sílaba terminada — coloque el cursor justo después de ella y pulse Mayús+Retroceso para reanudar la composición de ese bloque.

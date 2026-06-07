@@ -30,7 +30,11 @@ const actionIconSources = {
     a: resolve(sourceImageDir, "icon_a.svg"),
     h: resolve(sourceImageDir, "icon_h.svg"),
 };
-const copiedRuntimeImages = ["icon48.png", "icon128.png"];
+// The extension's main icons (manifest `icons` key) are rendered from the same
+// Hangul source SVG as the toolbar/mode icons, so everything stays in sync from a
+// single asset instead of hand-exported PNGs.
+const runtimeIconSource = actionIconSources.h;
+const runtimeIconSizes = [48, 128];
 const copiedRuntimeVideos = {
     chrome: {
         "pin-light.mp4": "chrome-lightmode-pin.mp4",
@@ -107,12 +111,12 @@ function prepareOutputVideoDir() {
     mkdirSync(outputVideoDir, { recursive: true });
 }
 
-function copyRuntimeImages() {
-    for (const fileName of copiedRuntimeImages) {
-        copyFileSync(resolve(sourceImageDir, fileName), resolve(outputImageDir, fileName));
+function generateRuntimeIcons() {
+    for (const size of runtimeIconSizes) {
+        writeFileSync(resolve(outputImageDir, `icon${size}.png`), renderIconPng(runtimeIconSource, size));
     }
 
-    console.log(`[build-manifest] copied ${copiedRuntimeImages.length} runtime images`);
+    console.log(`[build-manifest] wrote ${runtimeIconSizes.length} generated runtime icons`);
 }
 
 function copyRuntimeVideos() {
@@ -188,7 +192,7 @@ const manifest = { ...base, version, ...overrides };
 
 prepareOutputImageDir();
 prepareOutputVideoDir();
-copyRuntimeImages();
+generateRuntimeIcons();
 copyRuntimeVideos();
 generateActionIcons();
 generateModeIcons();

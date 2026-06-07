@@ -11,7 +11,7 @@ HOW TO USE
 
 FEATURES
 
-• Type Hangul in standard text boxes, text areas, and many online rich-text editors (such as CKEditor).
+• Type Hangul in standard text boxes, text areas, and many online rich-text editors.
 • On-screen keyboard — a floating keyboard showing both the Latin and Hangul keys. Turn it on or off from the extension's right-click menu.
 • Romanize — select Hangul text, right-click, and choose "Romanize" to convert it to the Latin alphabet (Revised Romanization; a few rare edge cases aren't handled).
 • Re-edit a finished syllable — put the cursor immediately after it and press Shift+Backspace to resume composing that block.
