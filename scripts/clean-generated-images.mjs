@@ -1,12 +1,14 @@
 import { existsSync, readdirSync, rmSync } from "node:fs";
 import { resolve } from "node:path";
 
-const outputImageDir = resolve(process.cwd(), "src/images");
+const generatedAssetDirs = [resolve(process.cwd(), "src/images"), resolve(process.cwd(), "src/videos")];
 
-if (!existsSync(outputImageDir)) {
-    process.exit(0);
-}
+for (const dir of generatedAssetDirs) {
+    if (!existsSync(dir)) {
+        continue;
+    }
 
-for (const entry of readdirSync(outputImageDir, { withFileTypes: true })) {
-    rmSync(resolve(outputImageDir, entry.name), { recursive: true, force: true });
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+        rmSync(resolve(dir, entry.name), { recursive: true, force: true });
+    }
 }

@@ -133,5 +133,68 @@
     },
     "options_hanYong_restore": {
         "message": "Restaurar el último modo"
+    },
+    "gettingStarted_title": {
+        "message": "El IME coreano está listo"
+    },
+    "gettingStarted_intro": {
+        "message": "Elija si esta extensión debe escribir hangul en páginas web o mantenerse al margen mientras usa las demás herramientas."
+    },
+    "gettingStarted_question": {
+        "message": "¿Cómo usará esta extensión?"
+    },
+    "gettingStarted_choiceTypeHangul_label": {
+        "message": "Escribir hangul en páginas web con esta extensión"
+    },
+    "gettingStarted_choiceTypeHangul_description": {
+        "message": "Activa el modo de escritura coreana para que la extensión convierta las teclas escritas en hangul en páginas web."
+    },
+    "gettingStarted_choiceOtherTools_label": {
+        "message": "Usar solo las otras herramientas"
+    },
+    "gettingStarted_choiceOtherTools_description": {
+        "message": "Desactiva el modo de escritura coreana para que la extensión no cambie inesperadamente la escritura de páginas web a hangul."
+    },
+    "gettingStarted_noticeOtherTools": {
+        "message": "El modo de escritura coreana está desactivado. La extensión no cambiará la escritura de páginas web a hangul. Aún puede usar las otras herramientas y volver a activar la escritura coreana más tarde en Opciones."
+    },
+    "gettingStarted_notice": {
+        "message": "El modo de escritura coreana está activado. Pulse Alt derecho para activar o desactivar la escritura en hangul en la pestaña actual. También puede hacer clic en el icono de la extensión."
+    },
+    "gettingStarted_errorLoad": {
+        "message": "No se pudo cargar la configuración. Abra Opciones e inténtelo de nuevo."
+    },
+    "gettingStarted_showIcon_heading": {
+        "message": "Mostrar el icono de la extensión"
+    },
+    "gettingStarted_showIcon_chrome": {
+        "message": "¿Prefiere un botón visible? En Chrome, haga clic en el icono de pieza de rompecabezas Extensiones, busque IME coreano y haga clic en el icono de anclar. Haga clic en el icono de la extensión para cambiar entre inglés y hangul."
+    },
+    "gettingStarted_showIcon_firefox": {
+        "message": "¿Prefiere un botón visible? En Firefox, haga clic en el botón de extensiones, busque IME coreano y use su menú para anclarlo a la barra de herramientas. Haga clic en el icono de la extensión para cambiar entre inglés y hangul."
+    },
+    "gettingStarted_showIcon_showVideo": {
+        "message": "Mostrar cómo anclarlo"
+    },
+    "gettingStarted_showIcon_videoLabel": {
+        "message": "Video que muestra cómo anclar el icono de la extensión Korean IME"
+    },
+    "gettingStarted_about_heading": {
+        "message": "Acerca de la escritura coreana"
+    },
+    "gettingStarted_about_typingMode": {
+        "message": "El modo de escritura coreana convierte la entrada según la distribución del teclado en hangul."
+    },
+    "gettingStarted_about_romanization": {
+        "message": "Las herramientas de romanización convierten hangul existente a letras latinas."
+    },
+    "gettingStarted_about_notPhonetic": {
+        "message": "annyeonghaseyo no se convertirá en 안녕하세요."
+    },
+    "gettingStarted_about_layoutExample": {
+        "message": "Con la distribución de teclado coreana 2-set, dkssudgktpdy produce 안녕하세요."
+    },
+    "gettingStarted_openOptions": {
+        "message": "Abrir Opciones"
     }
 }

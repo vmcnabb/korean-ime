@@ -133,5 +133,68 @@
     },
     "options_hanYong_restore": {
         "message": "마지막 모드 유지"
+    },
+    "gettingStarted_title": {
+        "message": "한글 입력기가 준비되었습니다"
+    },
+    "gettingStarted_intro": {
+        "message": "이 확장 프로그램으로 웹 페이지에서 한글을 입력할지, 다른 도구만 사용할지 선택하세요."
+    },
+    "gettingStarted_question": {
+        "message": "이 확장 프로그램을 어떻게 사용하시겠어요?"
+    },
+    "gettingStarted_choiceTypeHangul_label": {
+        "message": "이 확장 프로그램으로 웹 페이지에서 한글 입력"
+    },
+    "gettingStarted_choiceTypeHangul_description": {
+        "message": "입력한 키를 웹 페이지에서 한글로 바꾸도록 한국어 입력 모드를 켭니다."
+    },
+    "gettingStarted_choiceOtherTools_label": {
+        "message": "다른 도구만 사용"
+    },
+    "gettingStarted_choiceOtherTools_description": {
+        "message": "웹 페이지 입력이 예기치 않게 한글로 전환되지 않도록 한국어 입력 모드를 끕니다."
+    },
+    "gettingStarted_noticeOtherTools": {
+        "message": "한국어 입력 모드가 꺼져 있습니다. 이 확장 프로그램은 웹 페이지 입력을 한글로 전환하지 않습니다. 다른 도구는 계속 사용할 수 있으며 나중에 설정에서 한국어 입력을 다시 켤 수 있습니다."
+    },
+    "gettingStarted_notice": {
+        "message": "한국어 입력 모드가 켜져 있습니다. 현재 탭에서 한글 입력을 켜거나 끄려면 오른쪽 Alt 키를 누르세요. 확장 프로그램 아이콘을 클릭해도 됩니다."
+    },
+    "gettingStarted_errorLoad": {
+        "message": "설정을 불러올 수 없습니다. 설정을 열고 다시 시도하세요."
+    },
+    "gettingStarted_showIcon_heading": {
+        "message": "확장 프로그램 아이콘 표시"
+    },
+    "gettingStarted_showIcon_chrome": {
+        "message": "보이는 버튼을 선호하시나요? Chrome에서는 퍼즐 조각 모양의 확장 프로그램 아이콘을 클릭하고 Korean IME를 찾은 다음 핀 아이콘을 클릭하세요. 확장 프로그램 아이콘을 클릭하면 영어와 한글을 전환할 수 있습니다."
+    },
+    "gettingStarted_showIcon_firefox": {
+        "message": "보이는 버튼을 선호하시나요? Firefox에서는 확장 프로그램 버튼을 클릭하고 Korean IME를 찾은 다음 메뉴에서 도구 모음에 고정하세요. 확장 프로그램 아이콘을 클릭하면 영어와 한글을 전환할 수 있습니다."
+    },
+    "gettingStarted_showIcon_showVideo": {
+        "message": "고정 방법 보기"
+    },
+    "gettingStarted_showIcon_videoLabel": {
+        "message": "Korean IME 확장 프로그램 아이콘을 고정하는 방법을 보여 주는 동영상"
+    },
+    "gettingStarted_about_heading": {
+        "message": "한국어 입력 정보"
+    },
+    "gettingStarted_about_typingMode": {
+        "message": "한국어 입력 모드는 키보드 배열 입력을 한글로 바꿉니다."
+    },
+    "gettingStarted_about_romanization": {
+        "message": "로마자 표기 도구는 이미 입력된 한글을 라틴 문자로 변환합니다."
+    },
+    "gettingStarted_about_notPhonetic": {
+        "message": "annyeonghaseyo는 안녕하세요로 변환되지 않습니다."
+    },
+    "gettingStarted_about_layoutExample": {
+        "message": "한국어 두벌식 키보드 배열에서는 dkssudgktpdy가 안녕하세요를 입력합니다."
+    },
+    "gettingStarted_openOptions": {
+        "message": "설정 열기"
     }
 }

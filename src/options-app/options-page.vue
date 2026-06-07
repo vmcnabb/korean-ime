@@ -34,6 +34,8 @@ onMounted(initSettings);
 body {
     margin: 0;
     font-family: Arial, Helvetica, sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
     color: var(--text-primary);
     background-color: var(--bg-primary);
 }
