@@ -2,10 +2,11 @@
 
 A free, open-source browser extension for typing Hangul (Korean) without a
 Korean IME installed at the OS level — handy when you can't install the system
-IME (e.g. a locked-down work machine) — plus a romanization tool and a floating
+IME (e.g. a locked-down work machine). Also includes a romanization tool and an
 on-screen keyboard. Works in Chrome and Firefox.
 
-[Install from the Chrome Web Store](https://chromewebstore.google.com/detail/korean-ime/cimmbifnciobjhchpimjekibbndgmkfk) · Firefox (AMO) listing coming soon.
+- [Install from the Chrome Web Store](https://chromewebstore.google.com/detail/korean-ime/cimmbifnciobjhchpimjekibbndgmkfk)
+- [Install from Firefox Add-ons](https://addons.mozilla.org/firefox/addon/korean-ime-and-romanization/)
 
 ## Features
 
@@ -23,7 +24,8 @@ on-screen keyboard. Works in Chrome and Firefox.
 * Shift key toggles shifted characters; the Alt key on the keyboard toggles Hangul/Latin mode.
 * Enable or disable it from the extension's context menu.
 
-## [Change Log](CHANGELOG.md)
+## Change Log
+See [Change Log](CHANGELOG.md)
 
 ## Development
 
