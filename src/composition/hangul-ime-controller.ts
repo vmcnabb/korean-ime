@@ -12,12 +12,14 @@ export class HangulImeController {
     private _isActive = false;
     private compositor = new HangulCompositor();
     private compositionAdapter: CompositionAdapter;
+    private readonly element: HTMLElement;
 
     private changeListeners: (() => void)[] = [];
     private eventListeners: {
         target: EventTarget;
         type: string;
         listener: EventListener;
+        capture: boolean;
     }[] = [];
 
     private lastAlt?: KeyCode.AltLeft | KeyCode.AltRight = undefined;
@@ -29,6 +31,16 @@ export class HangulImeController {
         }
 
         this.compositionAdapter = compositionAdapter;
+        this.element = element;
+
+        // Backspace during composition must be intercepted in the *capture* phase, on
+        // window (the earliest point in event propagation). Rich editors like Word for
+        // the Web run their own Backspace handler before the event reaches us: because
+        // our composition is synthetic, the real Backspace has isComposing=false, so
+        // the editor treats it as a normal backspace and deletes the whole composing
+        // block before our bubble-phase handler can stop it. Intercepting on window
+        // capture puts us ahead of the editor so we can recompose and cancel the key.
+        this.addListener(window, "keydown", this.keydownCaptureGuard as EventListener, true);
 
         Object.keys(this.eventHandlers).forEach((type) => {
             const key = type as keyof typeof this.eventHandlers;
@@ -72,8 +84,8 @@ export class HangulImeController {
      */
     dispose() {
         this._isActive = false;
-        for (const { target, type, listener } of this.eventListeners) {
-            target.removeEventListener(type, listener);
+        for (const { target, type, listener, capture } of this.eventListeners) {
+            target.removeEventListener(type, listener, capture);
         }
         this.eventListeners = [];
         this.changeListeners = [];
@@ -133,26 +145,15 @@ export class HangulImeController {
                 return;
             }
 
+            // Shift+Backspace lifts the previous character back into composition.
+            // Normally already handled in the capture phase (see keydownCaptureGuard);
+            // this is the fallback for when the capture listener didn't run (a detached
+            // element, as in unit tests).
             const reqPrevCharComposition =
                 !this.compositor.isCompositing() && event.shiftKey && code === KeyCode.Backspace;
 
-            const canInsertPrevChar = this.compositionAdapter.supportsMethods(
-                "getPreviousCharacter",
-                "deleteContentBackwards"
-            );
-
-            if (reqPrevCharComposition && canInsertPrevChar) {
-                const character = this.compositionAdapter.getPreviousCharacter();
-
-                if (this.compositor.setCharacter(character)) {
-                    this.compositionAdapter.deleteContentBackwards();
-                    this.compositionAdapter.beginComposition(character!, KeyCode.Backspace);
-
-                    event.preventDefault();
-                    event.stopPropagation();
-                    event.stopImmediatePropagation();
-                    return;
-                }
+            if (reqPrevCharComposition && this.handlePreviousCharComposition(event)) {
+                return;
             }
 
             const key = keyMap[code];
@@ -162,25 +163,11 @@ export class HangulImeController {
             // only single-character keys are treated as input below.
             const isCharacterKey = event.key.length === 1;
 
+            // Normally already handled in the capture phase (see keydownCaptureGuard);
+            // this remains as a fallback for cases where the capture listener didn't
+            // run (e.g. an element detached from the document, as in unit tests).
             if (code === KeyCode.Backspace && this.compositor.isCompositing()) {
-                const block = this.compositor.removeLastJamo();
-                if (block) {
-                    this.compositionAdapter.updateComposition(block, code);
-                } else {
-                    // hack for contentEditableProxy
-                    // would prefer `editor.endComposition("")` and no `return` which works in the inputProxy.
-                    // the hack works by replacing the character with an "x" then allowing the browser
-                    // (or Google Docs) to handle the backspace which immediately removes the "x".
-                    // todo: find a better way to do this
-                    this.compositionAdapter.endComposition("x");
-                    return;
-                }
-
-                this.notifyOnEntry();
-
-                event.preventDefault();
-                event.stopPropagation();
-                event.stopImmediatePropagation();
+                this.handleComposingBackspace(event);
                 return;
             }
 
@@ -208,19 +195,164 @@ export class HangulImeController {
                 window.setTimeout(() => {
                     this.compositionAdapter.inputCharacter(event.key, code);
                 }, 0);
-            } else {
-                const jamo = event.shiftKey && key.jamo.shift ? key.jamo.shift : key.jamo.normal;
 
-                this.addJamo(jamo, code);
+                event.preventDefault();
+                event.stopImmediatePropagation();
+                event.stopPropagation();
+                return;
             }
 
-            event.preventDefault();
-            event.stopImmediatePropagation();
-            event.stopPropagation();
+            // Fallback for when the capture guard didn't run (no selection to replace,
+            // or a detached element as in unit tests). On a connected element with a
+            // selection the guard already handled this jamo and stopped the event.
+            this.handleJamoKey(event);
         },
         blur: () => this.flushComposition(),
         mousedown: () => this.flushComposition(),
     };
+
+    /**
+     * Capture-phase keydown guard, registered on window so it runs before any page
+     * handler. It intercepts the two cases where a rich editor (Word for the Web)
+     * acts on a key in its own capture-phase handler before our bubble handler can
+     * run — see the note in the constructor:
+     *
+     *   1. Backspace while composing: the editor deletes the whole composing block.
+     *   2. The composition-starting jamo while text is selected: the editor replaces
+     *      the selection with the key's literal character ("type over selection").
+     *
+     * Everything else is left to the bubble-phase handler.
+     */
+    private keydownCaptureGuard = (event: KeyboardEvent): void => {
+        if (isKimeEvent(event) || !this._isActive) {
+            return;
+        }
+
+        const code = event.code as KeyCode;
+
+        if (code === KeyCode.Backspace) {
+            if (this.compositor.isCompositing()) {
+                this.handleComposingBackspace(event);
+            } else if (event.shiftKey && this.ownsKeyEvent(event)) {
+                // Shift+Backspace must run here, ahead of the editor deleting the
+                // previous character itself — otherwise getPreviousCharacter() returns
+                // the character *before* the one the editor just removed, and we lift
+                // the wrong one into composition.
+                this.handlePreviousCharComposition(event);
+            }
+            // A plain (non-shift) Backspace while not composing is left to the editor.
+            return;
+        }
+
+        // Begin composition ahead of the editor's "type over selection" only when
+        // there's a real, non-collapsed document selection to replace. The
+        // no-selection path and plain <input> elements (whose selection isn't a
+        // document selection) stay on the bubble handler, unchanged. Scoped to our
+        // element so other active controllers on the page don't also act on it.
+        if (
+            !this.compositor.isCompositing() &&
+            this.isJamoKey(event) &&
+            this.hasNonCollapsedSelection() &&
+            this.ownsKeyEvent(event)
+        ) {
+            this.handleJamoKey(event);
+        }
+    };
+
+    private isJamoKey(event: KeyboardEvent): boolean {
+        const code = event.code as KeyCode;
+        return !event.ctrlKey && event.key.length === 1 && !!keyMap[code]?.jamo;
+    }
+
+    private hasNonCollapsedSelection(): boolean {
+        const selection = document.getSelection();
+        return !!selection && selection.rangeCount > 0 && !selection.getRangeAt(0).collapsed;
+    }
+
+    /**
+     * True if this controller's element owns the key event — i.e. the event targets
+     * (or the focus sits within) our element. Lets the window-level capture guard
+     * stay scoped to the focused editable when several controllers are active at once.
+     */
+    private ownsKeyEvent(event: Event): boolean {
+        const target = event.target as Node | null;
+        if (target && (this.element === target || this.element.contains(target))) {
+            return true;
+        }
+        const active = document.activeElement;
+        return !!active && (this.element === active || this.element.contains(active));
+    }
+
+    /**
+     * Shift+Backspace: lift the character before the caret back into composition so
+     * its last jamo can be edited. Deletes the character and re-enters composition
+     * with it. Returns false (handling nothing) when the adapter can't read/delete
+     * the previous character or it isn't composable Hangul, so the caller can fall
+     * through. Shared by the capture-phase guard (normal path) and the bubble handler.
+     */
+    private handlePreviousCharComposition(event: KeyboardEvent): boolean {
+        if (!this.compositionAdapter.supportsMethods("getPreviousCharacter", "deleteContentBackwards")) {
+            return false;
+        }
+
+        const character = this.compositionAdapter.getPreviousCharacter();
+        if (!this.compositor.setCharacter(character)) {
+            return false;
+        }
+
+        this.compositionAdapter.deleteContentBackwards();
+        this.compositionAdapter.beginComposition(character!, KeyCode.Backspace);
+
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+        return true;
+    }
+
+    /**
+     * Process a jamo key: add it to the in-progress block and cancel the key so the
+     * editor doesn't also act on it. Shared by the capture-phase guard (for the
+     * composition-starting jamo over a selection) and the bubble-phase handler.
+     */
+    private handleJamoKey(event: KeyboardEvent): void {
+        const code = event.code as KeyCode;
+        const key = keyMap[code];
+        if (!key?.jamo) {
+            return;
+        }
+
+        const jamo = event.shiftKey && key.jamo.shift ? key.jamo.shift : key.jamo.normal;
+        this.addJamo(jamo, code);
+
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+    }
+
+    /**
+     * Backspace pressed mid-composition: drop the last jamo and re-render the now
+     * shorter block, cancelling the key so the editor doesn't also act on it. If the
+     * block is now empty, fall back to the long-standing contenteditable hack —
+     * commit a throwaway "x" and let the editor's own Backspace delete it (so we
+     * deliberately do NOT cancel the key in that case).
+     *
+     * Called from both the capture-phase guard (the normal path) and the bubble-phase
+     * handler (fallback for detached elements); whichever runs first handles it, and
+     * the other is skipped because the compositor is no longer compositing.
+     */
+    private handleComposingBackspace(event: KeyboardEvent): void {
+        const block = this.compositor.removeLastJamo();
+        if (block) {
+            this.compositionAdapter.updateComposition(block, KeyCode.Backspace);
+            this.notifyOnEntry();
+
+            event.preventDefault();
+            event.stopPropagation();
+            event.stopImmediatePropagation();
+        } else {
+            this.compositionAdapter.endComposition("x");
+        }
+    }
 
     // Commit and clear any in-progress composition. Runs when the controller is
     // active, or whenever a composition is in progress even though inactive — the
@@ -283,8 +415,8 @@ export class HangulImeController {
         this.notifyOnEntry();
     }
 
-    private addListener(target: EventTarget, type: string, listener: EventListener) {
-        target.addEventListener(type, listener);
-        this.eventListeners.push({ target, type, listener });
+    private addListener(target: EventTarget, type: string, listener: EventListener, capture = false) {
+        target.addEventListener(type, listener, capture);
+        this.eventListeners.push({ target, type, listener, capture });
     }
 }

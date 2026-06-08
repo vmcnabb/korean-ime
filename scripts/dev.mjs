@@ -32,7 +32,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import * as ChromeLauncher from "chrome-launcher";
-import { killTree, requestedLocale, startTestPageServer, watchRequested, wordAdapterRequested } from "./dev-shared.mjs";
+import { killTree, requestedLocale, startTestPageServer, watchRequested } from "./dev-shared.mjs";
 
 const root = process.cwd();
 const DEFAULT_CHROME_DEBUG_PORT = 9222;
@@ -198,11 +198,10 @@ const { server, testUrl } = await startTestPageServer();
 
 // 2. Build the extension. Default: a one-off build. With --watch: start Parcel
 //    in watch mode (auto-rebuild + hot reload) and wait for the first build.
-const enableWord = wordAdapterRequested();
 const watchMode = watchRequested();
-const buildEnv = { ...process.env, NODE_ENV: "development", KIME_ENABLE_WORD: enableWord ? "true" : "" };
-console.log(`[dev] Word for the Web adapter: ${enableWord ? "enabled" : "disabled"} (Google Docs is unsupported)`);
+const buildEnv = { ...process.env, NODE_ENV: "development" };
 
+console.log("[dev] Starting...");
 if (watchMode) {
     console.log("[dev] Starting Parcel in watch mode…");
     watch = spawn("npm", ["run", "start:chrome"], {

@@ -1,5 +1,6 @@
 import { HangulImeController } from "./hangul-ime-controller";
 import { InputAdapter } from "./composition-adapters/input-adapter";
+import { ContentEditableAdapter } from "./composition-adapters/content-editable-adapter";
 import { KeyCode } from "../keyboard/korean-keyboard-map";
 
 function dispatchKeydown(target: EventTarget, code: string, key: string): KeyboardEvent {
@@ -7,6 +8,22 @@ function dispatchKeydown(target: EventTarget, code: string, key: string): Keyboa
     target.dispatchEvent(event);
     return event;
 }
+
+// Each controller registers a capture-phase keydown listener on `window`. Tests
+// don't dispose controllers (production does, via TextInputManager's removal
+// observer), so without cleanup a controller from one test keeps reacting to
+// keystrokes dispatched by the next. Track every controller and dispose them all
+// after each test to keep tests isolated.
+const liveControllers: HangulImeController[] = [];
+function makeController(element: HTMLElement): HangulImeController {
+    const controller = new HangulImeController(element);
+    liveControllers.push(controller);
+    return controller;
+}
+afterEach(() => {
+    liveControllers.forEach((controller) => controller.dispose());
+    liveControllers.length = 0;
+});
 
 function makeContentEditable(): HTMLElement {
     const element = document.createElement("div");
@@ -26,7 +43,7 @@ describe("HangulImeController", () => {
         const documentAdd = jest.spyOn(document, "addEventListener");
         const documentRemove = jest.spyOn(document, "removeEventListener");
 
-        const controller = new HangulImeController(element);
+        const controller = makeController(element);
 
         // contenteditable routes mousedown to `document`; keydown/blur to the element
         const mousedownAdd = documentAdd.mock.calls.find(([type]) => type === "mousedown");
@@ -56,7 +73,7 @@ describe("HangulImeController functional keys during composition", () => {
         const endComposition = jest.spyOn(InputAdapter.prototype, "endComposition").mockImplementation(() => {});
 
         const element = document.createElement("textarea");
-        const controller = new HangulImeController(element);
+        const controller = makeController(element);
         controller.activate();
         return { element, endComposition };
     }
@@ -108,7 +125,7 @@ describe("HangulImeController flushes OSK-driven compositions while inactive", (
         const blur = jest.spyOn(InputAdapter.prototype, "blur");
 
         const element = document.createElement("textarea");
-        const controller = new HangulImeController(element); // deliberately NOT activated
+        const controller = makeController(element); // deliberately NOT activated
         return { element, controller, blur };
     }
 
@@ -146,5 +163,240 @@ describe("HangulImeController flushes OSK-driven compositions while inactive", (
         element.dispatchEvent(new FocusEvent("blur"));
 
         expect(blur).not.toHaveBeenCalled();
+    });
+});
+
+describe("HangulImeController intercepts Backspace during composition in the capture phase", () => {
+    afterEach(() => {
+        jest.restoreAllMocks();
+        document.body.innerHTML = "";
+    });
+
+    // The element must be attached to the document so events propagate through the
+    // window-capture listener (that's the whole point of the fix). Adapter DOM
+    // mutations are stubbed so we can drive composition state in jsdom.
+    function activeConnectedController() {
+        jest.spyOn(InputAdapter.prototype, "beginComposition").mockImplementation(() => {});
+        const updateComposition = jest.spyOn(InputAdapter.prototype, "updateComposition").mockImplementation(() => {});
+        const endComposition = jest.spyOn(InputAdapter.prototype, "endComposition").mockImplementation(() => {});
+
+        const element = document.createElement("textarea");
+        document.body.appendChild(element);
+        const controller = makeController(element);
+        controller.activate();
+        return { element, controller, updateComposition, endComposition };
+    }
+
+    // Regression (Word for the Web): rich editors delete the whole composing block in
+    // their own capture-phase Backspace handler before our bubble handler runs. We
+    // must intercept in the capture phase, recompose, and stop the event so it never
+    // reaches the editor.
+    it("recomposes the block and stops Backspace before it reaches the page", () => {
+        const { element, updateComposition } = activeConnectedController();
+
+        dispatchKeydown(element, "KeyR", "r"); // ㄱ
+        dispatchKeydown(element, "KeyK", "k"); // 가
+
+        // A page listener on the element stands in for the editor's own handler.
+        let reachedPage = false;
+        element.addEventListener("keydown", () => (reachedPage = true));
+
+        const backspace = new KeyboardEvent("keydown", {
+            code: "Backspace",
+            key: "Backspace",
+            bubbles: true,
+            cancelable: true,
+        });
+        element.dispatchEvent(backspace);
+
+        expect(updateComposition).toHaveBeenCalledWith("ㄱ", KeyCode.Backspace); // 가 → ㄱ
+        expect(backspace.defaultPrevented).toBe(true); // key cancelled
+        expect(reachedPage).toBe(false); // stopped in the capture phase, never reached the editor
+    });
+
+    // When the block empties, we fall back to the contenteditable "x" hack and let the
+    // editor's own Backspace through — so the key must NOT be cancelled here.
+    it("commits 'x' and lets Backspace through when the block becomes empty", () => {
+        const { element, endComposition, updateComposition } = activeConnectedController();
+
+        dispatchKeydown(element, "KeyR", "r"); // single jamo ㄱ
+
+        const backspace = new KeyboardEvent("keydown", {
+            code: "Backspace",
+            key: "Backspace",
+            bubbles: true,
+            cancelable: true,
+        });
+        element.dispatchEvent(backspace);
+
+        expect(endComposition).toHaveBeenCalledWith("x");
+        expect(updateComposition).not.toHaveBeenCalled();
+        expect(backspace.defaultPrevented).toBe(false); // editor's Backspace deletes the "x"
+    });
+
+    it("ignores Backspace when not composing (lets the editor handle it)", () => {
+        const { element, updateComposition, endComposition } = activeConnectedController();
+
+        const backspace = new KeyboardEvent("keydown", {
+            code: "Backspace",
+            key: "Backspace",
+            bubbles: true,
+            cancelable: true,
+        });
+        element.dispatchEvent(backspace);
+
+        expect(updateComposition).not.toHaveBeenCalled();
+        expect(endComposition).not.toHaveBeenCalled();
+        expect(backspace.defaultPrevented).toBe(false);
+    });
+});
+
+describe("HangulImeController intercepts the first jamo over a selection in the capture phase", () => {
+    afterEach(() => {
+        jest.restoreAllMocks();
+        document.body.innerHTML = "";
+        document.getSelection()?.removeAllRanges();
+    });
+
+    function activeContentEditable(text: string) {
+        const beginComposition = jest
+            .spyOn(ContentEditableAdapter.prototype, "beginComposition")
+            .mockImplementation(() => {});
+        jest.spyOn(ContentEditableAdapter.prototype, "updateComposition").mockImplementation(() => {});
+        jest.spyOn(ContentEditableAdapter.prototype, "endComposition").mockImplementation(() => {});
+
+        const element = document.createElement("div");
+        // jsdom doesn't implement isContentEditable; define it so the factory picks
+        // the ContentEditableAdapter.
+        Object.defineProperty(element, "isContentEditable", { value: true });
+        element.textContent = text;
+        document.body.appendChild(element);
+
+        const controller = makeController(element);
+        controller.activate();
+        return { element, controller, beginComposition };
+    }
+
+    function selectWithin(node: Node, start: number, end: number) {
+        const range = document.createRange();
+        range.setStart(node, start);
+        range.setEnd(node, end);
+        const selection = document.getSelection();
+        selection?.removeAllRanges();
+        selection?.addRange(range);
+    }
+
+    function pressJamo(element: HTMLElement) {
+        const keydown = new KeyboardEvent("keydown", { code: "KeyD", key: "d", bubbles: true, cancelable: true });
+        element.dispatchEvent(keydown);
+        return keydown;
+    }
+
+    // Regression (Word for the Web): with text selected, the editor replaces the
+    // selection with the typed key's literal character in its capture-phase handler
+    // before our bubble handler runs. We must begin composition in the capture phase
+    // (which deletes the selection) and stop the key so the editor never sees it.
+    it("begins composition and stops the key before it propagates past window-capture", () => {
+        const { element, beginComposition } = activeContentEditable("Hello Anyeon.");
+        selectWithin(element.firstChild as Node, 6, 12); // select "Anyeon"
+
+        // A capture listener on <body> fires only if the event propagated past
+        // window-capture — i.e. only if we did NOT intercept it there.
+        let reachedBodyCapture = false;
+        document.body.addEventListener("keydown", () => (reachedBodyCapture = true), true);
+
+        const keydown = pressJamo(element); // "d" → ㅇ
+
+        expect(beginComposition).toHaveBeenCalledWith("ㅇ", KeyCode.KeyD);
+        expect(keydown.defaultPrevented).toBe(true);
+        expect(reachedBodyCapture).toBe(false); // intercepted at window-capture, ahead of the editor
+    });
+
+    // Without a selection there's nothing for the editor to type over, so the
+    // capture guard must stay out of the way and let the normal bubble path run.
+    it("leaves a no-selection jamo to the bubble handler (does not intercept in capture)", () => {
+        const { element, beginComposition } = activeContentEditable("Hello .");
+        selectWithin(element.firstChild as Node, 6, 6); // collapsed caret, no selection
+
+        let reachedBodyCapture = false;
+        document.body.addEventListener("keydown", () => (reachedBodyCapture = true), true);
+
+        const keydown = pressJamo(element);
+
+        expect(beginComposition).toHaveBeenCalledWith("ㅇ", KeyCode.KeyD); // still composed...
+        expect(keydown.defaultPrevented).toBe(true);
+        expect(reachedBodyCapture).toBe(true); // ...but via the bubble path, not capture
+    });
+});
+
+describe("HangulImeController intercepts Shift+Backspace in the capture phase", () => {
+    afterEach(() => {
+        jest.restoreAllMocks();
+        document.body.innerHTML = "";
+    });
+
+    function activeContentEditable(previousCharacter: string | undefined) {
+        const getPreviousCharacter = jest
+            .spyOn(ContentEditableAdapter.prototype, "getPreviousCharacter")
+            .mockReturnValue(previousCharacter);
+        const deleteContentBackwards = jest
+            .spyOn(ContentEditableAdapter.prototype, "deleteContentBackwards")
+            .mockImplementation(() => {});
+        const beginComposition = jest
+            .spyOn(ContentEditableAdapter.prototype, "beginComposition")
+            .mockImplementation(() => {});
+
+        const element = document.createElement("div");
+        Object.defineProperty(element, "isContentEditable", { value: true });
+        document.body.appendChild(element);
+
+        const controller = makeController(element);
+        controller.activate();
+        return { element, controller, getPreviousCharacter, deleteContentBackwards, beginComposition };
+    }
+
+    function pressShiftBackspace(element: HTMLElement) {
+        const keydown = new KeyboardEvent("keydown", {
+            code: "Backspace",
+            key: "Backspace",
+            shiftKey: true,
+            bubbles: true,
+            cancelable: true,
+        });
+        element.dispatchEvent(keydown);
+        return keydown;
+    }
+
+    // Regression (Word for the Web): the editor deletes the previous character in its
+    // own capture-phase handler before our bubble handler can read it, so we'd lift
+    // the character *before* it. Intercepting in the capture phase reads the correct
+    // previous character (still present) and stops the editor's delete.
+    it("lifts the still-present previous character and stops the key before the editor", () => {
+        const { element, deleteContentBackwards, beginComposition } = activeContentEditable("녕");
+
+        let reachedBodyCapture = false;
+        document.body.addEventListener("keydown", () => (reachedBodyCapture = true), true);
+
+        const keydown = pressShiftBackspace(element);
+
+        expect(deleteContentBackwards).toHaveBeenCalled();
+        expect(beginComposition).toHaveBeenCalledWith("녕", KeyCode.Backspace);
+        expect(keydown.defaultPrevented).toBe(true);
+        expect(reachedBodyCapture).toBe(false); // intercepted at window-capture, ahead of the editor
+    });
+
+    // If the previous character isn't composable Hangul, we do nothing and let the
+    // editor handle Shift+Backspace as an ordinary delete.
+    it("does not intercept when the previous character isn't composable Hangul", () => {
+        const { element, beginComposition } = activeContentEditable("o");
+
+        let reachedBodyCapture = false;
+        document.body.addEventListener("keydown", () => (reachedBodyCapture = true), true);
+
+        const keydown = pressShiftBackspace(element);
+
+        expect(beginComposition).not.toHaveBeenCalled();
+        expect(keydown.defaultPrevented).toBe(false);
+        expect(reachedBodyCapture).toBe(true);
     });
 });

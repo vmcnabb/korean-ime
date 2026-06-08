@@ -5,7 +5,6 @@ import { CompositionAdapterFactory } from "./composition-adapter-factory";
 import { InputAdapter } from "./composition-adapters/input-adapter";
 import { ContentEditableAdapter } from "./composition-adapters/content-editable-adapter";
 import { CkEditorAdapter } from "./composition-adapters/ck-editor-adapter";
-import { WordForTheWebAdapter } from "./composition-adapters/word-for-the-web-adapter";
 
 describe("CompositionAdapterFactory", () => {
     // jsdom does not implement isContentEditable, so we define it manually.
@@ -62,25 +61,6 @@ describe("CompositionAdapterFactory", () => {
                 expect(adapter).toBeUndefined();
             } finally {
                 Object.defineProperty(window, "frameElement", { value: null, configurable: true });
-            }
-        });
-
-        it("should not engage on Word for the Web by default", () => {
-            const div = makeContentEditable(document.createElement("div"));
-            div.id = "WACViewPanel_EditingElement";
-            const adapter = CompositionAdapterFactory.createCompositionAdapter(div);
-            expect(adapter).toBeUndefined();
-        });
-
-        it("should return a WordForTheWebAdapter for a Word element when KIME_ENABLE_WORD is set", () => {
-            process.env.KIME_ENABLE_WORD = "true";
-            try {
-                const div = makeContentEditable(document.createElement("div"));
-                div.id = "WACViewPanel_EditingElement";
-                const adapter = CompositionAdapterFactory.createCompositionAdapter(div);
-                expect(adapter).toBeInstanceOf(WordForTheWebAdapter);
-            } finally {
-                delete process.env.KIME_ENABLE_WORD;
             }
         });
 
