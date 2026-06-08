@@ -1,5 +1,5 @@
 import { KeyCode } from "../../keyboard/korean-keyboard-map";
-import { CompositionAdapter, DispatchableAction } from "./composition-adapter";
+import { CompositionAdapter } from "./composition-adapter";
 
 /**
  * Handles IME composition for contentEditable elements.
@@ -100,56 +100,17 @@ export class ContentEditableAdapter extends CompositionAdapter {
             throw new Error("Cannot begin composition when already compositing");
         }
 
-        const eventsToDispatch: DispatchableAction[] = [
-            new KeyboardEvent("keydown", {
-                key: "Process",
-                code: keyCode,
-                view: window,
-                bubbles: true,
-            }),
-            new CompositionEvent("compositionstart", {
-                view: window,
-                bubbles: true,
-            }),
-            new InputEvent("beforeinput", {
-                data: data,
-                isComposing: true,
-                inputType: "insertCompositionText",
-                bubbles: true,
-            }),
-            new CompositionEvent("compositionupdate", {
-                data: data,
-                view: window,
-                bubbles: true,
-            }),
-            () => {
-                // replace the current selection with the new data
-                const selection = window.getSelection();
-                if (selection) {
-                    selection.deleteFromDocument();
-                    const range = selection.getRangeAt(0);
-                    range.insertNode(document.createTextNode(data));
-                    range.collapse(false);
-                }
-            },
-            new InputEvent("input", {
-                data: data,
-                isComposing: true,
-                inputType: "insertCompositionText",
-                bubbles: true,
-            }),
-            () => {
-                document.dispatchEvent(new Event("selectionchange"));
-            },
-            new KeyboardEvent("keyup", {
-                key: "Process",
-                code: keyCode,
-                view: window,
-                bubbles: true,
-            }),
-        ];
-
-        this.dispatchActions(eventsToDispatch);
+        this._beginComposition(data, keyCode, () => {
+            // replace the current selection with the new data
+            const selection = window.getSelection();
+            if (selection) {
+                selection.deleteFromDocument();
+                const range = selection.getRangeAt(0);
+                range.insertNode(document.createTextNode(data));
+                range.collapse(false);
+            }
+            document.dispatchEvent(new Event("selectionchange"));
+        });
         this.createCompositingBox();
 
         this.currentBlock = data;
@@ -171,52 +132,17 @@ export class ContentEditableAdapter extends CompositionAdapter {
             throw new Error("Cannot update composition when not compositing");
         }
 
-        const eventsToDispatch: DispatchableAction[] = [
-            new KeyboardEvent("keydown", {
-                key: "Process",
-                code: keyCode,
-                isComposing: true,
-                view: window,
-                bubbles: true,
-            }),
-            new InputEvent("beforeinput", {
-                data: data,
-                isComposing: true,
-                inputType: "insertCompositionText",
-                bubbles: true,
-            }),
-            new CompositionEvent("compositionupdate", {
-                data: data,
-                view: window,
-                bubbles: true,
-            }),
-            () => {
-                // modify the character immediately before the caret
-                const selection = window.getSelection();
-                if (selection) {
-                    const range = selection.getRangeAt(0);
-                    range.setStart(range.startContainer, range.startOffset - 1);
-                    range.deleteContents();
-                    range.insertNode(document.createTextNode(data));
-                    range.collapse(false);
-                }
-            },
-            new InputEvent("input", {
-                data: data,
-                isComposing: true,
-                inputType: "insertCompositionText",
-                bubbles: true,
-            }),
-            new KeyboardEvent("keyup", {
-                key: "Process",
-                code: keyCode,
-                isComposing: true,
-                view: window,
-                bubbles: true,
-            }),
-        ];
-
-        this.dispatchActions(eventsToDispatch);
+        this._updateComposition(data, keyCode, () => {
+            // modify the character immediately before the caret
+            const selection = window.getSelection();
+            if (selection) {
+                const range = selection.getRangeAt(0);
+                range.setStart(range.startContainer, range.startOffset - 1);
+                range.deleteContents();
+                range.insertNode(document.createTextNode(data));
+                range.collapse(false);
+            }
+        });
         this.currentBlock = data;
     }
 

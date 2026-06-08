@@ -139,7 +139,72 @@ export abstract class CompositionAdapter implements ICompositionAdapter {
     }
 
     abstract beginComposition(data: string, keyCode: KeyCode): void;
+    /**
+     * Dispatches the IME event sequence a browser fires when the *first* jamo of a
+     * block is composed, with `mutate` slotted in where the browser would update the
+     * DOM (after `compositionupdate`, before `input`):
+     *
+     *  keydown(Process) → compositionstart → beforeinput(insertCompositionText) →
+     *  compositionupdate → [mutate] → input(insertCompositionText) → keyup(Process)
+     *
+     * Without these events a page that tracks its own value (e.g. Google search,
+     * any framework-controlled input) never learns the composed text changed — the
+     * value we write to the element is invisible to it until a non-composing key
+     * forces a real `input`. See `_updateComposition`/`_endComposition` for the rest.
+     */
+    protected _beginComposition(data: string, keyCode: KeyCode, mutate: () => void) {
+        this.dispatchActions([
+            new KeyboardEvent("keydown", { key: "Process", code: keyCode, view: window, bubbles: true }),
+            new CompositionEvent("compositionstart", { view: window, bubbles: true }),
+            new InputEvent("beforeinput", {
+                data,
+                isComposing: true,
+                inputType: "insertCompositionText",
+                bubbles: true,
+            }),
+            new CompositionEvent("compositionupdate", { data, view: window, bubbles: true }),
+            mutate,
+            new InputEvent("input", { data, isComposing: true, inputType: "insertCompositionText", bubbles: true }),
+            new KeyboardEvent("keyup", { key: "Process", code: keyCode, view: window, bubbles: true }),
+        ]);
+    }
+
     abstract updateComposition(data: string, keyCode: KeyCode): void;
+    /**
+     * Dispatches the IME event sequence a browser fires when a *subsequent* jamo
+     * changes the in-progress block (same as `_beginComposition` minus the
+     * `compositionstart`, since composition is already underway):
+     *
+     *  keydown(Process) → beforeinput(insertCompositionText) → compositionupdate →
+     *  [mutate] → input(insertCompositionText) → keyup(Process)
+     */
+    protected _updateComposition(data: string, keyCode: KeyCode, mutate: () => void) {
+        this.dispatchActions([
+            new KeyboardEvent("keydown", {
+                key: "Process",
+                code: keyCode,
+                isComposing: true,
+                view: window,
+                bubbles: true,
+            }),
+            new InputEvent("beforeinput", {
+                data,
+                isComposing: true,
+                inputType: "insertCompositionText",
+                bubbles: true,
+            }),
+            new CompositionEvent("compositionupdate", { data, view: window, bubbles: true }),
+            mutate,
+            new InputEvent("input", { data, isComposing: true, inputType: "insertCompositionText", bubbles: true }),
+            new KeyboardEvent("keyup", {
+                key: "Process",
+                code: keyCode,
+                isComposing: true,
+                view: window,
+                bubbles: true,
+            }),
+        ]);
+    }
 
     /**
      * When using Microsoft IME with Korean and Chrome, the following events are fired when the composition
@@ -174,6 +239,25 @@ export abstract class CompositionAdapter implements ICompositionAdapter {
      * @param data the final composition text
      */
     abstract endComposition(data: string): void;
+    /**
+     * Dispatches the events that commit the in-progress composition:
+     *
+     *  compositionend → [mutate] → input(insertCompositionText, isComposing: false)
+     *
+     * The `compositionend` tells the page composition is over (so it stops treating
+     * the value as tentative), and the trailing non-composing `input` lets
+     * value-tracking listeners read the committed text. This must fire even when the
+     * composition is abandoned by a focus/caret change (blur/mousedown) — otherwise
+     * the page is left believing a composition is still active and its model of the
+     * value diverges from what we actually wrote.
+     */
+    protected _endComposition(data: string, mutate: () => void) {
+        this.dispatchActions([
+            new CompositionEvent("compositionend", { data, view: window, bubbles: true }),
+            mutate,
+            new InputEvent("input", { data, isComposing: false, inputType: "insertCompositionText", bubbles: true }),
+        ]);
+    }
 
     /**
      * Dispatches a list of events and functions. Sets all events as Kime events unless
