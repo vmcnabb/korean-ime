@@ -64,8 +64,7 @@ Core domain logic (mostly pure, well unit-tested):
   **`composition-adapters/`** abstracts over editor types; the right adapter is
   chosen by `composition-adapter-factory.ts`. Active adapters: plain input,
   contentEditable, CKEditor. **Google Docs is unsupported** (factory returns no
-  adapter — see gotcha below) and **Word for the Web is off by default**
-  (flag-gated on `KIME_ENABLE_WORD`). The `GoogleDocsAdapter` file is kept for
+  adapter — see gotcha below). The `GoogleDocsAdapter` file is kept for
   reference but is no longer selected.
 - **`src/romanization/`** — Hangul → Latin conversion.
 - **`src/settings/`** — a plain typed `Settings` object + defaults
@@ -113,12 +112,10 @@ Core domain logic (mostly pure, well unit-tested):
   process group, immune to the same Ctrl+C); it waits for the launcher PID to
   die, then tree-kills the Firefox matching our throwaway profile dir name
   (scoped so it never touches the user's own Firefox).
-- **Google Docs & Word for the Web use canvas + the EditContext API.** Docs
+- **Google Docs uses canvas + the EditContext API.** Docs
   ignores synthetic composition events entirely (input goes through an
   EditContext the page owns, not the DOM), so it's unsupported — the factory
-  returns no adapter for it. Word still works via direct DOM editing but is on
-  the same path, so it's disabled by default behind `KIME_ENABLE_WORD`
-  (`npm run dev:chrome -- --enable-word`). Don't waste time trying to drive Docs with
+  returns no adapter for it. Don't waste time trying to drive Docs with
   synthetic events; that door is closed (Google Input Tools only works via a
   private main-world bridge into Docs' internal `kix` editor).
 - **`--load-extension` is dead in current Chrome, so `dev:chrome` loads over

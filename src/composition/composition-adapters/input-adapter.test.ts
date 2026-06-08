@@ -69,6 +69,57 @@ describe("InputAdapter composition events", () => {
         expect(element.value).toBe("ㄱ");
     });
 
+    // A real IME reports every consumed keystroke as key "Process" with
+    // keyCode/which === 229. We mirror that so IME-aware pages know the key was
+    // consumed.
+    it("stamps key 'Process' + keyCode/which 229 on the composition keydown/keyup", () => {
+        const element = makeTextarea();
+        const recorded = recordEvents(element, ["keydown", "keyup"]);
+        const adapter = makeAdapter(element);
+
+        adapter.beginComposition("ㄱ", KeyCode.KeyR);
+        adapter.updateComposition("가", KeyCode.KeyK);
+
+        const keyEvents = recorded.events as KeyboardEvent[];
+        expect(keyEvents).not.toHaveLength(0);
+        keyEvents.forEach((e) => {
+            expect(e.key).toBe("Process");
+            expect(e.keyCode).toBe(229);
+            expect(e.which).toBe(229);
+        });
+    });
+
+    // Regression (Word for the Web): a composition update driven by Backspace must
+    // NOT carry code "Backspace", or editors that key off event.code run their own
+    // delete on top of our recomposition, eating an extra character before the block.
+    it("does not leak an editing code onto the keydown when a block is recomposed via Backspace", () => {
+        const element = makeTextarea();
+        const adapter = makeAdapter(element);
+        adapter.beginComposition("가", KeyCode.KeyK);
+
+        const recorded = recordEvents(element, ["keydown", "keyup"]);
+        adapter.updateComposition("ㄱ", KeyCode.Backspace); // Backspace removed ㅏ, block is now ㄱ
+
+        const keyEvents = recorded.events as KeyboardEvent[];
+        expect(keyEvents).not.toHaveLength(0);
+        keyEvents.forEach((e) => {
+            expect(e.code).toBe(""); // editing code dropped...
+            expect(e.key).toBe("Process"); // ...but the IME signal stays
+        });
+    });
+
+    // The harmless case must still pass the real code through for fidelity.
+    it("keeps the real code on the keydown for ordinary jamo keys", () => {
+        const element = makeTextarea();
+        const recorded = recordEvents(element, ["keydown"]);
+        const adapter = makeAdapter(element);
+
+        adapter.beginComposition("ㄱ", KeyCode.KeyR);
+
+        const keydown = recorded.events[0] as KeyboardEvent;
+        expect(keydown.code).toBe("KeyR");
+    });
+
     it("fires an input event on every update so the page sees each keystroke", () => {
         const element = makeTextarea();
         const adapter = makeAdapter(element);

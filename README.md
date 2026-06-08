@@ -13,7 +13,7 @@ on-screen keyboard. Works in Chrome and Firefox.
 ### Hangul typing
 * Toggle between Hangul and Latin input by clicking the extension icon or pressing the right-hand **Alt** key.
 * Works in standard text inputs, textareas, `contenteditable` elements, and CKEditor.
-* **Not supported:** Google Docs and Word for the Web — both moved to canvas/EditContext-based editors that don't accept programmatic composition. The extension stays out of the way on those rather than mis-typing. (Word still partly works and can be enabled for development with a build flag — see below — but it's off by default.)
+* **Not supported:** Google Docs — moved to a canvas/EditContext-based that doesn't accept programmatic composition. The extension stays out of the way on those rather than mis-typing. 
 * Re-enter composition on an existing character by placing the caret immediately after it and pressing **Shift+Backspace**. This lets you continue building a syllable block you've already committed.
 
 ### Romanization
@@ -59,17 +59,7 @@ The Chrome production build (`npm run build:chrome`) outputs to `/dist-chrome` (
 
 #### Firefox development
 
-`npm run dev:firefox` builds to `/dist-firefox-dev` and uses [`web-ext`](https://github.com/mozilla/web-ext) to launch Firefox with the extension installed as a temporary add-on on a throwaway profile — no manual loading. Add `--watch` to rebuild, re-patch the manifest, and reload the extension on every change. Set `FIREFOX_PATH` if Firefox isn't found automatically. The `--enable-word` and `--locale` flags below work the same as for `dev:chrome`.
-
-#### Enabling the Word for the Web adapter
-
-The Word for the Web adapter is off by default. To enable it for a dev session:
-
-```sh
-npm run dev:chrome -- --enable-word
-```
-
-This sets the `KIME_ENABLE_WORD` build flag (which Parcel inlines). For other builds, set the env var directly, e.g. `KIME_ENABLE_WORD=true npm run build-dev:chrome`.
+`npm run dev:firefox` builds to `/dist-firefox-dev` and uses [`web-ext`](https://github.com/mozilla/web-ext) to launch Firefox with the extension installed as a temporary add-on on a throwaway profile — no manual loading. Add `--watch` to rebuild, re-patch the manifest, and reload the extension on every change. Set `FIREFOX_PATH` if Firefox isn't found automatically. The `--locale` flag below works the same as for `dev:chrome`.
 
 #### Testing a different locale
 

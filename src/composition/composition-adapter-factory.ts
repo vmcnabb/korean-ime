@@ -1,6 +1,5 @@
 import { InputAdapter } from "./composition-adapters/input-adapter";
 import { CompositionAdapter } from "./composition-adapters/composition-adapter";
-import { WordForTheWebAdapter } from "./composition-adapters/word-for-the-web-adapter";
 import { CkEditorAdapter } from "./composition-adapters/ck-editor-adapter";
 import { ContentEditableAdapter } from "./composition-adapters/content-editable-adapter";
 import { debugLog } from "../debug-log";
@@ -17,12 +16,6 @@ export class CompositionAdapterFactory {
                 return undefined;
             } else if (isCkEditorElement(element)) {
                 return new CkEditorAdapter(element);
-            } else if (isWordForTheWebElement(element)) {
-                // Word for the Web still works via direct DOM editing, but it's on the
-                // same EditContext trajectory as Docs and is fragile, so it's off by
-                // default. Enable it for development with `npm run dev:chrome -- --enable-word`
-                // (sets KIME_ENABLE_WORD, which Parcel inlines at build time).
-                return process.env.KIME_ENABLE_WORD === "true" ? new WordForTheWebAdapter(element) : undefined;
             } else if (element.isContentEditable) {
                 return new ContentEditableAdapter(element);
             }
@@ -51,8 +44,4 @@ function isGoogleDocsElement(element: HTMLElement) {
 
 function isCkEditorElement(element: HTMLElement) {
     return element.isContentEditable && element.classList.contains("ck-editor__editable");
-}
-
-function isWordForTheWebElement(element: HTMLElement) {
-    return element.isContentEditable && element.id === "WACViewPanel_EditingElement";
 }

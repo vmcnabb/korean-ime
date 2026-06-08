@@ -23,14 +23,7 @@
 import { spawn, spawnSync } from "node:child_process";
 import { resolve } from "node:path";
 import webExt from "web-ext";
-import {
-    killFirefoxByProfile,
-    killTree,
-    requestedLocale,
-    startTestPageServer,
-    watchRequested,
-    wordAdapterRequested,
-} from "./dev-shared.mjs";
+import { killFirefoxByProfile, killTree, requestedLocale, startTestPageServer, watchRequested } from "./dev-shared.mjs";
 
 const root = process.cwd();
 // Dev builds go to dist-firefox-dev/ so they can never be mistaken for, or
@@ -87,11 +80,10 @@ const testUrl = startedServer.testUrl;
 
 // 2. Build the extension. Default: a one-off build. With --watch: start Parcel
 //    in watch mode and patch the manifest after the first build.
-const enableWord = wordAdapterRequested();
 const watchMode = watchRequested();
-const buildEnv = { ...process.env, NODE_ENV: "development", KIME_ENABLE_WORD: enableWord ? "true" : "" };
-console.log(`[dev] Word for the Web adapter: ${enableWord ? "enabled" : "disabled"} (Google Docs is unsupported)`);
+const buildEnv = { ...process.env, NODE_ENV: "development" };
 
+console.log("[dev] Starting...");
 if (watchMode) {
     console.log("[dev] Starting Parcel in watch mode…");
     watch = spawn("npm", ["run", "start:firefox"], {

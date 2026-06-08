@@ -5,18 +5,6 @@ import { createServer } from "node:http";
 import { spawnSync } from "node:child_process";
 import { basename } from "node:path";
 
-// The Word for the Web adapter is disabled by default (see the factory). Turn it
-// on for a dev session with `npm run dev:<browser> -- --enable-word` (flag reaches
-// argv) or `npm run dev:<browser> --enable-word` (npm exposes it as
-// npm_config_enable_word). The build reads KIME_ENABLE_WORD, which the launcher
-// sets on the spawned Parcel process.
-export function wordAdapterRequested() {
-    if (process.argv.slice(2).includes("--enable-word")) return true;
-    const cfg = process.env.npm_config_enable_word;
-    if (cfg !== undefined && cfg !== "false" && cfg !== "0") return true;
-    return process.env.KIME_ENABLE_WORD === "true";
-}
-
 // Watch mode (Parcel watch + auto-reload) is opt-in:
 // `npm run dev:<browser> -- --watch` (flag reaches argv) or
 // `npm run dev:<browser> --watch` (npm exposes it as npm_config_watch).

@@ -23,7 +23,7 @@
                 },
                 "background": {
                     "activeOnStart": true,
-                    "beginsPattern": "^\\[dev\\] Word for the Web adapter:",
+                    "beginsPattern": "^\\[dev\\] [dev] Starting",
                     "endsPattern": "^\\[dev\\] VS Code debugger target ready\\.$"
                 }
             }

@@ -154,7 +154,7 @@ export abstract class CompositionAdapter implements ICompositionAdapter {
      */
     protected _beginComposition(data: string, keyCode: KeyCode, mutate: () => void) {
         this.dispatchActions([
-            new KeyboardEvent("keydown", { key: "Process", code: keyCode, view: window, bubbles: true }),
+            createProcessKeyEvent("keydown", keyCode),
             new CompositionEvent("compositionstart", { view: window, bubbles: true }),
             new InputEvent("beforeinput", {
                 data,
@@ -165,7 +165,7 @@ export abstract class CompositionAdapter implements ICompositionAdapter {
             new CompositionEvent("compositionupdate", { data, view: window, bubbles: true }),
             mutate,
             new InputEvent("input", { data, isComposing: true, inputType: "insertCompositionText", bubbles: true }),
-            new KeyboardEvent("keyup", { key: "Process", code: keyCode, view: window, bubbles: true }),
+            createProcessKeyEvent("keyup", keyCode),
         ]);
     }
 
@@ -180,13 +180,7 @@ export abstract class CompositionAdapter implements ICompositionAdapter {
      */
     protected _updateComposition(data: string, keyCode: KeyCode, mutate: () => void) {
         this.dispatchActions([
-            new KeyboardEvent("keydown", {
-                key: "Process",
-                code: keyCode,
-                isComposing: true,
-                view: window,
-                bubbles: true,
-            }),
+            createProcessKeyEvent("keydown", keyCode, true),
             new InputEvent("beforeinput", {
                 data,
                 isComposing: true,
@@ -196,13 +190,7 @@ export abstract class CompositionAdapter implements ICompositionAdapter {
             new CompositionEvent("compositionupdate", { data, view: window, bubbles: true }),
             mutate,
             new InputEvent("input", { data, isComposing: true, inputType: "insertCompositionText", bubbles: true }),
-            new KeyboardEvent("keyup", {
-                key: "Process",
-                code: keyCode,
-                isComposing: true,
-                view: window,
-                bubbles: true,
-            }),
+            createProcessKeyEvent("keyup", keyCode, true),
         ]);
     }
 
@@ -303,6 +291,43 @@ export abstract class CompositionAdapter implements ICompositionAdapter {
         }
         return record;
     }
+}
+
+/**
+ * keyCode/which value a browser reports for any key the IME consumed ("Process").
+ * See `createProcessKeyEvent`.
+ */
+const IME_PROCESS_KEY_CODE = 229;
+
+/**
+ * `code` values that carry a default editing action in a contenteditable. We must
+ * never put these on a synthetic composition keydown (see `createProcessKeyEvent`).
+ */
+const NATIVE_EDITING_CODES = new Set<KeyCode>([KeyCode.Backspace, KeyCode.Enter, KeyCode.Tab]);
+
+/**
+ * Builds the synthetic keydown/keyup a browser fires for a keystroke the IME has
+ * consumed during composition: `key === "Process"` and `keyCode === which === 229`
+ * (keyCode/which are legacy, readonly, and ignored by the KeyboardEvent
+ * constructor, so they're stamped on after construction).
+ *
+ * Crucially, we drop the real `code` when it names a key with a native editing
+ * action (Backspace/Enter/Tab). A composition update can be driven by Backspace
+ * (recomposing a block, or the shift+Backspace "compose previous char" feature),
+ * and some editors — notably Word for the Web — act on `event.code === "Backspace"`
+ * directly, running their own delete *on top of* our composition update and eating
+ * an extra character before the block. They do this even with `isComposing: true`
+ * and `keyCode: 229` set, so signalling IME intent isn't enough; the editing code
+ * simply must not be present. `key` stays `"Process"`, which is the real signal a
+ * page reads during composition; plain jamo codes (KeyR, …) have no native action
+ * and pass through unchanged for fidelity.
+ */
+function createProcessKeyEvent(type: "keydown" | "keyup", code: KeyCode, isComposing = false): KeyboardEvent {
+    const safeCode = NATIVE_EDITING_CODES.has(code) ? "" : code;
+    const event = new KeyboardEvent(type, { key: "Process", code: safeCode, isComposing, view: window, bubbles: true });
+    Object.defineProperty(event, "keyCode", { value: IME_PROCESS_KEY_CODE });
+    Object.defineProperty(event, "which", { value: IME_PROCESS_KEY_CODE });
+    return event;
 }
 
 function isDispatchableFunction(action: DispatchableAction): action is () => void {
