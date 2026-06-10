@@ -177,9 +177,15 @@
     }
 
     // Collapsed, the handle becomes a fixed ~1cm spacer between the mode icon
-    // and the buttons (the bar shrinks to fit — see toggleCollapsed).
+    // and the buttons (the bar shrinks to fit around the header). Size it with
+    // `width`, not a `flex: 0 0 1cm` basis: Firefox leaves a flex item's
+    // flex-basis out of the flex container's max-content size, so basing the
+    // spacer on flex-basis made the keyboard's fit-content width come up ~1cm
+    // short and the close button spilled past the right edge. Chrome counts the
+    // basis so it only showed in Firefox; a plain width is counted by both.
     &.collapsed .kb-handle {
-        flex: 0 0 1cm;
+        flex: none;
+        width: 1cm;
     }
 
     div.row {
