@@ -514,6 +514,35 @@ export class OnScreenKeyboardController {
         const dist = Math.hypot(resize.latestX - resize.pivotX, resize.latestY - resize.pivotY);
         this._keyUnit = clamp((resize.startUnit * dist) / resize.startDist, MIN_KEY_UNIT_PX, MAX_KEY_UNIT_PX);
         this._keyboardElement.style.setProperty("--key-unit", `${this._keyUnit}px`);
+        // Then lock it to the viewport: growing away from the pinned pivot must not
+        // push the keyboard off-screen, so shrink the unit just enough that the
+        // rendered board still fits the room between the pivot and the edge it grows
+        // toward. (Shrinking the keyboard never trips this — there's always room.)
+        this.clampResizeToViewport(resize);
+    }
+
+    // Cap --key-unit (and _keyUnit) so the resizing keyboard stays on-screen on the
+    // side it's growing toward. The pivot edge is held fixed (see anchorResizePivot),
+    // so a resize only ever extends the opposite edge; the room is the gap from the
+    // pivot out to the viewport edge in that direction. Iterates because fixed chrome
+    // (borders/padding/gaps) makes the size only roughly proportional to the unit, so
+    // one pass can overshoot — mirrors applyKeyUnit's convergence loop.
+    private clampResizeToViewport(resize: NonNullable<OnScreenKeyboardController["_resize"]>) {
+        const el = this._keyboardElement;
+        const availW =
+            (resize.pivotIsLeft ? this._keyboardContainer.clientWidth - resize.pivotX : resize.pivotX) -
+            VIEWPORT_MARGIN_PX;
+        const availH =
+            (resize.pivotIsTop ? this._keyboardContainer.clientHeight - resize.pivotY : resize.pivotY) -
+            VIEWPORT_MARGIN_PX;
+        for (let i = 0; i < 3; i++) {
+            const scale = Math.min(1, availW / el.offsetWidth, availH / el.offsetHeight);
+            if (scale >= 1) {
+                break;
+            }
+            this._keyUnit = Math.max(MIN_KEY_UNIT_PX, this._keyUnit * scale);
+            el.style.setProperty("--key-unit", `${this._keyUnit}px`);
+        }
     }
 
     // Pin the pivot corner (the one opposite the dragged grip) with CSS layout edges,
