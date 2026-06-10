@@ -767,6 +767,7 @@ describe("OnScreenKeyboardController resize", () => {
 
     it("resizes from any corner, keeping the anchor origin and moving its position", () => {
         const controller = new OnScreenKeyboardController(() => {});
+        mirrorViewportToContainer(); // the off-screen clamp reads the container's size
         const el = sized();
         controller.showKeyboard(); // default anchor: bottom-right
         el.getBoundingClientRect = () =>
@@ -784,6 +785,41 @@ describe("OnScreenKeyboardController resize", () => {
         expect(placementOf(controller).originX).toBe("right");
         expect(placementOf(controller).originY).toBe("bottom");
         expect(persistedKeyUnit()).toBeCloseTo((32 * Math.hypot(600, 450)) / 500, 0);
+    });
+
+    it("locks the size so growing past the viewport edge keeps the keyboard on-screen", () => {
+        const controller = new OnScreenKeyboardController(() => {});
+        // A small viewport so the keyboard runs out of room well before MAX.
+        Object.defineProperty(window, "innerWidth", { configurable: true, value: 1000 });
+        Object.defineProperty(window, "innerHeight", { configurable: true, value: 1000 });
+        mirrorViewportToContainer();
+        const el = host();
+        controller.showKeyboard();
+        // Bottom-right grip → pivot pinned at the top-left (100,100); it grows toward
+        // the far edges, so the room is 900×900 (edge − pivot).
+        el.getBoundingClientRect = () =>
+            ({ left: 100, top: 100, right: 500, bottom: 400, width: 400, height: 300 }) as DOMRect;
+        // Rendered size tracks --key-unit: 20px of width and 6px of height per unit-px,
+        // so width is the binding constraint and the board overflows before MAX. (Real
+        // layout adds fixed chrome too; proportional is enough to exercise the clamp.)
+        Object.defineProperty(el, "offsetWidth", {
+            configurable: true,
+            get: () => (parseFloat(el.style.getPropertyValue("--key-unit")) || 0) * 20,
+        });
+        Object.defineProperty(el, "offsetHeight", {
+            configurable: true,
+            get: () => (parseFloat(el.style.getPropertyValue("--key-unit")) || 0) * 6,
+        });
+        sendMessage.mockClear();
+
+        const br = document.querySelector(".kb-grip-br") as HTMLElement;
+        br.dispatchEvent(new MouseEvent("pointerdown", { bubbles: true, button: 0 }));
+        // Drag far past the corner: the raw request blows past MAX (64), but the lock
+        // caps it at the unit whose width just fills the 900px of room: 900 / 20 = 45.
+        br.dispatchEvent(new MouseEvent("pointermove", { bubbles: true, clientX: 1900, clientY: 1900 }));
+        br.dispatchEvent(new MouseEvent("pointerup", { bubbles: true, button: 0 }));
+
+        expect(persistedKeyUnit()).toBeCloseTo(45, 0);
     });
 
     it("does not resize while collapsed", () => {
