@@ -591,7 +591,6 @@ export class OnScreenKeyboardController {
         keyboardElement.style.top = "0";
         keyboardElement.style.willChange = "transform";
         keyboardElement.style.display = "none";
-        keyboardElement.style.border = "none";
 
         // Header bar (drag handle + collapse/close controls); the keys live in a
         // body wrapper so the header can collapse them away.
