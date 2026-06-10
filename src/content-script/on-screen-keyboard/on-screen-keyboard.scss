@@ -115,6 +115,7 @@
 
     .kb-close:hover {
         background-color: #a00000;
+        border-radius: 0 var(--kb-radius) 0 0;
     }
 
     // In-header layout drop-down: a trigger button + an absolutely-positioned
