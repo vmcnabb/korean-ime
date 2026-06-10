@@ -117,6 +117,9 @@
         background-color: #a00000;
         border-radius: 0 var(--kb-radius) 0 0;
     }
+    &.collapsed .kb-close:hover {
+        border-radius: 0 var(--kb-radius) var(--kb-radius) 0;
+    }
 
     // In-header layout drop-down: a trigger button + an absolutely-positioned
     // menu that drops below the header over the keys.
