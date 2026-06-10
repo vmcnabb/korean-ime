@@ -64,7 +64,6 @@
         height: 22px;
         background-color: var(--key-background-color);
         border-bottom: 1px solid var(--border-color);
-        cursor: move;
         // Round to match the keyboard's top corners (the header's own background
         // would otherwise square them off).
         border-radius: var(--kb-radius) var(--kb-radius) 0 0;
@@ -86,7 +85,16 @@
 
     .kb-handle {
         flex: 1 1 auto;
-        cursor: move;
+        cursor: grab;
+    }
+
+    // Show the grabbing cursor while a header drag is in progress (the .dragging
+    // class is toggled in start/endDrag). We can't use .kb-handle:active here:
+    // the keyboard's mousedown handler calls preventDefault() to keep page focus,
+    // and Firefox suppresses :active when the mousedown default is prevented
+    // (Chrome/Safari still apply it, which is why :active looked fine there).
+    &.dragging .kb-handle {
+        cursor: grabbing;
     }
 
     .kb-btn {

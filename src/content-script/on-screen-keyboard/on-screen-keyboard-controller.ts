@@ -229,6 +229,9 @@ export class OnScreenKeyboardController {
             height: this._keyboardElement.offsetHeight,
         };
         this._movedDuringDrag = false;
+        // Cursor feedback is class-driven, not :active — Firefox drops :active
+        // because the mousedown handler calls preventDefault (see the scss).
+        this._keyboardElement.classList.add("dragging");
     }
 
     // Coalesce pointer moves into at most one DOM write per animation frame, no
@@ -292,6 +295,7 @@ export class OnScreenKeyboardController {
             return;
         }
         this._drag = undefined;
+        this._keyboardElement.classList.remove("dragging");
 
         if (this._movedDuringDrag) {
             // The keyboard is already sitting at its dropped position (a transform).
