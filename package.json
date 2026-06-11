@@ -1,7 +1,7 @@
 {
   "name": "korean-ime",
-  "version": "2.5.0",
-  "description": "Allow people to type Hangul in Chrome when the OS does not have a Korean IME installed.",
+  "version": "2.6.0",
+  "description": "Allow people to type Hangul in Chrome/Firefox when the OS does not have a Korean IME installed.",
   "private": true,
   "source": "src/manifest.json",
   "ts-node": {

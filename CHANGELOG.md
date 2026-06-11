@@ -1,6 +1,27 @@
 Install the latest release from the Chrome Web Store:
 [https://chrome.google.com/webstore/detail/korean-ime/cimmbifnciobjhchpimjekibbndgmkfk?hl=en-GB]
 
+# 2.6.0
+2026-06-10
+
+This release adds Microsoft Word for the Web support and a round of on-screen
+keyboard polish.
+
+### Features
+* Added support for typing Hangul in Microsoft Word for the Web
+
+### Fixes
+* Composition now dispatches proper composition events to inputs and textareas, improving compatibility with sites that listen for them
+* On-screen keyboard header control glyphs are now centered
+* The on-screen keyboard shows a grab/grabbing cursor while it is being dragged
+* Resizing the on-screen keyboard is clamped so it can no longer be grown off-screen
+* The on-screen keyboard close button no longer overflows the header when collapsed (Firefox)
+* The on-screen keyboard close button's hover highlight keeps the rounded corner when collapsed
+* The on-screen keyboard header now has a border so it no longer blends into a black page background
+
+### Internal
+* Updated development dependencies
+
 # 2.5.0
 2026-06-07
 

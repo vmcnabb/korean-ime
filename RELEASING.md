@@ -70,12 +70,12 @@ merge it — *then* tag the merged commit on `master`.
 
 ```sh
 git add package.json CHANGELOG.md
-git commit -m "Release vX.Y.Z"
-git push -u origin release/vX.Y.Z
-gh pr create --base master --title "Release vX.Y.Z" --body "..."
+git commit -m "Release X.Y.Z"
+git push -u origin release/X.Y.Z
+gh pr create --base master --title "Release X.Y.Z" --body "..."
 # review + merge the PR (CI must be green), then:
 git checkout master && git pull          # pull the merged commit
-git tag -a vX.Y.Z -m "vX.Y.Z"            # tag the real merged commit
+git tag -a X.Y.Z -m "X.Y.Z"            # tag the real merged commit
 git push --tags
 ```
 
