@@ -80,11 +80,32 @@
     "options_hanYong_disabled_hint": {
         "message": "끄면 모든 한/영 전환이 비활성화되고 오른쪽 Alt/한영 키도 동작하지 않습니다."
     },
-    "options_hanYong_keyboardKeyEnabled_label": {
-        "message": "오른쪽 Alt/한영 키 전환 사용"
+    "options_hanYong_toggleKey_label": {
+        "message": "전환 키"
     },
-    "options_hanYong_keyboardKeyEnabled_description": {
-        "message": "실제 키보드 키에 적용됩니다. 한국어 키보드에서는 스페이스바 오른쪽의 전용 한/영 키가 이에 해당합니다."
+    "options_hanYong_toggleKey_description": {
+        "message": "한글과 영문을 전환하는 키 또는 조합입니다. 기본값은 오른쪽 Alt 키이며, 이 컴퓨터에만 저장됩니다."
+    },
+    "options_hanYong_toggleKey_change": {
+        "message": "변경"
+    },
+    "options_hanYong_toggleKey_capturing": {
+        "message": "키를 누르세요…"
+    },
+    "options_hanYong_toggleKey_hint": {
+        "message": "사용할 키 또는 조합을 누르세요. 일반 키는 Ctrl 또는 Alt와 함께 사용해야 합니다. 취소하려면 Esc를 누르세요."
+    },
+    "options_hanYong_toggleKey_turnOff": {
+        "message": "끄기"
+    },
+    "options_hanYong_toggleKey_reset": {
+        "message": "기본값으로 재설정"
+    },
+    "options_hanYong_toggleKey_off": {
+        "message": "꺼짐"
+    },
+    "options_hanYong_toggleKey_invalid": {
+        "message": "일반 키는 Ctrl 또는 Alt와 함께 사용해야 합니다."
     },
     "options_hanYong_syncAcrossTabs_label": {
         "message": "모든 탭에서 모드 동기화"

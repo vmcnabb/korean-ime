@@ -26,8 +26,6 @@ export interface OnScreenKeyboardSettings extends FeatureSettings {
 export interface HanYongSettings extends FeatureSettings {
     /** Whether Hangul typing is enabled at all. */
     enabled: boolean;
-    /** Whether the physical Right Alt / Han-Yong key toggles modes. */
-    keyboardKeyEnabled: boolean;
 }
 
 /**
@@ -35,6 +33,10 @@ export interface HanYongSettings extends FeatureSettings {
  * `chrome.storage.sync` (see `settings-store.ts`) and edited by the options
  * page. Every context reads the same global config from storage; there is no
  * per-tab dimension here (live per-tab state lives in `StateManager`).
+ *
+ * The Han/Yong toggle **key** is deliberately *not* here: it is stored per
+ * machine in `api.storage.local` (see `toggle-key-store.ts`), so it doesn't
+ * sync across machines whose keyboards differ.
  */
 export interface Settings {
     onScreenKeyboard: OnScreenKeyboardSettings;
@@ -49,7 +51,6 @@ export const defaultSettings: Settings = {
     },
     hanYong: {
         enabled: true,
-        keyboardKeyEnabled: true,
         persistence: Persistence.AlwaysOff,
         syncAcrossTabs: false,
     },

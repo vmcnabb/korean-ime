@@ -80,11 +80,32 @@
     "options_hanYong_disabled_hint": {
         "message": "Cuando está desactivado, toda la conmutación Han/Yong se deshabilita y la tecla Alt derecha / Han-Yong no hace nada."
     },
-    "options_hanYong_keyboardKeyEnabled_label": {
-        "message": "Activar alternancia con la tecla Alt derecha / Han-Yong"
+    "options_hanYong_toggleKey_label": {
+        "message": "Tecla de alternancia"
     },
-    "options_hanYong_keyboardKeyEnabled_description": {
-        "message": "Se aplica a la tecla física del teclado. En los teclados coreanos, es la tecla dedicada Han/Yong a la derecha de la barra espaciadora."
+    "options_hanYong_toggleKey_description": {
+        "message": "La tecla o combinación que cambia entre hangul e inglés. El valor predeterminado es Alt derecha y se guarda solo en este equipo."
+    },
+    "options_hanYong_toggleKey_change": {
+        "message": "Cambiar"
+    },
+    "options_hanYong_toggleKey_capturing": {
+        "message": "Pulse una tecla…"
+    },
+    "options_hanYong_toggleKey_hint": {
+        "message": "Pulse su tecla o combinación. Una tecla normal debe combinarse con Ctrl o Alt. Pulse Esc para cancelar."
+    },
+    "options_hanYong_toggleKey_turnOff": {
+        "message": "Desactivar"
+    },
+    "options_hanYong_toggleKey_reset": {
+        "message": "Restablecer el valor predeterminado"
+    },
+    "options_hanYong_toggleKey_off": {
+        "message": "Desactivado"
+    },
+    "options_hanYong_toggleKey_invalid": {
+        "message": "Una tecla normal debe combinarse con Ctrl o Alt."
     },
     "options_hanYong_syncAcrossTabs_label": {
         "message": "Sincronizar el modo entre pestañas"

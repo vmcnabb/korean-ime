@@ -47,7 +47,6 @@ describe("loadSettings", () => {
         expect(settings.hanYong.persistence).toBe(Persistence.KeepLastState);
         expect(settings.hanYong.syncAcrossTabs).toBe(true);
         expect(settings.hanYong.enabled).toBe(true);
-        expect(settings.hanYong.keyboardKeyEnabled).toBe(true);
         expect(settings.onScreenKeyboard.persistence).toBe(Persistence.AlwaysOff);
     });
 
@@ -102,7 +101,6 @@ describe("loadSettings", () => {
         stored({ hanYong: { persistence: Persistence.KeepLastState } });
 
         expect((await loadSettings()).hanYong.enabled).toBe(true);
-        expect((await loadSettings()).hanYong.keyboardKeyEnabled).toBe(true);
     });
 });
 
