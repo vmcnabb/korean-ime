@@ -1,12 +1,19 @@
 import { ContentScriptController } from "./content-script-controller";
 import { OnScreenKeyboardController } from "./on-screen-keyboard/on-screen-keyboard-controller";
 import { KeyCode } from "../keyboard/korean-keyboard-map";
+import { KeyBinding, defaultToggleKeyBinding } from "../keyboard/key-binding";
+import { loadToggleKeyBinding } from "../settings/toggle-key-store";
 import { KoreanKeyboardMode } from "../extension-state/korean-keyboard-mode";
 import { ServiceScriptMessageAction } from "../messaging/service-to-content-messages";
 import { ContentScriptRequestAction } from "../messaging/content-to-service-messages";
 
 jest.mock("../settings/settings-store", () => ({
     loadSettings: jest.fn().mockResolvedValue({ onScreenKeyboard: { layout: "full-us" } }),
+}));
+
+jest.mock("../settings/toggle-key-store", () => ({
+    TOGGLE_KEY_STORAGE_KEY: "hanYongToggleKey",
+    loadToggleKeyBinding: jest.fn(),
 }));
 
 jest.mock("./on-screen-keyboard/on-screen-keyboard-controller", () => ({
@@ -32,118 +39,145 @@ const lastOsk = () =>
 
 const flushMicrotasks = () => new Promise((resolve) => setTimeout(resolve, 0));
 
-describe("ContentScriptController AltRight handling", () => {
-    it("only intercepts AltRight when Hangul typing and the keyboard-key option are both enabled", () => {
-        const listeners: Array<(message: unknown) => void> = [];
-        const sendMessage = jest.fn();
+const altS: KeyBinding = { code: KeyCode.KeyS, ctrl: false, alt: true, shift: false, meta: false };
 
+describe("ContentScriptController toggle-key handling", () => {
+    let listeners: Array<(message: unknown) => void>;
+    let sendMessage: jest.Mock;
+
+    beforeEach(() => {
+        listeners = [];
+        sendMessage = jest.fn();
         Object.assign(globalThis, {
             chrome: {
                 runtime: {
                     sendMessage,
-                    onMessage: {
-                        addListener: (listener: (message: unknown) => void) => listeners.push(listener),
-                    },
+                    onMessage: { addListener: (listener: (message: unknown) => void) => listeners.push(listener) },
                 },
+                // The controller watches storage for toggle-key changes.
+                storage: { onChanged: { addListener: jest.fn() } },
             },
         });
+    });
 
+    let keydownHandler: (event: KeyboardEvent) => void;
+    let keyupHandler: (event: KeyboardEvent) => void;
+
+    // Init a non-top-window controller with the given toggle binding loaded from
+    // (mocked) local storage. We capture the controller's own capture-phase key
+    // handlers rather than attaching them to the shared jsdom `document`: the
+    // controller has no listener teardown, so real dispatch would let an earlier
+    // test's controller fire on a later test's events.
+    async function initController(binding: KeyBinding | null) {
+        (loadToggleKeyBinding as jest.Mock).mockResolvedValue(binding);
+        const add = jest.spyOn(document, "addEventListener").mockImplementation((type, handler, opts) => {
+            if (opts === true && type === "keydown") {
+                keydownHandler = handler as never;
+            }
+            if (opts === true && type === "keyup") {
+                keyupHandler = handler as never;
+            }
+        });
         const controller = new ContentScriptController();
         controller.initialize(false);
-        sendMessage.mockClear();
+        add.mockRestore();
+        await flushMicrotasks();
+        return controller;
+    }
 
-        const handleMessage = listeners[0];
-        handleMessage({
+    const setHanYongEnabled = (enabled: boolean) =>
+        listeners[0]({
             type: "serviceScriptMessage",
             action: ServiceScriptMessageAction.UpdateState,
             data: {
-                isHanYongEnabled: false,
-                isHanYongKeyboardKeyEnabled: true,
+                isHanYongEnabled: enabled,
                 isOnScreenKeyboardEnabled: false,
                 koreanKeyboardMode: KoreanKeyboardMode.English,
             },
         });
 
-        const disabledKeydown = new KeyboardEvent("keydown", {
-            bubbles: true,
-            cancelable: true,
-            code: KeyCode.AltRight,
-        });
-        const disabledKeyup = new KeyboardEvent("keyup", {
-            bubbles: true,
-            cancelable: true,
-            code: KeyCode.AltRight,
-        });
+    function fireKey(handler: (event: KeyboardEvent) => void, code: KeyCode, modifiers: Partial<KeyboardEvent> = {}) {
+        const event = {
+            code,
+            ctrlKey: false,
+            altKey: false,
+            shiftKey: false,
+            metaKey: false,
+            repeat: false,
+            ...modifiers,
+            preventDefault: jest.fn(),
+            stopImmediatePropagation: jest.fn(),
+        } as unknown as KeyboardEvent;
+        handler(event);
+        return event;
+    }
 
-        document.dispatchEvent(disabledKeydown);
-        document.dispatchEvent(disabledKeyup);
+    const toggleCall = {
+        type: "contentScriptRequest",
+        action: ContentScriptRequestAction.ToggleHanYongMode,
+    };
 
-        expect(disabledKeydown.defaultPrevented).toBe(false);
-        expect(disabledKeyup.defaultPrevented).toBe(false);
+    it("toggles on the bound key (Right Alt) when Hangul typing is enabled", async () => {
+        await initController(defaultToggleKeyBinding);
+        setHanYongEnabled(true);
+        sendMessage.mockClear();
+
+        const keydown = fireKey(keydownHandler, KeyCode.AltRight, { altKey: true });
+        const keyup = fireKey(keyupHandler, KeyCode.AltRight, { altKey: true });
+
+        expect(keydown.preventDefault).toHaveBeenCalled();
+        expect(keyup.preventDefault).toHaveBeenCalled(); // keyup swallowed (Firefox Alt menu)
+        // A modifier-only key is left to propagate so the IME can still track it.
+        expect(keydown.stopImmediatePropagation).not.toHaveBeenCalled();
+        expect(sendMessage).toHaveBeenCalledWith(toggleCall);
+    });
+
+    it("does not toggle while Hangul typing is disabled", async () => {
+        await initController(defaultToggleKeyBinding);
+        setHanYongEnabled(false);
+        sendMessage.mockClear();
+
+        const keydown = fireKey(keydownHandler, KeyCode.AltRight, { altKey: true });
+        const keyup = fireKey(keyupHandler, KeyCode.AltRight, { altKey: true });
+
+        expect(keydown.preventDefault).not.toHaveBeenCalled();
+        expect(keyup.preventDefault).not.toHaveBeenCalled();
         expect(sendMessage).not.toHaveBeenCalled();
+    });
 
-        handleMessage({
-            type: "serviceScriptMessage",
-            action: ServiceScriptMessageAction.UpdateState,
-            data: {
-                isHanYongEnabled: true,
-                isHanYongKeyboardKeyEnabled: false,
-                isOnScreenKeyboardEnabled: false,
-                koreanKeyboardMode: KoreanKeyboardMode.English,
-            },
-        });
+    it("does not toggle when the toggle key is turned off (null)", async () => {
+        await initController(null);
+        setHanYongEnabled(true);
         sendMessage.mockClear();
 
-        const keySettingDisabledKeydown = new KeyboardEvent("keydown", {
-            bubbles: true,
-            cancelable: true,
-            code: KeyCode.AltRight,
-        });
-        const keySettingDisabledKeyup = new KeyboardEvent("keyup", {
-            bubbles: true,
-            cancelable: true,
-            code: KeyCode.AltRight,
-        });
+        const keydown = fireKey(keydownHandler, KeyCode.AltRight, { altKey: true });
 
-        document.dispatchEvent(keySettingDisabledKeydown);
-        document.dispatchEvent(keySettingDisabledKeyup);
-
-        expect(keySettingDisabledKeydown.defaultPrevented).toBe(false);
-        expect(keySettingDisabledKeyup.defaultPrevented).toBe(false);
+        expect(keydown.preventDefault).not.toHaveBeenCalled();
         expect(sendMessage).not.toHaveBeenCalled();
+    });
 
-        handleMessage({
-            type: "serviceScriptMessage",
-            action: ServiceScriptMessageAction.UpdateState,
-            data: {
-                isHanYongEnabled: true,
-                isHanYongKeyboardKeyEnabled: true,
-                isOnScreenKeyboardEnabled: false,
-                koreanKeyboardMode: KoreanKeyboardMode.English,
-            },
-        });
+    it("toggles on a printable combo (Alt+S) and swallows the key fully", async () => {
+        await initController(altS);
+        setHanYongEnabled(true);
         sendMessage.mockClear();
 
-        const enabledKeydown = new KeyboardEvent("keydown", {
-            bubbles: true,
-            cancelable: true,
-            code: KeyCode.AltRight,
-        });
-        const enabledKeyup = new KeyboardEvent("keyup", {
-            bubbles: true,
-            cancelable: true,
-            code: KeyCode.AltRight,
-        });
+        const keydown = fireKey(keydownHandler, KeyCode.KeyS, { altKey: true });
 
-        document.dispatchEvent(enabledKeydown);
-        document.dispatchEvent(enabledKeyup);
+        expect(keydown.preventDefault).toHaveBeenCalled();
+        // A printable combo must be swallowed so the character can't also be typed.
+        expect(keydown.stopImmediatePropagation).toHaveBeenCalled();
+        expect(sendMessage).toHaveBeenCalledWith(toggleCall);
+    });
 
-        expect(enabledKeydown.defaultPrevented).toBe(true);
-        expect(enabledKeyup.defaultPrevented).toBe(true);
-        expect(sendMessage).toHaveBeenCalledWith({
-            type: "contentScriptRequest",
-            action: ContentScriptRequestAction.ToggleHanYongMode,
-        });
+    it("requires an exact modifier match (Ctrl+Alt+S does not fire Alt+S)", async () => {
+        await initController(altS);
+        setHanYongEnabled(true);
+        sendMessage.mockClear();
+
+        const keydown = fireKey(keydownHandler, KeyCode.KeyS, { altKey: true, ctrlKey: true });
+
+        expect(keydown.preventDefault).not.toHaveBeenCalled();
+        expect(sendMessage).not.toHaveBeenCalled();
     });
 });
 
@@ -153,6 +187,7 @@ describe("ContentScriptController on-screen-keyboard layout", () => {
 
     beforeEach(() => {
         (OnScreenKeyboardController as unknown as jest.Mock).mockClear();
+        (loadToggleKeyBinding as jest.Mock).mockResolvedValue(defaultToggleKeyBinding);
         listeners = [];
         sendMessage = jest.fn();
         Object.assign(globalThis, {
@@ -161,7 +196,7 @@ describe("ContentScriptController on-screen-keyboard layout", () => {
                     sendMessage,
                     onMessage: { addListener: (listener: (message: unknown) => void) => listeners.push(listener) },
                 },
-                // Top-window init watches storage for layout-setting changes.
+                // Top-window init watches storage for layout- and toggle-key changes.
                 storage: { onChanged: { addListener: jest.fn() } },
             },
         });
@@ -172,7 +207,6 @@ describe("ContentScriptController on-screen-keyboard layout", () => {
         action: ServiceScriptMessageAction.UpdateState,
         data: {
             isHanYongEnabled: false,
-            isHanYongKeyboardKeyEnabled: false,
             isOnScreenKeyboardEnabled,
             koreanKeyboardMode: KoreanKeyboardMode.English,
         },
@@ -225,9 +259,12 @@ describe("ContentScriptController on-screen-keyboard layout", () => {
         await flushMicrotasks();
         lastOsk().setLayout.mockClear();
 
-        // Fire the storage.onChanged listener the controller registered.
-        const onChanged = (globalThis.chrome.storage.onChanged.addListener as jest.Mock).mock.calls[0][0];
-        onChanged({ onScreenKeyboard: { newValue: {} } }, "sync");
+        // Fire every storage.onChanged listener the controller registered (layout +
+        // toggle-key watchers); the toggle-key watcher ignores sync changes.
+        const calls = (globalThis.chrome.storage.onChanged.addListener as jest.Mock).mock.calls;
+        for (const [onChanged] of calls) {
+            onChanged({ onScreenKeyboard: { newValue: {} } }, "sync");
+        }
         await flushMicrotasks();
 
         expect(lastOsk().setLayout).toHaveBeenCalledWith("full-us");

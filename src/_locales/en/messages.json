@@ -80,11 +80,32 @@
     "options_hanYong_disabled_hint": {
         "message": "When off, all Han/Yong switching is disabled and the Right Alt / Han/Yong key does nothing."
     },
-    "options_hanYong_keyboardKeyEnabled_label": {
-        "message": "Enable Right Alt / Han/Yong key toggle"
+    "options_hanYong_toggleKey_label": {
+        "message": "Toggle key"
     },
-    "options_hanYong_keyboardKeyEnabled_description": {
-        "message": "Applies to the physical keyboard key. On Korean keyboards, this is the dedicated Han/Yong key to the right of the spacebar."
+    "options_hanYong_toggleKey_description": {
+        "message": "The key or combination that switches between Hangul and English. The default is Right Alt — on Korean keyboards, the dedicated Han/Yong key to the right of the spacebar. This is saved on this computer only."
+    },
+    "options_hanYong_toggleKey_change": {
+        "message": "Change"
+    },
+    "options_hanYong_toggleKey_capturing": {
+        "message": "Press a key…"
+    },
+    "options_hanYong_toggleKey_hint": {
+        "message": "Press your key or combination. A normal key must be combined with Ctrl or Alt. Press Esc to cancel."
+    },
+    "options_hanYong_toggleKey_turnOff": {
+        "message": "Turn off"
+    },
+    "options_hanYong_toggleKey_reset": {
+        "message": "Reset to default"
+    },
+    "options_hanYong_toggleKey_off": {
+        "message": "Off"
+    },
+    "options_hanYong_toggleKey_invalid": {
+        "message": "A normal key must be combined with Ctrl or Alt."
     },
     "options_hanYong_syncAcrossTabs_label": {
         "message": "Sync mode across tabs"

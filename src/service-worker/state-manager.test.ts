@@ -103,7 +103,6 @@ describe("fresh-session seeding from persistence", () => {
         await manager.sendStateToTab(1);
 
         expect(lastSentTo(1)?.isHanYongEnabled).toBe(true);
-        expect(lastSentTo(1)?.isHanYongKeyboardKeyEnabled).toBe(true);
     });
 
     it("AlwaysOff starts the feature off", async () => {
@@ -234,17 +233,6 @@ describe("KeepLastState persistence", () => {
         expect(sentMessages).toHaveLength(1);
         expect(lastSentTo(1)?.koreanKeyboardMode).toBe(KoreanKeyboardMode.English);
         expect(lastSentTo(1)?.isHanYongEnabled).toBe(false);
-    });
-
-    it("still toggles Han/Yong mode when only the physical-key setting is disabled", async () => {
-        withSettings({ hanYong: { keyboardKeyEnabled: false, persistence: Persistence.AlwaysOff } });
-        const manager = new StateManager();
-
-        await manager.toggleHanYongMode(1);
-
-        expect(lastSentTo(1)?.isHanYongEnabled).toBe(true);
-        expect(lastSentTo(1)?.isHanYongKeyboardKeyEnabled).toBe(false);
-        expect(lastSentTo(1)?.koreanKeyboardMode).toBe(KoreanKeyboardMode.Hangul);
     });
 
     it("writes the toggled value to storage.local", async () => {
@@ -407,15 +395,13 @@ describe("sync across tabs", () => {
         const manager = new StateManager();
 
         withSettings({
-            hanYong: { enabled: true, keyboardKeyEnabled: false, persistence: Persistence.AlwaysOn },
+            hanYong: { enabled: true, persistence: Persistence.AlwaysOn },
         });
         await manager.onSettingsChanged();
 
         expect(lastSentTo(1)?.isHanYongEnabled).toBe(true);
-        expect(lastSentTo(1)?.isHanYongKeyboardKeyEnabled).toBe(false);
         expect(lastSentTo(1)?.koreanKeyboardMode).toBe(KoreanKeyboardMode.Hangul);
         expect(lastSentTo(2)?.isHanYongEnabled).toBe(true);
-        expect(lastSentTo(2)?.isHanYongKeyboardKeyEnabled).toBe(false);
         expect(lastSentTo(2)?.koreanKeyboardMode).toBe(KoreanKeyboardMode.Hangul);
         expect(lastSentTo(2)?.isOnScreenKeyboardEnabled).toBe(true);
     });

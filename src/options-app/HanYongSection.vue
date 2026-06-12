@@ -5,6 +5,7 @@ import { t } from "./i18n";
 import PersistenceSelect from "./PersistenceSelect.vue";
 import LabeledCheckbox from "./LabeledCheckbox.vue";
 import ToggleSwitch from "./ToggleSwitch.vue";
+import ToggleKeySetting from "./ToggleKeySetting.vue";
 
 const optionLabels: Record<Persistence, string> = {
     [Persistence.AlwaysOff]: t("options_hanYong_startOff"),
@@ -21,11 +22,7 @@ const optionLabels: Record<Persistence, string> = {
         </div>
         <template v-if="settings.hanYong.enabled">
             <p class="description section-hint">{{ t("options_hanYong_hint") }}</p>
-            <LabeledCheckbox
-                v-model="settings.hanYong.keyboardKeyEnabled"
-                :label="t('options_hanYong_keyboardKeyEnabled_label')"
-                :description="t('options_hanYong_keyboardKeyEnabled_description')"
-            />
+            <ToggleKeySetting />
             <LabeledCheckbox
                 v-model="settings.hanYong.syncAcrossTabs"
                 :label="t('options_hanYong_syncAcrossTabs_label')"
