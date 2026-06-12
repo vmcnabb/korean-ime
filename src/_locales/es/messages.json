@@ -84,7 +84,7 @@
         "message": "Tecla de alternancia"
     },
     "options_hanYong_toggleKey_description": {
-        "message": "La tecla o combinación que cambia entre hangul e inglés. El valor predeterminado es Alt derecha; en los teclados coreanos, la tecla dedicada Han/Yong a la derecha de la barra espaciadora. Esto se guarda solo en este equipo."
+        "message": "La tecla o combinación que cambia entre hangul e inglés. El valor predeterminado es Alt derecha y se guarda solo en este equipo."
     },
     "options_hanYong_toggleKey_change": {
         "message": "Cambiar"

@@ -26,6 +26,7 @@ onMounted(initSettings);
     --section-bg: light-dark(#f9f9f9, #1e1e1e);
     --section-border: light-dark(#ddd, #333);
     --description-color: light-dark(#666, #999);
+    --error-color: light-dark(#c0392b, #f87171);
 
     --toggle-off-bg: light-dark(#ccc, #555);
     --toggle-on-bg: light-dark(#2563eb, #3b82f6);

@@ -17,7 +17,7 @@ const optionLabels: Record<Persistence, string> = {
 <template>
     <section>
         <div class="section-header">
-            <ToggleSwitch v-model="settings.hanYong.enabled" :aria-label="t('options_hanYong_heading')" />
+            <ToggleSwitch v-model="settings.hanYong.enabled" :ariaLabel="t('options_hanYong_heading')" />
             <h2>{{ t("options_hanYong_heading") }}</h2>
         </div>
         <template v-if="settings.hanYong.enabled">

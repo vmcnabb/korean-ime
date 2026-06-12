@@ -84,7 +84,7 @@
         "message": "전환 키"
     },
     "options_hanYong_toggleKey_description": {
-        "message": "한글과 영문을 전환하는 키 또는 조합입니다. 기본값은 오른쪽 Alt 키이며, 한국어 키보드에서는 스페이스바 오른쪽의 전용 한/영 키입니다. 이 설정은 이 컴퓨터에만 저장됩니다."
+        "message": "한글과 영문을 전환하는 키 또는 조합입니다. 기본값은 오른쪽 Alt 키이며, 이 컴퓨터에만 저장됩니다."
     },
     "options_hanYong_toggleKey_change": {
         "message": "변경"

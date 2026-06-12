@@ -84,7 +84,7 @@
         "message": "Toggle key"
     },
     "options_hanYong_toggleKey_description": {
-        "message": "The key or combination that switches between Hangul and English. The default is Right Alt — on Korean keyboards, the dedicated Han/Yong key to the right of the spacebar. This is saved on this computer only."
+        "message": "The key or combination that switches between Hangul and English. The default is Right Alt, and it is saved on this computer only."
     },
     "options_hanYong_toggleKey_change": {
         "message": "Change"

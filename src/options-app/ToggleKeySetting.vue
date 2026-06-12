@@ -14,10 +14,13 @@ import { loadToggleKeyBinding, saveToggleKeyBinding } from "../settings/toggle-k
 const binding = ref<KeyBinding | null>(null);
 const capturing = ref(false);
 const invalid = ref(false);
+// Live "Ctrl + Shift +" prefix shown while modifiers are held mid-capture.
+const captureProgress = ref("");
 
-// A bare modifier keydown is ambiguous: it could be a lone-modifier binding
-// (e.g. Right Alt) finalized on its keyup, or the start of a combo (Alt+S)
-// finalized when the non-modifier key arrives. Hold it here until we know which.
+// A bare modifier keydown is ambiguous: pressed and released alone it's a
+// lone-modifier binding (e.g. Right Alt); held while another key arrives it's
+// the start of a combo (Alt+S). Hold the single-modifier candidate here; it's
+// cleared once a second modifier or a normal key is pressed.
 let pendingModifier: KeyBinding | null = null;
 
 onMounted(async () => {
@@ -31,13 +34,19 @@ function persist(next: KeyBinding | null) {
     void saveToggleKeyBinding(next);
 }
 
+function turnOff() {
+    stopCapture();
+    persist(null);
+}
+
 function resetToDefault() {
-    invalid.value = false;
+    stopCapture();
     persist(structuredClone(defaultToggleKeyBinding));
 }
 
 function startCapture() {
     invalid.value = false;
+    captureProgress.value = "";
     pendingModifier = null;
     capturing.value = true;
     window.addEventListener("keydown", onCaptureKeydown, true);
@@ -46,82 +55,126 @@ function startCapture() {
 
 function stopCapture() {
     capturing.value = false;
+    invalid.value = false;
+    captureProgress.value = "";
     pendingModifier = null;
     window.removeEventListener("keydown", onCaptureKeydown, true);
     window.removeEventListener("keyup", onCaptureKeyup, true);
 }
 
 function finishCapture(captured: KeyBinding) {
-    invalid.value = false;
     persist(captured);
     stopCapture();
+}
+
+function modifierCount(event: KeyboardEvent): number {
+    return (event.ctrlKey ? 1 : 0) + (event.altKey ? 1 : 0) + (event.shiftKey ? 1 : 0) + (event.metaKey ? 1 : 0);
+}
+
+// The held modifiers as a trailing prefix, e.g. "Ctrl + Shift +" (or "" if none).
+function heldModifierLabel(event: KeyboardEvent): string {
+    const parts: string[] = [];
+    if (event.ctrlKey) {
+        parts.push("Ctrl");
+    }
+    if (event.altKey) {
+        parts.push("Alt");
+    }
+    if (event.shiftKey) {
+        parts.push("Shift");
+    }
+    if (event.metaKey) {
+        parts.push("Win");
+    }
+    return parts.length ? `${parts.join(" + ")} +` : "";
 }
 
 function onCaptureKeydown(event: KeyboardEvent) {
     event.preventDefault();
     event.stopPropagation();
+    invalid.value = false; // a new keypress is a fresh attempt
 
-    if (event.code === "Escape" && !event.ctrlKey && !event.altKey && !event.shiftKey && !event.metaKey) {
+    if (event.code === "Escape" && modifierCount(event) === 0) {
         stopCapture();
         return;
     }
 
     if (isModifierKey(event.code as KeyCode)) {
-        // Could be a lone modifier (finalized on keyup) or the start of a combo.
-        pendingModifier = keyBindingFromEvent(event);
+        // One modifier may become a lone binding (finalized on keyup); two or more
+        // mean a combo is being built and needs a normal key to complete it.
+        pendingModifier = modifierCount(event) === 1 ? keyBindingFromEvent(event) : null;
+        captureProgress.value = heldModifierLabel(event);
         return;
     }
 
-    // A non-modifier key (possibly with modifiers held) ends the combo now.
+    // A non-modifier key (with any held modifiers) completes the combo.
     pendingModifier = null;
     const captured = keyBindingFromEvent(event);
     if (!isValidToggleKeyBinding(captured)) {
         invalid.value = true; // needs Ctrl or Alt — keep capturing
+        captureProgress.value = "";
         return;
     }
     finishCapture(captured);
 }
 
 function onCaptureKeyup(event: KeyboardEvent) {
-    if (!capturing.value) {
+    if (!capturing.value || !isModifierKey(event.code as KeyCode)) {
         return;
     }
     event.preventDefault();
     event.stopPropagation();
 
-    // A modifier released with nothing pressed after it = a lone-modifier binding.
-    if (isModifierKey(event.code as KeyCode) && pendingModifier?.code === event.code) {
+    // A single modifier pressed and released as the only key = a lone-modifier binding.
+    if (pendingModifier?.code === event.code && modifierCount(event) === 0) {
         const captured = pendingModifier;
         pendingModifier = null;
         if (!isValidToggleKeyBinding(captured)) {
             invalid.value = true; // e.g. lone Shift / Win — needs Ctrl or Alt
+            captureProgress.value = "";
             return;
         }
         finishCapture(captured);
+        return;
     }
+
+    // Released one of several held modifiers — keep showing what's still held.
+    captureProgress.value = heldModifierLabel(event);
 }
 </script>
 
 <template>
     <div class="toggle-key">
-        <span class="label">{{ t("options_hanYong_toggleKey_label") }}</span>
+        <span class="label">
+            {{ t("options_hanYong_toggleKey_label") }}
+            <span
+                class="help"
+                :title="t('options_hanYong_toggleKey_description')"
+                :aria-label="t('options_hanYong_toggleKey_description')"
+                >?</span
+            >
+        </span>
         <div class="controls">
-            <span class="binding" :class="{ off: !binding }">
-                {{ binding ? formatKeyBinding(binding) : t("options_hanYong_toggleKey_off") }}
+            <span class="binding" :class="{ off: !capturing && !binding, capturing }">
+                <template v-if="capturing">{{ captureProgress || t("options_hanYong_toggleKey_capturing") }}</template>
+                <template v-else>{{ binding ? formatKeyBinding(binding) : t("options_hanYong_toggleKey_off") }}</template>
             </span>
             <button type="button" :disabled="capturing" @click="startCapture">
-                {{ capturing ? t("options_hanYong_toggleKey_capturing") : t("options_hanYong_toggleKey_change") }}
+                {{ t("options_hanYong_toggleKey_change") }}
             </button>
-            <button type="button" :disabled="!binding" @click="persist(null)">
+            <button type="button" :disabled="!binding && !capturing" @click="turnOff">
                 {{ t("options_hanYong_toggleKey_turnOff") }}
             </button>
             <button type="button" @click="resetToDefault">
                 {{ t("options_hanYong_toggleKey_reset") }}
             </button>
         </div>
-        <p class="description">{{ t("options_hanYong_toggleKey_description") }}</p>
-        <p v-if="capturing" class="description capturing-hint">{{ t("options_hanYong_toggleKey_hint") }}</p>
-        <p v-if="invalid" class="error">{{ t("options_hanYong_toggleKey_invalid") }}</p>
+        <!-- Shown only while capturing, right under the controls: the capture hint,
+             or the validation error if an invalid key was pressed. The general
+             description lives in the heading's "?" tooltip. -->
+        <p v-if="invalid || capturing" class="feedback" :class="{ error: invalid }">
+            {{ invalid ? t("options_hanYong_toggleKey_invalid") : t("options_hanYong_toggleKey_hint") }}
+        </p>
     </div>
 </template>
 
@@ -130,10 +183,28 @@ function onCaptureKeyup(event: KeyboardEvent) {
     margin: 0.75em 0;
 }
 
-/* `.label` / `.description` typography is shared globally in options-page.vue */
+/* `.label` typography is shared globally in options-page.vue */
 .toggle-key .label {
     display: block;
     margin-bottom: 0.25em;
+}
+
+/* A small "?" badge after the heading; its tooltip carries the description. */
+.help {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.2em;
+    height: 1.2em;
+    margin-left: 0.35em;
+    border: 1px solid var(--description-color);
+    border-radius: 50%;
+    font-size: 0.7em;
+    font-weight: bold;
+    color: var(--description-color);
+    vertical-align: middle;
+    cursor: help;
+    user-select: none;
 }
 
 .controls {
@@ -157,18 +228,26 @@ function onCaptureKeyup(event: KeyboardEvent) {
     font-style: italic;
 }
 
+.binding.capturing {
+    border-color: var(--toggle-on-bg);
+    font-style: italic;
+}
+
 .controls button {
     font-size: 0.95em;
     padding: 0.25em 0.6em;
 }
 
-.capturing-hint {
+/* The contextual line under the controls swaps between hint/error/description;
+   keep their top margins equal so the swap doesn't shift the layout. */
+.feedback {
+    margin: 0.4em 0 0;
+    font-size: 0.9em;
     font-style: italic;
 }
 
-.error {
-    margin: 0.25em 0 0;
-    font-size: 0.9em;
-    color: var(--error-color, #c0392b);
+.feedback.error {
+    font-style: normal;
+    color: var(--error-color);
 }
 </style>
