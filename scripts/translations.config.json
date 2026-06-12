@@ -1,5 +1,5 @@
 {
     "localesDir": "src/_locales",
     "defaultLocale": "en",
-    "requiredLocales": ["ko", "es"]
+    "requiredLocales": ["ko", "es", "ja", "pt_BR"]
 }
