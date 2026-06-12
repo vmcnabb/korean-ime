@@ -1,0 +1,221 @@
+{
+    "extension_name": {
+        "message": "ローマ字変換ツール付き韓国語IME"
+    },
+    "extension_short_name": {
+        "message": "韓国語IME"
+    },
+    "extension_description": {
+        "message": "ブラウザでハングル（韓国語）を入力できます。ローマ字変換ツールと画面キーボードを含みます。"
+    },
+    "menu_romanizeInPopup": {
+        "message": "ポップアップでローマ字変換 (&R)"
+    },
+    "menu_romanizeBeside": {
+        "message": "隣にローマ字変換 (&B)"
+    },
+    "menu_onScreenKeyboard": {
+        "message": "画面キーボード"
+    },
+    "menu_openOptions": {
+        "message": "オプション"
+    },
+    "action_title_hangul": {
+        "message": "韓国語IME — ハングル"
+    },
+    "action_title_english": {
+        "message": "韓国語IME — 英語"
+    },
+    "romanize_popup_title": {
+        "message": "韓国語IME - ローマ字変換"
+    },
+    "romanize_popup_originalTextHeading": {
+        "message": "元のテキスト"
+    },
+    "romanize_popup_originalTextHeadingHint": {
+        "message": "（ここにハングルを入力できます）"
+    },
+    "romanize_popup_originalTextTextboxHint": {
+        "message": "ここにハングルを入力してください"
+    },
+    "romanize_popup_romanizedTextHeading": {
+        "message": "ローマ字テキスト"
+    },
+    "romanize_popup_romanizedTextTextboxHint": {
+        "message": "ローマ字に変換された結果がここに表示されます"
+    },
+    "keyboard_key_altRight_tooltip": {
+        "message": "ヨン（英語）とハングルを切り替える"
+    },
+    "keyboard_key_controlRight_tooltip": {
+        "message": "選択したハングルを漢字（ハンジャ）に変換する"
+    },
+    "keyboard_minimize": {
+        "message": "最小化"
+    },
+    "keyboard_restore": {
+        "message": "元に戻す"
+    },
+    "keyboard_close": {
+        "message": "閉じる"
+    },
+    "keyboard_resize": {
+        "message": "ドラッグしてサイズ変更、ダブルクリックでリセット"
+    },
+    "keyboard_layout": {
+        "message": "キーボードレイアウト"
+    },
+    "options_title": {
+        "message": "韓国語IMEのオプション"
+    },
+    "options_onScreenKeyboard_heading": {
+        "message": "画面キーボード"
+    },
+    "options_hanYong_heading": {
+        "message": "한/영（ハン/ヨン）切り替え"
+    },
+    "options_hanYong_enabled_label": {
+        "message": "韓国語（ハングル）入力を有効にする"
+    },
+    "options_hanYong_disabled_hint": {
+        "message": "オフにすると、すべての한/영切り替えが無効になり、右Alt／한영キーは何も動作しません。"
+    },
+    "options_hanYong_toggleKey_label": {
+        "message": "切り替えキー"
+    },
+    "options_hanYong_toggleKey_description": {
+        "message": "ハングルと英語を切り替えるキーまたは組み合わせです。既定値は右Altで、このコンピューターにのみ保存されます。"
+    },
+    "options_hanYong_toggleKey_change": {
+        "message": "変更"
+    },
+    "options_hanYong_toggleKey_capturing": {
+        "message": "キーを押してください…"
+    },
+    "options_hanYong_toggleKey_hint": {
+        "message": "使用するキーまたは組み合わせを押してください。通常のキーはCtrlまたはAltと組み合わせる必要があります。キャンセルするにはEscを押してください。"
+    },
+    "options_hanYong_toggleKey_turnOff": {
+        "message": "オフにする"
+    },
+    "options_hanYong_toggleKey_reset": {
+        "message": "既定値にリセット"
+    },
+    "options_hanYong_toggleKey_off": {
+        "message": "オフ"
+    },
+    "options_hanYong_toggleKey_invalid": {
+        "message": "通常のキーはCtrlまたはAltと組み合わせる必要があります。"
+    },
+    "options_hanYong_syncAcrossTabs_label": {
+        "message": "タブ間でモードを同期"
+    },
+    "options_hanYong_syncAcrossTabs_description": {
+        "message": "1つのタブでハングルと英語を切り替えると、すべてのタブが追従します。オフにすると、各タブが独自のモードを保持します。"
+    },
+    "options_hanYong_hint": {
+        "message": "ハングル入力とラテン文字入力を切り替えます。"
+    },
+    "options_persistence_label": {
+        "message": "ブラウザの起動時"
+    },
+    "options_onScreenKeyboard_startOff": {
+        "message": "非表示で開始"
+    },
+    "options_onScreenKeyboard_startOn": {
+        "message": "表示して開始"
+    },
+    "options_onScreenKeyboard_restore": {
+        "message": "前回の状態を復元"
+    },
+    "options_onScreenKeyboard_layout_label": {
+        "message": "キーボードレイアウト"
+    },
+    "options_onScreenKeyboard_layout_minimal": {
+        "message": "最小（字母リファレンス）"
+    },
+    "options_onScreenKeyboard_layout_fullUs": {
+        "message": "フル - US"
+    },
+    "options_onScreenKeyboard_layout_fullKorean": {
+        "message": "フル - 韓国語두벌식（トゥボルシク）"
+    },
+    "options_onScreenKeyboard_syncAcrossTabs_label": {
+        "message": "タブ間で表示を同期"
+    },
+    "options_onScreenKeyboard_syncAcrossTabs_description": {
+        "message": "1つのタブで画面キーボードを表示または非表示にすると、すべてのタブが追従します。オフにすると、各タブが個別に制御します。"
+    },
+    "options_hanYong_startOff": {
+        "message": "英語で開始"
+    },
+    "options_hanYong_startOn": {
+        "message": "ハングルで開始"
+    },
+    "options_hanYong_restore": {
+        "message": "前回のモードを復元"
+    },
+    "gettingStarted_title": {
+        "message": "韓国語IMEの準備ができました"
+    },
+    "gettingStarted_intro": {
+        "message": "この拡張機能でWebページにハングルを入力するか、他のツールを使用する間は動作しないようにするかを選択してください。"
+    },
+    "gettingStarted_question": {
+        "message": "この拡張機能をどのように使用しますか？"
+    },
+    "gettingStarted_choiceTypeHangul_label": {
+        "message": "この拡張機能でWebページにハングルを入力する"
+    },
+    "gettingStarted_choiceTypeHangul_description": {
+        "message": "韓国語入力モードを有効にして、入力したキーをWebページでハングルに変換します。"
+    },
+    "gettingStarted_choiceOtherTools_label": {
+        "message": "他のツールのみを使用する"
+    },
+    "gettingStarted_choiceOtherTools_description": {
+        "message": "韓国語入力モードを無効にして、拡張機能がWebページの入力を予期せずハングルに切り替えないようにします。"
+    },
+    "gettingStarted_noticeOtherTools": {
+        "message": "韓国語入力モードはオフです。拡張機能はWebページの入力をハングルに切り替えません。他のツールは引き続き使用でき、後でオプションから韓国語入力を再度オンにできます。"
+    },
+    "gettingStarted_notice": {
+        "message": "韓国語入力モードが有効です。現在のタブでハングル入力をオンまたはオフにするには、右Altを押してください。拡張機能のアイコンをクリックすることもできます。"
+    },
+    "gettingStarted_errorLoad": {
+        "message": "設定を読み込めませんでした。オプションを開いてもう一度お試しください。"
+    },
+    "gettingStarted_showIcon_heading": {
+        "message": "拡張機能のアイコンを表示する"
+    },
+    "gettingStarted_showIcon_chrome": {
+        "message": "見えるボタンが必要ですか？Chromeでは、拡張機能のパズルピースアイコンをクリックし、韓国語IMEを見つけて、ピンアイコンをクリックします。拡張機能のアイコンをクリックすると、英語とハングルを切り替えられます。"
+    },
+    "gettingStarted_showIcon_firefox": {
+        "message": "見えるボタンが必要ですか？Firefoxでは、拡張機能ボタンをクリックし、韓国語IMEを見つけて、そのメニューからツールバーに固定します。拡張機能のアイコンをクリックすると、英語とハングルを切り替えられます。"
+    },
+    "gettingStarted_showIcon_showVideo": {
+        "message": "固定する方法を見る"
+    },
+    "gettingStarted_showIcon_videoLabel": {
+        "message": "韓国語IME拡張機能のアイコンを固定する方法を示す動画"
+    },
+    "gettingStarted_about_heading": {
+        "message": "韓国語入力について"
+    },
+    "gettingStarted_about_typingMode": {
+        "message": "韓国語入力モードは、キーボードレイアウトの入力をハングルに変換します。"
+    },
+    "gettingStarted_about_romanization": {
+        "message": "ローマ字変換ツールは、既存のハングルをラテン文字に変換します。"
+    },
+    "gettingStarted_about_notPhonetic": {
+        "message": "annyeonghaseyo は 안녕하세요 にはなりません。"
+    },
+    "gettingStarted_about_layoutExample": {
+        "message": "韓国語두벌식キーボードレイアウトでは、dkssudgktpdy と入力すると 안녕하세요 になります。"
+    },
+    "gettingStarted_openOptions": {
+        "message": "オプションを開く"
+    }
+}

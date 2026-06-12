@@ -1,0 +1,221 @@
+{
+    "extension_name": {
+        "message": "IME coreano com romanização"
+    },
+    "extension_short_name": {
+        "message": "IME coreano"
+    },
+    "extension_description": {
+        "message": "Digite em coreano (hangul) no seu navegador. Inclui uma ferramenta de romanização e um teclado na tela."
+    },
+    "menu_romanizeInPopup": {
+        "message": "&Romanizar na janela pop-up"
+    },
+    "menu_romanizeBeside": {
+        "message": "Romanizar ao &lado"
+    },
+    "menu_onScreenKeyboard": {
+        "message": "Teclado na tela"
+    },
+    "menu_openOptions": {
+        "message": "Opções"
+    },
+    "action_title_hangul": {
+        "message": "IME coreano — Hangul"
+    },
+    "action_title_english": {
+        "message": "IME coreano — Inglês"
+    },
+    "romanize_popup_title": {
+        "message": "IME coreano - Romanização"
+    },
+    "romanize_popup_originalTextHeading": {
+        "message": "Texto original"
+    },
+    "romanize_popup_originalTextHeadingHint": {
+        "message": "(você pode digitar hangul aqui)"
+    },
+    "romanize_popup_originalTextTextboxHint": {
+        "message": "Digite seu hangul aqui"
+    },
+    "romanize_popup_romanizedTextHeading": {
+        "message": "Texto romanizado"
+    },
+    "romanize_popup_romanizedTextTextboxHint": {
+        "message": "A versão romanizada aparecerá aqui"
+    },
+    "keyboard_key_altRight_tooltip": {
+        "message": "Alternar entre Yong (inglês) e hangul"
+    },
+    "keyboard_key_controlRight_tooltip": {
+        "message": "Converter o hangul selecionado em hanja"
+    },
+    "keyboard_minimize": {
+        "message": "Minimizar"
+    },
+    "keyboard_restore": {
+        "message": "Restaurar"
+    },
+    "keyboard_close": {
+        "message": "Fechar"
+    },
+    "keyboard_resize": {
+        "message": "Arraste para redimensionar; clique duas vezes para redefinir"
+    },
+    "keyboard_layout": {
+        "message": "Layout do teclado"
+    },
+    "options_title": {
+        "message": "Opções do IME coreano"
+    },
+    "options_onScreenKeyboard_heading": {
+        "message": "Teclado na tela"
+    },
+    "options_hanYong_heading": {
+        "message": "Alternância Han/Yong (한/영)"
+    },
+    "options_hanYong_enabled_label": {
+        "message": "Ativar digitação em coreano (hangul)"
+    },
+    "options_hanYong_disabled_hint": {
+        "message": "Quando desativado, toda a alternância Han/Yong fica desabilitada e a tecla Alt direito / Han-Yong não faz nada."
+    },
+    "options_hanYong_toggleKey_label": {
+        "message": "Tecla de alternância"
+    },
+    "options_hanYong_toggleKey_description": {
+        "message": "A tecla ou combinação que alterna entre hangul e inglês. O padrão é o Alt direito e é salvo apenas neste computador."
+    },
+    "options_hanYong_toggleKey_change": {
+        "message": "Alterar"
+    },
+    "options_hanYong_toggleKey_capturing": {
+        "message": "Pressione uma tecla…"
+    },
+    "options_hanYong_toggleKey_hint": {
+        "message": "Pressione sua tecla ou combinação. Uma tecla normal deve ser combinada com Ctrl ou Alt. Pressione Esc para cancelar."
+    },
+    "options_hanYong_toggleKey_turnOff": {
+        "message": "Desativar"
+    },
+    "options_hanYong_toggleKey_reset": {
+        "message": "Redefinir para o padrão"
+    },
+    "options_hanYong_toggleKey_off": {
+        "message": "Desativado"
+    },
+    "options_hanYong_toggleKey_invalid": {
+        "message": "Uma tecla normal deve ser combinada com Ctrl ou Alt."
+    },
+    "options_hanYong_syncAcrossTabs_label": {
+        "message": "Sincronizar o modo entre as guias"
+    },
+    "options_hanYong_syncAcrossTabs_description": {
+        "message": "Alterne entre hangul e inglês em uma guia e todas as guias acompanharão. Quando desativado, cada guia mantém seu próprio modo."
+    },
+    "options_hanYong_hint": {
+        "message": "Alterna entre a entrada em hangul e a latina."
+    },
+    "options_persistence_label": {
+        "message": "Ao iniciar o navegador"
+    },
+    "options_onScreenKeyboard_startOff": {
+        "message": "Iniciar oculto"
+    },
+    "options_onScreenKeyboard_startOn": {
+        "message": "Iniciar visível"
+    },
+    "options_onScreenKeyboard_restore": {
+        "message": "Restaurar o último estado"
+    },
+    "options_onScreenKeyboard_layout_label": {
+        "message": "Layout do teclado"
+    },
+    "options_onScreenKeyboard_layout_minimal": {
+        "message": "Mínimo (referência de jamo)"
+    },
+    "options_onScreenKeyboard_layout_fullUs": {
+        "message": "Completo - EUA"
+    },
+    "options_onScreenKeyboard_layout_fullKorean": {
+        "message": "Completo - Dubeolsik coreano (두벌식)"
+    },
+    "options_onScreenKeyboard_syncAcrossTabs_label": {
+        "message": "Sincronizar a visibilidade entre as guias"
+    },
+    "options_onScreenKeyboard_syncAcrossTabs_description": {
+        "message": "Mostre ou oculte o teclado na tela em uma guia e todas as guias acompanharão. Quando desativado, cada guia controla o seu próprio."
+    },
+    "options_hanYong_startOff": {
+        "message": "Iniciar em inglês"
+    },
+    "options_hanYong_startOn": {
+        "message": "Iniciar em hangul"
+    },
+    "options_hanYong_restore": {
+        "message": "Restaurar o último modo"
+    },
+    "gettingStarted_title": {
+        "message": "O IME coreano está pronto"
+    },
+    "gettingStarted_intro": {
+        "message": "Escolha se esta extensão deve digitar hangul nas páginas da web ou ficar fora do caminho enquanto você usa as outras ferramentas."
+    },
+    "gettingStarted_question": {
+        "message": "Como você vai usar esta extensão?"
+    },
+    "gettingStarted_choiceTypeHangul_label": {
+        "message": "Digitar hangul nas páginas da web com esta extensão"
+    },
+    "gettingStarted_choiceTypeHangul_description": {
+        "message": "Ativa o modo de digitação em coreano para que a extensão converta as teclas digitadas em hangul nas páginas da web."
+    },
+    "gettingStarted_choiceOtherTools_label": {
+        "message": "Usar apenas as outras ferramentas"
+    },
+    "gettingStarted_choiceOtherTools_description": {
+        "message": "Desativa o modo de digitação em coreano para que a extensão não mude inesperadamente a digitação da página da web para hangul."
+    },
+    "gettingStarted_noticeOtherTools": {
+        "message": "O modo de digitação em coreano está desativado. A extensão não mudará a digitação da página da web para hangul. Você ainda pode usar as outras ferramentas e reativar a digitação em coreano mais tarde nas Opções."
+    },
+    "gettingStarted_notice": {
+        "message": "O modo de digitação em coreano está ativado. Pressione o Alt direito para ativar ou desativar a digitação em hangul na guia atual. Você também pode clicar no ícone da extensão."
+    },
+    "gettingStarted_errorLoad": {
+        "message": "Não foi possível carregar as configurações. Abra as Opções e tente novamente."
+    },
+    "gettingStarted_showIcon_heading": {
+        "message": "Mostrar o ícone da extensão"
+    },
+    "gettingStarted_showIcon_chrome": {
+        "message": "Prefere um botão visível? No Chrome, clique no ícone de quebra-cabeça Extensões, encontre o IME coreano e clique no ícone de fixar. Clique no ícone da extensão para alternar entre inglês e hangul."
+    },
+    "gettingStarted_showIcon_firefox": {
+        "message": "Prefere um botão visível? No Firefox, clique no botão de extensões, encontre o IME coreano e use o menu dele para fixá-lo na barra de ferramentas. Clique no ícone da extensão para alternar entre inglês e hangul."
+    },
+    "gettingStarted_showIcon_showVideo": {
+        "message": "Mostre como fixar"
+    },
+    "gettingStarted_showIcon_videoLabel": {
+        "message": "Vídeo mostrando como fixar o ícone da extensão IME coreano"
+    },
+    "gettingStarted_about_heading": {
+        "message": "Sobre a digitação em coreano"
+    },
+    "gettingStarted_about_typingMode": {
+        "message": "O modo de digitação em coreano converte a entrada do layout do teclado em hangul."
+    },
+    "gettingStarted_about_romanization": {
+        "message": "As ferramentas de romanização convertem o hangul existente em letras latinas."
+    },
+    "gettingStarted_about_notPhonetic": {
+        "message": "annyeonghaseyo não se tornará 안녕하세요."
+    },
+    "gettingStarted_about_layoutExample": {
+        "message": "Com o layout de teclado coreano Dubeolsik (두벌식), dkssudgktpdy produz 안녕하세요."
+    },
+    "gettingStarted_openOptions": {
+        "message": "Abrir as Opções"
+    }
+}
