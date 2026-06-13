@@ -1,0 +1,35 @@
+Digite em coreano (hangul) no seu navegador — sem precisar de um IME instalado no sistema nem de permissões de administrador.
+
+O IME coreano permite digitar hangul em qualquer computador, mesmo em um onde você não pode instalar o método de entrada coreano do sistema operacional (no trabalho, na escola ou em um computador compartilhado). Ele usa o layout coreano padrão Dubeolsik (두벌식) e funciona independentemente da configuração do seu teclado físico (QWERTY, Dvorak, AZERTY, russo e assim por diante).
+
+
+COMO USAR
+
+• Clique no ícone da extensão — ele mostra "a" no modo latino e "한" no modo hangul — ou pressione a tecla Alt direita (você pode alterar essa tecla nas Opções) para alternar entre a entrada em alfabeto latino e em hangul.
+• Comece a digitar — por exemplo, "dkssudgktpdy" vira "안녕하세요".
+
+
+RECURSOS
+
+• Digite hangul em caixas de texto padrão, áreas de texto, muitos editores de texto rico online e no Microsoft Word para a Web.
+• Teclado na tela — um teclado flutuante que mostra as teclas em alfabeto latino e em hangul. Ative-o ou desative-o no menu de contexto da extensão.
+• Romanizar — selecione um texto em hangul, clique com o botão direito e escolha uma opção "Romanizar" para convertê-lo para o alfabeto latino (Romanização Revisada; alguns casos raros não são tratados).
+• Reeditar uma sílaba finalizada — posicione o cursor logo após ela e pressione Shift+Backspace para retomar a composição desse bloco.
+
+
+LAYOUT DO TECLADO
+
+Este é o layout coreano padrão Dubeolsik (두벌식), o mesmo de um teclado coreano físico — por exemplo, a tecla "A" do QWERTY produz "ㅁ". Se o layout é novo para você, pesquise "layout de teclado coreano" para ver um mapa.
+
+
+O QUE NÃO É COMPATÍVEL
+
+• Google Docs — ele renderiza o texto em um canvas e usa um editor próprio que não aceita a entrada de extensões como esta, então a digitação em hangul não funciona lá.
+• As páginas internas do seu navegador (chrome://…, about:…), a loja de extensões/complementos e as páginas de outras extensões — os navegadores impedem que qualquer extensão seja executada nelas.
+
+
+PRIVACIDADE
+
+Funciona totalmente offline e não coleta, armazena nem transmite nenhum dos seus dados.
+
+Código aberto — relate problemas ou contribua em https://github.com/vmcnabb/korean-ime

@@ -1,0 +1,35 @@
+Digite em coreano (hangul) no seu navegador — sem precisar de um IME instalado no sistema nem de permissões de administrador.
+
+O IME coreano permite digitar hangul em qualquer computador, mesmo num onde não pode instalar o método de introdução coreano do sistema operativo (no trabalho, na escola ou num computador partilhado). Usa o layout coreano padrão Dubeolsik (두벌식) e funciona independentemente da configuração do seu teclado físico (QWERTY, Dvorak, AZERTY, russo e assim por diante).
+
+
+COMO USAR
+
+• Clique no ícone da extensão — mostra "a" no modo latino e "한" no modo hangul — ou prima a tecla Alt direita (pode alterar esta tecla nas Opções) para alternar entre a introdução em alfabeto latino e em hangul.
+• Comece a digitar — por exemplo, "dkssudgktpdy" torna-se "안녕하세요".
+
+
+FUNCIONALIDADES
+
+• Digite hangul em caixas de texto padrão, áreas de texto, muitos editores de texto formatado online e no Microsoft Word para a Web.
+• Teclado no ecrã — um teclado flutuante que mostra as teclas em alfabeto latino e em hangul. Ative-o ou desative-o no menu de contexto da extensão.
+• Romanizar — selecione um texto em hangul, clique com o botão direito e escolha uma opção "Romanizar" para convertê-lo para o alfabeto latino (Romanização Revisada; alguns casos raros não são tratados).
+• Reeditar uma sílaba terminada — posicione o cursor logo após ela e prima Shift+Backspace para retomar a composição desse bloco.
+
+
+LAYOUT DO TECLADO
+
+Este é o layout coreano padrão Dubeolsik (두벌식), o mesmo de um teclado coreano físico — por exemplo, a tecla "A" do QWERTY produz "ㅁ". Se o layout é novo para si, pesquise "layout de teclado coreano" para ver um mapa.
+
+
+O QUE NÃO É COMPATÍVEL
+
+• Google Docs — renderiza o texto num canvas e usa um editor próprio que não aceita a introdução de extensões como esta, por isso a digitação em hangul não funciona aí.
+• As páginas internas do seu navegador (chrome://…, about:…), a loja de extensões/complementos e as páginas de outras extensões — os navegadores impedem que qualquer extensão seja executada nelas.
+
+
+PRIVACIDADE
+
+Funciona totalmente offline e não recolhe, armazena nem transmite nenhum dos seus dados.
+
+Código aberto — comunique problemas ou contribua em https://github.com/vmcnabb/korean-ime
