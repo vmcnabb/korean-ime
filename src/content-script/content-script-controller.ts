@@ -229,14 +229,13 @@ export class ContentScriptController {
         document.addEventListener(
             "focus",
             (e) => {
-                const element = e.target as HTMLElement;
-                this.setActiveElement(element);
+                this.setActiveElement(e.target);
             },
             true
         );
     }
 
-    private setActiveElement(element: HTMLElement) {
+    private setActiveElement(element: EventTarget | null) {
         const compositionFeatures = this.textInputManager.setActiveElement(element);
 
         if (!compositionFeatures) {

@@ -30,9 +30,8 @@ export class TextInputManager {
         }
     }
 
-    public setActiveElement(element: HTMLElement): SupportedCompositionFeatures | undefined {
-        // check if element matches the selector `textInputElementsSelector`
-        if (element.matches(textInputElementsSelector)) {
+    public setActiveElement(element: EventTarget | null): SupportedCompositionFeatures | undefined {
+        if (element instanceof HTMLElement && element.matches(textInputElementsSelector)) {
             return this.ensureController(element).getCompositionFeatures();
         }
         return;

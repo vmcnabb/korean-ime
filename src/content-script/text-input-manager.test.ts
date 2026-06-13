@@ -55,6 +55,35 @@ describe("TextInputManager DOM-removal cleanup", () => {
     });
 });
 
+describe("TextInputManager.setActiveElement", () => {
+    afterEach(() => {
+        jest.restoreAllMocks();
+        document.body.innerHTML = "";
+    });
+
+    // Firefox delivers focus events whose target is the `document` (or other
+    // non-Element nodes) when focus enters the page/frame; those have no
+    // `.matches`, so setActiveElement must not call it blindly. Regression for
+    // "TypeError: element.matches is not a function".
+    it.each([
+        ["document", document],
+        ["null", null],
+    ])("returns undefined for a non-element focus target (%s)", (_label, target) => {
+        const manager = new TextInputManager();
+
+        expect(() => manager.setActiveElement(target)).not.toThrow();
+        expect(manager.setActiveElement(target)).toBeUndefined();
+    });
+
+    it("returns undefined for a focused element that is not a text input", () => {
+        const manager = new TextInputManager();
+        const button = element("<button></button>");
+        document.body.appendChild(button);
+
+        expect(manager.setActiveElement(button)).toBeUndefined();
+    });
+});
+
 describe("TextInputManager.enterCharacter", () => {
     afterEach(() => {
         jest.restoreAllMocks();
