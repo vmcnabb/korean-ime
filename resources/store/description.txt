@@ -5,15 +5,15 @@ Korean IME lets you type Hangul on any computer, even one where you can't instal
 
 HOW TO USE
 
-• Click the extension icon (the "a / 한" button) or press the right-hand Alt key to switch between Latin and Hangul input.
+• Click the extension icon — it shows "a" in Latin mode and "한" in Hangul mode — or press the right-hand Alt key (you can change this key in Options) to switch between Latin and Hangul input.
 • Start typing — for example, "dkssudgktpdy" becomes "안녕하세요".
 
 
 FEATURES
 
-• Type Hangul in standard text boxes, text areas, and many online rich-text editors.
+• Type Hangul in standard text boxes, text areas, many online rich-text editors, and Microsoft Word for the Web.
 • On-screen keyboard — a floating keyboard showing both the Latin and Hangul keys. Turn it on or off from the extension's right-click menu.
-• Romanize — select Hangul text, right-click, and choose "Romanize" to convert it to the Latin alphabet (Revised Romanization; a few rare edge cases aren't handled).
+• Romanize — select Hangul text, right-click, and choose a "Romanize" option to convert it to the Latin alphabet (Revised Romanization; a few rare edge cases aren't handled).
 • Re-edit a finished syllable — put the cursor immediately after it and press Shift+Backspace to resume composing that block.
 
 
@@ -25,7 +25,6 @@ This is the standard Korean Dubeolsik (두벌식) layout, the same as a physical
 WHAT'S NOT SUPPORTED
 
 • Google Docs — it renders text on a canvas and uses a private editor that doesn't accept input from extensions like this one, so Hangul typing won't work there.
-• Microsoft Word for the Web — for the same reasons.
 • Your browser's own pages (chrome://…, about:…), the extension/add-on store, and other extensions' pages — browsers block every extension from running on these.
 
 
