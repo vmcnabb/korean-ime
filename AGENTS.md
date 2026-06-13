@@ -96,10 +96,14 @@ Core domain logic (mostly pure, well unit-tested):
   webextension transformer *only* accepts `service_worker` and rejects a manifest
   with both keys. So `build:firefox` generates a `service_worker` manifest (what
   Parcel allows), lets Parcel bundle, then `scripts/patch-firefox-manifest.mjs`
-  adds `background.scripts` to the *emitted* `dist-firefox/manifest.json` — the
-  dual-key form Mozilla recommends, assembled after Parcel because it won't pass
-  it through pre-build. `lint:firefox` (`web-ext lint`) validates the result;
-  `BACKGROUND_SERVICE_WORKER_IGNORED` is the expected, correct warning. In
+  rewrites the *emitted* `dist-firefox/manifest.json`, swapping `service_worker`
+  for `background.scripts` (dropping the `service_worker` key Firefox ignores),
+  assembled after Parcel because it won't pass `scripts` through pre-build. We
+  swap rather than keep both keys because this manifest is Firefox-only — Mozilla's
+  dual-key form only helps a single manifest shared across browsers, and keeping
+  `service_worker` here would just earn a `BACKGROUND_SERVICE_WORKER_IGNORED`
+  warning from `web-ext lint` for no benefit. `lint:firefox` (`web-ext lint`)
+  validates the result. In
   `dev:firefox --watch` this patch must re-run after *every* Parcel rebuild
   (Parcel re-emits the `service_worker`-only manifest each time), and the Firefox
   reload must fire only after the patch — `scripts/dev-firefox.mjs` drives that
