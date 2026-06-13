@@ -1,6 +1,27 @@
 Install the latest release from the Chrome Web Store:
 [https://chrome.google.com/webstore/detail/korean-ime/cimmbifnciobjhchpimjekibbndgmkfk?hl=en-GB]
 
+# 2.7.0
+2026-06-13
+
+This release lets you choose your own Hangul/Latin toggle key and adds Japanese
+and Portuguese localizations.
+
+### Features
+* The Hangul/Latin toggle key is now configurable — set your own key or combination in the options page, or turn it off entirely. The default is still Right Alt, and the choice is saved on your computer.
+* Added Japanese localization
+* Added Portuguese localization (Brazilian and European)
+
+### Fixes
+* Fixed a Firefox error ("element.matches is not a function") when focusing certain elements
+* Fixed a double-character deletion in CKEditor when editing via the on-screen keyboard
+
+### Internal
+* Polished and translated the Chrome/Firefox store listing descriptions
+* Removed dead code and tightened typing in the composition adapters
+* `@trace` call-stack entries now link back to the TypeScript source
+* Updated development dependencies
+
 # 2.6.0
 2026-06-10
 
