@@ -1,4 +1,10 @@
 {
+    "extension_name": {
+        "message": "IME coreano com romanização"
+    },
+    "extension_short_name": {
+        "message": "IME coreano"
+    },
     "extension_description": {
         "message": "Digite em coreano (hangul) no seu navegador. Inclui uma ferramenta de romanização e um teclado no ecrã."
     },
