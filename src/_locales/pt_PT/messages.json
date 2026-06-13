@@ -1,0 +1,35 @@
+{
+    "extension_description": {
+        "message": "Digite em coreano (hangul) no seu navegador. Inclui uma ferramenta de romanização e um teclado no ecrã."
+    },
+    "menu_onScreenKeyboard": {
+        "message": "Teclado no ecrã"
+    },
+    "options_onScreenKeyboard_heading": {
+        "message": "Teclado no ecrã"
+    },
+    "options_hanYong_toggleKey_description": {
+        "message": "A tecla ou combinação que alterna entre hangul e inglês. A predefinição é o Alt direito e é guardada apenas neste computador."
+    },
+    "options_hanYong_toggleKey_reset": {
+        "message": "Repor a predefinição"
+    },
+    "options_hanYong_syncAcrossTabs_label": {
+        "message": "Sincronizar o modo entre os separadores"
+    },
+    "options_hanYong_syncAcrossTabs_description": {
+        "message": "Alterne entre hangul e inglês num separador e todos os separadores acompanharão. Quando desativado, cada separador mantém o seu próprio modo."
+    },
+    "options_onScreenKeyboard_syncAcrossTabs_label": {
+        "message": "Sincronizar a visibilidade entre os separadores"
+    },
+    "options_onScreenKeyboard_syncAcrossTabs_description": {
+        "message": "Mostre ou oculte o teclado no ecrã num separador e todos os separadores acompanharão. Quando desativado, cada separador controla o seu próprio."
+    },
+    "gettingStarted_notice": {
+        "message": "O modo de digitação em coreano está ativado. Pressione o Alt direito para ativar ou desativar a digitação em hangul no separador atual. Também pode clicar no ícone da extensão."
+    },
+    "gettingStarted_showIcon_videoLabel": {
+        "message": "Vídeo a mostrar como fixar o ícone da extensão IME coreano"
+    }
+}
