@@ -5,7 +5,7 @@ export class InputAdapter extends CompositionAdapter {
     private isCompositing = false;
     private currentBlock = "";
 
-    constructor(protected element: HTMLInputElement) {
+    constructor(protected element: HTMLInputElement | HTMLTextAreaElement) {
         super(element);
     }
 
