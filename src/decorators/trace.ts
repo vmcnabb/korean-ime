@@ -9,12 +9,6 @@ function createTraceProxy<T extends object>(instance: T): T {
         return `${targetName}.${String(prop)}`;
     }
 
-    function getCallStack() {
-        const callStack = new Error().stack;
-        // Remove the first two lines from the call stack, which are the Error and Proxy constructors.
-        return `Call stack:\n${callStack?.split("\n").slice(2).join("\n")}`;
-    }
-
     return new Proxy(instance, {
         get(target: object, property: PropertyKey): unknown {
             const value = Reflect.get(target, property);
@@ -22,23 +16,19 @@ function createTraceProxy<T extends object>(instance: T): T {
                 // Log method calls
                 return (...args: []) => {
                     const returnValue = value.apply(target, args);
-                    console.debug(
-                        `Called ${name(property)} at\n${getCallStack()}\nWith args, returning:`,
-                        args,
-                        returnValue
-                    );
+                    console.trace(`Called ${name(property)} With args, returning:`, args, returnValue);
                     return returnValue;
                 };
             } else {
                 // Log property access
-                console.debug(`Get ${name(property)} at\n${getCallStack()}\nValue:`, value);
+                console.trace(`Get ${name(property)}\nValue:`, value);
                 return value;
             }
         },
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         set(target: any, property: PropertyKey, value: any): boolean {
             // Log property updates
-            console.debug(`Set ${name(property)} at\n${getCallStack()}\nValue:`, value);
+            console.trace(`Set ${name(property)}\nValue:`, value);
             return Reflect.set(target, property, value);
         },
     });
