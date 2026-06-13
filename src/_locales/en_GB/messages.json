@@ -2,6 +2,9 @@
     "extension_name": {
         "message": "Korean IME with Romanisation Tool"
     },
+    "extension_short_name": {
+        "message": "Korean IME"
+    },
     "extension_description": {
         "message": "Type in Korean (Hangul) in your browser. Includes a romanisation tool and an on-screen keyboard."
     },

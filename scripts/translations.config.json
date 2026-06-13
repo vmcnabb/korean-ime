@@ -1,5 +1,6 @@
 {
     "localesDir": "src/_locales",
+    "manifestBase": "src/manifest.base.json",
     "defaultLocale": "en",
     "requiredLocales": ["ko", "es", "ja", "pt"]
 }
