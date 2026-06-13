@@ -5,15 +5,15 @@ IME coreano le permite escribir hangul en cualquier equipo, incluso en uno donde
 
 CÓMO USARLO
 
-• Haga clic en el icono de la extensión (el botón "a / 한") o pulse la tecla Alt derecha para alternar entre la entrada en alfabeto latino y en hangul.
+• Haga clic en el icono de la extensión — muestra "a" en modo latino y "한" en modo hangul — o pulse la tecla Alt derecha (puede cambiar esta tecla en Opciones) para alternar entre la entrada en alfabeto latino y en hangul.
 • Empiece a escribir — por ejemplo, "dkssudgktpdy" se convierte en "안녕하세요".
 
 
 FUNCIONES
 
-• Escriba hangul en cuadros de texto estándar, áreas de texto y muchos editores de texto enriquecido en línea.
+• Escriba hangul en cuadros de texto estándar, áreas de texto, muchos editores de texto enriquecido en línea y Microsoft Word para la Web.
 • Teclado en pantalla — un teclado flotante que muestra las teclas en alfabeto latino y en hangul. Actívelo o desactívelo desde el menú contextual de la extensión.
-• Romanizar — seleccione texto en hangul, haga clic derecho y elija "Romanizar" para convertirlo al alfabeto latino (Romanización Revisada; no se contemplan algunos casos excepcionales).
+• Romanizar — seleccione texto en hangul, haga clic derecho y elija una opción "Romanizar" para convertirlo al alfabeto latino (Romanización Revisada; no se contemplan algunos casos excepcionales).
 • Volver a editar una sílaba terminada — coloque el cursor justo después de ella y pulse Mayús+Retroceso para reanudar la composición de ese bloque.
 
 
@@ -25,7 +25,6 @@ Esta es la distribución coreana estándar Dubeolsik (두벌식), la misma que l
 QUÉ NO ES COMPATIBLE
 
 • Google Docs — representa el texto en un lienzo (canvas) y usa un editor privado que no acepta la entrada de extensiones como esta, así que la escritura en hangul no funcionará allí.
-• Microsoft Word para la Web — por los mismos motivos.
 • Las páginas internas de su navegador (chrome://…, about:…), la tienda de extensiones/complementos y las páginas de otras extensiones — los navegadores impiden que cualquier extensión se ejecute en ellas.
 
 
