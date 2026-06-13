@@ -59,10 +59,9 @@ const modeIconRenderSizes = [16, 24, 32, 48];
 // Both targets use `background.service_worker` here because Parcel's
 // webextension transformer only accepts the service_worker form — it rejects
 // `background.scripts`, and rejects a manifest containing both. Firefox doesn't
-// support service_worker, so the Firefox build adds `background.scripts` to the
-// *emitted* manifest afterwards (scripts/patch-firefox-manifest.mjs) — the
-// dual-key form Mozilla recommends, assembled post-Parcel because Parcel won't
-// pass it through.
+// support service_worker, so the Firefox build rewrites the *emitted* manifest
+// afterwards (scripts/patch-firefox-manifest.mjs), swapping service_worker for
+// `background.scripts` — done post-Parcel because Parcel won't pass scripts through.
 const targets = {
     chrome: {
         minimum_chrome_version: "102",
@@ -75,11 +74,19 @@ const targets = {
         browser_specific_settings: {
             gecko: {
                 id: "korean-ime@vmcnabb",
-                // storage.session (used heavily) requires Firefox 115+.
-                strict_min_version: "115.0",
+                // 140 is where data_collection_permissions (below) is first
+                // honoured on desktop, and it's the current ESR — so it's the
+                // honest floor for this manifest. (storage.session, used heavily,
+                // only needs 115, so it's comfortably covered.) There's no
+                // installed base on older Firefox to keep the floor low for.
+                strict_min_version: "140.0",
                 // AMO requires a data-collection declaration. This extension
                 // collects/transmits no personal data — all storage is local
                 // config/state, and there are no network calls — so "none".
+                // Honoured on FF desktop 140+ / Android 142+; web-ext still warns
+                // about the Android gap (KEY_FIREFOX_ANDROID_UNSUPPORTED_BY_MIN_VERSION)
+                // since we ship desktop-only and don't set gecko_android — that
+                // warning is expected and accepted.
                 data_collection_permissions: { required: ["none"] },
             },
         },
