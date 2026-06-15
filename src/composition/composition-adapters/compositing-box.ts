@@ -113,7 +113,7 @@ export class CompositingBox {
 
     private buildStyle(): Partial<CSSStyleDeclaration> {
         return {
-            ...getAssignableStyles(this.host),
+            ...getTextStyles(this.host),
             color: window.getComputedStyle(this.host).color,
             backgroundColor: resolveOpaqueBackground(this.host),
             backgroundImage: `linear-gradient(rgba(${ACCENT}, 0.18), rgba(${ACCENT}, 0.18))`,
@@ -133,59 +133,32 @@ export class CompositingBox {
     }
 }
 
-/**
- * Copy the font/text-appearance styles from the editor so the box's text matches
- * the page's, skipping anything that would interfere with the overlay's own box
- * model (background/border/layout) and anything still at its document default.
- */
-function getAssignableStyles(source: Element): Partial<CSSStyleDeclaration> {
-    const computedStyles = window.getComputedStyle(source);
-    const styles: Record<CSSStringKey, string> = {} as Record<CSSStringKey, string>;
+const COPIED_TEXT_STYLES: CSSStringKey[] = [
+    "fontFamily",
+    "fontSize",
+    "fontStyle",
+    "fontWeight",
+    "fontVariant",
+    "fontStretch",
+    "fontSizeAdjust",
+    "fontFeatureSettings",
+    "fontKerning",
+    "fontVariationSettings",
+    "letterSpacing",
+    "wordSpacing",
+    "textTransform",
+    "textRendering",
+    "direction",
+];
 
-    const testElement = document.createElement("div");
-    testElement.textContent = "test";
-    document.body.appendChild(testElement);
-    const defaultStyles = window.getComputedStyle(testElement);
-
-    for (let i = 0; i < computedStyles.length; i++) {
-        const styleName = computedStyles[i] as CSSStringKey;
-        if (shouldExclude(styleName, computedStyles, defaultStyles)) {
-            continue;
-        }
-        styles[styleName] = computedStyles.getPropertyValue(styleName);
+/** Copy just the text-appearance styles so the box's glyph matches the page's. */
+function getTextStyles(source: Element): Partial<CSSStyleDeclaration> {
+    const computed = window.getComputedStyle(source);
+    const styles: Partial<CSSStyleDeclaration> = {};
+    for (const property of COPIED_TEXT_STYLES) {
+        styles[property] = computed[property];
     }
-
-    testElement.remove();
     return styles;
-
-    function shouldExclude(styleName: string, computed: CSSStyleDeclaration, defaults: CSSStyleDeclaration) {
-        // The box owns these — never inherit them from the editor (they'd shift or
-        // hide the overlay). `inset`/`width`/`height`/`margin`/`padding` are set
-        // explicitly by the box; the rest would fight the absolute positioning.
-        const excludeStartWith = [
-            "background",
-            "border",
-            "outline",
-            "position",
-            "display",
-            "visibility",
-            "margin",
-            "padding",
-            "width",
-            "height",
-            "inset",
-            "top",
-            "left",
-            "right",
-            "bottom",
-        ];
-
-        if (excludeStartWith.some((prefix) => styleName.startsWith(prefix))) {
-            return true;
-        }
-
-        return computed.getPropertyValue(styleName) === defaults.getPropertyValue(styleName);
-    }
 }
 
 /**
