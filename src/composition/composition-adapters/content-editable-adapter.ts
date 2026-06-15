@@ -239,14 +239,23 @@ export class ContentEditableAdapter extends CompositionAdapter {
         }
 
         const caret = selection.getRangeAt(0);
-        const node = caret.startContainer;
-        if (node.nodeType !== Node.TEXT_NODE || caret.startOffset < 1) {
+        if (caret.startOffset < 1) {
             return undefined;
         }
 
+        // Select the content immediately before the caret — the just-composed
+        // glyph. This works whether the caret sits inside the glyph's text node
+        // (offsets are character indices, so this spans one character) or in its
+        // parent element (offsets are child indices, so this spans the glyph's text
+        // node) — the latter is where the caret usually lands after the block is
+        // inserted, which is why guarding on a text-node container drew no box.
         const glyph = document.createRange();
-        glyph.setStart(node, caret.startOffset - 1);
-        glyph.setEnd(node, caret.startOffset);
+        try {
+            glyph.setStart(caret.startContainer, caret.startOffset - 1);
+            glyph.setEnd(caret.startContainer, caret.startOffset);
+        } catch {
+            return undefined;
+        }
         const rect = glyph.getBoundingClientRect();
 
         if (rect.width === 0 && rect.height === 0) {
