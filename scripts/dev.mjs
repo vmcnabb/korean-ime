@@ -41,6 +41,18 @@ const DEFAULT_CHROME_DEBUG_PORT = 9222;
 // this in sync with the --dist-dir in the "start:chrome" npm script.
 const distDir = resolve(root, "dist-chrome-dev");
 
+// The Hanja feature (#150) is gated behind a build-time flag, off by default.
+// Turn it on for this dev session with `npm run dev:chrome -- --enable-hanja`
+// (flag reaches argv) or `npm run dev:chrome --enable-hanja` (npm exposes it as
+// npm_config_enable_hanja). The build reads KIME_ENABLE_HANJA, which we set on the
+// spawned Parcel process below; Parcel inlines it at build time.
+function hanjaFeatureRequested() {
+    if (process.argv.slice(2).includes("--enable-hanja")) return true;
+    const cfg = process.env.npm_config_enable_hanja;
+    if (cfg !== undefined && cfg !== "false" && cfg !== "0") return true;
+    return process.env.KIME_ENABLE_HANJA === "true";
+}
+
 function getChromeDebugPort() {
     const rawPort = process.env.KIME_CHROME_DEBUG_PORT ?? process.env.CHROME_DEBUG_PORT;
     if (rawPort === undefined || rawPort.trim() === "") return DEFAULT_CHROME_DEBUG_PORT;
@@ -199,7 +211,9 @@ const { server, testUrl } = await startTestPageServer();
 // 2. Build the extension. Default: a one-off build. With --watch: start Parcel
 //    in watch mode (auto-rebuild + hot reload) and wait for the first build.
 const watchMode = watchRequested();
-const buildEnv = { ...process.env, NODE_ENV: "development" };
+const enableHanja = hanjaFeatureRequested();
+console.log(`[dev] Hanja conversion (Right-Ctrl): ${enableHanja ? "enabled" : "disabled"}`);
+const buildEnv = { ...process.env, NODE_ENV: "development", KIME_ENABLE_HANJA: enableHanja ? "true" : "" };
 
 console.log("[dev] Starting...");
 if (watchMode) {

@@ -3,6 +3,7 @@ import { isAltKey, isModifierKey, KeyCode, keyMap } from "../keyboard/korean-key
 import { HangulCompositor } from "./hangul-compositor";
 import { CompositionAdapterFactory } from "./composition-adapter-factory";
 import { CompositionAdapter } from "./composition-adapters/composition-adapter";
+import { convertHangulToHanja } from "./hanja/hanja-converter";
 
 /**
  * Controls the Hangul IME for a given element.
@@ -113,6 +114,17 @@ export class HangulImeController {
             }
 
             const code = event.code as KeyCode;
+
+            // Temporary scaffolding for Issue 150; graduates to a Settings toggle when the feature ships.
+            if (process.env.KIME_ENABLE_HANJA === "true" && code === KeyCode.ControlRight) {
+                if (convertHangulToHanja(this.compositor, this.compositionAdapter)) {
+                    this.notifyOnEntry();
+                    event.preventDefault();
+                    event.stopPropagation();
+                    event.stopImmediatePropagation();
+                }
+                return;
+            }
 
             // record which alt was down last, so we know if the "han/yong" key is down
             if (isAltKey(code)) {
