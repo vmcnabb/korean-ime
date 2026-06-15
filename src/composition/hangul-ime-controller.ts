@@ -3,6 +3,7 @@ import { isAltKey, isModifierKey, KeyCode, keyMap } from "../keyboard/korean-key
 import { HangulCompositor } from "./hangul-compositor";
 import { CompositionAdapterFactory } from "./composition-adapter-factory";
 import { CompositionAdapter } from "./composition-adapters/composition-adapter";
+import { convertHangulToHanja } from "./hanja/hanja-converter";
 
 /**
  * Controls the Hangul IME for a given element.
@@ -113,6 +114,28 @@ export class HangulImeController {
             }
 
             const code = event.code as KeyCode;
+
+            // Hanja conversion (Right-Ctrl) — gated behind a build-time flag, off by
+            // default. Parcel inlines process.env.KIME_ENABLE_HANJA at build time, so
+            // with the flag unset this condition folds to a constant false and the whole
+            // branch is dropped: the feature never runs and is inert (dark) in
+            // production. (Parcel still bundles the small hanja/ module — its
+            // symbol-level tree-shaking doesn't drop the now-dead import — but it's
+            // unreachable, so the only cost is a few bytes.) Temporary scaffolding for
+            // #150; graduates to a Settings toggle when the feature ships. The trigger is
+            // Right-Ctrl (the 한자 key on a US layout); the Korean keyboard's dedicated
+            // Lang2/한자 key is the natural equivalent to wire up later. Sits ahead of the
+            // modifier-key early-return below because ControlRight is a modifier and
+            // would otherwise be ignored.
+            if (process.env.KIME_ENABLE_HANJA === "true" && code === KeyCode.ControlRight) {
+                if (convertHangulToHanja(this.compositor, this.compositionAdapter)) {
+                    this.notifyOnEntry();
+                    event.preventDefault();
+                    event.stopPropagation();
+                    event.stopImmediatePropagation();
+                }
+                return;
+            }
 
             // record which alt was down last, so we know if the "han/yong" key is down
             if (isAltKey(code)) {

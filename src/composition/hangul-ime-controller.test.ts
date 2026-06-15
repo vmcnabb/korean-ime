@@ -400,3 +400,67 @@ describe("HangulImeController intercepts Shift+Backspace in the capture phase", 
         expect(reachedBodyCapture).toBe(true);
     });
 });
+
+describe("HangulImeController Hanja conversion (Right-Ctrl, KIME_ENABLE_HANJA)", () => {
+    afterEach(() => {
+        jest.restoreAllMocks();
+        delete process.env.KIME_ENABLE_HANJA;
+    });
+
+    // Drive composition state in jsdom by stubbing the adapter's DOM mutations, then
+    // type the jamo for a syllable so the compositor is genuinely mid-composition.
+    function composingController() {
+        jest.spyOn(InputAdapter.prototype, "beginComposition").mockImplementation(() => {});
+        jest.spyOn(InputAdapter.prototype, "updateComposition").mockImplementation(() => {});
+        const endComposition = jest.spyOn(InputAdapter.prototype, "endComposition").mockImplementation(() => {});
+
+        const element = document.createElement("textarea");
+        const controller = makeController(element);
+        controller.activate();
+        return { element, endComposition };
+    }
+
+    function composeHan(element: HTMLElement) {
+        dispatchKeydown(element, "KeyG", "g"); // ㅎ
+        dispatchKeydown(element, "KeyK", "k"); // ㅏ → 하
+        dispatchKeydown(element, "KeyS", "s"); // ㄴ → 한
+    }
+
+    function pressRightCtrl(element: HTMLElement) {
+        return dispatchKeydown(element, "ControlRight", "Control");
+    }
+
+    it("converts a composing 한 to 韓 and swallows the key when the flag is on", () => {
+        process.env.KIME_ENABLE_HANJA = "true";
+        const { element, endComposition } = composingController();
+        composeHan(element);
+
+        const ctrl = pressRightCtrl(element);
+
+        expect(endComposition).toHaveBeenCalledWith("韓");
+        expect(ctrl.defaultPrevented).toBe(true);
+    });
+
+    it("does nothing when the flag is off (Right-Ctrl is just a modifier)", () => {
+        const { element, endComposition } = composingController(); // flag unset
+        composeHan(element);
+
+        const ctrl = pressRightCtrl(element);
+
+        expect(endComposition).not.toHaveBeenCalled();
+        expect(ctrl.defaultPrevented).toBe(false);
+    });
+
+    it("leaves a composing syllable that isn't in the dictionary alone, even with the flag on", () => {
+        process.env.KIME_ENABLE_HANJA = "true";
+        const { element, endComposition } = composingController();
+        dispatchKeydown(element, "KeyR", "r"); // ㄱ
+        dispatchKeydown(element, "KeyM", "m"); // ㅡ → 그
+        dispatchKeydown(element, "KeyF", "f"); // ㄹ → 글
+
+        const ctrl = pressRightCtrl(element);
+
+        expect(endComposition).not.toHaveBeenCalled();
+        expect(ctrl.defaultPrevented).toBe(false);
+    });
+});
