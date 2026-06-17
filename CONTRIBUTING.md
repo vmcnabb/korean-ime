@@ -3,8 +3,11 @@ If you want to contribute, please discuss with me first
 and if it fits in with my vision for the project I'll accept it, but
 communication could save us both some time.
 
-`master` is protected: all changes land via pull request — branch off `master`,
-push your branch, and open a PR. Run `npm run validate` before pushing so CI
+For features and bugfixes, please open a GitHub issue first so the change has a
+clear discussion and tracking point. `master` is protected: all changes land via
+pull request. Branch off `master` using
+`issue/<issue-number>-<short-kebab-case-description>`, push your branch, and
+open a PR that references the issue. Run `npm run validate` before pushing so CI
 passes.
 
 For translation tone, locale inheritance, and regional wording preferences, see
