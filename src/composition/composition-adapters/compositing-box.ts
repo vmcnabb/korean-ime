@@ -48,6 +48,7 @@ export class CompositingBox {
         const box = document.createElement("div");
         Object.assign(box.style, this.buildStyle());
         box.textContent = text;
+        box.style.lineHeight = `${rect.height}px`; // vertically center the glyph
         this.box = box;
         this.position(rect);
         document.body.appendChild(box);
@@ -103,12 +104,14 @@ export class CompositingBox {
         }
         // measure() returns viewport coordinates; the box is absolutely positioned
         // on document.body, so add the page scroll to convert to document space.
-        Object.assign(this.box.style, {
+        const pageRect = {
             left: `${rect.left + window.scrollX - BORDER}px`,
             top: `${rect.top + window.scrollY - BORDER}px`,
             width: `${rect.width}px`,
             height: `${rect.height}px`,
-        });
+        };
+        Object.assign(this.box.style, pageRect);
+        console.log("[KIME RECT]", pageRect);
     }
 
     private buildStyle(): Partial<CSSStyleDeclaration> {
@@ -118,9 +121,6 @@ export class CompositingBox {
             backgroundColor: resolveOpaqueBackground(this.host),
             backgroundImage: `linear-gradient(rgba(${ACCENT}, 0.18), rgba(${ACCENT}, 0.18))`,
             border: `${BORDER}px solid rgba(${ACCENT}, 0.9)`,
-            // Keep the overlay tight to the glyph and inert: no inherited box
-            // spacing, and never intercept pointer events meant for the editor.
-            boxSizing: "content-box",
             margin: "0",
             padding: "0",
             overflow: "hidden",
@@ -149,6 +149,10 @@ const COPIED_TEXT_STYLES: CSSStringKey[] = [
     "textTransform",
     "textRendering",
     "direction",
+    "lineHeight",
+    "textAlign",
+    "textIndent",
+    "tabSize",
 ];
 
 /** Copy just the text-appearance styles so the box's glyph matches the page's. */

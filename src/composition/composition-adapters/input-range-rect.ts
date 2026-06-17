@@ -14,14 +14,17 @@ import { GlyphRect } from "./compositing-box";
  */
 const MIRRORED_PROPERTIES: string[] = [
     "width",
-    "borderTopWidth",
-    "borderRightWidth",
-    "borderBottomWidth",
-    "borderLeftWidth",
+    "boxSizing",
+    "borderTop",
+    "borderRight",
+    "borderBottom",
+    "borderLeft",
     "paddingTop",
     "paddingRight",
     "paddingBottom",
     "paddingLeft",
+    "paddingBlock",
+    "paddingInline",
     "fontStyle",
     "fontVariant",
     "fontWeight",
@@ -33,10 +36,12 @@ const MIRRORED_PROPERTIES: string[] = [
     "textAlign",
     "textTransform",
     "textIndent",
+    "textRendering",
     "letterSpacing",
     "wordSpacing",
     "tabSize",
     "direction",
+    "overflowWrap",
 ];
 
 export function measureInputRangeRect(
@@ -57,49 +62,45 @@ export function measureInputRangeRect(
     // field's own box-sizing, so force content-box here: the copied width is then the
     // content width and the copied padding/border sit outside it, matching the field's
     // text-layout box exactly (otherwise a border-box textarea would wrap too early).
-    mirror.style.boxSizing = "content-box";
-    mirror.style.position = "absolute";
+    mirror.style.position = "fixed";
     mirror.style.top = "0";
     mirror.style.left = "0";
     mirror.style.visibility = "hidden";
-    mirror.style.overflow = "hidden";
+    mirror.style.boxSizing = "content-box";
     // A single-line input never wraps; a textarea wraps at its content width.
     mirror.style.whiteSpace = isSingleLine ? "pre" : "pre-wrap";
-    mirror.style.wordWrap = isSingleLine ? "normal" : "break-word";
+    mirror.style.overflowWrap = isSingleLine ? "normal" : "break-word";
+
     if (isSingleLine) {
         mirror.style.width = "auto";
     }
 
     const value = field.value;
-    mirror.textContent = value.substring(0, start);
-    const marker = doc.createElement("span");
-    // A zero-width range (collapsed) still needs something to measure.
-    marker.textContent = value.substring(start, end) || "\u200b";
-    mirror.appendChild(marker);
-    mirror.appendChild(doc.createTextNode(value.substring(end)));
+    if (value.length === 0) return undefined;
+
+    mirror.textContent = value;
 
     doc.body.appendChild(mirror);
-    const mirrorRect = mirror.getBoundingClientRect();
-    const markerRect = marker.getBoundingClientRect();
+
+    const range = document.createRange();
+    range.setStart(mirror.firstChild || mirror, start);
+    range.setEnd(mirror.firstChild || mirror, end);
+    const markerRect = range.getBoundingClientRect();
+
     doc.body.removeChild(mirror);
 
-    if (markerRect.width === 0 && markerRect.height === 0) {
-        return undefined;
-    }
-
-    // The mirror replicates the field's border + padding, so the marker's offset
-    // from the mirror's border-box equals its offset from the field's border-box
-    // (before the field scrolls its content).
-    const offsetLeft = markerRect.left - mirrorRect.left;
-    const offsetTop = markerRect.top - mirrorRect.top;
-
     const fieldRect = field.getBoundingClientRect();
-    return {
-        left: fieldRect.left + offsetLeft - field.scrollLeft,
-        top: fieldRect.top + offsetTop - field.scrollTop,
+    const measure = {
+        left: markerRect.left + fieldRect.left - field.scrollLeft,
+        top: markerRect.top + fieldRect.top - field.scrollTop,
         width: markerRect.width,
         height: markerRect.height,
     };
+
+    console.log("[KIME MEASURE]", measure);
+    console.log("[KIME FIELD]", fieldRect);
+    console.log("[KIME COMPUTED]", computed);
+    return measure;
 }
 
 function toKebabCase(property: string): string {
