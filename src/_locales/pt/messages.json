@@ -84,7 +84,7 @@
         "message": "Tecla de alternância"
     },
     "options_hanYong_toggleKey_description": {
-        "message": "A tecla ou combinação que alterna entre hangul e inglês. O padrão é Command direito no Mac e Alt direito nos outros sistemas, e é salvo apenas neste computador."
+        "message": "A tecla ou combinação que alterna entre hangul e inglês. A tecla padrão é Command direito no Mac e Alt direito nos outros sistemas. Essa configuração é salva apenas neste computador."
     },
     "options_hanYong_toggleKey_change": {
         "message": "Alterar"
@@ -96,7 +96,7 @@
         "message": "Pressione sua tecla ou combinação. Uma tecla normal deve ser combinada com Ctrl ou Alt. Pressione Esc para cancelar."
     },
     "options_hanYong_toggleKey_hint_mac": {
-        "message": "Pressione sua tecla ou combinação. No Mac, Command, Control ou Option podem ser usados sozinhos. Uma tecla normal deve incluir Control ou Option; Command pode ser adicionado. Pressione Esc para cancelar."
+        "message": "Pressione sua tecla ou combinação. No Mac, Command, Control ou Option podem ser usados isoladamente. Uma tecla normal deve incluir Control ou Option; Command pode ser adicionado. Pressione Esc para cancelar."
     },
     "options_hanYong_toggleKey_turnOff": {
         "message": "Desativar"
