@@ -111,7 +111,6 @@ export class CompositingBox {
             height: `${rect.height}px`,
         };
         Object.assign(this.box.style, pageRect);
-        console.log("[KIME RECT]", pageRect);
     }
 
     private buildStyle(): Partial<CSSStyleDeclaration> {
@@ -121,6 +120,7 @@ export class CompositingBox {
             backgroundColor: resolveOpaqueBackground(this.host),
             backgroundImage: `linear-gradient(rgba(${ACCENT}, 0.18), rgba(${ACCENT}, 0.18))`,
             border: `${BORDER}px solid rgba(${ACCENT}, 0.9)`,
+            boxSizing: "content-box",
             margin: "0",
             padding: "0",
             overflow: "hidden",

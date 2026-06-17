@@ -42,6 +42,8 @@ const MIRRORED_PROPERTIES: string[] = [
     "tabSize",
     "direction",
     "overflowWrap",
+    "overflowClip",
+    "overflowClipMargin",
 ];
 
 export function measureInputRangeRect(
@@ -97,9 +99,6 @@ export function measureInputRangeRect(
         height: markerRect.height,
     };
 
-    console.log("[KIME MEASURE]", measure);
-    console.log("[KIME FIELD]", fieldRect);
-    console.log("[KIME COMPUTED]", computed);
     return measure;
 }
 
