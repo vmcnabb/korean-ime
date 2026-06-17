@@ -186,7 +186,10 @@
         "message": "O modo de digitação em coreano está desativado. A extensão não mudará a digitação da página da web para hangul. Você ainda pode usar as outras ferramentas e reativar a digitação em coreano mais tarde nas Opções."
     },
     "gettingStarted_notice": {
-        "message": "O modo de digitação em coreano está ativado. Pressione a tecla de alternância padrão (Command direito no Mac, Alt direito nos outros sistemas) para ativar ou desativar a digitação em hangul na guia atual. Você também pode clicar no ícone da extensão."
+        "message": "O modo de digitação em coreano está ativado. Pressione o Alt direito para ativar ou desativar a digitação em hangul na guia atual. Você também pode clicar no ícone da extensão."
+    },
+    "gettingStarted_notice_mac": {
+        "message": "O modo de digitação em coreano está ativado. Pressione o Command direito para ativar ou desativar a digitação em hangul na guia atual. Você também pode clicar no ícone da extensão."
     },
     "gettingStarted_errorLoad": {
         "message": "Não foi possível carregar as configurações. Abra as Opções e tente novamente."

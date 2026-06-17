@@ -186,7 +186,10 @@
         "message": "El modo de escritura coreana está desactivado. La extensión no cambiará la escritura de páginas web a hangul. Aún puede usar las otras herramientas y volver a activar la escritura coreana más tarde en Opciones."
     },
     "gettingStarted_notice": {
-        "message": "El modo de escritura coreana está activado. Pulse la tecla de alternancia predeterminada (Comando derecha en Mac, Alt derecha en otros sistemas) para activar o desactivar la escritura en hangul en la pestaña actual. También puede hacer clic en el icono de la extensión."
+        "message": "El modo de escritura coreana está activado. Pulse Alt derecha para activar o desactivar la escritura en hangul en la pestaña actual. También puede hacer clic en el icono de la extensión."
+    },
+    "gettingStarted_notice_mac": {
+        "message": "El modo de escritura coreana está activado. Pulse Comando derecha para activar o desactivar la escritura en hangul en la pestaña actual. También puede hacer clic en el icono de la extensión."
     },
     "gettingStarted_errorLoad": {
         "message": "No se pudo cargar la configuración. Abra Opciones e inténtelo de nuevo."

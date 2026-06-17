@@ -33,7 +33,10 @@
         "message": "Mostre ou oculte o teclado no ecrã num separador e todos os separadores acompanharão. Quando desativado, cada separador controla o seu próprio."
     },
     "gettingStarted_notice": {
-        "message": "O modo de digitação em coreano está ativado. Pressione a tecla de alternância predefinida (Command direito no Mac, Alt direito nos outros sistemas) para ativar ou desativar a digitação em hangul no separador atual. Também pode clicar no ícone da extensão."
+        "message": "O modo de digitação em coreano está ativado. Pressione o Alt direito para ativar ou desativar a digitação em hangul no separador atual. Também pode clicar no ícone da extensão."
+    },
+    "gettingStarted_notice_mac": {
+        "message": "O modo de digitação em coreano está ativado. Pressione o Command direito para ativar ou desativar a digitação em hangul no separador atual. Também pode clicar no ícone da extensão."
     },
     "gettingStarted_showIcon_videoLabel": {
         "message": "Vídeo a mostrar como fixar o ícone da extensão IME coreano"
