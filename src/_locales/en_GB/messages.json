@@ -51,7 +51,7 @@
         "message": "Korean typing mode is off. The extension will not switch web-page typing into Hangul. You can still use the other tools, and you can turn Korean typing back on later in Options."
     },
     "gettingStarted_notice": {
-        "message": "Korean typing mode is enabled. Press Right Alt to turn Hangul typing on or off in the current tab. You can also click the extension icon."
+        "message": "Korean typing mode is enabled. Press the default toggle key (Right Command on Mac, Right Alt elsewhere) to turn Hangul typing on or off in the current tab. You can also click the extension icon."
     },
     "gettingStarted_errorLoad": {
         "message": "Settings could not be loaded. Open Options and try again."

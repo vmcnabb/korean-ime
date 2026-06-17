@@ -78,13 +78,13 @@
         "message": "Activar escritura coreana (hangul)"
     },
     "options_hanYong_disabled_hint": {
-        "message": "Cuando está desactivado, toda la conmutación Han/Yong se deshabilita y la tecla Alt derecha / Han-Yong no hace nada."
+        "message": "Cuando está desactivado, toda la conmutación Han/Yong se deshabilita y la tecla de alternancia no hace nada."
     },
     "options_hanYong_toggleKey_label": {
         "message": "Tecla de alternancia"
     },
     "options_hanYong_toggleKey_description": {
-        "message": "La tecla o combinación que cambia entre hangul e inglés. El valor predeterminado es Alt derecha y se guarda solo en este equipo."
+        "message": "La tecla o combinación que cambia entre hangul e inglés. El valor predeterminado es Comando derecha en Mac y Alt derecha en otros sistemas, y se guarda solo en este equipo."
     },
     "options_hanYong_toggleKey_change": {
         "message": "Cambiar"
@@ -94,6 +94,9 @@
     },
     "options_hanYong_toggleKey_hint": {
         "message": "Pulse su tecla o combinación. Una tecla normal debe combinarse con Ctrl o Alt. Pulse Esc para cancelar."
+    },
+    "options_hanYong_toggleKey_hint_mac": {
+        "message": "Pulse su tecla o combinación. En Mac, Comando, Control u Opción pueden usarse solas. Una tecla normal debe incluir Control u Opción; se puede añadir Comando. Pulse Esc para cancelar."
     },
     "options_hanYong_toggleKey_turnOff": {
         "message": "Desactivar"
@@ -106,6 +109,9 @@
     },
     "options_hanYong_toggleKey_invalid": {
         "message": "Una tecla normal debe combinarse con Ctrl o Alt."
+    },
+    "options_hanYong_toggleKey_invalid_mac": {
+        "message": "Use Comando, Control u Opción solas, o incluya Control u Opción con una tecla normal."
     },
     "options_hanYong_syncAcrossTabs_label": {
         "message": "Sincronizar el modo entre pestañas"
@@ -180,7 +186,7 @@
         "message": "El modo de escritura coreana está desactivado. La extensión no cambiará la escritura de páginas web a hangul. Aún puede usar las otras herramientas y volver a activar la escritura coreana más tarde en Opciones."
     },
     "gettingStarted_notice": {
-        "message": "El modo de escritura coreana está activado. Pulse Alt derecho para activar o desactivar la escritura en hangul en la pestaña actual. También puede hacer clic en el icono de la extensión."
+        "message": "El modo de escritura coreana está activado. Pulse la tecla de alternancia predeterminada (Comando derecha en Mac, Alt derecha en otros sistemas) para activar o desactivar la escritura en hangul en la pestaña actual. También puede hacer clic en el icono de la extensión."
     },
     "gettingStarted_errorLoad": {
         "message": "No se pudo cargar la configuración. Abra Opciones e inténtelo de nuevo."

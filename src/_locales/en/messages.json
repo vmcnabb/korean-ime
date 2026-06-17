@@ -78,13 +78,13 @@
         "message": "Enable Korean (Hangul) typing"
     },
     "options_hanYong_disabled_hint": {
-        "message": "When off, all Han/Yong switching is disabled and the Right Alt / Han/Yong key does nothing."
+        "message": "When off, all Han/Yong switching is disabled and the toggle key does nothing."
     },
     "options_hanYong_toggleKey_label": {
         "message": "Toggle key"
     },
     "options_hanYong_toggleKey_description": {
-        "message": "The key or combination that switches between Hangul and English. The default is Right Alt, and it is saved on this computer only."
+        "message": "The key or combination that switches between Hangul and English. The default is Right Command on Mac and Right Alt elsewhere, and it is saved on this computer only."
     },
     "options_hanYong_toggleKey_change": {
         "message": "Change"
@@ -94,6 +94,9 @@
     },
     "options_hanYong_toggleKey_hint": {
         "message": "Press your key or combination. A normal key must be combined with Ctrl or Alt. Press Esc to cancel."
+    },
+    "options_hanYong_toggleKey_hint_mac": {
+        "message": "Press your key or combination. On Mac, Command, Control, or Option can be used by itself. A normal key must include Control or Option; Command may be added. Press Esc to cancel."
     },
     "options_hanYong_toggleKey_turnOff": {
         "message": "Turn off"
@@ -106,6 +109,9 @@
     },
     "options_hanYong_toggleKey_invalid": {
         "message": "A normal key must be combined with Ctrl or Alt."
+    },
+    "options_hanYong_toggleKey_invalid_mac": {
+        "message": "Use Command, Control, or Option by itself, or include Control or Option with a normal key."
     },
     "options_hanYong_syncAcrossTabs_label": {
         "message": "Sync mode across tabs"
@@ -180,7 +186,7 @@
         "message": "Korean typing mode is off. The extension will not switch web-page typing into Hangul. You can still use the other tools, and you can turn Korean typing back on later in Options."
     },
     "gettingStarted_notice": {
-        "message": "Korean typing mode is enabled. Press Right Alt to turn Hangul typing on or off in the current tab. You can also click the extension icon."
+        "message": "Korean typing mode is enabled. Press the default toggle key (Right Command on Mac, Right Alt elsewhere) to turn Hangul typing on or off in the current tab. You can also click the extension icon."
     },
     "gettingStarted_errorLoad": {
         "message": "Settings could not be loaded. Open Options and try again."

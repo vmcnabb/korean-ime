@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from "vue";
+import { computed, onMounted, onUnmounted, ref } from "vue";
 import { t } from "./i18n";
 import {
     KeyBinding,
-    defaultToggleKeyBinding,
+    currentKeyBindingPlatform,
+    defaultToggleKeyBindingForPlatform,
     formatKeyBinding,
+    formatModifierKeyPrefix,
     isValidToggleKeyBinding,
     keyBindingFromEvent,
 } from "../keyboard/key-binding";
@@ -16,12 +18,39 @@ const capturing = ref(false);
 const invalid = ref(false);
 // Live "Ctrl + Shift +" prefix shown while modifiers are held mid-capture.
 const captureProgress = ref("");
+const captureProgressAccessible = ref("");
+const keyBindingPlatform = currentKeyBindingPlatform();
 
 // A bare modifier keydown is ambiguous: pressed and released alone it's a
 // lone-modifier binding (e.g. Right Alt); held while another key arrives it's
 // the start of a combo (Alt+S). Hold the single-modifier candidate here; it's
 // cleared once a second modifier or a normal key is pressed.
 let pendingModifier: KeyBinding | null = null;
+
+const bindingDisplay = computed(() => {
+    if (capturing.value) {
+        return captureProgress.value || t("options_hanYong_toggleKey_capturing");
+    }
+    return binding.value
+        ? formatKeyBinding(binding.value, { platform: keyBindingPlatform })
+        : t("options_hanYong_toggleKey_off");
+});
+
+const bindingAccessibleLabel = computed(() => {
+    if (capturing.value) {
+        return captureProgressAccessible.value || t("options_hanYong_toggleKey_capturing");
+    }
+    return binding.value
+        ? formatKeyBinding(binding.value, { platform: keyBindingPlatform, labelMode: "accessible" })
+        : t("options_hanYong_toggleKey_off");
+});
+
+const hintMessageKey = computed(() =>
+    keyBindingPlatform === "mac" ? "options_hanYong_toggleKey_hint_mac" : "options_hanYong_toggleKey_hint"
+);
+const invalidMessageKey = computed(() =>
+    keyBindingPlatform === "mac" ? "options_hanYong_toggleKey_invalid_mac" : "options_hanYong_toggleKey_invalid"
+);
 
 onMounted(async () => {
     binding.value = await loadToggleKeyBinding();
@@ -41,12 +70,13 @@ function turnOff() {
 
 function resetToDefault() {
     stopCapture();
-    persist(structuredClone(defaultToggleKeyBinding));
+    persist(defaultToggleKeyBindingForPlatform(keyBindingPlatform));
 }
 
 function startCapture() {
     invalid.value = false;
     captureProgress.value = "";
+    captureProgressAccessible.value = "";
     pendingModifier = null;
     capturing.value = true;
     window.addEventListener("keydown", onCaptureKeydown, true);
@@ -57,6 +87,7 @@ function stopCapture() {
     capturing.value = false;
     invalid.value = false;
     captureProgress.value = "";
+    captureProgressAccessible.value = "";
     pendingModifier = null;
     window.removeEventListener("keydown", onCaptureKeydown, true);
     window.removeEventListener("keyup", onCaptureKeyup, true);
@@ -71,22 +102,23 @@ function modifierCount(event: KeyboardEvent): number {
     return (event.ctrlKey ? 1 : 0) + (event.altKey ? 1 : 0) + (event.shiftKey ? 1 : 0) + (event.metaKey ? 1 : 0);
 }
 
+function modifierState(event: KeyboardEvent) {
+    return {
+        ctrl: event.ctrlKey,
+        alt: event.altKey,
+        shift: event.shiftKey,
+        meta: event.metaKey,
+    };
+}
+
 // The held modifiers as a trailing prefix, e.g. "Ctrl + Shift +" (or "" if none).
-function heldModifierLabel(event: KeyboardEvent): string {
-    const parts: string[] = [];
-    if (event.ctrlKey) {
-        parts.push("Ctrl");
-    }
-    if (event.altKey) {
-        parts.push("Alt");
-    }
-    if (event.shiftKey) {
-        parts.push("Shift");
-    }
-    if (event.metaKey) {
-        parts.push("Win");
-    }
-    return parts.length ? `${parts.join(" + ")} +` : "";
+function updateCaptureProgress(event: KeyboardEvent) {
+    const modifiers = modifierState(event);
+    captureProgress.value = formatModifierKeyPrefix(modifiers, { platform: keyBindingPlatform });
+    captureProgressAccessible.value = formatModifierKeyPrefix(modifiers, {
+        platform: keyBindingPlatform,
+        labelMode: "accessible",
+    });
 }
 
 function onCaptureKeydown(event: KeyboardEvent) {
@@ -103,16 +135,17 @@ function onCaptureKeydown(event: KeyboardEvent) {
         // One modifier may become a lone binding (finalized on keyup); two or more
         // mean a combo is being built and needs a normal key to complete it.
         pendingModifier = modifierCount(event) === 1 ? keyBindingFromEvent(event) : null;
-        captureProgress.value = heldModifierLabel(event);
+        updateCaptureProgress(event);
         return;
     }
 
     // A non-modifier key (with any held modifiers) completes the combo.
     pendingModifier = null;
     const captured = keyBindingFromEvent(event);
-    if (!isValidToggleKeyBinding(captured)) {
-        invalid.value = true; // needs Ctrl or Alt — keep capturing
+    if (!isValidToggleKeyBinding(captured, keyBindingPlatform)) {
+        invalid.value = true; // invalid binding — keep capturing
         captureProgress.value = "";
+        captureProgressAccessible.value = "";
         return;
     }
     finishCapture(captured);
@@ -129,9 +162,10 @@ function onCaptureKeyup(event: KeyboardEvent) {
     if (pendingModifier?.code === event.code && modifierCount(event) === 0) {
         const captured = pendingModifier;
         pendingModifier = null;
-        if (!isValidToggleKeyBinding(captured)) {
-            invalid.value = true; // e.g. lone Shift / Win — needs Ctrl or Alt
+        if (!isValidToggleKeyBinding(captured, keyBindingPlatform)) {
+            invalid.value = true; // e.g. lone Shift / Win on non-Mac
             captureProgress.value = "";
+            captureProgressAccessible.value = "";
             return;
         }
         finishCapture(captured);
@@ -139,7 +173,7 @@ function onCaptureKeyup(event: KeyboardEvent) {
     }
 
     // Released one of several held modifiers — keep showing what's still held.
-    captureProgress.value = heldModifierLabel(event);
+    updateCaptureProgress(event);
 }
 </script>
 
@@ -155,9 +189,13 @@ function onCaptureKeyup(event: KeyboardEvent) {
             >
         </span>
         <div class="controls">
-            <span class="binding" :class="{ off: !capturing && !binding, capturing }">
-                <template v-if="capturing">{{ captureProgress || t("options_hanYong_toggleKey_capturing") }}</template>
-                <template v-else>{{ binding ? formatKeyBinding(binding) : t("options_hanYong_toggleKey_off") }}</template>
+            <span
+                class="binding"
+                :class="{ off: !capturing && !binding, capturing }"
+                :title="bindingAccessibleLabel"
+                :aria-label="bindingAccessibleLabel"
+            >
+                {{ bindingDisplay }}
             </span>
             <button type="button" :disabled="capturing" @click="startCapture">
                 {{ t("options_hanYong_toggleKey_change") }}
@@ -173,7 +211,7 @@ function onCaptureKeyup(event: KeyboardEvent) {
              or the validation error if an invalid key was pressed. The general
              description lives in the heading's "?" tooltip. -->
         <p v-if="invalid || capturing" class="feedback" :class="{ error: invalid }">
-            {{ invalid ? t("options_hanYong_toggleKey_invalid") : t("options_hanYong_toggleKey_hint") }}
+            {{ invalid ? t(invalidMessageKey) : t(hintMessageKey) }}
         </p>
     </div>
 </template>
