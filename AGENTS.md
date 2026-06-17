@@ -11,18 +11,16 @@ on-screen keyboard. TypeScript, bundled with **Parcel**; the options page uses
 
 ## Workflow
 
-**`master` is protected — never commit to it directly.** Features and fixes
-should start with a GitHub issue. Branch off `master` using
+Features and fixes should start with a GitHub issue. Branch off `master` using
 `issue/<issue-number>-<short-kebab-case-description>` (release prep keeps its
-own `release/vX.Y.Z` branch pattern). All changes land via pull request: push
-the branch, open a PR that references the issue, and merge it (GitHub
-auto-deletes the merged branch). A direct push to `master` will be rejected, so
-don't try it even for a one-line doc fix. Run `npm run validate` before pushing
-so CI passes on the first try. After a merge, **confirm it via the PR's merged
-state** (e.g. `gh pr view <n> --json state`) rather than inferring it from local
-`git` — a local checkout that's behind `origin/master`, or that still has the
-feature branch around, can look merged when it isn't (or vice versa). `git
-checkout master && git pull` first if you do check locally.
+own `release/vX.Y.Z` branch pattern). Open a PR that references the issue and
+run `npm run validate` before pushing so CI passes on the first try. `master` is
+protected, so changes are merged through PRs and GitHub auto-deletes the merged
+branch. After a merge, **confirm it via the PR's merged state** (e.g. `gh pr
+view <n> --json state`) rather than inferring it from local `git` — a local
+checkout that's behind `origin/master`, or that still has the feature branch
+around, can look merged when it isn't (or vice versa). `git checkout master &&
+git pull` first if you do check locally.
 
 ## Commands
 
