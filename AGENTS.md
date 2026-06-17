@@ -74,6 +74,9 @@ Core domain logic (mostly pure, well unit-tested):
 - **`src/keyboard/`** — `korean-keyboard-map.ts`: the `KeyCode` enum, the key
   map (`keyMap`), and key helpers (`isModifierKey`, `isAltKey`). Foundational —
   imported across `composition/`, `content-script/`, and `messaging/`.
+- Translation tone, locale inheritance, and regional wording guidance live in
+  `TRANSLATIONS.md`; required complete locales are configured in
+  `scripts/translations.config.json`.
 
 ## Gotchas
 

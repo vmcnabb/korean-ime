@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref } from "vue";
+import { currentKeyBindingPlatform } from "../keyboard/key-binding";
 import { api } from "../platform/browser-api";
 import { GettingStartedChoice, gettingStartedChoices } from "./getting-started-model";
 import { t } from "./i18n";
@@ -16,6 +17,7 @@ const showPinningVideo = ref(false);
 const optionsPageHref = getOptionsPageHref();
 const pinningVideoSrc = getPreferredPinningVideoSrc();
 const pinningVideoId = "pinning-video";
+const keyBindingPlatform = currentKeyBindingPlatform();
 
 const selectedChoice = computed<GettingStartedChoice>(() =>
     settings.hanYong.enabled ? gettingStartedChoices.typeHangul : gettingStartedChoices.otherTools
@@ -23,6 +25,9 @@ const selectedChoice = computed<GettingStartedChoice>(() =>
 const isFirefoxFamily = browserHasFirefoxExtensionMenu();
 const pinningGuidance = computed(() =>
     isFirefoxFamily ? t("gettingStarted_showIcon_firefox") : t("gettingStarted_showIcon_chrome")
+);
+const gettingStartedNoticeKey = computed(() =>
+    keyBindingPlatform === "mac" ? "gettingStarted_notice_mac" : "gettingStarted_notice"
 );
 
 onMounted(async () => {
@@ -134,7 +139,7 @@ function getPreferredPinningVideoSrc(): string {
                 {{ t("gettingStarted_noticeOtherTools") }}
             </p>
             <p v-else-if="selectedChoice === gettingStartedChoices.typeHangul" class="notice" role="status">
-                {{ t("gettingStarted_notice") }}
+                {{ t(gettingStartedNoticeKey) }}
             </p>
             <p v-if="errorMessage" class="error" role="alert">{{ errorMessage }}</p>
         </section>

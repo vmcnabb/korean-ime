@@ -180,7 +180,7 @@ export class StateManager {
      * `storage.onChanged` listener calls this — see #25/#26).
      *
      * Some settings affect open tabs immediately and so must be propagated:
-     *  - Enabling/disabling Hangul typing (or the Right Alt / Han-Yong key)
+     *  - Enabling/disabling Hangul typing (or the configured Han/Yong toggle key)
      *    is re-derived for every tab by `hydrateTabState`, so each open tab is
      *    re-sent its state to reflect the change.
      *  - Turning on a feature's `syncAcrossTabs` converges the currently-open

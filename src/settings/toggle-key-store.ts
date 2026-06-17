@@ -1,5 +1,10 @@
 import { api } from "../platform/browser-api";
-import { KeyBinding, defaultToggleKeyBinding } from "../keyboard/key-binding";
+import {
+    KeyBinding,
+    KeyBindingPlatform,
+    currentKeyBindingPlatform,
+    defaultToggleKeyBindingForPlatform,
+} from "../keyboard/key-binding";
 
 /**
  * The Han/Yong toggle key binding is stored **per machine** in
@@ -9,16 +14,18 @@ import { KeyBinding, defaultToggleKeyBinding } from "../keyboard/key-binding";
  * for area `"local"` and this key.
  *
  * Stored value semantics:
- *   - key absent  → never set → fall back to the default (Right Alt)
+ *   - key absent  → never set → fall back to the platform default
  *   - `null`      → the user explicitly turned the toggle key off
  *   - a binding   → the user's chosen key/combo
  */
 export const TOGGLE_KEY_STORAGE_KEY = "hanYongToggleKey";
 
-export async function loadToggleKeyBinding(): Promise<KeyBinding | null> {
+export async function loadToggleKeyBinding(
+    platform: KeyBindingPlatform = currentKeyBindingPlatform()
+): Promise<KeyBinding | null> {
     const result = (await api.storage.local.get(TOGGLE_KEY_STORAGE_KEY)) as Record<string, unknown>;
     if (!(TOGGLE_KEY_STORAGE_KEY in result)) {
-        return structuredClone(defaultToggleKeyBinding);
+        return defaultToggleKeyBindingForPlatform(platform);
     }
     return (result[TOGGLE_KEY_STORAGE_KEY] as KeyBinding | null) ?? null;
 }

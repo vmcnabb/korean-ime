@@ -6,7 +6,7 @@
  * to. jsdom does not provide it.
  */
 import { TOGGLE_KEY_STORAGE_KEY, loadToggleKeyBinding, saveToggleKeyBinding } from "./toggle-key-store";
-import { defaultToggleKeyBinding, KeyBinding } from "../keyboard/key-binding";
+import { defaultToggleKeyBinding, KeyBinding, macDefaultToggleKeyBinding } from "../keyboard/key-binding";
 import { KeyCode } from "../keyboard/korean-keyboard-map";
 
 let get: ReturnType<typeof jest.fn>;
@@ -19,14 +19,24 @@ beforeEach(() => {
 });
 
 describe("loadToggleKeyBinding", () => {
-    it("returns the default (Right Alt) when nothing is stored", async () => {
+    it("returns the default Right Alt binding when nothing is stored on non-Mac platforms", async () => {
         get.mockReturnValue(Promise.resolve({}));
 
-        const binding = await loadToggleKeyBinding();
+        const binding = await loadToggleKeyBinding("default");
 
         expect(binding).toEqual(defaultToggleKeyBinding);
         // A fresh copy, not the shared default object.
         expect(binding).not.toBe(defaultToggleKeyBinding);
+    });
+
+    it("returns the default Right Command binding when nothing is stored on macOS", async () => {
+        get.mockReturnValue(Promise.resolve({}));
+
+        const binding = await loadToggleKeyBinding("mac");
+
+        expect(binding).toEqual(macDefaultToggleKeyBinding);
+        // A fresh copy, not the shared default object.
+        expect(binding).not.toBe(macDefaultToggleKeyBinding);
     });
 
     it("returns null when the toggle key was explicitly turned off", async () => {
@@ -35,11 +45,12 @@ describe("loadToggleKeyBinding", () => {
         expect(await loadToggleKeyBinding()).toBeNull();
     });
 
-    it("returns the stored custom binding", async () => {
+    it("returns the stored custom binding regardless of platform", async () => {
         const altS: KeyBinding = { code: KeyCode.KeyS, ctrl: false, alt: true, shift: false, meta: false };
         get.mockReturnValue(Promise.resolve({ [TOGGLE_KEY_STORAGE_KEY]: altS }));
 
         expect(await loadToggleKeyBinding()).toEqual(altS);
+        expect(await loadToggleKeyBinding("mac")).toEqual(altS);
     });
 });
 

@@ -6,3 +6,6 @@ communication could save us both some time.
 `master` is protected: all changes land via pull request — branch off `master`,
 push your branch, and open a PR. Run `npm run validate` before pushing so CI
 passes.
+
+For translation tone, locale inheritance, and regional wording preferences, see
+`TRANSLATIONS.md`.
