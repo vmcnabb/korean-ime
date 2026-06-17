@@ -15,7 +15,13 @@
         "message": "Teclado no ecrã"
     },
     "options_hanYong_toggleKey_description": {
-        "message": "A tecla ou combinação que alterna entre hangul e inglês. A predefinição é o Alt direito e é guardada apenas neste computador."
+        "message": "A tecla ou combinação que alterna entre hangul e inglês. A tecla predefinida é Command direito no Mac e Alt direito nos outros sistemas. Esta configuração é guardada apenas neste computador."
+    },
+    "options_hanYong_toggleKey_hint_mac": {
+        "message": "Prima a sua tecla ou combinação. No Mac, Command, Control ou Option podem ser usados isoladamente. Uma tecla normal deve incluir Control ou Option; Command pode ser adicionado. Prima Esc para cancelar."
+    },
+    "options_hanYong_toggleKey_invalid_mac": {
+        "message": "Use Command, Control ou Option isoladamente, ou inclua Control ou Option com uma tecla normal."
     },
     "options_hanYong_toggleKey_reset": {
         "message": "Repor a predefinição"
@@ -33,7 +39,10 @@
         "message": "Mostre ou oculte o teclado no ecrã num separador e todos os separadores acompanharão. Quando desativado, cada separador controla o seu próprio."
     },
     "gettingStarted_notice": {
-        "message": "O modo de digitação em coreano está ativado. Pressione o Alt direito para ativar ou desativar a digitação em hangul no separador atual. Também pode clicar no ícone da extensão."
+        "message": "O modo de escrita em coreano está ativado. Prima o Alt direito para ativar ou desativar a escrita em hangul no separador atual. Também pode clicar no ícone da extensão."
+    },
+    "gettingStarted_notice_mac": {
+        "message": "O modo de escrita em coreano está ativado. Prima o Command direito para ativar ou desativar a escrita em hangul no separador atual. Também pode clicar no ícone da extensão."
     },
     "gettingStarted_showIcon_videoLabel": {
         "message": "Vídeo a mostrar como fixar o ícone da extensão IME coreano"

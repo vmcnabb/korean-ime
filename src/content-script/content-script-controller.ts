@@ -199,7 +199,7 @@ export class ContentScriptController {
 
                     // A printable-key combo (e.g. Alt+S) must be swallowed fully so the
                     // character doesn't also reach the page or the IME. A modifier-only
-                    // key (the default Right Alt) is left to propagate so the IME can
+                    // key (e.g. the default Right Alt/Command) is left to propagate so the IME can
                     // still track it (see HangulImeController's `lastAlt`).
                     if (!isModifierOnlyBinding(binding)) {
                         e.stopImmediatePropagation();
@@ -212,7 +212,7 @@ export class ContentScriptController {
         // Firefox (Windows/Linux) toggles its menu bar when Alt is pressed and
         // released without an intervening key — triggered on keyup. The keydown
         // preventDefault above doesn't stop it, so also swallow the keyup of a
-        // modifier-only toggle key (the default Right Alt). Printable combos don't
+        // modifier-only toggle key. Printable combos don't
         // trigger the menu, so they need no keyup handling. (No-op on Chrome.)
         document.addEventListener(
             "keyup",

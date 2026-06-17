@@ -78,13 +78,13 @@
         "message": "Ativar digitação em coreano (hangul)"
     },
     "options_hanYong_disabled_hint": {
-        "message": "Quando desativado, toda a alternância Han/Yong fica desabilitada e a tecla Alt direito / Han-Yong não faz nada."
+        "message": "Quando desativado, toda a alternância Han/Yong fica desabilitada e a tecla de alternância não faz nada."
     },
     "options_hanYong_toggleKey_label": {
         "message": "Tecla de alternância"
     },
     "options_hanYong_toggleKey_description": {
-        "message": "A tecla ou combinação que alterna entre hangul e inglês. O padrão é o Alt direito e é salvo apenas neste computador."
+        "message": "A tecla ou combinação que alterna entre hangul e inglês. A tecla padrão é Command direito no Mac e Alt direito nos outros sistemas. Essa configuração é salva apenas neste computador."
     },
     "options_hanYong_toggleKey_change": {
         "message": "Alterar"
@@ -94,6 +94,9 @@
     },
     "options_hanYong_toggleKey_hint": {
         "message": "Pressione sua tecla ou combinação. Uma tecla normal deve ser combinada com Ctrl ou Alt. Pressione Esc para cancelar."
+    },
+    "options_hanYong_toggleKey_hint_mac": {
+        "message": "Pressione sua tecla ou combinação. No Mac, Command, Control ou Option podem ser usados isoladamente. Uma tecla normal deve incluir Control ou Option; Command pode ser adicionado. Pressione Esc para cancelar."
     },
     "options_hanYong_toggleKey_turnOff": {
         "message": "Desativar"
@@ -106,6 +109,9 @@
     },
     "options_hanYong_toggleKey_invalid": {
         "message": "Uma tecla normal deve ser combinada com Ctrl ou Alt."
+    },
+    "options_hanYong_toggleKey_invalid_mac": {
+        "message": "Use Command, Control ou Option isoladamente, ou inclua Control ou Option com uma tecla normal."
     },
     "options_hanYong_syncAcrossTabs_label": {
         "message": "Sincronizar o modo entre as guias"
@@ -181,6 +187,9 @@
     },
     "gettingStarted_notice": {
         "message": "O modo de digitação em coreano está ativado. Pressione o Alt direito para ativar ou desativar a digitação em hangul na guia atual. Você também pode clicar no ícone da extensão."
+    },
+    "gettingStarted_notice_mac": {
+        "message": "O modo de digitação em coreano está ativado. Pressione o Command direito para ativar ou desativar a digitação em hangul na guia atual. Você também pode clicar no ícone da extensão."
     },
     "gettingStarted_errorLoad": {
         "message": "Não foi possível carregar as configurações. Abra as Opções e tente novamente."
