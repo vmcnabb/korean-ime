@@ -16,29 +16,14 @@ onMounted(initSettings);
     </main>
 </template>
 
+<!-- Design tokens, base typography and the .label / .description utility text
+     are shared in src/styles/design-system.css (imported in options-app.ts).
+     This file keeps only the options-app layout. The section card and heading
+     rules are element selectors so the child-component <section>s and the
+     getting-started page pick them up too. -->
 <style>
-:root {
-    color-scheme: light dark;
-
-    --bg-primary: light-dark(white, black);
-    --text-primary: light-dark(#1a1a1a, #e5e5e5);
-
-    --section-bg: light-dark(#f9f9f9, #1e1e1e);
-    --section-border: light-dark(#ddd, #333);
-    --description-color: light-dark(#666, #999);
-    --error-color: light-dark(#c0392b, #f87171);
-
-    --toggle-off-bg: light-dark(#ccc, #555);
-    --toggle-on-bg: light-dark(#2563eb, #3b82f6);
-}
-
 body {
     margin: 0;
-    font-family: Arial, Helvetica, sans-serif;
-    font-size: 16px;
-    line-height: 1.5;
-    color: var(--text-primary);
-    background-color: var(--bg-primary);
 }
 
 main {
@@ -49,7 +34,11 @@ main {
 
 h1 {
     padding-left: calc(128px + 1em);
+    /* image-set serves the 2x logo on HiDPI / zoom; the plain url() and the
+       -webkit- form are fallbacks for older engines. */
     background-image: url("../images/icon128.png");
+    background-image: -webkit-image-set(url("../images/icon128.png") 1x, url("../images/icon256.png") 2x);
+    background-image: image-set(url("../images/icon128.png") 1x, url("../images/icon256.png") 2x);
     background-repeat: no-repeat;
     line-height: 128px;
     white-space: nowrap;
@@ -60,22 +49,11 @@ section {
     padding: 1em 1.25em;
     background-color: var(--section-bg);
     border: 1px solid var(--section-border);
-    border-radius: 8px;
+    border-radius: var(--radius);
 }
 
 section h2 {
     margin: 0 0 0.75em;
     font-size: 1.25em;
-}
-
-/* Shared by LabeledCheckbox and PersistenceSelect (intentionally not scoped). */
-.label {
-    font-size: 1.1em;
-}
-
-.description {
-    margin: 0.15em 0 0;
-    font-size: 0.9em;
-    color: var(--description-color);
 }
 </style>

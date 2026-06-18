@@ -23,7 +23,7 @@ const options = computed(() => [
 <template>
     <label class="select">
         <span class="label">{{ label }}</span>
-        <select v-model="model">
+        <select v-model="model" class="ds-field">
             <option v-for="option in options" :key="option.value" :value="option.value">
                 {{ option.name }}
             </option>
