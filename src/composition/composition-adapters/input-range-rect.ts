@@ -13,7 +13,6 @@ import { GlyphRect } from "./compositing-box";
  * layout) so the caller can skip drawing.
  */
 const MIRRORED_PROPERTIES: string[] = [
-    "width",
     "boxSizing",
     "borderTop",
     "borderRight",
@@ -74,7 +73,14 @@ export function measureInputRangeRect(
     mirror.style.overflowWrap = isSingleLine ? "normal" : "break-word";
 
     if (isSingleLine) {
+        // A single-line input never wraps, so the mirror can take its natural width.
         mirror.style.width = "auto";
+    } else {
+        // Wrap at the textarea's real text-layout width. clientWidth already excludes
+        // the border and any vertical scrollbar.
+        const paddingLeft = parseFloat(computed.paddingLeft) || 0;
+        const paddingRight = parseFloat(computed.paddingRight) || 0;
+        mirror.style.width = `${field.clientWidth - paddingLeft - paddingRight}px`;
     }
 
     const value = field.value;
