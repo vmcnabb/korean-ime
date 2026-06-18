@@ -44,6 +44,41 @@
     "romanize_popup_romanizedTextTextboxHint": {
         "message": "ローマ字に変換された結果がここに表示されます"
     },
+    "romanize_popup_copyOriginal": {
+        "message": "元の文をコピー"
+    },
+    "romanize_popup_copyRomanized": {
+        "message": "ローマ字をコピー"
+    },
+    "romanize_popup_originalCopied": {
+        "message": "元の文をコピーしました"
+    },
+    "romanize_popup_romanizedCopied": {
+        "message": "ローマ字をコピーしました"
+    },
+    "romanize_popup_inputModeLabel": {
+        "message": "入力モード"
+    },
+    "romanize_popup_hangulMode": {
+        "message": "ハングル入力"
+    },
+    "romanize_popup_latinMode": {
+        "message": "ラテン文字入力"
+    },
+    "romanize_popup_romanizationSystemName": {
+        "message": "改訂ローマ字表記法"
+    },
+    "romanize_popup_readOnly": {
+        "message": "生成された出力"
+    },
+    "romanize_popup_characterCount": {
+        "message": "$count$ 文字",
+        "placeholders": {
+            "count": {
+                "content": "$1"
+            }
+        }
+    },
     "keyboard_key_altRight_tooltip": {
         "message": "ヨン（英語）とハングルを切り替える"
     },
