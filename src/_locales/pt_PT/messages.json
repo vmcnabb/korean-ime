@@ -11,6 +11,15 @@
     "menu_onScreenKeyboard": {
         "message": "Teclado no ecrã"
     },
+    "romanize_popup_originalTextHeadingHint": {
+        "message": "(pode escrever hangul aqui)"
+    },
+    "romanize_popup_originalTextTextboxHint": {
+        "message": "Escreva hangul aqui"
+    },
+    "romanize_popup_romanizationSystemName": {
+        "message": "Romanização revista"
+    },
     "options_onScreenKeyboard_heading": {
         "message": "Teclado no ecrã"
     },

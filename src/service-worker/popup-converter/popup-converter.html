@@ -1,31 +1,101 @@
 ﻿<!DOCTYPE html>
 <html>
     <head>
+        <meta charset="utf-8" />
         <meta name="google" value="notranslate" />
         <title data-message="romanize_popup_title"></title>
         <link type="text/css" rel="stylesheet" href="popup-converter.css" />
     </head>
     <body>
-        <div class="flex-container">
-            <h3>
-                <span data-message="romanize_popup_originalTextHeading"></span>
-                <span
-                    class="normal"
-                    data-message="romanize_popup_originalTextHeadingHint"
-                ></span>
-            </h3>
-            <div
-                id="original"
-                contenteditable
-                data-placeholder-message="romanize_popup_originalTextTextboxHint"
-            ></div>
-            <h3 data-message="romanize_popup_romanizedTextHeading"></h3>
-            <div
-                id="romanized"
-                contenteditable
-                data-placeholder-message="romanize_popup_romanizedTextTextboxHint"
-            ></div>
-        </div>
+        <main class="popup-shell">
+            <section class="text-panel">
+                <div class="panel-heading">
+                    <h2 data-message="romanize_popup_originalTextHeading"></h2>
+                    <div class="toolbar">
+                        <button
+                            id="input-mode-toggle"
+                            class="mode-button"
+                            type="button"
+                            data-aria-label-message="romanize_popup_inputModeLabel"
+                        >
+                            <img id="input-mode-icon" alt="" width="24" height="24" />
+                        </button>
+                        <span class="copy-action">
+                            <button
+                                id="copy-original"
+                                class="copy-button"
+                                type="button"
+                                data-message="romanize_popup_copy"
+                                data-aria-label-message="romanize_popup_copyOriginal"
+                            ></button>
+                            <span
+                                id="copy-original-feedback"
+                                class="copy-feedback"
+                                aria-hidden="true"
+                                data-message="romanize_popup_copied"
+                            ></span>
+                        </span>
+                    </div>
+                </div>
+                <div class="field-wrap">
+                    <div
+                        id="original"
+                        class="text-field"
+                        contenteditable
+                        role="textbox"
+                        aria-multiline="true"
+                        spellcheck="false"
+                        data-placeholder-message="romanize_popup_originalTextTextboxHint"
+                    ></div>
+                </div>
+                <div class="panel-footer">
+                    <span id="original-count"></span>
+                </div>
+            </section>
+
+            <section class="text-panel">
+                <div class="panel-heading">
+                    <div class="heading-with-meta">
+                        <h2 data-message="romanize_popup_romanizedTextHeading"></h2>
+                        <span class="system-pill" data-message="romanize_popup_romanizationSystemName"></span>
+                    </div>
+                    <div class="toolbar">
+                        <span class="copy-action">
+                            <button
+                                id="copy-romanized"
+                                class="copy-button"
+                                type="button"
+                                data-message="romanize_popup_copy"
+                                data-aria-label-message="romanize_popup_copyRomanized"
+                            ></button>
+                            <span
+                                id="copy-romanized-feedback"
+                                class="copy-feedback"
+                                aria-hidden="true"
+                                data-message="romanize_popup_copied"
+                            ></span>
+                        </span>
+                    </div>
+                </div>
+                <div class="field-wrap">
+                    <div
+                        id="romanized"
+                        class="text-field readonly"
+                        role="textbox"
+                        aria-readonly="true"
+                        aria-multiline="true"
+                        tabindex="0"
+                        data-placeholder-message="romanize_popup_romanizedTextTextboxHint"
+                    ></div>
+                </div>
+                <div class="panel-footer">
+                    <span id="romanized-count"></span>
+                    <span data-message="romanize_popup_readOnly"></span>
+                </div>
+            </section>
+
+            <div id="copy-status" class="visually-hidden" aria-live="polite"></div>
+        </main>
         <script src="popup-converter.ts" charset="utf-8" type="module"></script>
     </body>
 </html>

@@ -44,6 +44,41 @@
     "romanize_popup_romanizedTextTextboxHint": {
         "message": "위에 입력하신 한글이 여기에 로마자로 나타납니다"
     },
+    "romanize_popup_copy": {
+        "message": "복사"
+    },
+    "romanize_popup_copyOriginal": {
+        "message": "원문 텍스트 복사"
+    },
+    "romanize_popup_copyRomanized": {
+        "message": "로마자 텍스트 복사"
+    },
+    "romanize_popup_copied": {
+        "message": "복사됨"
+    },
+    "romanize_popup_inputModeLabel": {
+        "message": "원문 입력 모드"
+    },
+    "romanize_popup_hangulMode": {
+        "message": "한글 입력"
+    },
+    "romanize_popup_latinMode": {
+        "message": "라틴 문자 입력"
+    },
+    "romanize_popup_romanizationSystemName": {
+        "message": "국어의 로마자 표기법"
+    },
+    "romanize_popup_readOnly": {
+        "message": "생성된 결과"
+    },
+    "romanize_popup_characterCount": {
+        "message": "$count$자",
+        "placeholders": {
+            "count": {
+                "content": "$1"
+            }
+        }
+    },
     "keyboard_key_altRight_tooltip": {
         "message": "영문과 한글 사이를 전환"
     },

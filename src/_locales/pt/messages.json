@@ -44,6 +44,41 @@
     "romanize_popup_romanizedTextTextboxHint": {
         "message": "A versão romanizada aparecerá aqui"
     },
+    "romanize_popup_copy": {
+        "message": "Copiar"
+    },
+    "romanize_popup_copyOriginal": {
+        "message": "Copiar texto original"
+    },
+    "romanize_popup_copyRomanized": {
+        "message": "Copiar texto romanizado"
+    },
+    "romanize_popup_copied": {
+        "message": "Copiado"
+    },
+    "romanize_popup_inputModeLabel": {
+        "message": "Modo de entrada original"
+    },
+    "romanize_popup_hangulMode": {
+        "message": "Entrada hangul"
+    },
+    "romanize_popup_latinMode": {
+        "message": "Entrada latina"
+    },
+    "romanize_popup_romanizationSystemName": {
+        "message": "Romanização revisada"
+    },
+    "romanize_popup_readOnly": {
+        "message": "Resultado gerado"
+    },
+    "romanize_popup_characterCount": {
+        "message": "$count$ caracteres",
+        "placeholders": {
+            "count": {
+                "content": "$1"
+            }
+        }
+    },
     "keyboard_key_altRight_tooltip": {
         "message": "Alternar entre Yong (inglês) e hangul"
     },

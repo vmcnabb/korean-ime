@@ -4,6 +4,7 @@ import { romanize } from "../romanization/romanize";
 import { sendMessageToTab } from "./send-message-to-tab";
 import popupConverter from "url:./popup-converter/popup-converter.html";
 import { api } from "../platform/browser-api";
+import { loadPopupWindowSize, trackPopupWindowSize } from "./popup-converter/popup-window-size";
 
 export async function romanizeInPopup(event: chrome.contextMenus.OnClickData) {
     const selectionText = event.selectionText || "";
@@ -12,17 +13,20 @@ export async function romanizeInPopup(event: chrome.contextMenus.OnClickData) {
         romanized: romanize(selectionText),
     };
 
+    const popupSize = await loadPopupWindowSize();
     const newWindow = await api.windows.create({
         url: popupConverter,
         type: "popup",
-        width: 600,
-        height: 400,
+        width: popupSize.width,
+        height: popupSize.height,
     });
 
     if (newWindow?.id === undefined) {
         console.error("Failed to create popup window");
         return;
     }
+
+    await trackPopupWindowSize(newWindow, popupSize);
 
     // Hand the text off via storage rather than messaging the new window on a
     // timer: the popup reads it on load, so there's no load-timing race and no

@@ -1,61 +1,243 @@
 :root {
     color-scheme: light dark;
-    --page-bg-color: light-dark(#f0f0f0, #111);
-    --placeholder-color: light-dark(#666, #999);
-    --input-border-color: light-dark(#ccc, #555);
-    --input-bg-color: light-dark(white, #222);
-    --input-shadow-color: light-dark(#ddd, #333);
+
+    --bg-primary: light-dark(white, black);
+    --text-primary: light-dark(#1a1a1a, #e5e5e5);
+    --section-bg: light-dark(#f9f9f9, #1e1e1e);
+    --section-border: light-dark(#ddd, #333);
+    --description-color: light-dark(#666, #999);
+    --toggle-off-bg: light-dark(#ccc, #555);
+    --toggle-on-bg: light-dark(#2563eb, #3b82f6);
+    --success-color: light-dark(#168a45, #63d38a);
+
+    --field-bg: light-dark(white, #141414);
+    --field-readonly-bg: light-dark(#f3f4f6, #181818);
+    --button-hover-bg: light-dark(#f1f5f9, #292929);
+    --placeholder-color: light-dark(#777, #888);
 }
 
 html,
 body {
     padding: 0;
     margin: 0;
-    height: 100%;
+    min-height: 100%;
 }
+
 html {
-    font-size: 12pt;
-    background-color: var(--page-bg-color);
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+    color: var(--text-primary);
+    background-color: var(--bg-primary);
 }
 
-div[contenteditable] {
-    border: 1px solid var(--input-border-color);
-    border-radius: 2px;
-    padding: 0.5em;
+body {
+    height: 100vh;
+    overflow: hidden;
+}
+
+button {
+    font: inherit;
+}
+
+.popup-shell {
+    display: grid;
+    grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 0.75em;
+    height: 100vh;
+    padding: 0.85em;
+    box-sizing: border-box;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+    color: var(--text-primary);
+}
+
+.panel-heading,
+.panel-footer,
+.toolbar {
+    display: flex;
+    align-items: center;
+}
+
+h2 {
+    margin: 0;
+    letter-spacing: 0;
+}
+
+h2 {
+    font-size: 1em;
+    font-weight: 700;
+}
+
+.heading-with-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.45em;
+    min-width: 0;
+}
+
+.system-pill {
+    flex: 0 0 auto;
+    border: 1px solid var(--section-border);
+    border-radius: 999px;
+    padding: 0.15em 0.55em;
+    color: var(--description-color);
+    font-size: 0.75em;
+    background-color: var(--section-bg);
+}
+
+.text-panel {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    min-height: 0;
+    gap: 0.35em;
+    padding: 0.65em 0.75em;
+    background-color: var(--section-bg);
+    border: 1px solid var(--section-border);
+    border-radius: 8px;
+}
+
+.panel-heading {
+    justify-content: space-between;
+    gap: 0.75em;
+}
+
+.toolbar {
+    flex: 0 0 auto;
+    gap: 0.45em;
+}
+
+.mode-button,
+.copy-button {
+    min-height: 2em;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    color: var(--text-primary);
+    background-color: transparent;
+    cursor: pointer;
+}
+
+.copy-action {
+    display: inline-grid;
+    align-items: center;
+}
+
+.copy-action > * {
+    grid-area: 1 / 1;
+    justify-self: end;
+}
+
+.mode-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    min-height: 34px;
+    padding: 0;
+    border-radius: 50%;
+}
+
+.mode-button img {
+    display: block;
+    width: 24px;
+    height: 24px;
+}
+
+.copy-button {
+    padding: 0 0.7em;
+    border-color: var(--section-border);
+    background-color: var(--bg-primary);
+}
+
+.copy-feedback {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35em;
+    min-height: 2em;
+    padding: 0 0.7em;
+    color: var(--text-primary);
+    visibility: hidden;
+    opacity: 0;
+}
+
+.copy-feedback::before {
+    content: "✓";
+    color: var(--success-color);
+    font-weight: 700;
+}
+
+.copy-action.copied .copy-button {
+    visibility: hidden;
+    opacity: 0;
+}
+
+.copy-action.copied .copy-feedback {
+    visibility: visible;
+    opacity: 1;
+}
+
+.mode-button:hover,
+.copy-button:hover {
+    background-color: var(--button-hover-bg);
+}
+
+.mode-button:focus-visible,
+.copy-button:focus-visible,
+.text-field:focus-visible {
+    outline: 2px solid var(--toggle-on-bg);
+    outline-offset: 2px;
+}
+
+.field-wrap {
+    min-height: 0;
+}
+
+.text-field {
+    height: 100%;
+    min-height: 0;
+    box-sizing: border-box;
+    border: 1px solid var(--section-border);
+    border-radius: 8px;
+    padding: 0.6em 0.65em;
     overflow: auto;
-    background-color: var(--input-bg-color);
-    box-shadow: var(--input-shadow-color) 2px 2px 3px;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    background-color: var(--field-bg);
 }
 
-div[contenteditable]:empty:before {
+.text-field.readonly {
+    user-select: text;
+    background-color: var(--field-readonly-bg);
+}
+
+.text-field:empty::before {
     content: attr(data-placeholder);
     color: var(--placeholder-color);
 }
 
-h3 {
-    margin-top: 1rem;
-    margin-bottom: 0.3em;
-    font-size: 0.9rem;
-    font-family: sans-serif;
-}
-h3 > span.normal {
-    font-size: 1rem;
-    font-weight: normal;
-}
-h3:first-child {
-    margin-top: 0;
+.text-field[data-input-mode="hangul"] {
+    caret-color: var(--toggle-on-bg);
 }
 
-div.flex-container {
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    height: 100%;
-    padding: 1em;
-    box-sizing: border-box;
+.panel-footer {
+    justify-content: space-between;
+    min-height: 1em;
+    color: var(--description-color);
+    font-size: 0.8em;
 }
 
-div.flex-container > div {
-    flex-grow: 1;
-    font-size: 1.1rem;
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    border: 0;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    overflow: hidden;
+    white-space: nowrap;
 }
