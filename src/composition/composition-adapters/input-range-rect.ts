@@ -97,6 +97,12 @@ export function measureInputRangeRect(
 
     doc.body.removeChild(mirror);
 
+    // A zero-size rect means the glyph isn't measurable — a detached or hidden field,
+    // or jsdom's no-layout stub — so skip drawing rather than placing the box at 0,0.
+    if (markerRect.width === 0 && markerRect.height === 0) {
+        return undefined;
+    }
+
     const fieldRect = field.getBoundingClientRect();
     const measure = {
         left: markerRect.left + fieldRect.left - field.scrollLeft,
