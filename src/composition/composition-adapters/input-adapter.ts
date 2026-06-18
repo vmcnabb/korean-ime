@@ -1,9 +1,16 @@
 import { KeyCode } from "../../keyboard/korean-keyboard-map";
 import { CompositionAdapter } from "./composition-adapter";
+import { CompositingBox } from "./compositing-box";
+import { measureInputRangeRect } from "./input-range-rect";
 
 export class InputAdapter extends CompositionAdapter {
     private isCompositing = false;
     private currentBlock = "";
+    // Where the composing block starts in `value`. We track it explicitly rather
+    // than leaning on the field's selection because the composing region is shown
+    // with the overlay box (caret collapsed), not a native selection.
+    private blockStart = 0;
+    private box?: CompositingBox;
 
     constructor(protected element: HTMLInputElement | HTMLTextAreaElement) {
         super(element);
@@ -22,46 +29,54 @@ export class InputAdapter extends CompositionAdapter {
     }
 
     beginComposition(text: string, keyCode: KeyCode): void {
-        this._beginComposition(text, keyCode, () => this.replaceComposingRegion(text));
-        this.isCompositing = true;
+        const start = this.element.selectionStart ?? 0;
+        const end = this.element.selectionEnd ?? start;
+        this.blockStart = start;
+
+        this._beginComposition(text, keyCode, () => this.spliceValue(start, end, text));
         this.currentBlock = text;
+        this.isCompositing = true;
+
+        // Draw the composing block as an overlay box, mirroring the contentEditable
+        // adapter (which collapses the caret and overlays the glyph). `spliceValue`
+        // already collapsed the selection, so there's no native highlight underneath.
+        this.box = new CompositingBox(this.element, () => this.measureCompositingRect());
+        this.box.show(text);
     }
 
     updateComposition(text: string, keyCode: KeyCode) {
-        this._updateComposition(text, keyCode, () => this.replaceComposingRegion(text));
+        const previous = this.currentBlock;
+        this._updateComposition(text, keyCode, () =>
+            this.spliceValue(this.blockStart, this.blockStart + previous.length, text)
+        );
         this.currentBlock = text;
+        this.box?.update(text);
     }
 
-    /**
-     * @param {string} text
-     */
     endComposition(text: string) {
-        this._endComposition(text, () => this.replaceComposingRegion(text));
-        this.collapseSelection();
+        const previous = this.currentBlock;
+        this._endComposition(text, () => this.spliceValue(this.blockStart, this.blockStart + previous.length, text));
         this.isCompositing = false;
         this.currentBlock = "";
+        this.box?.remove();
+        this.box = undefined;
     }
 
     /**
-     * Replace the currently-selected composing region with `text` and re-select it,
-     * mirroring how a browser keeps the in-progress block highlighted. The previous
-     * block is what's selected between `selectionStart` and `selectionEnd`, so this
-     * works for both the first jamo (collapsed caret → insert) and updates
-     * (selected block → replace).
+     * Replace `value[start, end)` with `text` and collapse the caret to the end of
+     * the inserted text — so the composing block is shown by the overlay box, not a
+     * native selection highlight.
      */
-    private replaceComposingRegion(text: string) {
+    private spliceValue(start: number, end: number, text: string) {
         const element = this.element;
-        const start = element.selectionStart;
+        element.value = element.value.substring(0, start) + text + element.value.substring(end);
+        const caret = start + text.length;
+        element.selectionStart = caret;
+        element.selectionEnd = caret;
+    }
 
-        if (start == null) {
-            return;
-        }
-
-        const end = element.selectionEnd || 0;
-
-        element.value = element.value.substring(0, start) + text + element.value.substring(end, element.value.length);
-        element.selectionStart = start;
-        element.selectionEnd = start + text.length;
+    private measureCompositingRect() {
+        return measureInputRangeRect(this.element, this.blockStart, this.blockStart + this.currentBlock.length);
     }
 
     inputCharacter(data: string, keyCode: KeyCode): void {

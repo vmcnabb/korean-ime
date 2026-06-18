@@ -1,5 +1,6 @@
 import { KeyCode } from "../../keyboard/korean-keyboard-map";
 import { CompositionAdapter } from "./composition-adapter";
+import { CompositingBox, GlyphRect } from "./compositing-box";
 
 /**
  * Handles IME composition for contentEditable elements.
@@ -13,10 +14,8 @@ export class ContentEditableAdapter extends CompositionAdapter {
     private isCompositing = false;
     private _currentBlock = "";
 
-    /**
-     * Used to display or underline the current composition.
-     */
-    private compositingBox?: HTMLElement = undefined;
+    /** The overlay drawn over the composing block. */
+    private compositingBox?: CompositingBox = undefined;
 
     constructor(element: HTMLElement) {
         super(element);
@@ -28,9 +27,7 @@ export class ContentEditableAdapter extends CompositionAdapter {
 
     private set currentBlock(value: string) {
         this._currentBlock = value;
-        if (this.compositingBox) {
-            this.compositingBox.innerText = value;
-        }
+        this.compositingBox?.update(value);
     }
 
     deleteContentBackwards(): void {
@@ -111,7 +108,11 @@ export class ContentEditableAdapter extends CompositionAdapter {
             }
             document.dispatchEvent(new Event("selectionchange"));
         });
-        this.createCompositingBox();
+
+        // The glyph is now in the DOM with the caret just after it, so the box can
+        // measure it. (See measureCompositingRect.)
+        this.compositingBox = new CompositingBox(this.element, () => this.measureCompositingRect());
+        this.compositingBox.show(data);
 
         this.currentBlock = data;
         this.isCompositing = true;
@@ -184,7 +185,8 @@ export class ContentEditableAdapter extends CompositionAdapter {
         } finally {
             this.isCompositing = false;
             this.currentBlock = "";
-            this.removeCompositingBox();
+            this.compositingBox?.remove();
+            this.compositingBox = undefined;
         }
     }
 
@@ -226,172 +228,40 @@ export class ContentEditableAdapter extends CompositionAdapter {
     }
 
     /**
-     * Creates a box that is positioned at the current caret position. This box is used to indicate that the character
-     * shown is being composed.
+     * The composing glyph's viewport rect, measured directly from a Range over the
+     * character immediately before the caret (the just-composed block). No DOM
+     * mutation, so it's safe to re-run on every scroll frame as the box re-aligns.
      */
-    private createCompositingBox() {
-        if (this.compositingBox) {
-            this.removeCompositingBox();
-        }
-
+    private measureCompositingRect(): GlyphRect | undefined {
         const selection = window.getSelection();
-
         if (!selection || selection.rangeCount === 0) {
-            console.error("no selection!");
-            return;
+            return undefined;
         }
 
-        // find x/y coordinates of caret
-        const range = selection.getRangeAt(0);
-
-        // Create a temporary span element at the caret position to measure the height/width of the
-        // selection of a Hangul character as well as the x/y coordinates of the caret.
-        const span = document.createElement("span");
-        span.textContent = "아"; // same height/width as all Hangul characters
-        span.style.display = "inline-block";
-        range.insertNode(span);
-
-        const characterRect = span.getBoundingClientRect();
-        const selectionStyle = this.getAssignableStyles(span);
-        // Capture the effective text color at the caret while the span is still in
-        // the DOM, so the box reuses the page's own color-on-background pairing.
-        const textColor = window.getComputedStyle(span).color;
-
-        span.parentNode?.removeChild(span);
-
-        // Take the current scroll position into account
-        const scrollTop = window.scrollY;
-        const scrollLeft = window.scrollX;
-
-        const left =
-            characterRect.left -
-            characterRect.width + // we created the compositing box after already rendering the character
-            scrollLeft;
-        const top = characterRect.top + scrollTop;
-
-        const borderLeftWidth = 1;
-        const borderTopWidth = 1;
-
-        // The box is drawn on top of the already-inserted glyph, so it needs an
-        // opaque background to occlude it. Rather than hardcode one (which clashed
-        // with dark pages and could match the text color), reuse the page's own
-        // background + text color so the composing text is always as legible as the
-        // page's normal text, on light and dark alike. The blue stays as a
-        // scheme-agnostic accent: a translucent border plus a faint tint overlay
-        // (a 1px-wide solid-color gradient painted over the background) so the box
-        // still reads as an active composition.
-        const accent = "68, 136, 255";
-        const style: Partial<CSSStyleDeclaration> = {
-            ...selectionStyle,
-            color: textColor,
-            display: "inline-block",
-            position: "absolute",
-            top: `${top - borderTopWidth}px`,
-            left: `${left - borderLeftWidth}px`,
-            width: `${characterRect.width}px`,
-            height: `${characterRect.height}px`,
-            backgroundColor: this.resolveOpaqueBackground(),
-            backgroundImage: `linear-gradient(rgba(${accent}, 0.18), rgba(${accent}, 0.18))`,
-            zIndex: "2147483647",
-            borderLeft: `${borderLeftWidth}px solid rgba(${accent}, 0.9)`,
-            borderTop: `${borderTopWidth}px solid rgba(${accent}, 0.9)`,
-            borderRight: `1px solid rgba(${accent}, 0.9)`,
-            borderBottom: `1px solid rgba(${accent}, 0.9)`,
-        };
-
-        const characterBox = document.createElement("div");
-        Object.assign(characterBox.style, style);
-
-        document.body.appendChild(characterBox);
-
-        this.compositingBox = characterBox;
-    }
-
-    // Find the background the composing glyph actually sits on: the first opaque
-    // background-color walking up from the editor. A transparent (alpha < 1)
-    // background lets what's behind it show through, so it can't occlude the glyph
-    // on its own — keep walking. If nothing opaque is found, fall back to the
-    // `Canvas` system color, which tracks the user's light/dark color scheme.
-    private resolveOpaqueBackground(): string {
-        let element: Element | null = this.element;
-
-        while (element) {
-            const backgroundColor = window.getComputedStyle(element).backgroundColor;
-            if (isOpaqueColor(backgroundColor)) {
-                return backgroundColor;
-            }
-            element = element.parentElement;
+        const caret = selection.getRangeAt(0);
+        if (caret.startOffset < 1) {
+            return undefined;
         }
 
-        return "Canvas";
-    }
+        // Select the content immediately before the caret — the just-composed
+        // glyph. This works whether the caret sits inside the glyph's text node
+        // (offsets are character indices, so this spans one character) or in its
+        // parent element (offsets are child indices, so this spans the glyph's text
+        // node) — the latter is where the caret usually lands after the block is
+        // inserted, which is why guarding on a text-node container drew no box.
+        const glyph = document.createRange();
+        try {
+            glyph.setStart(caret.startContainer, caret.startOffset - 1);
+            glyph.setEnd(caret.startContainer, caret.startOffset);
+        } catch {
+            return undefined;
+        }
+        const rect = glyph.getBoundingClientRect();
 
-    private getAssignableStyles(sourceElement: Element): Partial<CSSStyleDeclaration> {
-        const computedStyles = window.getComputedStyle(sourceElement);
-
-        const styles: Record<CSSStringKey, string> = {} as Record<CSSStringKey, string>;
-
-        // get the default styles for an element at document root
-        const testElement = document.createElement("div");
-        testElement.innerText = "test";
-        document.body.appendChild(testElement);
-        const defaultStyles = window.getComputedStyle(testElement);
-
-        for (let i = 0; i < computedStyles.length; i++) {
-            const styleName = computedStyles[i] as CSSStringKey;
-            if (shouldExclude(styleName, computedStyles, defaultStyles)) {
-                continue;
-            }
-            styles[styleName] = computedStyles.getPropertyValue(styleName);
+        if (rect.width === 0 && rect.height === 0) {
+            return undefined;
         }
 
-        testElement.remove();
-
-        return styles;
-
-        function shouldExclude(
-            styleName: string,
-            computedStyles: CSSStyleDeclaration,
-            defaultStyles: CSSStyleDeclaration
-        ) {
-            const excludeStartWith = ["background", "border", "outline", "position", "display", "visibility"];
-
-            if (excludeStartWith.some((prefix) => styleName.startsWith(prefix))) {
-                return true;
-            }
-
-            if (computedStyles.getPropertyValue(styleName) === defaultStyles.getPropertyValue(styleName)) {
-                return true;
-            }
-
-            return false;
-        }
+        return { left: rect.left, top: rect.top, width: rect.width, height: rect.height };
     }
-
-    private removeCompositingBox() {
-        if (this.compositingBox) {
-            this.compositingBox.remove();
-            this.compositingBox = undefined;
-        }
-    }
-}
-
-type StringStyleKeys<T> = {
-    [K in keyof T]: T[K] extends string ? K : never;
-}[keyof T];
-
-type CSSStringKey = Extract<StringStyleKeys<CSSStyleDeclaration>, string>;
-
-// True only for a fully opaque color. getComputedStyle normalizes background-color
-// to "rgb(...)"/"rgba(...)", or "rgba(0, 0, 0, 0)" / "transparent" when unset; we
-// treat anything with alpha < 1 (or unparseable) as see-through.
-function isOpaqueColor(color: string): boolean {
-    const channels = color.match(/^rgba?\(([^)]+)\)/);
-    if (!channels) {
-        return false;
-    }
-
-    const parts = channels[1].split(",");
-    const alpha = parts.length >= 4 ? parseFloat(parts[3]) : 1;
-    return alpha === 1;
 }
