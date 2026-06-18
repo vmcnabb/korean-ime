@@ -9,7 +9,7 @@ const model = defineModel<boolean>({ required: true });
 
 <template>
     <label class="checkbox">
-        <input v-model="model" type="checkbox" />
+        <input v-model="model" type="checkbox" class="ds-checkbox" />
         <span class="label">{{ label }}</span>
         <p v-if="description" class="description">{{ description }}</p>
     </label>
@@ -20,11 +20,15 @@ const model = defineModel<boolean>({ required: true });
     display: grid;
     grid-template-columns: auto 1fr;
     column-gap: 0.5em;
-    align-items: baseline;
+    align-items: start;
     margin: 0.75em 0;
 }
 
-/* `.label` / `.description` typography is shared globally in options-page.vue */
+.checkbox .ds-checkbox {
+    margin-top: 0.3em;
+}
+
+/* `.label` / `.description` typography is shared in the design system. */
 .checkbox .description {
     grid-column: 2;
 }

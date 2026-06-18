@@ -184,7 +184,7 @@ function getPreferredPinningVideoSrc(): string {
         </section>
 
         <p class="actions">
-            <a :href="optionsPageHref">{{ t("gettingStarted_openOptions") }}</a>
+            <a :href="optionsPageHref" class="ds-btn ds-btn--secondary">{{ t("gettingStarted_openOptions") }}</a>
         </p>
     </main>
 </template>
@@ -220,9 +220,13 @@ legend {
     background-color: var(--bg-primary);
 }
 
+.choice-card:hover {
+    background-color: var(--button-hover-bg);
+}
+
 .choice-card.selected {
     border-color: var(--toggle-on-bg);
-    box-shadow: 0 0 0 1px var(--toggle-on-bg);
+    background-color: var(--accent-subtle-bg);
 }
 
 .choice-card input {

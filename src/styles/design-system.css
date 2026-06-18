@@ -25,6 +25,7 @@
     /* Accent / toggle / subtle states */
     --toggle-off-bg: light-dark(#ccc, #555);
     --toggle-on-bg: light-dark(#2563eb, #3b82f6);
+    --accent-subtle-bg: light-dark(#eef4ff, #10213d);
     --button-hover-bg: light-dark(#f1f5f9, #292929);
     --success-color: light-dark(#168a45, #63d38a);
     --error-color: light-dark(#c0392b, #f87171);
@@ -76,6 +77,10 @@ body {
     background-color: var(--button-hover-bg);
 }
 
+.ds-btn:where(a) {
+    text-decoration: none;
+}
+
 /* Filled accent button (the getting-started "show video" action). */
 .ds-btn--primary {
     color: white;
@@ -87,6 +92,11 @@ body {
 .ds-btn--primary:hover:not(:disabled) {
     background-color: var(--toggle-on-bg);
     filter: brightness(1.08);
+}
+
+.ds-btn--secondary {
+    color: var(--text-primary);
+    background-color: var(--section-bg);
 }
 
 /* Compact size for dense control rows (the toggle-key controls). */
@@ -161,6 +171,47 @@ body {
     padding: 0.25em 0.45em;
 }
 
+.ds-field--select {
+    width: min(100%, var(--ds-field-select-width, 16rem));
+}
+
+/* --- Checkboxes ---------------------------------------------------------- */
+
+.ds-checkbox {
+    display: grid;
+    place-content: center;
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    font: inherit;
+    color: white;
+    appearance: none;
+    background-color: var(--field-bg);
+    border: 1px solid var(--section-border);
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+.ds-checkbox::before {
+    content: "";
+    width: 5px;
+    height: 9px;
+    margin-top: -2px;
+    border-right: 2px solid currentColor;
+    border-bottom: 2px solid currentColor;
+    transform: rotate(45deg) scale(0);
+    transition: transform 0.12s ease;
+}
+
+.ds-checkbox:checked {
+    background-color: var(--toggle-on-bg);
+    border-color: var(--toggle-on-bg);
+}
+
+.ds-checkbox:checked::before {
+    transform: rotate(45deg) scale(1);
+}
+
 /* --- Utility text -------------------------------------------------------- */
 
 .label {
@@ -177,7 +228,8 @@ body {
 
 .ds-btn:focus-visible,
 .ds-icon-btn:focus-visible,
-.ds-field:focus-visible {
+.ds-field:focus-visible,
+.ds-checkbox:focus-visible {
     outline: var(--focus-ring-width) solid var(--toggle-on-bg);
     outline-offset: var(--focus-ring-offset);
 }

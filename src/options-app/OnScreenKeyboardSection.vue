@@ -34,7 +34,10 @@ const layoutOptions: { value: LayoutId; name: string }[] = [
         />
         <label class="select">
             <span class="label">{{ t("options_onScreenKeyboard_layout_label") }}</span>
-            <select v-model="settings.onScreenKeyboard.layout" class="ds-field ds-field--compact">
+            <select
+                v-model="settings.onScreenKeyboard.layout"
+                class="ds-field ds-field--compact ds-field--select keyboard-layout-select"
+            >
                 <option v-for="option in layoutOptions" :key="option.value" :value="option.value">
                     {{ option.name }}
                 </option>
@@ -44,6 +47,10 @@ const layoutOptions: { value: LayoutId; name: string }[] = [
 </template>
 
 <style scoped>
+.keyboard-layout-select {
+    --ds-field-select-width: 20rem;
+}
+
 .select {
     display: block;
     margin: 0.75em 0;
