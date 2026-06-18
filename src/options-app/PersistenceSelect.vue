@@ -23,7 +23,7 @@ const options = computed(() => [
 <template>
     <label class="select">
         <span class="label">{{ label }}</span>
-        <select v-model="model" class="ds-field">
+        <select v-model="model" class="ds-field ds-field--compact">
             <option v-for="option in options" :key="option.value" :value="option.value">
                 {{ option.name }}
             </option>
@@ -38,14 +38,9 @@ const options = computed(() => [
     margin: 0.75em 0;
 }
 
-/* `.label` / `.description` typography is shared globally in options-page.vue */
+/* `.label` / `.description` typography is shared in the design system. */
 .select .label {
     display: block;
     margin-bottom: 0.25em;
-}
-
-.select select {
-    font-size: 1em;
-    padding: 0.25em;
 }
 </style>

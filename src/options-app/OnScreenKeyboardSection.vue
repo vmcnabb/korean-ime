@@ -34,7 +34,7 @@ const layoutOptions: { value: LayoutId; name: string }[] = [
         />
         <label class="select">
             <span class="label">{{ t("options_onScreenKeyboard_layout_label") }}</span>
-            <select v-model="settings.onScreenKeyboard.layout" class="ds-field">
+            <select v-model="settings.onScreenKeyboard.layout" class="ds-field ds-field--compact">
                 <option v-for="option in layoutOptions" :key="option.value" :value="option.value">
                     {{ option.name }}
                 </option>
@@ -49,14 +49,9 @@ const layoutOptions: { value: LayoutId; name: string }[] = [
     margin: 0.75em 0;
 }
 
-/* `.label` typography is shared globally in options-page.vue */
+/* `.label` typography is shared in the design system. */
 .select .label {
     display: block;
     margin-bottom: 0.25em;
-}
-
-.select select {
-    font-size: 1em;
-    padding: 0.25em;
 }
 </style>
