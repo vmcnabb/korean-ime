@@ -8,43 +8,33 @@
     </head>
     <body>
         <main class="popup-shell">
-            <header class="popup-header">
-                <h1 data-message="romanize_popup_title"></h1>
-                <span class="system-pill" data-message="romanize_popup_romanizationSystemName"></span>
-            </header>
-
             <section class="text-panel">
                 <div class="panel-heading">
                     <h2 data-message="romanize_popup_originalTextHeading"></h2>
                     <div class="toolbar">
-                        <div
-                            class="mode-toggle"
-                            role="group"
+                        <button
+                            id="input-mode-toggle"
+                            class="mode-button"
+                            type="button"
                             data-aria-label-message="romanize_popup_inputModeLabel"
                         >
+                            <img id="input-mode-icon" alt="" width="24" height="24" />
+                        </button>
+                        <span class="copy-action">
                             <button
-                                id="hangul-mode"
-                                class="mode-button"
+                                id="copy-original"
+                                class="copy-button"
                                 type="button"
-                                data-aria-label-message="romanize_popup_hangulMode"
-                            >
-                                한
-                            </button>
-                            <button
-                                id="latin-mode"
-                                class="mode-button"
-                                type="button"
-                                data-aria-label-message="romanize_popup_latinMode"
-                            >
-                                A
-                            </button>
-                        </div>
-                        <button
-                            id="copy-original"
-                            class="copy-button"
-                            type="button"
-                            data-message="romanize_popup_copyOriginal"
-                        ></button>
+                                data-message="romanize_popup_copy"
+                                data-aria-label-message="romanize_popup_copyOriginal"
+                            ></button>
+                            <span
+                                id="copy-original-feedback"
+                                class="copy-feedback"
+                                aria-hidden="true"
+                                data-message="romanize_popup_copied"
+                            ></span>
+                        </span>
                     </div>
                 </div>
                 <div class="field-wrap">
@@ -65,14 +55,26 @@
 
             <section class="text-panel">
                 <div class="panel-heading">
-                    <h2 data-message="romanize_popup_romanizedTextHeading"></h2>
+                    <div class="heading-with-meta">
+                        <h2 data-message="romanize_popup_romanizedTextHeading"></h2>
+                        <span class="system-pill" data-message="romanize_popup_romanizationSystemName"></span>
+                    </div>
                     <div class="toolbar">
-                        <button
-                            id="copy-romanized"
-                            class="copy-button primary"
-                            type="button"
-                            data-message="romanize_popup_copyRomanized"
-                        ></button>
+                        <span class="copy-action">
+                            <button
+                                id="copy-romanized"
+                                class="copy-button"
+                                type="button"
+                                data-message="romanize_popup_copy"
+                                data-aria-label-message="romanize_popup_copyRomanized"
+                            ></button>
+                            <span
+                                id="copy-romanized-feedback"
+                                class="copy-feedback"
+                                aria-hidden="true"
+                                data-message="romanize_popup_copied"
+                            ></span>
+                        </span>
                     </div>
                 </div>
                 <div class="field-wrap">
@@ -92,7 +94,7 @@
                 </div>
             </section>
 
-            <div id="copy-status" class="copy-status" aria-live="polite"></div>
+            <div id="copy-status" class="visually-hidden" aria-live="polite"></div>
         </main>
         <script src="popup-converter.ts" charset="utf-8" type="module"></script>
     </body>

@@ -1,6 +1,12 @@
 import { HangulImeController } from "../../composition/hangul-ime-controller";
 import { KoreanKeyboardMode } from "../../extension-state/korean-keyboard-mode";
 import { KeyBinding, isModifierOnlyBinding, matchesKeyBinding } from "../../keyboard/key-binding";
+import {
+    popupModeIconEnglish,
+    popupModeIconEnglishSrcset,
+    popupModeIconHangul,
+    popupModeIconHangulSrcset,
+} from "../../content-script/on-screen-keyboard/mode-icons";
 import { romanize } from "../../romanization/romanize";
 import { TOGGLE_KEY_STORAGE_KEY, loadToggleKeyBinding } from "../../settings/toggle-key-store";
 import { PopupConverterData, popupConverterDataKey } from "./popup-converter-data";
@@ -9,8 +15,8 @@ import { api } from "../../platform/browser-api";
 
 const original = document.getElementById("original") as HTMLDivElement,
     roman = document.getElementById("romanized") as HTMLDivElement,
-    hangulModeButton = document.getElementById("hangul-mode") as HTMLButtonElement,
-    latinModeButton = document.getElementById("latin-mode") as HTMLButtonElement,
+    inputModeButton = document.getElementById("input-mode-toggle") as HTMLButtonElement,
+    inputModeIcon = document.getElementById("input-mode-icon") as HTMLImageElement,
     copyOriginalButton = document.getElementById("copy-original") as HTMLButtonElement,
     copyRomanizedButton = document.getElementById("copy-romanized") as HTMLButtonElement,
     copyStatus = document.getElementById("copy-status") as HTMLDivElement,
@@ -19,7 +25,7 @@ const original = document.getElementById("original") as HTMLDivElement,
 
 let inputMode = KoreanKeyboardMode.Hangul;
 let toggleKeyBinding: KeyBinding | null = null;
-let copyStatusTimer: number | undefined;
+let copyFeedbackTimer: number | undefined;
 
 setupLocalization();
 setupInputModeToggleKey();
@@ -80,10 +86,9 @@ original.addEventListener("paste", (event) => {
     document.execCommand("insertText", false, text);
 });
 
-hangulModeButton.addEventListener("click", () => setInputMode(KoreanKeyboardMode.Hangul));
-latinModeButton.addEventListener("click", () => setInputMode(KoreanKeyboardMode.English));
-copyOriginalButton.addEventListener("click", () => void copyText(original.innerText, "romanize_popup_originalCopied"));
-copyRomanizedButton.addEventListener("click", () => void copyText(roman.innerText, "romanize_popup_romanizedCopied"));
+inputModeButton.addEventListener("click", () => setInputMode(togglePopupInputMode(inputMode)));
+copyOriginalButton.addEventListener("click", () => void copyText(original.innerText, copyOriginalButton));
+copyRomanizedButton.addEventListener("click", () => void copyText(roman.innerText, copyRomanizedButton));
 
 function setupInputModeToggleKey() {
     window.addEventListener(
@@ -138,10 +143,14 @@ function setInputMode(mode: KoreanKeyboardMode) {
     }
 
     const isHangul = isHangulInputMode(mode);
-    hangulModeButton.classList.toggle("active", isHangul);
-    latinModeButton.classList.toggle("active", !isHangul);
-    hangulModeButton.setAttribute("aria-pressed", String(isHangul));
-    latinModeButton.setAttribute("aria-pressed", String(!isHangul));
+    inputModeIcon.src = isHangul ? popupModeIconHangul : popupModeIconEnglish;
+    inputModeIcon.srcset = isHangul ? popupModeIconHangulSrcset : popupModeIconEnglishSrcset;
+    inputModeButton.classList.toggle("active", isHangul);
+    inputModeButton.setAttribute("aria-pressed", String(isHangul));
+
+    const modeLabel = api.i18n.getMessage(isHangul ? "romanize_popup_hangulMode" : "romanize_popup_latinMode");
+    inputModeButton.setAttribute("aria-label", modeLabel);
+    inputModeButton.title = modeLabel;
     original.dataset.inputMode = isHangul ? "hangul" : "latin";
 }
 
@@ -154,14 +163,14 @@ function formatCharacterCount(count: number) {
     return api.i18n.getMessage("romanize_popup_characterCount", String(count));
 }
 
-async function copyText(text: string, copiedMessageKey: string) {
+async function copyText(text: string, button: HTMLButtonElement) {
     if (navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(text);
     } else {
         fallbackCopyText(text);
     }
 
-    showCopyStatus(api.i18n.getMessage(copiedMessageKey));
+    showCopyFeedback(button);
 }
 
 function fallbackCopyText(text: string) {
@@ -176,35 +185,45 @@ function fallbackCopyText(text: string) {
     textarea.remove();
 }
 
-function showCopyStatus(message: string) {
-    copyStatus.textContent = message;
-    if (copyStatusTimer !== undefined) {
-        window.clearTimeout(copyStatusTimer);
+function showCopyFeedback(button: HTMLButtonElement) {
+    const copiedMessage = api.i18n.getMessage("romanize_popup_copied");
+    copyStatus.textContent = copiedMessage;
+
+    if (copyFeedbackTimer !== undefined) {
+        window.clearTimeout(copyFeedbackTimer);
     }
-    copyStatusTimer = window.setTimeout(() => {
+
+    document.querySelectorAll<HTMLElement>(".copy-action").forEach((copyAction) => {
+        copyAction.classList.remove("copied");
+    });
+
+    const copyAction = button.closest<HTMLElement>(".copy-action");
+    copyAction?.classList.add("copied");
+
+    copyFeedbackTimer = window.setTimeout(() => {
+        copyAction?.classList.remove("copied");
         copyStatus.textContent = "";
-        copyStatusTimer = undefined;
-    }, 1600);
+        copyFeedbackTimer = undefined;
+    }, 1400);
 }
 
 function setupLocalization() {
     document.querySelectorAll("[data-message]").forEach((el) => {
         const element = el as HTMLElement;
-        element.innerText = element.dataset.message ? api.i18n.getMessage(element.dataset.message) : "";
+        element.innerText = getMessage(element.dataset.message);
     });
 
     document.querySelectorAll("[data-placeholder-message]").forEach((el) => {
         const element = el as HTMLElement;
-        element.dataset.placeholder = element.dataset.placeholderMessage
-            ? api.i18n.getMessage(element.dataset.placeholderMessage)
-            : "";
+        element.dataset.placeholder = getMessage(element.dataset.placeholderMessage);
     });
 
     document.querySelectorAll("[data-aria-label-message]").forEach((el) => {
         const element = el as HTMLElement;
-        element.setAttribute(
-            "aria-label",
-            element.dataset.ariaLabelMessage ? api.i18n.getMessage(element.dataset.ariaLabelMessage) : ""
-        );
+        element.setAttribute("aria-label", getMessage(element.dataset.ariaLabelMessage));
     });
+}
+
+function getMessage(messageKey: string | undefined) {
+    return messageKey ? api.i18n.getMessage(messageKey) : "";
 }

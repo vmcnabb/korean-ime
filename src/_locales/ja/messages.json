@@ -44,17 +44,17 @@
     "romanize_popup_romanizedTextTextboxHint": {
         "message": "ローマ字に変換された結果がここに表示されます"
     },
+    "romanize_popup_copy": {
+        "message": "コピー"
+    },
     "romanize_popup_copyOriginal": {
-        "message": "元の文をコピー"
+        "message": "元のテキストをコピー"
     },
     "romanize_popup_copyRomanized": {
-        "message": "ローマ字をコピー"
+        "message": "ローマ字テキストをコピー"
     },
-    "romanize_popup_originalCopied": {
-        "message": "元の文をコピーしました"
-    },
-    "romanize_popup_romanizedCopied": {
-        "message": "ローマ字をコピーしました"
+    "romanize_popup_copied": {
+        "message": "コピーしました"
     },
     "romanize_popup_inputModeLabel": {
         "message": "入力モード"

@@ -44,17 +44,17 @@
     "romanize_popup_romanizedTextTextboxHint": {
         "message": "위에 입력하신 한글이 여기에 로마자로 나타납니다"
     },
+    "romanize_popup_copy": {
+        "message": "복사"
+    },
     "romanize_popup_copyOriginal": {
-        "message": "원문 복사"
+        "message": "원문 텍스트 복사"
     },
     "romanize_popup_copyRomanized": {
-        "message": "로마자 복사"
+        "message": "로마자 텍스트 복사"
     },
-    "romanize_popup_originalCopied": {
-        "message": "원문을 복사했습니다"
-    },
-    "romanize_popup_romanizedCopied": {
-        "message": "로마자를 복사했습니다"
+    "romanize_popup_copied": {
+        "message": "복사됨"
     },
     "romanize_popup_inputModeLabel": {
         "message": "원문 입력 모드"

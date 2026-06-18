@@ -44,17 +44,17 @@
     "romanize_popup_romanizedTextTextboxHint": {
         "message": "A versão romanizada aparecerá aqui"
     },
+    "romanize_popup_copy": {
+        "message": "Copiar"
+    },
     "romanize_popup_copyOriginal": {
-        "message": "Copiar original"
+        "message": "Copiar texto original"
     },
     "romanize_popup_copyRomanized": {
-        "message": "Copiar romanizado"
+        "message": "Copiar texto romanizado"
     },
-    "romanize_popup_originalCopied": {
-        "message": "Original copiado"
-    },
-    "romanize_popup_romanizedCopied": {
-        "message": "Texto romanizado copiado"
+    "romanize_popup_copied": {
+        "message": "Copiado"
     },
     "romanize_popup_inputModeLabel": {
         "message": "Modo de entrada original"

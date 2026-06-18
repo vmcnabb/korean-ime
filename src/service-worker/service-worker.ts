@@ -8,6 +8,7 @@ import { setupGettingStartedOnInstall } from "./getting-started";
 import { settingsKeys } from "../settings/settings";
 import { debugLog } from "../debug-log";
 import { api } from "../platform/browser-api";
+import { setupPopupWindowSizeTracking } from "./popup-converter/popup-window-size";
 
 const stateManager = new StateManager();
 const contentScriptListener = new ContentScriptListener(stateManager);
@@ -15,6 +16,7 @@ contentScriptListener.listen();
 setupMenuListener(stateManager);
 setupActionListener(stateManager);
 setupGettingStartedOnInstall();
+setupPopupWindowSizeTracking();
 
 // Create the context menus on every service-worker startup, not just on
 // install. MV3 workers are ephemeral and `onInstalled` doesn't fire on a normal
