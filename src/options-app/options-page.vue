@@ -33,8 +33,6 @@ main {
 }
 
 h1 {
-    --page-heading-icon-size: 128px;
-
     display: flex;
     align-items: center;
     min-height: var(--page-heading-icon-size);

@@ -214,6 +214,21 @@ body {
     transform: rotate(45deg) scale(1);
 }
 
+/* In Windows high-contrast / forced-colors mode the UA replaces the author
+   accent fill and the currentColor checkmark with system colors, which can
+   leave the checked state indistinguishable from unchecked. Pin both to the
+   system selection pair so "checked" always reads. */
+@media (forced-colors: active) {
+    .ds-checkbox:checked {
+        background-color: Highlight;
+        border-color: Highlight;
+    }
+
+    .ds-checkbox::before {
+        border-color: HighlightText;
+    }
+}
+
 /* --- Utility text -------------------------------------------------------- */
 
 .label {
