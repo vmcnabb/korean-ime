@@ -20,7 +20,7 @@ const model = defineModel<boolean>({ required: true });
     display: grid;
     grid-template-columns: auto 1fr;
     column-gap: 0.5em;
-    align-items: start;
+    align-items: center;
 }
 
 /* `.label` / `.description` typography is shared in the design system. */

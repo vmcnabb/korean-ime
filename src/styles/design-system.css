@@ -21,6 +21,8 @@
     --field-bg: light-dark(white, #141414);
     --field-readonly-bg: light-dark(#f3f4f6, #181818);
     --placeholder-color: light-dark(#777, #888);
+    --label-font-size: 1.1em;
+    --checkbox-size: var(--label-font-size);
 
     /* Accent / toggle / subtle states */
     --toggle-off-bg: light-dark(#ccc, #555);
@@ -180,8 +182,8 @@ body {
 .ds-checkbox {
     display: grid;
     place-content: center;
-    width: 16px;
-    height: 16px;
+    width: var(--checkbox-size);
+    height: var(--checkbox-size);
     margin: 0;
     font: inherit;
     color: white;
@@ -215,7 +217,7 @@ body {
 /* --- Utility text -------------------------------------------------------- */
 
 .label {
-    font-size: 1.1em;
+    font-size: var(--label-font-size);
 }
 
 .description {
