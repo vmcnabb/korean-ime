@@ -23,6 +23,27 @@ export function requestedLocale() {
     return process.env.npm_config_locale || undefined;
 }
 
+function truthyNpmFlag(value) {
+    return value !== undefined && value !== "false" && value !== "0";
+}
+
+// Optional color scheme for testing light/dark UI without changing the OS theme.
+// `npm run dev:<browser> -- --dark` / `--light` (flag reaches argv), or
+// `npm run dev:<browser> --dark` / `--light` (npm exposes npm_config_dark/light).
+export function requestedColorScheme() {
+    const args = process.argv.slice(2);
+    const dark = args.includes("--dark") || truthyNpmFlag(process.env.npm_config_dark);
+    const light = args.includes("--light") || truthyNpmFlag(process.env.npm_config_light);
+
+    if (dark && light) {
+        throw new Error("Choose either --dark or --light, not both.");
+    }
+
+    if (dark) return "dark";
+    if (light) return "light";
+    return undefined;
+}
+
 // child.kill() only kills the immediate process. On Windows, killing the whole
 // process tree is the reliable way to take down a spawned browser — and, in
 // --watch mode, the Parcel watcher (which runs through a shell) and its HMR
