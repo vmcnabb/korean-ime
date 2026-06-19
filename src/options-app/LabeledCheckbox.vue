@@ -21,11 +21,6 @@ const model = defineModel<boolean>({ required: true });
     grid-template-columns: auto 1fr;
     column-gap: 0.5em;
     align-items: start;
-    margin: 0.75em 0;
-}
-
-.checkbox .ds-checkbox {
-    margin-top: 0.3em;
 }
 
 /* `.label` / `.description` typography is shared in the design system. */

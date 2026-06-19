@@ -70,4 +70,10 @@ section h2 {
     margin: 0 0 0.75em;
     font-size: 1.25em;
 }
+
+div.setting {
+    margin-top: 1.5em;
+    border-top: 1px solid var(--section-border);
+    padding-top: 0.75em;
+}
 </style>

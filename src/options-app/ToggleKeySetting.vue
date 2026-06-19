@@ -217,14 +217,9 @@ function onCaptureKeyup(event: KeyboardEvent) {
 </template>
 
 <style scoped>
-.toggle-key {
-    margin: 0.75em 0;
-}
-
 /* `.label` typography is shared globally in options-page.vue */
 .toggle-key .label {
     display: block;
-    margin-bottom: 0.25em;
 }
 
 /* A small "?" badge after the heading; its tooltip carries the description. */
