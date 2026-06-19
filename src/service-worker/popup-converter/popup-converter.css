@@ -1,20 +1,7 @@
-:root {
-    color-scheme: light dark;
-
-    --bg-primary: light-dark(white, black);
-    --text-primary: light-dark(#1a1a1a, #e5e5e5);
-    --section-bg: light-dark(#f9f9f9, #1e1e1e);
-    --section-border: light-dark(#ddd, #333);
-    --description-color: light-dark(#666, #999);
-    --toggle-off-bg: light-dark(#ccc, #555);
-    --toggle-on-bg: light-dark(#2563eb, #3b82f6);
-    --success-color: light-dark(#168a45, #63d38a);
-
-    --field-bg: light-dark(white, #141414);
-    --field-readonly-bg: light-dark(#f3f4f6, #181818);
-    --button-hover-bg: light-dark(#f1f5f9, #292929);
-    --placeholder-color: light-dark(#777, #888);
-}
+/* Design tokens, base typography and the shared control primitives
+   (.ds-btn, .ds-icon-btn, .ds-circle-btn, .ds-pill, .ds-field, .visually-hidden,
+   the focus ring) all live here. This file keeps only popup-specific layout. */
+@import "../../styles/design-system.css";
 
 html,
 body {
@@ -23,21 +10,9 @@ body {
     min-height: 100%;
 }
 
-html {
-    font-family: Arial, Helvetica, sans-serif;
-    font-size: 16px;
-    line-height: 1.5;
-    color: var(--text-primary);
-    background-color: var(--bg-primary);
-}
-
 body {
     height: 100vh;
     overflow: hidden;
-}
-
-button {
-    font: inherit;
 }
 
 .popup-shell {
@@ -47,10 +22,6 @@ button {
     height: 100vh;
     padding: 0.85em;
     box-sizing: border-box;
-    font-family: Arial, Helvetica, sans-serif;
-    font-size: 16px;
-    line-height: 1.5;
-    color: var(--text-primary);
 }
 
 .panel-heading,
@@ -63,9 +34,6 @@ button {
 h2 {
     margin: 0;
     letter-spacing: 0;
-}
-
-h2 {
     font-size: 1em;
     font-weight: 700;
 }
@@ -78,16 +46,6 @@ h2 {
     min-width: 0;
 }
 
-.system-pill {
-    flex: 0 0 auto;
-    border: 1px solid var(--section-border);
-    border-radius: 999px;
-    padding: 0.15em 0.55em;
-    color: var(--description-color);
-    font-size: 0.75em;
-    background-color: var(--section-bg);
-}
-
 .text-panel {
     display: grid;
     grid-template-rows: auto minmax(0, 1fr) auto;
@@ -96,7 +54,7 @@ h2 {
     padding: 0.65em 0.75em;
     background-color: var(--section-bg);
     border: 1px solid var(--section-border);
-    border-radius: 8px;
+    border-radius: var(--radius);
 }
 
 .panel-heading {
@@ -109,16 +67,6 @@ h2 {
     gap: 0.45em;
 }
 
-.mode-button,
-.copy-button {
-    min-height: 2em;
-    border: 1px solid transparent;
-    border-radius: 6px;
-    color: var(--text-primary);
-    background-color: transparent;
-    cursor: pointer;
-}
-
 .copy-action {
     display: inline-grid;
     align-items: center;
@@ -129,27 +77,9 @@ h2 {
     justify-self: end;
 }
 
-.mode-button {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 34px;
-    height: 34px;
-    min-height: 34px;
-    padding: 0;
-    border-radius: 50%;
-}
-
-.mode-button img {
-    display: block;
-    width: 24px;
-    height: 24px;
-}
-
+/* The copy button is a .ds-btn; only its tighter padding is popup-specific. */
 .copy-button {
     padding: 0 0.7em;
-    border-color: var(--section-border);
-    background-color: var(--bg-primary);
 }
 
 .copy-feedback {
@@ -179,33 +109,17 @@ h2 {
     opacity: 1;
 }
 
-.mode-button:hover,
-.copy-button:hover {
-    background-color: var(--button-hover-bg);
-}
-
-.mode-button:focus-visible,
-.copy-button:focus-visible,
-.text-field:focus-visible {
-    outline: 2px solid var(--toggle-on-bg);
-    outline-offset: 2px;
-}
-
 .field-wrap {
     min-height: 0;
 }
 
+/* The text panels are .ds-field; these add the multiline fill / wrap behaviour. */
 .text-field {
     height: 100%;
     min-height: 0;
-    box-sizing: border-box;
-    border: 1px solid var(--section-border);
-    border-radius: 8px;
-    padding: 0.6em 0.65em;
     overflow: auto;
     white-space: pre-wrap;
     overflow-wrap: anywhere;
-    background-color: var(--field-bg);
 }
 
 .text-field.readonly {
@@ -227,17 +141,4 @@ h2 {
     min-height: 1em;
     color: var(--description-color);
     font-size: 0.8em;
-}
-
-.visually-hidden {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    margin: -1px;
-    padding: 0;
-    border: 0;
-    clip: rect(0 0 0 0);
-    clip-path: inset(50%);
-    overflow: hidden;
-    white-space: nowrap;
 }

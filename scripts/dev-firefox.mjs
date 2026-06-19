@@ -7,6 +7,8 @@
 //     after changes to rebuild.
 //   - `npm run dev:firefox --watch`: also runs Parcel in watch mode, re-patches
 //     the manifest after every rebuild, and reloads the extension in Firefox.
+//   - Add `--dark` or `--light` to force a colour scheme for testing extension
+//     pages without changing the OS/browser theme.
 //
 // THE MANIFEST PATCH IS THE WHOLE TRICK IN --watch. Parcel only emits
 // background.service_worker, but Firefox needs background.scripts, so
@@ -23,7 +25,14 @@
 import { spawn, spawnSync } from "node:child_process";
 import { resolve } from "node:path";
 import webExt from "web-ext";
-import { killFirefoxByProfile, killTree, requestedLocale, startTestPageServer, watchRequested } from "./dev-shared.mjs";
+import {
+    killFirefoxByProfile,
+    killTree,
+    requestedColorScheme,
+    requestedLocale,
+    startTestPageServer,
+    watchRequested,
+} from "./dev-shared.mjs";
 
 const root = process.cwd();
 // Dev builds go to dist-firefox-dev/ so they can never be mistaken for, or
@@ -139,6 +148,7 @@ if (watchMode) {
 // 3. Launch Firefox with the extension as a temporary add-on. web-ext creates a
 //    throwaway profile; noReload because we drive reloads ourselves (see above).
 const locale = requestedLocale();
+const colorScheme = requestedColorScheme();
 const runParams = {
     sourceDir: distDir,
     target: ["firefox-desktop"],
@@ -148,7 +158,16 @@ const runParams = {
 };
 if (process.env.FIREFOX_PATH) runParams.firefox = process.env.FIREFOX_PATH;
 // intl.locale.requested sets the Firefox UI locale chrome.i18n resolves against.
-if (locale) runParams.pref = { "intl.locale.requested": locale };
+if (locale || colorScheme) {
+    runParams.pref = {
+        ...(locale ? { "intl.locale.requested": locale } : {}),
+        // Drives the content `prefers-color-scheme` result in the dev profile.
+        // 0 = light, 1 = dark.
+        ...(colorScheme ? { "ui.systemUsesDarkTheme": colorScheme === "dark" ? 1 : 0 } : {}),
+        // Explicit content override: 0 = dark, 1 = light, 2 = system, 3 = browser theme.
+        ...(colorScheme ? { "layout.css.prefers-color-scheme.content-override": colorScheme === "dark" ? 0 : 1 } : {}),
+    };
+}
 
 try {
     runner = await webExt.cmd.run(runParams);
@@ -186,6 +205,9 @@ runner.registerCleanup(() => shutdown(0));
 
 if (locale) {
     console.log(`[dev] UI locale: ${locale}`);
+}
+if (colorScheme) {
+    console.log(`[dev] Color scheme: ${colorScheme}`);
 }
 console.log(`\n[dev] Extension:    ${distDir}`);
 console.log(`[dev] Test page:    ${testUrl}`);

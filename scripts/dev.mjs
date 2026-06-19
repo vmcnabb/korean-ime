@@ -7,6 +7,8 @@
 //     after changes to rebuild.
 //   - `npm run dev:chrome --watch`: also runs Parcel in watch mode, so edits
 //     auto-rebuild and the extension hot-reloads during the session.
+//   - Add `--dark` or `--light` to force a colour scheme for testing extension
+//     pages without changing the OS/browser theme.
 //
 // The default is the one-off build because a background watcher fights `clean`
 // (from `build`/`package`) over the shared Parcel cache and dev dist dir — only
@@ -32,7 +34,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import * as ChromeLauncher from "chrome-launcher";
-import { killTree, requestedLocale, startTestPageServer, watchRequested } from "./dev-shared.mjs";
+import { killTree, requestedColorScheme, requestedLocale, startTestPageServer, watchRequested } from "./dev-shared.mjs";
 
 const root = process.cwd();
 const DEFAULT_CHROME_DEBUG_PORT = 9222;
@@ -274,6 +276,7 @@ removeSessionFile();
 profileDir = mkdtempSync(join(tmpdir(), "kime-dev-"));
 
 const locale = requestedLocale();
+const colorScheme = requestedColorScheme();
 const args = [
     `--user-data-dir=${profileDir}`,
     // The port is kept for VS Code debugging and /json polling; the *pipe* (fd
@@ -288,6 +291,10 @@ const args = [
     // --lang sets the UI locale chrome.i18n resolves against. Every run uses a
     // fresh profile, so a locale change always takes effect.
     ...(locale ? [`--lang=${locale}`] : []),
+    // Force `prefers-color-scheme` for extension pages and the test page without
+    // changing the OS theme.
+    ...(colorScheme === "dark" ? ["--force-dark-mode"] : []),
+    ...(colorScheme === "light" ? ["--force-light-mode"] : []),
     // Open a blank page; the test page is opened over CDP after the extension is
     // loaded, so its content script injects on load.
     "about:blank",
@@ -295,6 +302,9 @@ const args = [
 
 if (locale) {
     console.log(`[dev] UI locale: ${locale}`);
+}
+if (colorScheme) {
+    console.log(`[dev] Color scheme: ${colorScheme}`);
 }
 
 // fd 0-2 ignored; fd 3/4 are the CDP pipe (--remote-debugging-pipe).

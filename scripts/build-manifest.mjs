@@ -34,7 +34,10 @@ const actionIconSources = {
 // Hangul source SVG as the toolbar/mode icons, so everything stays in sync from a
 // single asset instead of hand-exported PNGs.
 const runtimeIconSource = actionIconSources.h;
-const runtimeIconSizes = [48, 128];
+// 48/128 back the manifest `icons` key; 256 is the 2x source for the options
+// page's `h1` logo (referenced from CSS via image-set), so it stays crisp on
+// HiDPI displays and under page zoom.
+const runtimeIconSizes = [48, 128, 256];
 const copiedRuntimeVideos = {
     chrome: {
         "pin-light.mp4": "chrome-lightmode-pin.mp4",

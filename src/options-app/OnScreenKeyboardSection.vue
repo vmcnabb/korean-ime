@@ -3,14 +3,14 @@ import { settings } from "./use-settings";
 import { Persistence } from "../settings/settings";
 import { LayoutId } from "../extension-state/osk-layout";
 import { t } from "./i18n";
-import PersistenceSelect from "./PersistenceSelect.vue";
+import SelectSetting from "./SelectSetting.vue";
 import LabeledCheckbox from "./LabeledCheckbox.vue";
 
-const optionLabels: Record<Persistence, string> = {
-    [Persistence.AlwaysOff]: t("options_onScreenKeyboard_startOff"),
-    [Persistence.AlwaysOn]: t("options_onScreenKeyboard_startOn"),
-    [Persistence.KeepLastState]: t("options_onScreenKeyboard_restore"),
-};
+const persistenceOptions: { value: Persistence; name: string }[] = [
+    { value: Persistence.AlwaysOff, name: t("options_onScreenKeyboard_startOff") },
+    { value: Persistence.AlwaysOn, name: t("options_onScreenKeyboard_startOn") },
+    { value: Persistence.KeepLastState, name: t("options_onScreenKeyboard_restore") },
+];
 
 const layoutOptions: { value: LayoutId; name: string }[] = [
     { value: LayoutId.Minimal, name: t("options_onScreenKeyboard_layout_minimal") },
@@ -22,41 +22,33 @@ const layoutOptions: { value: LayoutId; name: string }[] = [
 <template>
     <section>
         <h2>{{ t("options_onScreenKeyboard_heading") }}</h2>
-        <PersistenceSelect
-            v-model="settings.onScreenKeyboard.persistence"
-            :label="t('options_persistence_label')"
-            :option-labels="optionLabels"
-        />
-        <LabeledCheckbox
-            v-model="settings.onScreenKeyboard.syncAcrossTabs"
-            :label="t('options_onScreenKeyboard_syncAcrossTabs_label')"
-            :description="t('options_onScreenKeyboard_syncAcrossTabs_description')"
-        />
-        <label class="select">
-            <span class="label">{{ t("options_onScreenKeyboard_layout_label") }}</span>
-            <select v-model="settings.onScreenKeyboard.layout">
-                <option v-for="option in layoutOptions" :key="option.value" :value="option.value">
-                    {{ option.name }}
-                </option>
-            </select>
-        </label>
+        <div class="setting">
+            <SelectSetting
+                v-model="settings.onScreenKeyboard.persistence"
+                :label="t('options_persistence_label')"
+                :options="persistenceOptions"
+            />
+        </div>
+        <div class="setting">
+            <LabeledCheckbox
+                v-model="settings.onScreenKeyboard.syncAcrossTabs"
+                :label="t('options_onScreenKeyboard_syncAcrossTabs_label')"
+                :description="t('options_onScreenKeyboard_syncAcrossTabs_description')"
+            />
+        </div>
+        <div class="setting">
+            <SelectSetting
+                v-model="settings.onScreenKeyboard.layout"
+                :label="t('options_onScreenKeyboard_layout_label')"
+                :options="layoutOptions"
+                select-class="keyboard-layout-select"
+            />
+        </div>
     </section>
 </template>
 
 <style scoped>
-.select {
-    display: block;
-    margin: 0.75em 0;
-}
-
-/* `.label` typography is shared globally in options-page.vue */
-.select .label {
-    display: block;
-    margin-bottom: 0.25em;
-}
-
-.select select {
-    font-size: 1em;
-    padding: 0.25em;
+.keyboard-layout-select {
+    --ds-field-select-width: 20rem;
 }
 </style>

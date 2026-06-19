@@ -149,7 +149,7 @@ function getPreferredPinningVideoSrc(): string {
             <p class="description">{{ pinningGuidance }}</p>
             <p v-if="!showPinningVideo" class="pinning-video-action">
                 <button
-                    class="show-pinning-video"
+                    class="ds-btn ds-btn--primary"
                     type="button"
                     :aria-controls="pinningVideoId"
                     @click="revealPinningVideo"
@@ -184,7 +184,7 @@ function getPreferredPinningVideoSrc(): string {
         </section>
 
         <p class="actions">
-            <a :href="optionsPageHref">{{ t("gettingStarted_openOptions") }}</a>
+            <a :href="optionsPageHref" class="ds-btn ds-btn--secondary">{{ t("gettingStarted_openOptions") }}</a>
         </p>
     </main>
 </template>
@@ -215,14 +215,18 @@ legend {
     margin-top: 0.75em;
     padding: 0.85em 1em;
     border: 1px solid var(--section-border);
-    border-radius: 8px;
+    border-radius: var(--radius);
     cursor: pointer;
     background-color: var(--bg-primary);
 }
 
+.choice-card:hover {
+    background-color: var(--button-hover-bg);
+}
+
 .choice-card.selected {
     border-color: var(--toggle-on-bg);
-    box-shadow: 0 0 0 1px var(--toggle-on-bg);
+    background-color: var(--accent-subtle-bg);
 }
 
 .choice-card input {
@@ -238,19 +242,19 @@ legend {
 .error {
     margin: 1em 0 0;
     padding: 0.75em 0.9em;
-    border-radius: 8px;
+    border-radius: var(--radius);
 }
 
 .notice {
-    color: light-dark(#243b1e, #d7f5cb);
-    background-color: light-dark(#edf8e8, #1f3219);
-    border: 1px solid light-dark(#b9daa8, #476b38);
+    color: var(--notice-text);
+    background-color: var(--notice-bg);
+    border: 1px solid var(--notice-border);
 }
 
 .error {
-    color: light-dark(#6b1f1f, #ffdede);
-    background-color: light-dark(#fff0f0, #3a1717);
-    border: 1px solid light-dark(#e3aaaa, #8a3b3b);
+    color: var(--error-banner-text);
+    background-color: var(--error-banner-bg);
+    border: 1px solid var(--error-banner-border);
 }
 
 .about-list {
@@ -266,22 +270,6 @@ legend {
     margin: 0.85em 0 0;
 }
 
-.show-pinning-video {
-    padding: 0.55em 0.8em;
-    font: inherit;
-    font-weight: 700;
-    color: white;
-    background-color: var(--toggle-on-bg);
-    border: 1px solid var(--toggle-on-bg);
-    border-radius: 6px;
-    cursor: pointer;
-}
-
-.show-pinning-video:hover,
-.show-pinning-video:focus-visible {
-    filter: brightness(1.08);
-}
-
 .pinning-video {
     display: block;
     width: 100%;
@@ -290,7 +278,7 @@ legend {
     object-fit: contain;
     background-color: light-dark(#f2f2f2, #111);
     border: 1px solid var(--section-border);
-    border-radius: 8px;
+    border-radius: var(--radius);
 }
 
 .pinning-video-reveal-enter-active {

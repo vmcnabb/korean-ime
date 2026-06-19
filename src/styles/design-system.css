@@ -1,0 +1,267 @@
+/* Shared design system for the extension's own page surfaces: the romanization
+   popup (src/service-worker/popup-converter/) and the Vue options /
+   getting-started pages (src/options-app/). One obvious place for design tokens
+   and the reusable control primitives both surfaces draw on.
+
+   NOT a consumer: the on-screen keyboard (src/content-script/on-screen-keyboard/).
+   It injects into arbitrary web pages under an `all: unset` reset and keeps its
+   own self-contained palette, so these page-level :root tokens can't reach it. */
+
+:root {
+    color-scheme: light dark;
+
+    /* Foreground / background / surface */
+    --bg-primary: light-dark(white, black);
+    --text-primary: light-dark(#1a1a1a, #e5e5e5);
+    --description-color: light-dark(#666, #999);
+    --section-bg: light-dark(#f9f9f9, #1e1e1e);
+    --section-border: light-dark(#ddd, #333);
+
+    /* Fields */
+    --field-bg: light-dark(white, #141414);
+    --field-readonly-bg: light-dark(#f3f4f6, #181818);
+    --placeholder-color: light-dark(#777, #888);
+    --label-font-size: 1.1em;
+    --checkbox-size: var(--label-font-size);
+
+    /* Accent / toggle / subtle states */
+    --toggle-off-bg: light-dark(#ccc, #555);
+    --toggle-on-bg: light-dark(#2563eb, #3b82f6);
+    --accent-subtle-bg: light-dark(#eef4ff, #10213d);
+    --button-hover-bg: light-dark(#f1f5f9, #292929);
+    --success-color: light-dark(#168a45, #63d38a);
+    --error-color: light-dark(#c0392b, #f87171);
+
+    /* Notice / error banners (were inline light-dark() literals in
+       GettingStartedPage). */
+    --notice-text: light-dark(#243b1e, #d7f5cb);
+    --notice-bg: light-dark(#edf8e8, #1f3219);
+    --notice-border: light-dark(#b9daa8, #476b38);
+    --error-banner-text: light-dark(#6b1f1f, #ffdede);
+    --error-banner-bg: light-dark(#fff0f0, #3a1717);
+    --error-banner-border: light-dark(#e3aaaa, #8a3b3b);
+
+    /* Shape / focus */
+    --radius: 8px;
+    --radius-sm: 6px;
+    --focus-ring-width: 2px;
+    --focus-ring-offset: 2px;
+}
+
+/* Base typography shared by both page contexts. Surface-specific layout (the
+   popup's grid shell, the options page's centred column) stays local. */
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+    color: var(--text-primary);
+    background-color: var(--bg-primary);
+}
+
+/* --- Buttons ------------------------------------------------------------- */
+
+/* Neutral bordered button (the popup's copy button). */
+.ds-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2em;
+    padding: 0.3em 0.8em;
+    font: inherit;
+    color: var(--text-primary);
+    background-color: var(--bg-primary);
+    border: 1px solid var(--section-border);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+}
+
+.ds-btn:hover:not(:disabled) {
+    background-color: var(--button-hover-bg);
+}
+
+.ds-btn:where(a) {
+    text-decoration: none;
+}
+
+/* Filled accent button (the getting-started "show video" action). */
+.ds-btn--primary {
+    color: white;
+    font-weight: 700;
+    background-color: var(--toggle-on-bg);
+    border-color: var(--toggle-on-bg);
+}
+
+.ds-btn--primary:hover:not(:disabled) {
+    background-color: var(--toggle-on-bg);
+    filter: brightness(1.08);
+}
+
+.ds-btn--secondary {
+    color: var(--text-primary);
+    background-color: var(--section-bg);
+}
+
+/* Compact size for dense control rows (the toggle-key controls). */
+.ds-btn--sm {
+    min-height: 0;
+    padding: 0.25em 0.6em;
+    font-size: 0.95em;
+}
+
+/* Transparent icon button; the circular variant is the mode / Han-Yong control. */
+.ds-icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    color: var(--text-primary);
+    background-color: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+}
+
+.ds-icon-btn:hover:not(:disabled) {
+    background-color: var(--button-hover-bg);
+}
+
+.ds-btn:disabled,
+.ds-icon-btn:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+.ds-circle-btn {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+}
+
+.ds-circle-btn img {
+    display: block;
+    width: 24px;
+    height: 24px;
+}
+
+/* --- Pill / badge -------------------------------------------------------- */
+
+.ds-pill {
+    flex: 0 0 auto;
+    padding: 0.15em 0.55em;
+    color: var(--description-color);
+    font-size: 0.75em;
+    background-color: var(--section-bg);
+    border: 1px solid var(--section-border);
+    border-radius: 999px;
+}
+
+/* --- Fields -------------------------------------------------------------- */
+
+/* The bordered input surface. The popup's multiline text panels add their own
+   sizing / placeholder / readonly treatment on top of this. */
+.ds-field {
+    box-sizing: border-box;
+    font: inherit;
+    color: var(--text-primary);
+    background-color: var(--field-bg);
+    border: 1px solid var(--section-border);
+    border-radius: var(--radius);
+    padding: 0.6em 0.65em;
+}
+
+.ds-field--compact {
+    padding: 0.25em 0.45em;
+}
+
+.ds-field--select {
+    width: min(100%, var(--ds-field-select-width, 16rem));
+}
+
+/* --- Checkboxes ---------------------------------------------------------- */
+
+.ds-checkbox {
+    display: grid;
+    place-content: center;
+    width: var(--checkbox-size);
+    height: var(--checkbox-size);
+    margin: 0;
+    font: inherit;
+    color: white;
+    appearance: none;
+    background-color: var(--field-bg);
+    border: 1px solid var(--section-border);
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+.ds-checkbox::before {
+    content: "";
+    width: 5px;
+    height: 9px;
+    margin-top: -2px;
+    border-right: 2px solid currentColor;
+    border-bottom: 2px solid currentColor;
+    transform: rotate(45deg) scale(0);
+    transition: transform 0.12s ease;
+}
+
+.ds-checkbox:checked {
+    background-color: var(--toggle-on-bg);
+    border-color: var(--toggle-on-bg);
+}
+
+.ds-checkbox:checked::before {
+    transform: rotate(45deg) scale(1);
+}
+
+/* In Windows high-contrast / forced-colors mode the UA replaces the author
+   accent fill and the currentColor checkmark with system colors, which can
+   leave the checked state indistinguishable from unchecked. Pin both to the
+   system selection pair so "checked" always reads. */
+@media (forced-colors: active) {
+    .ds-checkbox:checked {
+        background-color: Highlight;
+        border-color: Highlight;
+    }
+
+    .ds-checkbox::before {
+        border-color: HighlightText;
+    }
+}
+
+/* --- Utility text -------------------------------------------------------- */
+
+.label {
+    font-size: var(--label-font-size);
+}
+
+.description {
+    margin: 0.15em 0 0;
+    font-size: 0.9em;
+    color: var(--description-color);
+}
+
+/* --- Focus ring ---------------------------------------------------------- */
+
+.ds-btn:focus-visible,
+.ds-icon-btn:focus-visible,
+.ds-field:focus-visible,
+.ds-checkbox:focus-visible {
+    outline: var(--focus-ring-width) solid var(--toggle-on-bg);
+    outline-offset: var(--focus-ring-offset);
+}
+
+/* --- Accessibility helper ------------------------------------------------ */
+
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    border: 0;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    overflow: hidden;
+    white-space: nowrap;
+}

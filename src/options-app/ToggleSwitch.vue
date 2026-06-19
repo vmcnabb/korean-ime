@@ -8,7 +8,10 @@ const model = defineModel<boolean>({ required: true });
 
 <template>
     <label class="switch">
-        <input v-model="model" type="checkbox" :aria-label="ariaLabel" />
+        <!-- Hidden (shared .visually-hidden) but still focusable and accessible:
+             the styled .slider is the visible control, the native checkbox drives
+             state and keyboard interaction. -->
+        <input v-model="model" type="checkbox" class="visually-hidden" :aria-label="ariaLabel" />
         <span class="slider" aria-hidden="true"></span>
     </label>
 </template>
@@ -18,21 +21,6 @@ const model = defineModel<boolean>({ required: true });
     display: inline-flex;
     flex: 0 0 auto;
     cursor: pointer;
-}
-
-/* Visually hidden but still focusable and accessible: the styled .slider is the
-   visible control, the native checkbox drives state and keyboard interaction. */
-.switch input {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    margin: -1px;
-    padding: 0;
-    border: 0;
-    clip: rect(0 0 0 0);
-    clip-path: inset(50%);
-    overflow: hidden;
-    white-space: nowrap;
 }
 
 .slider {
@@ -66,7 +54,7 @@ const model = defineModel<boolean>({ required: true });
 }
 
 .switch input:focus-visible + .slider {
-    outline: 2px solid var(--toggle-on-bg);
-    outline-offset: 2px;
+    outline: var(--focus-ring-width) solid var(--toggle-on-bg);
+    outline-offset: var(--focus-ring-offset);
 }
 </style>

@@ -197,13 +197,13 @@ function onCaptureKeyup(event: KeyboardEvent) {
             >
                 {{ bindingDisplay }}
             </span>
-            <button type="button" :disabled="capturing" @click="startCapture">
+            <button type="button" class="ds-btn ds-btn--sm" :disabled="capturing" @click="startCapture">
                 {{ t("options_hanYong_toggleKey_change") }}
             </button>
-            <button type="button" :disabled="!binding && !capturing" @click="turnOff">
+            <button type="button" class="ds-btn ds-btn--sm" :disabled="!binding && !capturing" @click="turnOff">
                 {{ t("options_hanYong_toggleKey_turnOff") }}
             </button>
-            <button type="button" @click="resetToDefault">
+            <button type="button" class="ds-btn ds-btn--sm" @click="resetToDefault">
                 {{ t("options_hanYong_toggleKey_reset") }}
             </button>
         </div>
@@ -217,14 +217,9 @@ function onCaptureKeyup(event: KeyboardEvent) {
 </template>
 
 <style scoped>
-.toggle-key {
-    margin: 0.75em 0;
-}
-
 /* `.label` typography is shared globally in options-page.vue */
 .toggle-key .label {
     display: block;
-    margin-bottom: 0.25em;
 }
 
 /* A small "?" badge after the heading; its tooltip carries the description. */
@@ -269,11 +264,6 @@ function onCaptureKeyup(event: KeyboardEvent) {
 .binding.capturing {
     border-color: var(--toggle-on-bg);
     font-style: italic;
-}
-
-.controls button {
-    font-size: 0.95em;
-    padding: 0.25em 0.6em;
 }
 
 /* The contextual line under the controls swaps between hint/error/description;
