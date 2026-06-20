@@ -235,8 +235,13 @@ legend {
 /* The native radio is visually hidden (it still drives state + keyboard
    navigation), so surface keyboard focus on the card itself. */
 .choice-card:has(:focus-visible) {
-    outline: var(--focus-ring-width) solid var(--toggle-on-bg);
+    outline: var(--focus-ring-width) solid var(--focus-ring-color);
     outline-offset: var(--focus-ring-offset);
+}
+
+/* Selected card's border is the accent fill — stand the focus ring off it. */
+.choice-card.selected:has(:focus-visible) {
+    outline-offset: var(--focus-ring-offset-filled);
 }
 
 /* Selection is the card's border + tint plus this corner check — a shape cue, so

@@ -54,7 +54,12 @@ const model = defineModel<boolean>({ required: true });
 }
 
 .switch input:focus-visible + .slider {
-    outline: var(--focus-ring-width) solid var(--toggle-on-bg);
+    outline: var(--focus-ring-width) solid var(--focus-ring-color);
     outline-offset: var(--focus-ring-offset);
+}
+
+/* When on, the track is the accent fill — stand the ring off so it doesn't merge. */
+.switch input:checked:focus-visible + .slider {
+    outline-offset: var(--focus-ring-offset-filled);
 }
 </style>

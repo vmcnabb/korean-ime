@@ -51,7 +51,15 @@
     --radius: 8px;
     --radius-sm: 6px;
     --focus-ring-width: 2px;
+    /* Tight ring by default (offset 0). The ring colour is its own lever,
+       decoupled from the accent fill: --focus-ring-color defaults to the accent
+       but can be retoned without touching the fills. Filled-accent controls
+       (primary button, checked checkbox, toggle-on, selected card) would merge a
+       same-colour ring into the fill, so those alone stand it off by
+       --focus-ring-offset-filled — the one place we break the tight ring. */
     --focus-ring-offset: 0;
+    --focus-ring-offset-filled: 3px;
+    --focus-ring-color: var(--toggle-on-bg);
 }
 
 /* Base typography shared by both page contexts. Surface-specific layout (the
@@ -253,8 +261,16 @@ body {
 .ds-icon-btn:focus-visible,
 .ds-field:focus-visible,
 .ds-checkbox:focus-visible {
-    outline: var(--focus-ring-width) solid var(--toggle-on-bg);
+    outline: var(--focus-ring-width) solid var(--focus-ring-color);
     outline-offset: var(--focus-ring-offset);
+}
+
+/* Filled-accent controls: a same-colour ring at offset 0 merges into the violet
+   fill, so stand it off just for these. After the base rule so the override wins
+   on equal specificity. */
+.ds-btn--primary:focus-visible,
+.ds-checkbox:checked:focus-visible {
+    outline-offset: var(--focus-ring-offset-filled);
 }
 
 /* --- Accessibility helper ------------------------------------------------ */
