@@ -3,7 +3,7 @@ import { computed, nextTick, onMounted, ref } from "vue";
 import { currentKeyBindingPlatform } from "../keyboard/key-binding";
 import { api } from "../platform/browser-api";
 import { GettingStartedChoice, gettingStartedChoices } from "./getting-started-model";
-import { t } from "./i18n";
+import { t, type MessageKey } from "./i18n";
 import { initSettings, settings } from "./use-settings";
 import pinDarkVideo from "url:../videos/pin-dark.mp4";
 import pinLightVideo from "url:../videos/pin-light.mp4";
@@ -26,7 +26,7 @@ const isFirefoxFamily = browserHasFirefoxExtensionMenu();
 const pinningGuidance = computed(() =>
     isFirefoxFamily ? t("gettingStarted_showIcon_firefox") : t("gettingStarted_showIcon_chrome")
 );
-const gettingStartedNoticeKey = computed(() =>
+const gettingStartedNoticeKey = computed<MessageKey>(() =>
     keyBindingPlatform === "mac" ? "gettingStarted_notice_mac" : "gettingStarted_notice"
 );
 
