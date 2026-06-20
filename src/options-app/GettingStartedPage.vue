@@ -10,8 +10,6 @@ import pinLightVideo from "url:../videos/pin-light.mp4";
 
 const loading = ref(true);
 const errorMessage = ref("");
-const typeHangulInput = ref<HTMLInputElement>();
-const otherToolsInput = ref<HTMLInputElement>();
 const pinningVideo = ref<HTMLVideoElement>();
 const showPinningVideo = ref(false);
 const optionsPageHref = getOptionsPageHref();
@@ -38,8 +36,6 @@ onMounted(async () => {
         console.error(error);
     } finally {
         loading.value = false;
-        await nextTick();
-        focusInitialChoice();
     }
 });
 
@@ -63,15 +59,6 @@ async function revealPinningVideo(): Promise<void> {
     } catch {
         // The controls remain visible if a browser blocks autoplay for any reason.
     }
-}
-
-function focusInitialChoice(): void {
-    if (selectedChoice.value === gettingStartedChoices.otherTools) {
-        otherToolsInput.value?.focus();
-        return;
-    }
-
-    typeHangulInput.value?.focus();
 }
 
 function browserHasFirefoxExtensionMenu(): boolean {
@@ -108,7 +95,6 @@ function getPreferredPinningVideoSrc(): string {
 
                 <label class="choice-card" :class="{ selected: selectedChoice === gettingStartedChoices.typeHangul }">
                     <input
-                        ref="typeHangulInput"
                         type="radio"
                         class="visually-hidden"
                         name="getting-started-choice"
@@ -123,7 +109,6 @@ function getPreferredPinningVideoSrc(): string {
 
                 <label class="choice-card" :class="{ selected: selectedChoice === gettingStartedChoices.otherTools }">
                     <input
-                        ref="otherToolsInput"
                         type="radio"
                         class="visually-hidden"
                         name="getting-started-choice"
