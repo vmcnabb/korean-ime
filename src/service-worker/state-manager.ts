@@ -17,6 +17,7 @@ import { Persistence, Settings } from "../settings/settings";
 import { loadSettings } from "../settings/settings-store";
 import { debugLog } from "../debug-log";
 import { api } from "../platform/browser-api";
+import { t } from "../i18n";
 
 /**
  * Global current live state (browser-session-lived). New tabs inherit it, and
@@ -120,7 +121,7 @@ export class StateManager {
         });
         await api.action.setTitle({
             tabId: tabId,
-            title: api.i18n.getMessage(isHangulMode ? "action_title_hangul" : "action_title_english"),
+            title: t(isHangulMode ? "action_title_hangul" : "action_title_english"),
         });
 
         // Update the on-screen-keyboard menu checkbox. The menu may not exist

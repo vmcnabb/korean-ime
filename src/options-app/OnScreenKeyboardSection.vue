@@ -2,7 +2,7 @@
 import { settings } from "./use-settings";
 import { Persistence } from "../settings/settings";
 import { LayoutId } from "../extension-state/osk-layout";
-import { t } from "./i18n";
+import { t } from "../i18n";
 import SelectSetting from "./SelectSetting.vue";
 import LabeledCheckbox from "./LabeledCheckbox.vue";
 

@@ -2,19 +2,20 @@ import { romanizeBeside, romanizeInPopup } from "./romanize-menu-actions";
 import { StateManager } from "./state-manager";
 import { debugLog } from "../debug-log";
 import { api } from "../platform/browser-api";
+import { t, type MessageKey } from "../i18n";
 
 export const menus = Object.freeze({
     onScreenKeyboard: {
-        id: "menu_onScreenKeyboard",
+        id: "menu_onScreenKeyboard" as MessageKey,
     },
     romanizeInPopup: {
-        id: "menu_romanizeInPopup",
+        id: "menu_romanizeInPopup" as MessageKey,
     },
     romanizeBeside: {
-        id: "menu_romanizeBeside",
+        id: "menu_romanizeBeside" as MessageKey,
     },
     openOptions: {
-        id: "menu_openOptions",
+        id: "menu_openOptions" as MessageKey,
     },
 });
 
@@ -80,21 +81,21 @@ export async function createMenus() {
     api.contextMenus.create({
         type: "normal",
         id: menus.romanizeInPopup.id,
-        title: api.i18n.getMessage(menus.romanizeInPopup.id),
+        title: t(menus.romanizeInPopup.id),
         contexts: ["all"],
     });
 
     api.contextMenus.create({
         type: "normal",
         id: menus.romanizeBeside.id,
-        title: api.i18n.getMessage(menus.romanizeBeside.id),
+        title: t(menus.romanizeBeside.id),
         contexts: ["editable"],
     });
 
     api.contextMenus.create({
         type: "checkbox",
         id: menus.onScreenKeyboard.id,
-        title: api.i18n.getMessage(menus.onScreenKeyboard.id),
+        title: t(menus.onScreenKeyboard.id),
         contexts: ["all"],
     });
 
@@ -102,7 +103,7 @@ export async function createMenus() {
         api.contextMenus.create({
             type: "normal",
             id: menus.openOptions.id,
-            title: api.i18n.getMessage(menus.openOptions.id),
+            title: t(menus.openOptions.id),
             contexts: ["action"],
         });
     }

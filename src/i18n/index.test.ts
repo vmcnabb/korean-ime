@@ -1,7 +1,7 @@
 /**
  * @jest-environment node
  */
-import { t } from "./i18n";
+import { t } from ".";
 
 afterEach(() => {
     delete (globalThis as { chrome?: unknown }).chrome;

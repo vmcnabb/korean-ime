@@ -1,3 +1,5 @@
+import { MessageKey } from "../i18n";
+
 export enum KeyCode {
     KeyQ = "KeyQ",
     KeyW = "KeyW",
@@ -78,7 +80,7 @@ export type KeyRecord = {
 
     label?: string;
     koreanLabel?: string;
-    tooltipResourceKey?: string;
+    tooltipResourceKey?: MessageKey;
 };
 
 export function isModifierKey(code: KeyCode): boolean {

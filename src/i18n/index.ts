@@ -1,4 +1,4 @@
-import type { MessageKey } from "../i18n/message-key";
+import type { MessageKey } from "./message-key";
 
 export type { MessageKey };
 
@@ -14,7 +14,7 @@ export type { MessageKey };
  * string can be an intentional translation (e.g. a hint omitted in some
  * locales); `|| key` would wrongly render the key name in that case.
  */
-export function t(key: MessageKey): string {
+export function t(key: MessageKey, substitutions?: string | (string | number)[] | undefined): string {
     const i18n = globalThis.chrome?.i18n;
-    return i18n ? i18n.getMessage(key) : key;
+    return i18n ? i18n.getMessage(key, substitutions) : key;
 }

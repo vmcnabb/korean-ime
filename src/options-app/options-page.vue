@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted } from "vue";
 import { initSettings } from "./use-settings";
-import { t } from "./i18n";
+import { t } from "../i18n";
 import OnScreenKeyboardSection from "./OnScreenKeyboardSection.vue";
 import HanYongSection from "./HanYongSection.vue";
 

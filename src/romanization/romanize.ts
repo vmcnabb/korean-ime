@@ -10,7 +10,6 @@ import {
 /**
  * Return a string with the hangul converted into Roman characters, e.g.
  * "hello 강" => "hello gang"
- * @param {string} text
  */
 export function romanize(text: string) {
     let romanText = "";

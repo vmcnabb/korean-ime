@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from "vue";
-import { t, type MessageKey } from "./i18n";
+import { t, type MessageKey } from "../i18n";
 import {
     KeyBinding,
     currentKeyBindingPlatform,

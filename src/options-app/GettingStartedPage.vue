@@ -3,7 +3,7 @@ import { computed, nextTick, onMounted, ref } from "vue";
 import { currentKeyBindingPlatform } from "../keyboard/key-binding";
 import { api } from "../platform/browser-api";
 import { GettingStartedChoice, gettingStartedChoices } from "./getting-started-model";
-import { t, type MessageKey } from "./i18n";
+import { t, type MessageKey } from "../i18n";
 import { initSettings, settings } from "./use-settings";
 import pinDarkVideo from "url:../videos/pin-dark.mp4";
 import pinLightVideo from "url:../videos/pin-light.mp4";

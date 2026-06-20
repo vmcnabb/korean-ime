@@ -12,6 +12,7 @@ import { TOGGLE_KEY_STORAGE_KEY, loadToggleKeyBinding } from "../../settings/tog
 import { PopupConverterData, popupConverterDataKey } from "./popup-converter-data";
 import { isHangulInputMode, togglePopupInputMode } from "./popup-input-mode";
 import { api } from "../../platform/browser-api";
+import { MessageKey, t } from "../../i18n";
 
 const original = document.getElementById("original") as HTMLDivElement,
     roman = document.getElementById("romanized") as HTMLDivElement,
@@ -148,7 +149,7 @@ function setInputMode(mode: KoreanKeyboardMode) {
     inputModeButton.classList.toggle("active", isHangul);
     inputModeButton.setAttribute("aria-pressed", String(isHangul));
 
-    const modeLabel = api.i18n.getMessage(isHangul ? "romanize_popup_hangulMode" : "romanize_popup_latinMode");
+    const modeLabel = t(isHangul ? "romanize_popup_hangulMode" : "romanize_popup_latinMode");
     inputModeButton.setAttribute("aria-label", modeLabel);
     inputModeButton.title = modeLabel;
     original.dataset.inputMode = isHangul ? "hangul" : "latin";
@@ -160,7 +161,7 @@ function updateCounts() {
 }
 
 function formatCharacterCount(count: number) {
-    return api.i18n.getMessage("romanize_popup_characterCount", String(count));
+    return t("romanize_popup_characterCount", String(count));
 }
 
 async function copyText(text: string, button: HTMLButtonElement) {
@@ -186,7 +187,7 @@ function fallbackCopyText(text: string) {
 }
 
 function showCopyFeedback(button: HTMLButtonElement) {
-    const copiedMessage = api.i18n.getMessage("romanize_popup_copied");
+    const copiedMessage = t("romanize_popup_copied");
     copyStatus.textContent = copiedMessage;
 
     if (copyFeedbackTimer !== undefined) {
@@ -225,5 +226,5 @@ function setupLocalization() {
 }
 
 function getMessage(messageKey: string | undefined) {
-    return messageKey ? api.i18n.getMessage(messageKey) : "";
+    return messageKey ? t(messageKey as MessageKey) : "";
 }
