@@ -103,6 +103,7 @@ function connectCdpPipe(chromeProc) {
     const writeStream = chromeProc.stdio[3]; // commands → browser (fd 3)
     const readStream = chromeProc.stdio[4]; // replies/events ← browser (fd 4)
     const pending = new Map();
+    const listeners = new Map(); // CDP event method → Set<handler>
     let nextId = 1;
     let buffer = Buffer.alloc(0);
 
@@ -119,21 +120,38 @@ function connectCdpPipe(chromeProc) {
                 continue;
             }
             if (msg.id && pending.has(msg.id)) {
+                // Reply to a command. ids are unique across the whole connection
+                // (one global counter), so matching by id alone is correct even
+                // for replies that carry a sessionId.
                 const { resolve: res, reject: rej } = pending.get(msg.id);
                 pending.delete(msg.id);
                 if (msg.error) rej(new Error(msg.error.message ?? "CDP error"));
                 else res(msg.result);
+            } else if (msg.method) {
+                // An event (no id). In flat mode, session events carry sessionId.
+                const handlers = listeners.get(msg.method);
+                if (handlers) {
+                    for (const handler of handlers) handler(msg.params ?? {}, msg.sessionId);
+                }
             }
         }
     });
 
     return {
-        send(method, params = {}) {
+        // sessionId routes a command to an auto-attached target's flat session;
+        // omit it for browser-level commands (Extensions.*, Target.*).
+        send(method, params = {}, sessionId) {
             const id = nextId++;
             return new Promise((res, rej) => {
                 pending.set(id, { resolve: res, reject: rej });
-                writeStream.write(`${JSON.stringify({ id, method, params })}\0`);
+                const message = sessionId ? { id, method, params, sessionId } : { id, method, params };
+                writeStream.write(`${JSON.stringify(message)}\0`);
             });
+        },
+        on(method, handler) {
+            let handlers = listeners.get(method);
+            if (!handlers) listeners.set(method, (handlers = new Set()));
+            handlers.add(handler);
         },
         close() {
             try {
@@ -291,10 +309,10 @@ const args = [
     // --lang sets the UI locale chrome.i18n resolves against. Every run uses a
     // fresh profile, so a locale change always takes effect.
     ...(locale ? [`--lang=${locale}`] : []),
-    // Force `prefers-color-scheme` for extension pages and the test page without
-    // changing the OS theme.
-    ...(colorScheme === "dark" ? ["--force-dark-mode"] : []),
-    ...(colorScheme === "light" ? ["--force-light-mode"] : []),
+    // NB: --dark / --light are NOT forced with a Chrome switch. Chrome only ships
+    // --force-dark-mode (there is no --force-light-mode), so we emulate
+    // prefers-color-scheme over CDP after launch instead — see below. That works
+    // for both directions and covers extension pages too.
     // Open a blank page; the test page is opened over CDP after the extension is
     // loaded, so its content script injects on load.
     "about:blank",
@@ -323,6 +341,40 @@ chrome.on("exit", () => {
 // 4. Load the extension over the DevTools Protocol pipe, then open the test page.
 const cdp = connectCdpPipe(chrome);
 try {
+    // Force `prefers-color-scheme` without changing the OS theme. Chrome has no
+    // --force-light-mode switch (only --force-dark-mode), so instead of a flag we
+    // emulate the media feature over CDP, which works for both directions.
+    // Emulation.setEmulatedMedia is per-target, so we auto-attach to every
+    // page/iframe target and (re)apply it on attach. The filter keeps us off the
+    // extension's own service worker (and every other non-page target), so the
+    // extension under test is never paused or disturbed. New targets the dev
+    // opens later — the options page, the action/romanize popups — are covered
+    // automatically; the on-screen keyboard renders into the page target, so it's
+    // covered by emulating that page. Enabled before the test page is created
+    // below so the page is caught on attach.
+    if (colorScheme) {
+        cdp.on("Target.attachedToTarget", ({ targetInfo, sessionId }) => {
+            const type = targetInfo?.type;
+            if (type !== "page" && type !== "iframe") return;
+            cdp.send(
+                "Emulation.setEmulatedMedia",
+                { features: [{ name: "prefers-color-scheme", value: colorScheme }] },
+                sessionId
+            ).catch(() => {
+                /* target may have closed before we could emulate it */
+            });
+        });
+        await cdp.send("Target.setAutoAttach", {
+            autoAttach: true,
+            waitForDebuggerOnStart: false,
+            flatten: true,
+            filter: [
+                { type: "page", exclude: false },
+                { type: "iframe", exclude: false },
+            ],
+        });
+    }
+
     const { id } = await cdp.send("Extensions.loadUnpacked", { path: distDir });
     console.log(`[dev] Loaded unpacked extension: ${id}`);
 
