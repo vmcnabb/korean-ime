@@ -24,10 +24,16 @@
     --label-font-size: 1.1em;
     --checkbox-size: var(--label-font-size);
 
-    /* Accent / toggle / subtle states */
+    /* Accent / toggle / subtle states. The accent is the logo's violet
+       (icon_h.svg: #5a2d82→#2b1340, with a #dcbfff glyph), brightened in dark
+       mode the way the rest of the palette is. --accent-on is the ink for
+       text/icons sitting on a filled accent: white reads on the light-mode
+       violet, but the lighter dark-mode violet needs dark ink (the logo's deep
+       aubergine) to stay legible. */
     --toggle-off-bg: light-dark(#ccc, #555);
-    --toggle-on-bg: light-dark(#2563eb, #3b82f6);
-    --accent-subtle-bg: light-dark(#eef4ff, #10213d);
+    --toggle-on-bg: light-dark(#6d28d9, #a78bfa);
+    --accent-on: light-dark(white, #2b1340);
+    --accent-subtle-bg: light-dark(#f3edff, #2b1340);
     --button-hover-bg: light-dark(#f1f5f9, #292929);
     --success-color: light-dark(#168a45, #63d38a);
     --error-color: light-dark(#c0392b, #f87171);
@@ -85,7 +91,7 @@ body {
 
 /* Filled accent button (the getting-started "show video" action). */
 .ds-btn--primary {
-    color: white;
+    color: var(--accent-on);
     font-weight: 700;
     background-color: var(--toggle-on-bg);
     border-color: var(--toggle-on-bg);
@@ -186,7 +192,7 @@ body {
     height: var(--checkbox-size);
     margin: 0;
     font: inherit;
-    color: white;
+    color: var(--accent-on);
     appearance: none;
     background-color: var(--field-bg);
     border: 1px solid var(--section-border);
