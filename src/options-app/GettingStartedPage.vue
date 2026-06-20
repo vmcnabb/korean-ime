@@ -158,18 +158,20 @@ function getPreferredPinningVideoSrc(): string {
                 </button>
             </p>
             <Transition name="pinning-video-reveal">
-                <video
-                    v-if="showPinningVideo"
-                    :id="pinningVideoId"
-                    ref="pinningVideo"
-                    class="pinning-video"
-                    :src="pinningVideoSrc"
-                    controls
-                    muted
-                    playsinline
-                    preload="metadata"
-                    :aria-label="t('gettingStarted_showIcon_videoLabel')"
-                ></video>
+                <div class="video-container"
+                    v-if="showPinningVideo">
+                    <video
+                        :id="pinningVideoId"
+                        ref="pinningVideo"
+                        class="pinning-video"
+                        :src="pinningVideoSrc"
+                        controls
+                        muted
+                        playsinline
+                        preload="metadata"
+                        :aria-label="t('gettingStarted_showIcon_videoLabel')"
+                    ></video>
+                </div>
             </Transition>
         </section>
 
@@ -270,6 +272,13 @@ legend {
     margin: 0.85em 0 0;
 }
 
+.video-container {
+    display: block;
+    width: 100%;
+    max-height: 360px;
+    margin: 0;
+    object-fit: contain;
+}
 .pinning-video {
     display: block;
     width: 100%;
@@ -284,8 +293,8 @@ legend {
 .pinning-video-reveal-enter-active {
     overflow: hidden;
     transition:
-        max-height 180ms ease,
-        opacity 180ms ease;
+        max-height 1000ms ease,
+        opacity 500ms ease;
 }
 
 .pinning-video-reveal-enter-from {
