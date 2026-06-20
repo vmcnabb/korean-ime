@@ -110,6 +110,7 @@ function getPreferredPinningVideoSrc(): string {
                     <input
                         ref="typeHangulInput"
                         type="radio"
+                        class="visually-hidden"
                         name="getting-started-choice"
                         :checked="selectedChoice === gettingStartedChoices.typeHangul"
                         @change="choose(gettingStartedChoices.typeHangul)"
@@ -124,6 +125,7 @@ function getPreferredPinningVideoSrc(): string {
                     <input
                         ref="otherToolsInput"
                         type="radio"
+                        class="visually-hidden"
                         name="getting-started-choice"
                         :checked="selectedChoice === gettingStartedChoices.otherTools"
                         @change="choose(gettingStartedChoices.otherTools)"
@@ -210,12 +212,11 @@ legend {
 }
 
 .choice-card {
+    position: relative;
     display: grid;
-    grid-template-columns: auto 1fr;
-    gap: 0.75em;
-    align-items: start;
     margin-top: 0.75em;
-    padding: 0.85em 1em;
+    /* Trailing room so a long translated label never runs under the check. */
+    padding: 0.85em 2.6em 0.85em 1em;
     border: 1px solid var(--section-border);
     border-radius: var(--radius);
     cursor: pointer;
@@ -231,8 +232,30 @@ legend {
     background-color: var(--accent-subtle-bg);
 }
 
-.choice-card input {
-    margin-top: 0.15em;
+/* The native radio is visually hidden (it still drives state + keyboard
+   navigation), so surface keyboard focus on the card itself. */
+.choice-card:has(:focus-visible) {
+    outline: var(--focus-ring-width) solid var(--toggle-on-bg);
+    outline-offset: var(--focus-ring-offset);
+}
+
+/* Selection is the card's border + tint plus this corner check — a shape cue, so
+   it doesn't lean on colour alone. */
+.choice-card::after {
+    content: "";
+    position: absolute;
+    top: 1.15em;
+    right: 1.05em;
+    width: 6px;
+    height: 11px;
+    border-right: 2px solid var(--toggle-on-bg);
+    border-bottom: 2px solid var(--toggle-on-bg);
+    transform: rotate(45deg) scale(0);
+    transition: transform 0.12s ease;
+}
+
+.choice-card.selected::after {
+    transform: rotate(45deg) scale(1);
 }
 
 .choice-card strong,
