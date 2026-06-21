@@ -3,14 +3,16 @@ import { isAltKey, isModifierKey, KeyCode, keyMap } from "../keyboard/korean-key
 import { HangulCompositor } from "./hangul-compositor";
 import { CompositionAdapterFactory } from "./composition-adapter-factory";
 import { CompositionAdapter } from "./composition-adapters/composition-adapter";
-import { HanjaCandidateWindow } from "./hanja/hanja-candidate-window";
+import { HanjaCandidatePager } from "./hanja/hanja-candidate-pager";
+import { HanjaCandidateWindow, HanjaCandidateWindowPage } from "./hanja/hanja-candidate-window";
 import { HanjaCompositionOverlay } from "./hanja/hanja-composition-overlay";
 import { commitHanjaCandidate, getHanjaConversionTarget, HanjaConversionTarget } from "./hanja/hanja-converter";
+import { HanjaCandidate } from "./hanja/hanja-dictionary";
 import { isDefaultHanjaKey } from "./hanja/hanja-key";
 
 type HanjaCandidateSelection = {
     target: HanjaConversionTarget;
-    selectedIndex: number;
+    pager: HanjaCandidatePager<HanjaCandidate>;
     overlay: HanjaCompositionOverlay;
     window: HanjaCandidateWindow;
 };
@@ -391,11 +393,17 @@ export class HangulImeController {
         };
         const overlay = new HanjaCompositionOverlay(this.element, this.compositionAdapter);
         const overlayRect = overlay.show(target.reading);
+        const pager = new HanjaCandidatePager(target.candidates);
         this.hanjaCandidateSelection = {
             target: committedTarget,
-            selectedIndex: 0,
+            pager,
             overlay,
-            window: new HanjaCandidateWindow(this.element, target.candidates, overlayRect),
+            window: new HanjaCandidateWindow(this.element, this.hanjaCandidatePage(pager), overlayRect, {
+                onPreviousPage: () => this.moveHanjaCandidatePage(-1),
+                onNextPage: () => this.moveHanjaCandidatePage(1),
+                onMoveSelection: (delta) => this.moveHanjaCandidateSelection(delta),
+                onSelectCandidate: (visibleIndex) => this.commitVisibleHanjaCandidate(visibleIndex, KeyCode.Lang2),
+            }),
         };
         return true;
     }
@@ -407,27 +415,37 @@ export class HangulImeController {
         }
 
         const numberedIndex = hanjaCandidateNumberIndex(event);
-        if (numberedIndex !== undefined && numberedIndex < selection.target.candidates.length) {
-            this.commitHanjaCandidate(numberedIndex, event.code as KeyCode);
+        const candidateIndex =
+            numberedIndex === undefined ? undefined : selection.pager.selectByVisibleIndex(numberedIndex);
+        if (candidateIndex !== undefined) {
+            this.commitHanjaCandidate(candidateIndex, event.code as KeyCode);
             this.cancelEvent(event);
             return true;
         }
 
         switch (event.key) {
             case "ArrowDown":
-            case "ArrowRight":
                 this.moveHanjaCandidateSelection(1);
                 this.cancelEvent(event);
                 return true;
 
             case "ArrowUp":
-            case "ArrowLeft":
                 this.moveHanjaCandidateSelection(-1);
                 this.cancelEvent(event);
                 return true;
 
+            case "ArrowRight":
+                this.moveHanjaCandidatePage(1);
+                this.cancelEvent(event);
+                return true;
+
+            case "ArrowLeft":
+                this.moveHanjaCandidatePage(-1);
+                this.cancelEvent(event);
+                return true;
+
             case "Enter":
-                this.commitHanjaCandidate(selection.selectedIndex, event.code as KeyCode);
+                this.commitHanjaCandidate(selection.pager.selectedIndex, event.code as KeyCode);
                 this.cancelEvent(event);
                 return true;
 
@@ -453,9 +471,32 @@ export class HangulImeController {
             return;
         }
 
-        const candidateCount = selection.target.candidates.length;
-        selection.selectedIndex = (selection.selectedIndex + delta + candidateCount) % candidateCount;
-        selection.window.setActiveIndex(selection.selectedIndex);
+        selection.pager.moveSelection(delta);
+        selection.window.update(this.hanjaCandidatePage(selection.pager));
+    }
+
+    private moveHanjaCandidatePage(delta: number): void {
+        const selection = this.hanjaCandidateSelection;
+        if (!selection) {
+            return;
+        }
+
+        selection.pager.movePage(delta);
+        selection.window.update(this.hanjaCandidatePage(selection.pager));
+    }
+
+    private commitVisibleHanjaCandidate(visibleIndex: number, keyCode: KeyCode): void {
+        const selection = this.hanjaCandidateSelection;
+        if (!selection) {
+            return;
+        }
+
+        const candidateIndex = selection.pager.selectByVisibleIndex(visibleIndex);
+        if (candidateIndex === undefined) {
+            return;
+        }
+
+        this.commitHanjaCandidate(candidateIndex, keyCode);
     }
 
     private commitHanjaCandidate(index: number, keyCode: KeyCode): void {
@@ -468,6 +509,15 @@ export class HangulImeController {
         this.closeHanjaCandidateSelection();
         commitHanjaCandidate(selection.target, candidate, this.compositor, this.compositionAdapter, keyCode);
         this.notifyOnEntry();
+    }
+
+    private hanjaCandidatePage(pager: HanjaCandidatePager<HanjaCandidate>): HanjaCandidateWindowPage {
+        return {
+            candidates: pager.visibleCandidates,
+            selectedIndex: pager.selectedPageIndex,
+            pageIndex: pager.pageIndex,
+            pageCount: pager.pageCount,
+        };
     }
 
     private closeHanjaCandidateSelection(): void {

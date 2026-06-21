@@ -446,9 +446,52 @@ describe("HangulImeController Hanja candidate selection (KIME_ENABLE_HANJA)", ()
     }
 
     function candidateTexts() {
-        return Array.from(document.querySelectorAll<HTMLElement>(".kime-hanja-candidate")).map((item) =>
-            item.textContent?.trim()
+        return Array.from(document.querySelectorAll<HTMLElement>(".kime-hanja-candidate")).map((item) => {
+            const number = item.querySelector("span:first-child")?.textContent;
+            const hanja = item.querySelector(".kime-hanja-candidate-hanja")?.textContent;
+            return `${number}${hanja}`;
+        });
+    }
+
+    function candidateValues() {
+        return Array.from(document.querySelectorAll<HTMLElement>(".kime-hanja-candidate")).map(
+            (item) => item.querySelector(".kime-hanja-candidate-hanja")?.textContent
         );
+    }
+
+    function activeCandidateValue() {
+        return document.querySelector<HTMLElement>(
+            '.kime-hanja-candidate[aria-selected="true"] .kime-hanja-candidate-hanja'
+        )?.textContent;
+    }
+
+    function controllerAfterCommittedSyllable(reading: string) {
+        const element = document.createElement("textarea");
+        element.value = reading;
+        element.selectionStart = reading.length;
+        element.selectionEnd = reading.length;
+        const controller = makeController(element);
+        controller.activate();
+        pressRightCtrl(element);
+        return { element };
+    }
+
+    function clickNextPage() {
+        document.querySelector<HTMLButtonElement>(".kime-hanja-page-next")?.click();
+    }
+
+    function clickPreviousPage() {
+        document.querySelector<HTMLButtonElement>(".kime-hanja-page-previous")?.click();
+    }
+
+    function scrollCandidates(deltaY: number) {
+        document
+            .querySelector<HTMLElement>(".kime-hanja-candidates")
+            ?.dispatchEvent(new WheelEvent("wheel", { deltaY, bubbles: true, cancelable: true }));
+    }
+
+    function clickCandidate(index: number) {
+        document.querySelectorAll<HTMLElement>(".kime-hanja-candidate")[index].click();
     }
 
     it("shows candidates for a composing 한 and swallows the Hanja key when the flag is on", () => {
@@ -488,13 +531,13 @@ describe("HangulImeController Hanja candidate selection (KIME_ENABLE_HANJA)", ()
         expect(digit.defaultPrevented).toBe(true);
     });
 
-    it("commits the active composing candidate with arrows and Enter", () => {
+    it("commits the active composing candidate with Down and Enter", () => {
         process.env.KIME_ENABLE_HANJA = "true";
         const { element, inputCharacter } = composingController();
         composeHan(element);
         pressRightCtrl(element);
 
-        const arrow = dispatchKeydown(element, "ArrowRight", "ArrowRight");
+        const arrow = dispatchKeydown(element, "ArrowDown", "ArrowDown");
         const enter = dispatchKeydown(element, "Enter", "Enter");
 
         expect(inputCharacter).toHaveBeenCalledWith("寒", KeyCode.Enter);
@@ -550,17 +593,168 @@ describe("HangulImeController Hanja candidate selection (KIME_ENABLE_HANJA)", ()
 
     it("selects candidates after a committed syllable", () => {
         process.env.KIME_ENABLE_HANJA = "true";
-        const element = document.createElement("textarea");
-        element.value = "한";
-        element.selectionStart = 1;
-        element.selectionEnd = 1;
-        const controller = makeController(element);
-        controller.activate();
+        const { element } = controllerAfterCommittedSyllable("한");
 
-        pressRightCtrl(element);
         dispatchKeydown(element, "Digit3", "3");
 
         expect(element.value).toBe("恨");
+        expect(document.querySelector(".kime-hanja-candidates")).toBeNull();
+    });
+
+    it("shows a maxed one-page candidate list without a usable next page", () => {
+        process.env.KIME_ENABLE_HANJA = "true";
+        const { element } = controllerAfterCommittedSyllable("가");
+
+        expect(candidateValues()).toHaveLength(9);
+
+        dispatchKeydown(element, "ArrowRight", "ArrowRight");
+
+        expect(candidateValues()).toEqual(["家", "加", "可", "假", "價", "佳", "街", "歌", "架"]);
+    });
+
+    it("wraps pages with Left and Right instead of moving between candidates", () => {
+        process.env.KIME_ENABLE_HANJA = "true";
+        const { element } = controllerAfterCommittedSyllable("나");
+
+        expect(activeCandidateValue()).toBe("羅");
+
+        dispatchKeydown(element, "ArrowLeft", "ArrowLeft");
+        expect(candidateValues()).toEqual(["儺"]);
+        expect(activeCandidateValue()).toBe("儺");
+
+        dispatchKeydown(element, "ArrowRight", "ArrowRight");
+        expect(candidateValues()).toEqual(["羅", "那", "裸", "懶", "螺", "拿", "娜", "拏", "糯"]);
+        expect(activeCandidateValue()).toBe("羅");
+
+        dispatchKeydown(element, "ArrowRight", "ArrowRight");
+        expect(candidateValues()).toEqual(["儺"]);
+
+        dispatchKeydown(element, "ArrowRight", "ArrowRight");
+        expect(candidateValues()).toEqual(["羅", "那", "裸", "懶", "螺", "拿", "娜", "拏", "糯"]);
+    });
+
+    it("commits a numbered candidate from the visible page", () => {
+        process.env.KIME_ENABLE_HANJA = "true";
+        const { element } = controllerAfterCommittedSyllable("나");
+
+        dispatchKeydown(element, "ArrowRight", "ArrowRight");
+        dispatchKeydown(element, "Digit1", "1");
+
+        expect(element.value).toBe("儺");
+    });
+
+    it("moves Up from the first entry on a page to the last entry on the previous page", () => {
+        process.env.KIME_ENABLE_HANJA = "true";
+        const { element } = controllerAfterCommittedSyllable("나");
+
+        dispatchKeydown(element, "ArrowRight", "ArrowRight");
+        dispatchKeydown(element, "ArrowUp", "ArrowUp");
+
+        expect(candidateValues()).toEqual(["羅", "那", "裸", "懶", "螺", "拿", "娜", "拏", "糯"]);
+        expect(activeCandidateValue()).toBe("糯");
+    });
+
+    it("moves Down from the last entry on a page to the first entry on the next page", () => {
+        process.env.KIME_ENABLE_HANJA = "true";
+        const { element } = controllerAfterCommittedSyllable("나");
+
+        for (let i = 0; i < 9; i += 1) {
+            dispatchKeydown(element, "ArrowDown", "ArrowDown");
+        }
+
+        expect(candidateValues()).toEqual(["儺"]);
+        expect(activeCandidateValue()).toBe("儺");
+    });
+
+    it("supports a maxed second page and a third page", () => {
+        process.env.KIME_ENABLE_HANJA = "true";
+        const { element } = controllerAfterCommittedSyllable("다");
+
+        dispatchKeydown(element, "ArrowRight", "ArrowRight");
+        expect(candidateValues()).toHaveLength(9);
+        dispatchKeydown(element, "Escape", "Escape");
+
+        const thirdPage = controllerAfterCommittedSyllable("라");
+        dispatchKeydown(thirdPage.element, "ArrowRight", "ArrowRight");
+        dispatchKeydown(thirdPage.element, "ArrowRight", "ArrowRight");
+        expect(candidateValues()).toEqual(["籮"]);
+    });
+
+    it("moves between pages two and three with Down and Up", () => {
+        process.env.KIME_ENABLE_HANJA = "true";
+        const { element } = controllerAfterCommittedSyllable("라");
+
+        dispatchKeydown(element, "ArrowRight", "ArrowRight");
+        for (let i = 0; i < 9; i += 1) {
+            dispatchKeydown(element, "ArrowDown", "ArrowDown");
+        }
+
+        expect(candidateValues()).toEqual(["籮"]);
+        expect(activeCandidateValue()).toBe("籮");
+
+        dispatchKeydown(element, "ArrowUp", "ArrowUp");
+
+        expect(candidateValues()).toEqual(["瘰", "臝", "騾", "驘", "囉", "砢", "摞", "欏", "玀"]);
+        expect(activeCandidateValue()).toBe("玀");
+    });
+
+    it("wraps Up from the first item on the first page to the last item on the last page", () => {
+        process.env.KIME_ENABLE_HANJA = "true";
+        const { element } = controllerAfterCommittedSyllable("라");
+
+        dispatchKeydown(element, "ArrowUp", "ArrowUp");
+
+        expect(candidateValues()).toEqual(["籮"]);
+        expect(activeCandidateValue()).toBe("籮");
+    });
+
+    it("wraps Down from the last item on the last page to the first item on the first page", () => {
+        process.env.KIME_ENABLE_HANJA = "true";
+        const { element } = controllerAfterCommittedSyllable("라");
+
+        dispatchKeydown(element, "ArrowLeft", "ArrowLeft");
+        dispatchKeydown(element, "ArrowDown", "ArrowDown");
+
+        expect(candidateValues()).toEqual(["羅", "螺", "裸", "懶", "邏", "鑼", "喇", "蘿", "癩"]);
+        expect(activeCandidateValue()).toBe("羅");
+    });
+
+    it("wraps pages with mouse buttons", () => {
+        process.env.KIME_ENABLE_HANJA = "true";
+        controllerAfterCommittedSyllable("나");
+
+        clickPreviousPage();
+        expect(candidateValues()).toEqual(["儺"]);
+
+        clickNextPage();
+        expect(candidateValues()).toEqual(["羅", "那", "裸", "懶", "螺", "拿", "娜", "拏", "糯"]);
+
+        clickNextPage();
+        expect(candidateValues()).toEqual(["儺"]);
+
+        clickNextPage();
+        expect(candidateValues()).toEqual(["羅", "那", "裸", "懶", "螺", "拿", "娜", "拏", "糯"]);
+    });
+
+    it("moves selection with mouse wheel scrolling", () => {
+        process.env.KIME_ENABLE_HANJA = "true";
+        controllerAfterCommittedSyllable("한");
+
+        scrollCandidates(100);
+        expect(activeCandidateValue()).toBe("寒");
+
+        scrollCandidates(-100);
+        expect(activeCandidateValue()).toBe("韓");
+    });
+
+    it("commits a clicked candidate from the visible page", () => {
+        process.env.KIME_ENABLE_HANJA = "true";
+        const { element } = controllerAfterCommittedSyllable("나");
+
+        dispatchKeydown(element, "ArrowRight", "ArrowRight");
+        clickCandidate(0);
+
+        expect(element.value).toBe("儺");
         expect(document.querySelector(".kime-hanja-candidates")).toBeNull();
     });
 
