@@ -25,6 +25,37 @@ describe("findTranslationKeyAtPosition", () => {
         });
     });
 
+    it("finds the hovered branch inside a ternary t() argument", () => {
+        const line = 'const label = t(isMac ? "gettingStarted_notice_mac" : "gettingStarted_notice");';
+
+        assert.deepEqual(findTranslationKeyAtPosition(line, line.indexOf("notice_mac")), {
+            key: "gettingStarted_notice_mac",
+            start: 24,
+            end: 51,
+        });
+        assert.deepEqual(findTranslationKeyAtPosition(line, line.lastIndexOf("gettingStarted_notice")), {
+            key: "gettingStarted_notice",
+            start: 54,
+            end: 77,
+        });
+    });
+
+    it("handles nested parentheses in a t() argument expression", () => {
+        const line = 'const label = t(getChoice("mac") ? "gettingStarted_notice_mac" : "gettingStarted_notice");';
+
+        assert.deepEqual(findTranslationKeyAtPosition(line, line.indexOf("notice_mac")), {
+            key: "gettingStarted_notice_mac",
+            start: 35,
+            end: 62,
+        });
+    });
+
+    it("returns undefined when hovering non-string parts of a t() expression", () => {
+        const line = 'const label = t(isMac ? "gettingStarted_notice_mac" : "gettingStarted_notice");';
+
+        assert.equal(findTranslationKeyAtPosition(line, line.indexOf("isMac")), undefined);
+    });
+
     it("returns undefined outside a t() string literal", () => {
         const line = 'const key = "options_title";';
 
