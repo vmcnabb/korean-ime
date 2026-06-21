@@ -2,7 +2,8 @@
 
 Local VS Code extension for this repo. It shows the English Chrome i18n message
 when hovering over `t("message_key")` or `t('message_key')` calls in Vue,
-TypeScript, and JavaScript files.
+TypeScript, and JavaScript files. In TypeScript files, it also shows hovers for
+string literals whose contextual type is `MessageKey`.
 
 ## Install
 

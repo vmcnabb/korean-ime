@@ -3,7 +3,8 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const vscode = require("vscode");
-const { findTranslationKeyAtPosition, formatMessage } = require("./hover-utils");
+const { findStringLiteralAtPosition, findTranslationKeyAtPosition, formatMessage } = require("./hover-utils");
+const { TypeScriptMessageKeyResolver } = require("./typescript-message-key");
 
 const messagesRelativePath = path.join("src", "_locales", "en", "messages.json");
 const messagesRelativeGlob = "src/_locales/en/messages.json";
@@ -21,12 +22,12 @@ const supportedDocuments = [
 function activate(context) {
     const output = vscode.window.createOutputChannel("Korean IME i18n Hover");
     const messages = new MessageCatalog(context, output);
-    context.subscriptions.push(output, messages);
+    const messageKeyResolver = new TypeScriptMessageKeyResolver(output);
+    context.subscriptions.push(output, messages, messageKeyResolver);
 
     const provider = vscode.languages.registerHoverProvider(supportedDocuments, {
         provideHover(document, position) {
-            const line = document.lineAt(position.line);
-            const hit = findTranslationKeyAtPosition(line.text, position.character);
+            const hit = findHoverHit(document, position, messageKeyResolver);
             if (!hit) {
                 return undefined;
             }
@@ -42,9 +43,7 @@ function activate(context) {
             markdown.appendMarkdown("**en**: ");
             markdown.appendText(message);
 
-            const start = new vscode.Position(position.line, hit.start);
-            const end = new vscode.Position(position.line, hit.end);
-            return new vscode.Hover(markdown, new vscode.Range(start, end));
+            return new vscode.Hover(markdown, hit.range);
         },
     });
 
@@ -68,6 +67,38 @@ function activate(context) {
 }
 
 function deactivate() {}
+
+function findHoverHit(document, position, messageKeyResolver) {
+    const line = document.lineAt(position.line);
+    const translationCallHit = findTranslationKeyAtPosition(line.text, position.character);
+    if (translationCallHit) {
+        const start = new vscode.Position(position.line, translationCallHit.start);
+        const end = new vscode.Position(position.line, translationCallHit.end);
+        return {
+            key: translationCallHit.key,
+            range: new vscode.Range(start, end),
+        };
+    }
+
+    if (!isTypeScriptDocument(document) || !findStringLiteralAtPosition(line.text, position.character)) {
+        return undefined;
+    }
+
+    const workspaceRoots = (vscode.workspace.workspaceFolders ?? []).map((folder) => folder.uri.fsPath);
+    const semanticHit = messageKeyResolver.find(document.uri.fsPath, document.getText(), document.offsetAt(position), workspaceRoots);
+    if (!semanticHit) {
+        return undefined;
+    }
+
+    return {
+        key: semanticHit.key,
+        range: new vscode.Range(document.positionAt(semanticHit.start), document.positionAt(semanticHit.end)),
+    };
+}
+
+function isTypeScriptDocument(document) {
+    return document.languageId === "typescript" || document.languageId === "typescriptreact";
+}
 
 class MessageCatalog {
     #messages = {};

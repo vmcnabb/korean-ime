@@ -2,7 +2,7 @@
 
 const assert = require("node:assert/strict");
 const { describe, it } = require("node:test");
-const { findTranslationKeyAtPosition, formatMessage } = require("../hover-utils");
+const { findStringLiteralAtPosition, findTranslationKeyAtPosition, formatMessage } = require("../hover-utils");
 
 describe("findTranslationKeyAtPosition", () => {
     it("finds a double-quoted t() key when hovering inside the literal", () => {
@@ -60,6 +60,24 @@ describe("findTranslationKeyAtPosition", () => {
         const line = 'const key = "options_title";';
 
         assert.equal(findTranslationKeyAtPosition(line, line.indexOf("options")), undefined);
+    });
+});
+
+describe("findStringLiteralAtPosition", () => {
+    it("finds a string literal under the cursor", () => {
+        const line = 'tooltipResourceKey: "keyboard_close",';
+
+        assert.deepEqual(findStringLiteralAtPosition(line, line.indexOf("keyboard")), {
+            key: "keyboard_close",
+            start: 20,
+            end: 36,
+        });
+    });
+
+    it("returns undefined outside a string literal", () => {
+        const line = 'tooltipResourceKey: "keyboard_close",';
+
+        assert.equal(findStringLiteralAtPosition(line, line.indexOf("tooltipResourceKey")), undefined);
     });
 });
 

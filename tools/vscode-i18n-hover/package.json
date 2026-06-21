@@ -2,7 +2,7 @@
   "name": "korean-ime-i18n-hover",
   "publisher": "vmcnabb",
   "displayName": "Korean IME i18n Hover",
-  "description": "Shows English Chrome i18n messages when hovering over t(\"message_key\") calls in this repo.",
+  "description": "Shows English Chrome i18n messages when hovering over message keys in this repo.",
   "version": "0.0.1",
   "private": true,
   "license": "MIT",
@@ -25,11 +25,13 @@
     "onCommand:koreanImeI18nHover.showStatus",
     "onLanguage:vue",
     "onLanguage:typescript",
+    "onLanguage:typescriptreact",
+    "onLanguage:javascriptreact",
     "onLanguage:javascript"
   ],
   "main": "./extension.js",
   "scripts": {
-    "test": "node test/hover-utils.test.js"
+    "test": "node --test test/*.test.js"
   },
   "contributes": {
     "commands": [

@@ -32,6 +32,22 @@ function findTranslationKeyAtPosition(text, offset) {
     return undefined;
 }
 
+function findStringLiteralAtPosition(text, offset) {
+    for (const match of text.matchAll(stringLiteralPattern)) {
+        const literalStart = match.index;
+        const literalEnd = literalStart + match[0].length;
+        if (offset >= literalStart && offset <= literalEnd) {
+            return {
+                key: match[2],
+                start: literalStart,
+                end: literalEnd,
+            };
+        }
+    }
+
+    return undefined;
+}
+
 function findClosingParen(text, start) {
     let depth = 1;
     let quote;
@@ -79,6 +95,7 @@ function formatMessage(messageEntry) {
 }
 
 module.exports = {
+    findStringLiteralAtPosition,
     findTranslationKeyAtPosition,
     formatMessage,
 };
