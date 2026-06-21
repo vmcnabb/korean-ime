@@ -10,10 +10,10 @@ function dispatchKeydown(target: EventTarget, code: string, key: string): Keyboa
 }
 
 // Each controller registers a capture-phase keydown listener on `window`. Tests
-// don't dispose controllers (production does, via TextInputManager's removal
-// observer), so without cleanup a controller from one test keeps reacting to
-// keystrokes dispatched by the next. Track every controller and dispose them all
-// after each test to keep tests isolated.
+// don't route controllers through TextInputManager, so without cleanup a
+// controller from one test keeps reacting to keystrokes dispatched by the next.
+// Track every controller and dispose them all after each test to keep tests
+// isolated.
 const liveControllers: HangulImeController[] = [];
 function makeController(element: HTMLElement): HangulImeController {
     const controller = new HangulImeController(element);

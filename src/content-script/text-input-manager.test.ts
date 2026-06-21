@@ -1,6 +1,7 @@
 import { TextInputManager, textInputElementsSelector } from "./text-input-manager";
 import { HangulImeController } from "../composition/hangul-ime-controller";
 import { KeyCode } from "../keyboard/korean-keyboard-map";
+import { CompositionAdapterFactory } from "../composition/composition-adapter-factory";
 
 function element(html: string): HTMLElement {
     const wrapper = document.createElement("div");
@@ -36,25 +37,6 @@ describe("textInputElementsSelector", () => {
     });
 });
 
-describe("TextInputManager DOM-removal cleanup", () => {
-    afterEach(() => jest.restoreAllMocks());
-
-    it("disposes a controller when its element leaves the DOM", async () => {
-        const dispose = jest.spyOn(HangulImeController.prototype, "dispose");
-        const manager = new TextInputManager();
-
-        const textarea = document.createElement("textarea");
-        document.body.appendChild(textarea);
-        manager.setActiveElement(textarea); // creates a controller + starts the observer
-
-        textarea.remove();
-        // MutationObserver callbacks run as microtasks; a macrotask tick lets it fire.
-        await new Promise((resolve) => setTimeout(resolve, 0));
-
-        expect(dispose).toHaveBeenCalledTimes(1);
-    });
-});
-
 describe("TextInputManager.setActiveElement", () => {
     afterEach(() => {
         jest.restoreAllMocks();
@@ -82,6 +64,83 @@ describe("TextInputManager.setActiveElement", () => {
 
         expect(manager.setActiveElement(button)).toBeUndefined();
     });
+
+    it("disposes the current controller when focus moves to another editable", () => {
+        const dispose = jest.spyOn(HangulImeController.prototype, "dispose");
+        const manager = new TextInputManager();
+
+        const first = document.createElement("textarea");
+        const second = document.createElement("textarea");
+        document.body.append(first, second);
+
+        manager.setActiveElement(first);
+        manager.setActiveElement(second);
+
+        expect(dispose).toHaveBeenCalledTimes(1);
+    });
+
+    it("reuses the current controller when the same editable is reported twice", () => {
+        const dispose = jest.spyOn(HangulImeController.prototype, "dispose");
+        const manager = new TextInputManager();
+
+        const textarea = document.createElement("textarea");
+        document.body.appendChild(textarea);
+
+        manager.setActiveElement(textarea);
+        manager.setActiveElement(textarea);
+
+        expect(dispose).not.toHaveBeenCalled();
+    });
+
+    it("disposes the current controller when focus leaves editable input", () => {
+        const dispose = jest.spyOn(HangulImeController.prototype, "dispose");
+        const manager = new TextInputManager();
+
+        const textarea = document.createElement("textarea");
+        const button = document.createElement("button");
+        document.body.append(textarea, button);
+
+        manager.setActiveElement(textarea);
+        manager.setActiveElement(button);
+
+        expect(dispose).toHaveBeenCalledTimes(1);
+    });
+
+    it("keeps only one window-capture keydown guard after replacing the controller", () => {
+        const add = jest.spyOn(window, "addEventListener");
+        const remove = jest.spyOn(window, "removeEventListener");
+        const manager = new TextInputManager();
+
+        const first = document.createElement("textarea");
+        const second = document.createElement("textarea");
+        document.body.append(first, second);
+
+        manager.setActiveElement(first);
+        manager.setActiveElement(second);
+
+        const keydownCaptureAdds = add.mock.calls.filter(([type, _listener, capture]) => {
+            return type === "keydown" && capture === true;
+        });
+
+        expect(keydownCaptureAdds).toHaveLength(2);
+        expect(remove).toHaveBeenCalledWith("keydown", keydownCaptureAdds[0][1], true);
+    });
+
+    it("clears the current controller when the focused editable has no adapter", () => {
+        const dispose = jest.spyOn(HangulImeController.prototype, "dispose");
+        const createAdapter = jest.spyOn(CompositionAdapterFactory, "createCompositionAdapter");
+        const manager = new TextInputManager();
+
+        const textarea = document.createElement("textarea");
+        const unsupported = element("<div contenteditable></div>");
+        document.body.append(textarea, unsupported);
+
+        manager.setActiveElement(textarea);
+        createAdapter.mockReturnValueOnce(undefined);
+
+        expect(manager.setActiveElement(unsupported)).toBeUndefined();
+        expect(dispose).toHaveBeenCalledTimes(1);
+    });
 });
 
 describe("TextInputManager.enterCharacter", () => {
@@ -96,6 +155,18 @@ describe("TextInputManager.enterCharacter", () => {
         expect(manager.enterCharacter("a", KeyCode.KeyA)).toBe(false);
     });
 
+    it("clears a stale controller when no editable element is focused", () => {
+        const dispose = jest.spyOn(HangulImeController.prototype, "dispose");
+        const manager = new TextInputManager();
+
+        const textarea = document.createElement("textarea");
+        document.body.appendChild(textarea);
+        manager.setActiveElement(textarea);
+
+        expect(manager.enterCharacter("a", KeyCode.KeyA)).toBe(false);
+        expect(dispose).toHaveBeenCalledTimes(1);
+    });
+
     it("creates a controller for the focused element and routes the character", () => {
         const addCharacter = jest.spyOn(HangulImeController.prototype, "addCharacter").mockImplementation(() => {});
         const manager = new TextInputManager();
@@ -105,10 +176,29 @@ describe("TextInputManager.enterCharacter", () => {
         input.focus();
 
         // No setActiveElement call first: enterCharacter must create the
-        // controller itself (via ensureController), not rely on a getter side effect.
+        // controller itself (via tryGetOrCreateController), not rely on a getter side effect.
         const handled = manager.enterCharacter("a", KeyCode.KeyA);
 
         expect(handled).toBe(true);
+        expect(addCharacter).toHaveBeenCalledWith("a", KeyCode.KeyA);
+    });
+
+    it("replaces the controller with one for the focused element before routing the character", () => {
+        const dispose = jest.spyOn(HangulImeController.prototype, "dispose");
+        const addCharacter = jest.spyOn(HangulImeController.prototype, "addCharacter").mockImplementation(() => {});
+        const manager = new TextInputManager();
+
+        const first = document.createElement("textarea");
+        const second = document.createElement("input");
+        document.body.append(first, second);
+
+        manager.setActiveElement(first);
+        second.focus();
+
+        const handled = manager.enterCharacter("a", KeyCode.KeyA);
+
+        expect(handled).toBe(true);
+        expect(dispose).toHaveBeenCalledTimes(1);
         expect(addCharacter).toHaveBeenCalledWith("a", KeyCode.KeyA);
     });
 });

@@ -13,7 +13,6 @@ export class HangulImeController {
     private _isActive = false;
     private compositor = new HangulCompositor();
     private compositionAdapter: CompositionAdapter;
-    private readonly element: HTMLElement;
 
     private changeListeners: (() => void)[] = [];
     private eventListeners: {
@@ -25,14 +24,15 @@ export class HangulImeController {
 
     private lastAlt?: KeyCode.AltLeft | KeyCode.AltRight = undefined;
 
-    constructor(element: HTMLElement) {
-        const compositionAdapter = CompositionAdapterFactory.createCompositionAdapter(element);
+    constructor(
+        element: HTMLElement,
+        compositionAdapter = CompositionAdapterFactory.createCompositionAdapter(element)
+    ) {
         if (!compositionAdapter) {
             throw new Error("Could not create composition adapter for element");
         }
 
         this.compositionAdapter = compositionAdapter;
-        this.element = element;
 
         // Backspace during composition must be intercepted in the *capture* phase, on
         // window (the earliest point in event propagation). Rich editors like Word for
@@ -80,16 +80,20 @@ export class HangulImeController {
     /**
      * Tears down the controller and removes every event listener it registered.
      * Some listeners live on `document` (e.g. mousedown for contenteditable), so
-     * without this the controller — and the element it references — would never
-     * be garbage-collected after the element leaves the DOM.
+     * without this the controller, its adapter, and listener targets would stay
+     * retained after the element leaves the DOM.
      */
     dispose() {
-        this._isActive = false;
-        for (const { target, type, listener, capture } of this.eventListeners) {
-            target.removeEventListener(type, listener, capture);
+        try {
+            this.flushComposition();
+        } finally {
+            this._isActive = false;
+            for (const { target, type, listener, capture } of this.eventListeners) {
+                target.removeEventListener(type, listener, capture);
+            }
+            this.eventListeners = [];
+            this.changeListeners = [];
         }
-        this.eventListeners = [];
-        this.changeListeners = [];
     }
 
     getCompositionFeatures() {
@@ -245,7 +249,7 @@ export class HangulImeController {
         if (code === KeyCode.Backspace) {
             if (this.compositor.isCompositing()) {
                 this.handleComposingBackspace(event);
-            } else if (event.shiftKey && this.ownsKeyEvent(event)) {
+            } else if (event.shiftKey) {
                 // Shift+Backspace must run here, ahead of the editor deleting the
                 // previous character itself — otherwise getPreviousCharacter() returns
                 // the character *before* the one the editor just removed, and we lift
@@ -259,14 +263,8 @@ export class HangulImeController {
         // Begin composition ahead of the editor's "type over selection" only when
         // there's a real, non-collapsed document selection to replace. The
         // no-selection path and plain <input> elements (whose selection isn't a
-        // document selection) stay on the bubble handler, unchanged. Scoped to our
-        // element so other active controllers on the page don't also act on it.
-        if (
-            !this.compositor.isCompositing() &&
-            this.isJamoKey(event) &&
-            this.hasNonCollapsedSelection() &&
-            this.ownsKeyEvent(event)
-        ) {
+        // document selection) stay on the bubble handler, unchanged.
+        if (!this.compositor.isCompositing() && this.isJamoKey(event) && this.hasNonCollapsedSelection()) {
             this.handleJamoKey(event);
         }
     };
@@ -279,20 +277,6 @@ export class HangulImeController {
     private hasNonCollapsedSelection(): boolean {
         const selection = document.getSelection();
         return !!selection && selection.rangeCount > 0 && !selection.getRangeAt(0).collapsed;
-    }
-
-    /**
-     * True if this controller's element owns the key event — i.e. the event targets
-     * (or the focus sits within) our element. Lets the window-level capture guard
-     * stay scoped to the focused editable when several controllers are active at once.
-     */
-    private ownsKeyEvent(event: Event): boolean {
-        const target = event.target as Node | null;
-        if (target && (this.element === target || this.element.contains(target))) {
-            return true;
-        }
-        const active = document.activeElement;
-        return !!active && (this.element === active || this.element.contains(active));
     }
 
     /**
