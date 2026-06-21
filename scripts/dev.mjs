@@ -34,7 +34,15 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import * as ChromeLauncher from "chrome-launcher";
-import { killTree, requestedColorScheme, requestedLocale, startTestPageServer, watchRequested } from "./dev-shared.mjs";
+import {
+    killChromeByProfile,
+    killStrayDevChromes,
+    killTree,
+    requestedColorScheme,
+    requestedLocale,
+    startTestPageServer,
+    watchRequested,
+} from "./dev-shared.mjs";
 
 const root = process.cwd();
 const DEFAULT_CHROME_DEBUG_PORT = 9222;
@@ -205,6 +213,11 @@ function shutdown(code = 0) {
     removeSessionFile();
     killTree(chrome);
     killTree(watch);
+    // The Windows Chrome launcher detaches the real browser from the PID we
+    // captured, so killTree(chrome) can miss it. Reap any Chrome still holding
+    // this run's throwaway profile — scoped to kime-dev, so it never touches the
+    // user's own Chrome. This must run before we rmSync the profile dir below.
+    if (profileDir) killChromeByProfile([profileDir]);
     server?.close();
     // Throwaway profile: drop it so runs don't accumulate temp dirs. Chrome may
     // still hold a lock for a moment after kill, so this is best-effort.
@@ -224,6 +237,14 @@ process.on("uncaughtException", (err) => {
 });
 process.on("SIGINT", () => shutdown(0));
 process.on("SIGTERM", () => shutdown(0));
+
+// 0. Clear any stray dev Chromes left by a previous run that didn't shut down
+//    cleanly. On Windows the Chrome launcher detaches the real browser from the
+//    PID we capture, so a crash or abrupt Ctrl+C can strand a kime-dev Chrome
+//    holding the debug port — which then breaks this launch with a "Timed out
+//    waiting for a Chrome page target" error. Scoped to the kime-dev throwaway
+//    profile, so it never touches the user's own Chrome.
+killStrayDevChromes();
 
 // 1. Serve the test page on a random localhost port.
 const { server, testUrl } = await startTestPageServer();

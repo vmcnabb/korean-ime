@@ -1,6 +1,7 @@
 import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync, rmSync } from "node:fs";
 import { resolve } from "node:path";
+import { killChromeByProfile, killStrayDevChromes } from "./dev-shared.mjs";
 
 const sessionFile = resolve(process.cwd(), ".chrome-profile", "dev-session.json");
 
@@ -42,11 +43,21 @@ async function waitForSessionFileToClear(timeout = 5000) {
 
 const session = readSession();
 if (!session) {
+    // No recorded session, but a previous run may have crashed and stranded a
+    // kime-dev Chrome on the debug port. Sweep any such strays so the next launch
+    // isn't blocked, then we're done.
+    killStrayDevChromes();
     console.log("[stop-dev] No active dev session found.");
     process.exit(0);
 }
 
 killTree(session.chromePid);
+// The captured PID is the launcher Chrome spawned; on Windows it detaches the
+// real browser into a separate tree, so the kill above can miss it. Reap by the
+// throwaway profile name too — scoped to kime-dev, never the user's own Chrome.
+if (typeof session.profileDir === "string" && session.profileDir) {
+    killChromeByProfile([session.profileDir]);
+}
 
 if (!(await waitForSessionFileToClear())) {
     killTree(session.devPid);

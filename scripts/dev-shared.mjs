@@ -88,6 +88,52 @@ export function killFirefoxByProfile(profileDirs) {
     }
 }
 
+// The dev Chrome runs on a throwaway profile created as mkdtemp(tmpdir/"kime-dev-…"),
+// so every dev Chrome's command line carries this prefix in its --user-data-dir.
+// Matching on it scopes our kills to our own throwaway sessions — never the
+// user's real Chrome.
+const DEV_CHROME_PROFILE_PREFIX = "kime-dev";
+
+// Tree-kill every chrome.exe whose command line contains `needle`. The captured
+// PID is unreliable on Windows: Chrome's launcher detaches the real browser into
+// a separate process tree, so a taskkill on the spawned PID can miss the actual
+// windows (the same problem the Firefox launcher has — see killFirefoxByProfile).
+// Matching the throwaway-profile name in the command line finds the detached tree.
+function killChromeMatchingCommandLine(needle) {
+    if (!needle) return;
+    if (process.platform === "win32") {
+        const escaped = needle.replace(/'/g, "''");
+        spawnSync(
+            "powershell.exe",
+            [
+                "-NoProfile",
+                "-Command",
+                `Get-CimInstance Win32_Process -Filter "Name='chrome.exe'" | Where-Object { $_.CommandLine -like '*${escaped}*' } | ForEach-Object { taskkill /PID $_.ProcessId /T /F }`,
+            ],
+            { stdio: "ignore" }
+        );
+    } else {
+        spawnSync("pkill", ["-f", needle], { stdio: "ignore" });
+    }
+}
+
+// Force-close the dev Chrome for a specific run by matching its unique throwaway
+// profile dir name. Mirrors killFirefoxByProfile — scoped to that one session, so
+// it never touches the user's own Chrome.
+export function killChromeByProfile(profileDirs) {
+    for (const dir of profileDirs) {
+        killChromeMatchingCommandLine(basename(dir));
+    }
+}
+
+// Clear *any* lingering dev Chrome left by an earlier run that didn't shut down
+// cleanly (a crash or abrupt kill can strand a kime-dev Chrome on the debug port,
+// which then breaks the next launch). Matches the shared kime-dev profile prefix,
+// so it only ever reaps our own throwaway sessions, never the user's own Chrome.
+export function killStrayDevChromes() {
+    killChromeMatchingCommandLine(DEV_CHROME_PROFILE_PREFIX);
+}
+
 // A built-in test page served over http://localhost so the content script
 // actually injects (it won't on file:/data:/about: URLs).
 export const TEST_PAGE = `<!DOCTYPE html>
