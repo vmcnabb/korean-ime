@@ -19,6 +19,7 @@ import {
     MAX_KEY_UNIT_PX,
 } from "../../extension-state/osk-layout";
 import { currentOskSite } from "../osk-site";
+import { t, type MessageKey } from "../../i18n";
 
 /**
  * How long the anchor guides linger after a drag ends before fading out. The
@@ -59,7 +60,7 @@ const clampAxis = (pos: number, size: number, container: number, anchoredFar: bo
     size > container ? (anchoredFar ? container - size : 0) : clamp(pos, 0, container - size);
 
 /** Layouts shown in the in-header drop-down, with their i18n label keys. */
-const LAYOUT_OPTIONS: { id: LayoutId; messageKey: string }[] = [
+const LAYOUT_OPTIONS: { id: LayoutId; messageKey: MessageKey }[] = [
     { id: LayoutId.Minimal, messageKey: "options_onScreenKeyboard_layout_minimal" },
     { id: LayoutId.FullUs, messageKey: "options_onScreenKeyboard_layout_fullUs" },
     { id: LayoutId.FullKorean, messageKey: "options_onScreenKeyboard_layout_fullKorean" },
@@ -984,14 +985,14 @@ export class OnScreenKeyboardController {
     private createHeaderButton(
         className: string,
         glyph: string,
-        titleKey: string,
+        titleKey: MessageKey,
         onClick: () => void
     ): HTMLButtonElement {
         const button = document.createElement("button");
         button.type = "button";
         button.className = `kb-btn ${className}`;
         button.textContent = glyph;
-        const label = api.i18n.getMessage(titleKey);
+        const label = t(titleKey);
         button.title = label;
         button.setAttribute("aria-label", label);
         button.addEventListener("click", onClick);
@@ -1020,7 +1021,7 @@ export class OnScreenKeyboardController {
             const item = document.createElement("button");
             item.type = "button";
             item.className = "kb-layout-option";
-            item.textContent = api.i18n.getMessage(option.messageKey);
+            item.textContent = t(option.messageKey);
             item.addEventListener("click", () => this.selectLayout(option.id));
             this._layoutOptionButtons.set(option.id, item);
             menu.appendChild(item);
@@ -1096,7 +1097,7 @@ export class OnScreenKeyboardController {
 
         if (this._collapseButton) {
             this._collapseButton.textContent = collapsed ? "\u{1F5D6}" : "\u{1F5D5}";
-            this._collapseButton.title = api.i18n.getMessage(collapsed ? "keyboard_restore" : "keyboard_minimize");
+            this._collapseButton.title = t(collapsed ? "keyboard_restore" : "keyboard_minimize");
         }
     }
 
@@ -1134,7 +1135,7 @@ export class OnScreenKeyboardController {
             indicator.src = isHangul ? modeIconHangul : modeIconEnglish;
             indicator.srcset = isHangul ? modeIconHangulSrcset : modeIconEnglishSrcset;
             // Label it like the toolbar icon so it has an accessible name and tooltip.
-            indicator.alt = api.i18n.getMessage(isHangul ? "action_title_hangul" : "action_title_english");
+            indicator.alt = t(isHangul ? "action_title_hangul" : "action_title_english");
             indicator.title = indicator.alt;
         } else {
             indicator.style.display = "none";
@@ -1278,7 +1279,7 @@ export class OnScreenKeyboardController {
             this.renderSpecialKeyLabels(keyElement, key, code);
 
             if (key.tooltipResourceKey) {
-                keyElement.title = api.i18n.getMessage(key.tooltipResourceKey);
+                keyElement.title = t(key.tooltipResourceKey);
             }
         }
 

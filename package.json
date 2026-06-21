@@ -22,16 +22,18 @@
     "lint": "eslint src scripts *.mjs",
     "lint:fix": "eslint src scripts *.mjs --fix",
     "lint:firefox": "web-ext lint --source-dir dist-firefox",
-    "validate": "npm run check && npm run lint && npm run check-translations && npm test",
+    "validate": "npm run check-message-keys && npm run check && npm run lint && npm run check-translations && npm test",
     "gen-manifest:chrome": "node scripts/build-manifest.mjs chrome",
     "gen-manifest:firefox": "node scripts/build-manifest.mjs firefox",
+    "gen-message-keys": "node scripts/generate-message-keys.mjs",
+    "check-message-keys": "node scripts/generate-message-keys.mjs --check",
     "check-translations": "node scripts/check-translations.mjs",
     "package": "node scripts/package-help.mjs",
     "package:chrome": "npm run validate && npm run build:chrome && node scripts/package.mjs chrome",
     "package:firefox": "npm run validate && npm run build:firefox && npm run lint:firefox && node scripts/package.mjs firefox",
     "dev:chrome": "node scripts/dev.mjs",
     "dev:firefox": "node scripts/dev-firefox.mjs",
-    "prepare": "husky && node scripts/build-manifest.mjs chrome"
+    "prepare": "husky && node scripts/build-manifest.mjs chrome && node scripts/generate-message-keys.mjs"
   },
   "lint-staged": {
     "*.{ts,vue,mjs}": "eslint --fix"

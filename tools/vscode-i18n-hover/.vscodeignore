@@ -1,0 +1,10 @@
+src/**
+test/**
+scripts/**
+dist-test/**
+tsconfig.json
+tsconfig.test.json
+*.code-workspace
+*.vsix
+.gitignore
+.vscodeignore

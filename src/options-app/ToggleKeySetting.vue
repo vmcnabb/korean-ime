@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from "vue";
-import { t } from "./i18n";
+import { t, type MessageKey } from "../i18n";
 import {
     KeyBinding,
     currentKeyBindingPlatform,
@@ -45,10 +45,10 @@ const bindingAccessibleLabel = computed(() => {
         : t("options_hanYong_toggleKey_off");
 });
 
-const hintMessageKey = computed(() =>
+const hintMessageKey = computed<MessageKey>(() =>
     keyBindingPlatform === "mac" ? "options_hanYong_toggleKey_hint_mac" : "options_hanYong_toggleKey_hint"
 );
-const invalidMessageKey = computed(() =>
+const invalidMessageKey = computed<MessageKey>(() =>
     keyBindingPlatform === "mac" ? "options_hanYong_toggleKey_invalid_mac" : "options_hanYong_toggleKey_invalid"
 );
 

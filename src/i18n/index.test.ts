@@ -1,7 +1,7 @@
 /**
  * @jest-environment node
  */
-import { t } from "./i18n";
+import { t } from ".";
 
 afterEach(() => {
     delete (globalThis as { chrome?: unknown }).chrome;
@@ -22,9 +22,9 @@ describe("t", () => {
     });
 
     it("preserves an intentionally-empty translation instead of falling back to the key", () => {
-        mockI18n({ some_optional_hint: "" });
+        mockI18n({ menu_onScreenKeyboard: "" });
 
-        expect(t("some_optional_hint")).toBe("");
+        expect(t("menu_onScreenKeyboard")).toBe("");
     });
 
     it("returns the key unchanged when chrome.i18n is unavailable", () => {
