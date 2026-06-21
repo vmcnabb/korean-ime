@@ -24,6 +24,15 @@ The extension reads `src/_locales/en/messages.json` and reloads it when the file
 changes. It is editor tooling only; it does not affect the browser extension
 runtime.
 
+English is always shown first. To show extra locales, add `i18n-hover.json` to
+the project root:
+
+```json
+{
+    "displayed_locales": ["ko", "ja"]
+}
+```
+
 If hovers do not appear, run `Korean IME i18n Hover: Show Status` from the
 Command Palette. It prints the workspace and loaded message catalog details to
 the `Korean IME i18n Hover` output channel.

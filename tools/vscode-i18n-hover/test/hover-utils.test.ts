@@ -2,7 +2,12 @@
 
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { findStringLiteralAtPosition, findTranslationKeyAtPosition, formatMessage } from "../src/hover-utils";
+import {
+    findStringLiteralAtPosition,
+    findTranslationKeyAtPosition,
+    formatMessage,
+    getDisplayedLocales,
+} from "../src/hover-utils";
 
 describe("findTranslationKeyAtPosition", () => {
     it("finds a double-quoted t() key when hovering inside the literal", () => {
@@ -102,5 +107,23 @@ describe("formatMessage", () => {
 
     it("returns undefined for an unknown key entry", () => {
         assert.equal(formatMessage(undefined), undefined);
+    });
+});
+
+describe("getDisplayedLocales", () => {
+    it("shows English only when no config is present", () => {
+        assert.deepEqual(getDisplayedLocales(undefined), ["en"]);
+    });
+
+    it("adds configured locales after English", () => {
+        assert.deepEqual(getDisplayedLocales({ displayed_locales: ["ko", "ja"] }), ["en", "ko", "ja"]);
+    });
+
+    it("deduplicates English and repeated locales", () => {
+        assert.deepEqual(getDisplayedLocales({ displayed_locales: ["ko", "en", "ko"] }), ["en", "ko"]);
+    });
+
+    it("normalizes and ignores invalid locale values", () => {
+        assert.deepEqual(getDisplayedLocales({ displayed_locales: [" ko ", "", 7, null] }), ["en", "ko"]);
     });
 });

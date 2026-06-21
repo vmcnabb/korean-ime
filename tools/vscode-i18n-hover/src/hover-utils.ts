@@ -11,6 +11,8 @@ export type ChromeMessageEntry = {
     placeholders?: Record<string, { content?: unknown }>;
 };
 
+export const defaultLocale = "en";
+
 const translationCallPattern = /\bt\s*\(/g;
 const stringLiteralPattern = /(["'])([^"']+)\1/g;
 
@@ -116,4 +118,25 @@ export function formatMessage(messageEntry: ChromeMessageEntry | undefined): str
     }
 
     return message;
+}
+
+export function getDisplayedLocales(config: unknown): string[] {
+    const locales = [defaultLocale];
+    const displayedLocales =
+        typeof config === "object" && config !== null && "displayed_locales" in config
+            ? (config as { displayed_locales?: unknown }).displayed_locales
+            : undefined;
+
+    if (!Array.isArray(displayedLocales)) {
+        return locales;
+    }
+
+    for (const locale of displayedLocales) {
+        const normalizedLocale = typeof locale === "string" ? locale.trim() : undefined;
+        if (normalizedLocale && !locales.includes(normalizedLocale)) {
+            locales.push(normalizedLocale);
+        }
+    }
+
+    return locales;
 }
