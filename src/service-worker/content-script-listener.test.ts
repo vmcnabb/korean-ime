@@ -4,6 +4,7 @@ import { ContentScriptListener } from "./content-script-listener";
 import { StateManager } from "./state-manager";
 
 jest.mock("url:../hanja-dictionary/single-syllable.data", () => "single-syllable.data", { virtual: true });
+jest.mock("url:../hanja-dictionary/hanja-hanzi.data", () => "hanja-hanzi.data", { virtual: true });
 
 async function settleResponse() {
     await Promise.resolve();

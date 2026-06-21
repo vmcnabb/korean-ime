@@ -10,21 +10,24 @@ conversion. It contains:
 - single-syllable Hangul readings only
 - ordered Hanja candidates for each reading
 - Korean reading/gloss text from libhangul
+- Simplified Chinese variants from Unihan, when one is listed
+- Pinyin from Unihan `kMandarin`, when one is listed
 
-The generated `single-syllable.data` file contains JSON. The neutral extension is
+The generated `.data` files contain JSON. The neutral extension is
 intentional: it lets the extension fetch the file at runtime as a packaged asset
 without Parcel compiling it into a JavaScript JSON module.
 
-It does not include multi-syllable word keys, frequency ranking data, Simplified
-Chinese, or Pinyin.
+It does not include multi-syllable word keys or frequency ranking data.
 
 ## Source
 
-Generated from libhangul:
+Generated from libhangul and Unihan:
 
 - upstream repository: <https://github.com/libhangul/libhangul>
-- source file: `data/hanja/hanja.txt`
-- source commit used: `a34aef7`
+- libhangul source file: `data/hanja/hanja.txt`
+- libhangul source commit used: `a34aef7`
+- Unihan source files: `Unihan_Variants.txt` and `Unihan_Readings.txt`
+- Unihan version used: Unicode 17.0.0, dated 2025-07-24
 
 The generator expects the usual sibling checkout layout by default:
 
@@ -32,16 +35,19 @@ The generator expects the usual sibling checkout layout by default:
 ~/code/
   korean-ime/
   libhangul/
+  Unihan/
 ```
 
-From this repository root, that means the default source path is:
+From this repository root, that means the default source paths are:
 
 ```text
 ../libhangul/data/hanja/hanja.txt
+../Unihan/Unihan_Variants.txt
+../Unihan/Unihan_Readings.txt
 ```
 
-Use `LIBHANGUL_DIR` or `--libhangul-dir` when the libhangul checkout lives
-somewhere else.
+Use `LIBHANGUL_DIR` / `--libhangul-dir` and `UNIHAN_DIR` / `--unihan-dir` when
+the source checkouts live somewhere else.
 
 ## Regeneration
 
@@ -55,10 +61,29 @@ or:
 npm run gen-hanja -- --libhangul-dir /path/to/libhangul
 ```
 
+or:
+
+```bash
+npm run gen-hanja -- --libhangul-dir /path/to/libhangul --unihan-dir /path/to/Unihan
+```
+
 ## License And Attribution
 
-The generated dictionary is derived from libhangul `hanja.txt`, whose header
-contains the following notice and BSD-style license terms:
+The generated dictionary is derived from libhangul `hanja.txt` and the Unicode
+Unihan database.
+
+The Unihan source files are part of the Unicode Character Database. Their header
+points to the Unicode terms of use:
+
+```text
+Unicode Character Database
+© 2025 Unicode®, Inc.
+Unicode and the Unicode Logo are registered trademarks of Unicode, Inc. in the U.S. and other countries.
+For terms of use and license, see https://www.unicode.org/terms_of_use.html
+```
+
+The libhangul `hanja.txt` header contains the following notice and BSD-style
+license terms:
 
 ```text
 Copyright (c) 2005,2006 Choe Hwanjin
