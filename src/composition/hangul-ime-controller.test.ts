@@ -401,10 +401,11 @@ describe("HangulImeController intercepts Shift+Backspace in the capture phase", 
     });
 });
 
-describe("HangulImeController Hanja conversion (Right-Ctrl, KIME_ENABLE_HANJA)", () => {
+describe("HangulImeController Hanja candidate selection (KIME_ENABLE_HANJA)", () => {
     afterEach(() => {
         jest.restoreAllMocks();
         delete process.env.KIME_ENABLE_HANJA;
+        document.body.innerHTML = "";
     });
 
     // Drive composition state in jsdom by stubbing the adapter's DOM mutations, then
@@ -413,11 +414,15 @@ describe("HangulImeController Hanja conversion (Right-Ctrl, KIME_ENABLE_HANJA)",
         jest.spyOn(InputAdapter.prototype, "beginComposition").mockImplementation(() => {});
         jest.spyOn(InputAdapter.prototype, "updateComposition").mockImplementation(() => {});
         const endComposition = jest.spyOn(InputAdapter.prototype, "endComposition").mockImplementation(() => {});
+        const deleteContentBackwards = jest
+            .spyOn(InputAdapter.prototype, "deleteContentBackwards")
+            .mockImplementation(() => {});
+        const inputCharacter = jest.spyOn(InputAdapter.prototype, "inputCharacter").mockImplementation(() => {});
 
         const element = document.createElement("textarea");
         const controller = makeController(element);
         controller.activate();
-        return { element, endComposition };
+        return { element, endComposition, deleteContentBackwards, inputCharacter };
     }
 
     function composeHan(element: HTMLElement) {
@@ -426,19 +431,149 @@ describe("HangulImeController Hanja conversion (Right-Ctrl, KIME_ENABLE_HANJA)",
         dispatchKeydown(element, "KeyS", "s"); // ㄴ → 한
     }
 
+    function composeAn(element: HTMLElement) {
+        dispatchKeydown(element, "KeyD", "d"); // ㅇ
+        dispatchKeydown(element, "KeyK", "k"); // ㅏ → 아
+        dispatchKeydown(element, "KeyS", "s"); // ㄴ → 안
+    }
+
     function pressRightCtrl(element: HTMLElement) {
         return dispatchKeydown(element, "ControlRight", "Control");
     }
 
-    it("converts a composing 한 to 韓 and swallows the key when the flag is on", () => {
+    function pressRightOption(element: HTMLElement) {
+        return dispatchKeydown(element, "AltRight", "Alt");
+    }
+
+    function candidateTexts() {
+        return Array.from(document.querySelectorAll<HTMLElement>(".kime-hanja-candidate")).map((item) =>
+            item.textContent?.trim()
+        );
+    }
+
+    it("shows candidates for a composing 한 and swallows the Hanja key when the flag is on", () => {
         process.env.KIME_ENABLE_HANJA = "true";
         const { element, endComposition } = composingController();
         composeHan(element);
 
         const ctrl = pressRightCtrl(element);
 
-        expect(endComposition).toHaveBeenCalledWith("韓");
+        expect(candidateTexts()).toEqual(["1韓", "2寒", "3恨"]);
+        expect(endComposition).toHaveBeenCalledWith("한");
+        expect(endComposition).not.toHaveBeenCalledWith("韓");
         expect(ctrl.defaultPrevented).toBe(true);
+    });
+
+    it("shows candidates for a composing 안", () => {
+        process.env.KIME_ENABLE_HANJA = "true";
+        const { element } = composingController();
+        composeAn(element);
+
+        pressRightCtrl(element);
+
+        expect(candidateTexts()).toEqual(["1安", "2岸"]);
+    });
+
+    it("commits a composing candidate selected by number", () => {
+        process.env.KIME_ENABLE_HANJA = "true";
+        const { element, deleteContentBackwards, inputCharacter } = composingController();
+        composeHan(element);
+        pressRightCtrl(element);
+
+        const digit = dispatchKeydown(element, "Digit2", "2");
+
+        expect(deleteContentBackwards).toHaveBeenCalled();
+        expect(inputCharacter).toHaveBeenCalledWith("寒", KeyCode.Digit2);
+        expect(document.querySelector(".kime-hanja-candidates")).toBeNull();
+        expect(digit.defaultPrevented).toBe(true);
+    });
+
+    it("commits the active composing candidate with arrows and Enter", () => {
+        process.env.KIME_ENABLE_HANJA = "true";
+        const { element, inputCharacter } = composingController();
+        composeHan(element);
+        pressRightCtrl(element);
+
+        const arrow = dispatchKeydown(element, "ArrowRight", "ArrowRight");
+        const enter = dispatchKeydown(element, "Enter", "Enter");
+
+        expect(inputCharacter).toHaveBeenCalledWith("寒", KeyCode.Enter);
+        expect(arrow.defaultPrevented).toBe(true);
+        expect(enter.defaultPrevented).toBe(true);
+    });
+
+    it("closes the candidate list on Escape without committing", () => {
+        process.env.KIME_ENABLE_HANJA = "true";
+        const { element, endComposition } = composingController();
+        composeHan(element);
+        pressRightCtrl(element);
+
+        const escape = dispatchKeydown(element, "Escape", "Escape");
+
+        expect(endComposition).not.toHaveBeenCalledWith(expect.stringMatching(/[韓寒恨]/));
+        expect(endComposition).toHaveBeenCalledWith("한");
+        expect(document.querySelector(".kime-hanja-candidates")).toBeNull();
+        expect(escape.defaultPrevented).toBe(true);
+    });
+
+    it("closes the candidate list on Backspace without deleting or committing", () => {
+        process.env.KIME_ENABLE_HANJA = "true";
+        const { element, deleteContentBackwards, inputCharacter } = composingController();
+        composeHan(element);
+        pressRightCtrl(element);
+
+        deleteContentBackwards.mockClear();
+        inputCharacter.mockClear();
+        const backspace = dispatchKeydown(element, "Backspace", "Backspace");
+
+        expect(deleteContentBackwards).not.toHaveBeenCalled();
+        expect(inputCharacter).not.toHaveBeenCalled();
+        expect(document.querySelector(".kime-hanja-candidates")).toBeNull();
+        expect(backspace.defaultPrevented).toBe(true);
+    });
+
+    it("closes the candidate list on Delete without deleting or committing", () => {
+        process.env.KIME_ENABLE_HANJA = "true";
+        const { element, deleteContentBackwards, inputCharacter } = composingController();
+        composeHan(element);
+        pressRightCtrl(element);
+
+        deleteContentBackwards.mockClear();
+        inputCharacter.mockClear();
+        const del = dispatchKeydown(element, "Delete", "Delete");
+
+        expect(deleteContentBackwards).not.toHaveBeenCalled();
+        expect(inputCharacter).not.toHaveBeenCalled();
+        expect(document.querySelector(".kime-hanja-candidates")).toBeNull();
+        expect(del.defaultPrevented).toBe(true);
+    });
+
+    it("selects candidates after a committed syllable", () => {
+        process.env.KIME_ENABLE_HANJA = "true";
+        const element = document.createElement("textarea");
+        element.value = "한";
+        element.selectionStart = 1;
+        element.selectionEnd = 1;
+        const controller = makeController(element);
+        controller.activate();
+
+        pressRightCtrl(element);
+        dispatchKeydown(element, "Digit3", "3");
+
+        expect(element.value).toBe("恨");
+        expect(document.querySelector(".kime-hanja-candidates")).toBeNull();
+    });
+
+    it("uses Right Option as the Hanja key on macOS", () => {
+        jest.spyOn(window.navigator, "platform", "get").mockReturnValue("MacIntel");
+        process.env.KIME_ENABLE_HANJA = "true";
+        const { element } = composingController();
+        composeHan(element);
+
+        const option = pressRightOption(element);
+
+        expect(candidateTexts()).toEqual(["1韓", "2寒", "3恨"]);
+        expect(option.defaultPrevented).toBe(true);
     });
 
     it("does nothing when the flag is off (Right-Ctrl is just a modifier)", () => {
@@ -448,6 +583,7 @@ describe("HangulImeController Hanja conversion (Right-Ctrl, KIME_ENABLE_HANJA)",
         const ctrl = pressRightCtrl(element);
 
         expect(endComposition).not.toHaveBeenCalled();
+        expect(document.querySelector(".kime-hanja-candidates")).toBeNull();
         expect(ctrl.defaultPrevented).toBe(false);
     });
 

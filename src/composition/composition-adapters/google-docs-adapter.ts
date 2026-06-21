@@ -1,6 +1,7 @@
 import { KeyCode } from "../../keyboard/korean-keyboard-map";
 import { CompositionAdapter, DispatchableAction } from "./composition-adapter";
 import { methodNotSupported } from "../../decorators/method-not-supported";
+import { GlyphRect } from "../compositing-box";
 
 /**
  * Handles IME composition (and selection) for Google Docs.
@@ -17,6 +18,11 @@ export class GoogleDocsAdapter extends CompositionAdapter {
 
     @methodNotSupported
     getPreviousCharacter(): string | undefined {
+        return;
+    }
+
+    @methodNotSupported
+    getPreviousCharacterRect(): GlyphRect | undefined {
         return;
     }
 

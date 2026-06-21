@@ -1,6 +1,6 @@
 import { KeyCode } from "../../keyboard/korean-keyboard-map";
 import { CompositionAdapter } from "./composition-adapter";
-import { CompositingBox, GlyphRect } from "./compositing-box";
+import { CompositingBox, GlyphRect } from "../compositing-box";
 
 /**
  * Handles IME composition for contentEditable elements.
@@ -232,14 +232,18 @@ export class ContentEditableAdapter extends CompositionAdapter {
      * character immediately before the caret (the just-composed block). No DOM
      * mutation, so it's safe to re-run on every scroll frame as the box re-aligns.
      */
-    private measureCompositingRect(): GlyphRect | undefined {
+    getPreviousCharacterRect(): GlyphRect | undefined {
         const selection = window.getSelection();
         if (!selection || selection.rangeCount === 0) {
             return undefined;
         }
 
         const caret = selection.getRangeAt(0);
-        if (caret.startOffset < 1) {
+        if (!this.element.contains(caret.startContainer) || !this.element.contains(caret.endContainer)) {
+            return undefined;
+        }
+
+        if (!caret.collapsed || caret.startOffset < 1) {
             return undefined;
         }
 
@@ -263,5 +267,9 @@ export class ContentEditableAdapter extends CompositionAdapter {
         }
 
         return { left: rect.left, top: rect.top, width: rect.width, height: rect.height };
+    }
+
+    private measureCompositingRect(): GlyphRect | undefined {
+        return this.getPreviousCharacterRect();
     }
 }

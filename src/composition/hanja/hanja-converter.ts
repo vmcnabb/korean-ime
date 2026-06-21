@@ -3,50 +3,68 @@ import { CompositionAdapter } from "../composition-adapters/composition-adapter"
 import { HangulCompositor } from "../hangul-compositor";
 import { lookUpHanja } from "./hanja-dictionary";
 
+export type HanjaConversionTarget =
+    | {
+          kind: "composition";
+          reading: string;
+          candidates: readonly string[];
+      }
+    | {
+          kind: "previous-character";
+          reading: string;
+          candidates: readonly string[];
+      };
+
 /**
  * Hanja conversion — the distinct phase that turns an already-composed Hangul
  * syllable into Hanja. It deliberately sits *alongside* the compositor rather than
  * inside it: jamo assembly is already done by the time this runs.
  *
- * Step 1 (#150): one-entry dictionary, single candidate, no candidate UI — the
- * sole candidate is committed immediately. Two entry points, mirroring how a real
- * IME's Hanja key behaves:
+ * Two entry points, mirroring how a real IME's Hanja key behaves:
  *
  *   1. mid-composition — the block (e.g. 한) is still being composed; or
  *   2. after a committed syllable — the caret sits immediately after it.
- *
- * Returns true when a conversion happened (so the caller can swallow the key),
- * and false when there was nothing to convert: an unknown reading, no preceding
- * syllable, or an adapter that can't read/replace the previous character.
  */
-export function convertHangulToHanja(compositor: HangulCompositor, adapter: CompositionAdapter): boolean {
+export function getHanjaConversionTarget(
+    compositor: HangulCompositor,
+    adapter: CompositionAdapter
+): HanjaConversionTarget | undefined {
     if (compositor.isCompositing()) {
-        const hanja = firstCandidate(compositor.getCurrentChar());
-        if (!hanja) {
-            return false;
+        const reading = compositor.getCurrentChar();
+        const candidates = lookUpHanja(reading);
+        if (candidates.length === 0) {
+            return undefined;
         }
 
-        // Commit the Hanja in place of the in-progress block.
-        adapter.endComposition(hanja);
-        compositor.reset();
-        return true;
+        return { kind: "composition", reading, candidates };
     }
 
     if (!adapter.supportsMethods("getPreviousCharacter", "deleteContentBackwards", "inputCharacter")) {
-        return false;
+        return undefined;
     }
 
-    const hanja = firstCandidate(adapter.getPreviousCharacter());
-    if (!hanja) {
-        return false;
+    const reading = adapter.getPreviousCharacter();
+    if (!reading) {
+        return undefined;
     }
 
-    // Replace the committed syllable before the caret with its Hanja.
-    adapter.deleteContentBackwards();
-    adapter.inputCharacter(hanja, KeyCode.ControlRight);
-    return true;
+    const candidates = lookUpHanja(reading);
+    return candidates.length === 0 ? undefined : { kind: "previous-character", reading, candidates };
 }
 
-function firstCandidate(reading: string | undefined): string | undefined {
-    return reading ? lookUpHanja(reading)[0] : undefined;
+export function commitHanjaCandidate(
+    target: HanjaConversionTarget,
+    candidate: string,
+    compositor: HangulCompositor,
+    adapter: CompositionAdapter,
+    keyCode: KeyCode
+): void {
+    if (target.kind === "composition") {
+        adapter.endComposition(candidate);
+        compositor.reset();
+        return;
+    }
+
+    adapter.deleteContentBackwards();
+    adapter.inputCharacter(candidate, keyCode);
 }
