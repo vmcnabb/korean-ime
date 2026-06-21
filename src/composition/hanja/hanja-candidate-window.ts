@@ -142,7 +142,7 @@ export class HanjaCandidateWindow {
         const hasRoomAbove = aboveTop >= 0;
 
         const top = !hasRoomBelow && hasRoomAbove ? aboveTop : belowTop;
-        const left = rect.left;
+        const left = Math.min(rect.left, window.innerWidth - ownRect.width);
 
         this.root.style.top = `${Math.max(0, top)}px`;
         this.root.style.left = `${Math.max(0, left)}px`;

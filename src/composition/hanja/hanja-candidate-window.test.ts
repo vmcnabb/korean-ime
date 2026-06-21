@@ -18,6 +18,7 @@ function rect(left: number, top: number, width: number, height: number): DOMRect
 }
 
 describe("HanjaCandidateWindow", () => {
+    const originalInnerWidth = window.innerWidth;
     const originalInnerHeight = window.innerHeight;
     let getBoundingClientRect: jest.SpyInstance;
 
@@ -48,6 +49,7 @@ describe("HanjaCandidateWindow", () => {
 
     afterEach(() => {
         getBoundingClientRect.mockRestore();
+        Object.defineProperty(window, "innerWidth", { value: originalInnerWidth, configurable: true });
         Object.defineProperty(window, "innerHeight", { value: originalInnerHeight, configurable: true });
         document.body.innerHTML = "";
     });
@@ -60,6 +62,15 @@ describe("HanjaCandidateWindow", () => {
 
         expect(windowElement.style.left).toBe("100px");
         expect(windowElement.style.top).toBe("31px");
+    });
+
+    it("moves left to stay within the browser viewport", () => {
+        Object.defineProperty(window, "innerWidth", { value: 120, configurable: true });
+
+        new HanjaCandidateWindow(document.createElement("textarea"), page(), rect(100, 20, 10, 10), windowOptions());
+        const windowElement = document.querySelector<HTMLElement>(".kime-hanja-candidates")!;
+
+        expect(windowElement.style.left).toBe("40px");
     });
 
     it("places the candidate window above the overlay when there is room above but not below", () => {
