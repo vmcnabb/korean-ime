@@ -262,7 +262,10 @@ function onCaptureKeyup(event: KeyboardEvent) {
 }
 
 .binding.capturing {
-    border-color: var(--toggle-on-bg);
+    /* "Listening for a key" is an active/focused state, so reuse the shared focus
+       ring rather than a bespoke accent border. */
+    outline: var(--focus-ring-width) solid var(--focus-ring-color);
+    outline-offset: var(--focus-ring-offset);
     font-style: italic;
 }
 
