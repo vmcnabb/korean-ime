@@ -1,6 +1,6 @@
 import { HanjaCandidateWindow, HanjaCandidateWindowPage } from "./hanja-candidate-window";
 import { HANJA_CANDIDATES_PER_PAGE } from "./hanja-candidate-pager";
-import { HanjaCandidate } from "./hanja-dictionary";
+import { HanjaCandidate } from "./hanja-candidate";
 
 const CANDIDATE_ITEM_HEIGHT_PX = 44;
 
@@ -232,6 +232,27 @@ describe("HanjaCandidateWindow", () => {
         expect(document.querySelector(".kime-hanja-candidate-korean")?.textContent).toBe("나라 이름 한, 한나라 한");
         expect(document.querySelector(".kime-hanja-candidate-simplified")?.textContent).toBe("韩");
         expect(document.querySelector(".kime-hanja-candidate-pinyin")?.textContent).toBe("hán");
+    });
+
+    it("renders Korean-only Hanja candidate metadata", () => {
+        new HanjaCandidateWindow(
+            document.createElement("textarea"),
+            page({
+                candidates: [
+                    {
+                        hanja: "韓",
+                        korean: "나라 이름 한, 한나라 한",
+                    },
+                ],
+            }),
+            rect(100, 20, 10, 10),
+            windowOptions()
+        );
+
+        expect(document.querySelector(".kime-hanja-candidate-hanja")?.textContent).toBe("韓");
+        expect(document.querySelector(".kime-hanja-candidate-korean")?.textContent).toBe("나라 이름 한, 한나라 한");
+        expect(document.querySelector(".kime-hanja-candidate-simplified")).toBeNull();
+        expect(document.querySelector(".kime-hanja-candidate-pinyin")).toBeNull();
     });
 
     it("highlights a hovered candidate without changing the selected candidate", () => {

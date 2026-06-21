@@ -1,4 +1,8 @@
-import { ContentScriptRequestMessage, ContentScriptRequestAction } from "../messaging/content-to-service-messages";
+import {
+    ContentScriptRequestMessage,
+    ContentScriptRequestAction,
+    HanjaLookupResponse,
+} from "../messaging/content-to-service-messages";
 import { ServiceScriptMessage, ServiceScriptMessageAction } from "../messaging/service-to-content-messages";
 import { routeByAction } from "../messaging/route-message";
 import { StateManager } from "./state-manager";
@@ -10,6 +14,8 @@ import {
     isContentScriptBroadcastMessage,
 } from "../messaging/content-to-content-messages";
 import { api } from "../platform/browser-api";
+import { HanjaDictionaryProvider } from "../composition/hanja/hanja-dictionary-provider";
+import { GeneratedHanjaDictionaryProvider } from "./hanja-dictionary-provider";
 
 /**
  * This class is responsible for listening to messages from the content script.
@@ -17,7 +23,10 @@ import { api } from "../platform/browser-api";
 export class ContentScriptListener {
     private isListening = false;
 
-    public constructor(private stateManager: StateManager) {}
+    public constructor(
+        private stateManager: StateManager,
+        private readonly hanjaDictionaryProvider: HanjaDictionaryProvider = new GeneratedHanjaDictionaryProvider()
+    ) {}
 
     public listen() {
         if (this.isListening) {
@@ -28,11 +37,11 @@ export class ContentScriptListener {
 
         // listen for ContentScriptRequest messages and handle them
         api.runtime.onMessage.addListener(
-            (message: ContentScriptRequestMessage | ContentScriptBroadcastMessage, sender) => {
+            (message: ContentScriptRequestMessage | ContentScriptBroadcastMessage, sender, sendResponse) => {
                 debugLog("ContentScriptListener received message: ", message);
 
                 if (!sender.tab?.id) {
-                    return;
+                    return undefined;
                 }
                 const tabId = sender.tab.id;
 
@@ -41,7 +50,18 @@ export class ContentScriptListener {
                         this.stateManager.setFocusedFrame(tabId, sender.frameId);
                     }
                     sendMessageToTab(tabId, message);
-                    return;
+                    return undefined;
+                }
+
+                if (message.action === ContentScriptRequestAction.HanjaLookup) {
+                    void this.hanjaDictionaryProvider
+                        .lookup(message.data.reading)
+                        .then((candidates) => sendResponse({ candidates } satisfies HanjaLookupResponse))
+                        .catch((error) => {
+                            debugLog("hanjaLookup failed:", error);
+                            sendResponse({ candidates: [] } satisfies HanjaLookupResponse);
+                        });
+                    return true;
                 }
 
                 // The StateManager calls are async; log a failure rather than
@@ -67,6 +87,7 @@ export class ContentScriptListener {
                     [ContentScriptRequestAction.PersistOnScreenKeyboardLayout]: (m) =>
                         run("saveOnScreenKeyboardLayout", saveOnScreenKeyboardLayout(m.data)),
                 });
+                return undefined;
             }
         );
 

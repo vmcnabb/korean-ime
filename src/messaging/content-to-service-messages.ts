@@ -3,6 +3,7 @@
 import { KeyCode } from "../keyboard/korean-keyboard-map";
 import { KeyboardPlacement } from "../extension-state/osk-layout";
 import { hasProperties } from "../types/objects";
+import { HanjaCandidate } from "../composition/hanja/hanja-candidate";
 
 export enum ContentScriptRequestAction {
     /** request the TabState from the service script */
@@ -17,6 +18,8 @@ export enum ContentScriptRequestAction {
     RequestOnScreenKeyboardLayout = "requestOnScreenKeyboardLayout",
     /** ask the service script to persist the on-screen-keyboard layout */
     PersistOnScreenKeyboardLayout = "persistOnScreenKeyboardLayout",
+    /** request Hanja candidates for a Hangul reading */
+    HanjaLookup = "hanjaLookup",
 }
 
 export type SendKeyRequestMessage = {
@@ -37,6 +40,16 @@ export type PersistOnScreenKeyboardLayoutMessage = {
     data: { site?: string; position?: KeyboardPlacement; collapsed?: boolean; keyUnit?: number };
 };
 
+export type HanjaLookupRequestMessage = {
+    type: "contentScriptRequest";
+    action: ContentScriptRequestAction.HanjaLookup;
+    data: { reading: string };
+};
+
+export type HanjaLookupResponse = {
+    candidates: readonly HanjaCandidate[];
+};
+
 export type ContentScriptRequestMessage =
     | {
           type: "contentScriptRequest";
@@ -47,7 +60,8 @@ export type ContentScriptRequestMessage =
       }
     | SendKeyRequestMessage
     | RequestOnScreenKeyboardLayoutMessage
-    | PersistOnScreenKeyboardLayoutMessage;
+    | PersistOnScreenKeyboardLayoutMessage
+    | HanjaLookupRequestMessage;
 
 export function isContentScriptRequestMessage(message: unknown): message is ContentScriptRequestMessage {
     return (

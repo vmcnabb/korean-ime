@@ -2,6 +2,8 @@ import { HangulImeController } from "./hangul-ime-controller";
 import { InputAdapter } from "./composition-adapters/input-adapter";
 import { ContentEditableAdapter } from "./composition-adapters/content-editable-adapter";
 import { KeyCode } from "../keyboard/korean-keyboard-map";
+import { HanjaDictionaryProvider } from "./hanja/hanja-dictionary-provider";
+import { HanjaCandidate } from "./hanja/hanja-candidate";
 
 function dispatchKeydown(target: EventTarget, code: string, key: string): KeyboardEvent {
     const event = new KeyboardEvent("keydown", { code, key, bubbles: true, cancelable: true });
@@ -15,8 +17,8 @@ function dispatchKeydown(target: EventTarget, code: string, key: string): Keyboa
 // Track every controller and dispose them all after each test to keep tests
 // isolated.
 const liveControllers: HangulImeController[] = [];
-function makeController(element: HTMLElement): HangulImeController {
-    const controller = new HangulImeController(element);
+function makeController(element: HTMLElement, hanjaDictionaryProvider?: HanjaDictionaryProvider): HangulImeController {
+    const controller = new HangulImeController(element, undefined, hanjaDictionaryProvider);
     liveControllers.push(controller);
     return controller;
 }
@@ -445,6 +447,11 @@ describe("HangulImeController Hanja candidate selection (KIME_ENABLE_HANJA)", ()
         return dispatchKeydown(element, "AltRight", "Alt");
     }
 
+    async function settleHanjaLookup() {
+        await Promise.resolve();
+        await Promise.resolve();
+    }
+
     function candidateTexts() {
         return Array.from(document.querySelectorAll<HTMLElement>(".kime-hanja-candidate")).map((item) => {
             const number = item.querySelector("span:first-child")?.textContent;
@@ -465,7 +472,7 @@ describe("HangulImeController Hanja candidate selection (KIME_ENABLE_HANJA)", ()
         )?.textContent;
     }
 
-    function controllerAfterCommittedSyllable(reading: string) {
+    async function controllerAfterCommittedSyllable(reading: string) {
         const element = document.createElement("textarea");
         element.value = reading;
         element.selectionStart = reading.length;
@@ -473,6 +480,7 @@ describe("HangulImeController Hanja candidate selection (KIME_ENABLE_HANJA)", ()
         const controller = makeController(element);
         controller.activate();
         pressRightCtrl(element);
+        await settleHanjaLookup();
         return { element };
     }
 
@@ -494,12 +502,13 @@ describe("HangulImeController Hanja candidate selection (KIME_ENABLE_HANJA)", ()
         document.querySelectorAll<HTMLElement>(".kime-hanja-candidate")[index].click();
     }
 
-    it("shows candidates for a composing 한 and swallows the Hanja key when the flag is on", () => {
+    it("shows candidates for a composing 한 and swallows the Hanja key when the flag is on", async () => {
         process.env.KIME_ENABLE_HANJA = "true";
         const { element, endComposition } = composingController();
         composeHan(element);
 
         const ctrl = pressRightCtrl(element);
+        await settleHanjaLookup();
 
         expect(candidateTexts()).toEqual(["1韓", "2寒", "3恨"]);
         expect(endComposition).toHaveBeenCalledWith("한");
@@ -507,21 +516,23 @@ describe("HangulImeController Hanja candidate selection (KIME_ENABLE_HANJA)", ()
         expect(ctrl.defaultPrevented).toBe(true);
     });
 
-    it("shows candidates for a composing 안", () => {
+    it("shows candidates for a composing 안", async () => {
         process.env.KIME_ENABLE_HANJA = "true";
         const { element } = composingController();
         composeAn(element);
 
         pressRightCtrl(element);
+        await settleHanjaLookup();
 
         expect(candidateTexts()).toEqual(["1安", "2岸"]);
     });
 
-    it("commits a composing candidate selected by number", () => {
+    it("commits a composing candidate selected by number", async () => {
         process.env.KIME_ENABLE_HANJA = "true";
         const { element, deleteContentBackwards, inputCharacter } = composingController();
         composeHan(element);
         pressRightCtrl(element);
+        await settleHanjaLookup();
 
         const digit = dispatchKeydown(element, "Digit2", "2");
 
@@ -531,11 +542,12 @@ describe("HangulImeController Hanja candidate selection (KIME_ENABLE_HANJA)", ()
         expect(digit.defaultPrevented).toBe(true);
     });
 
-    it("commits the active composing candidate with Down and Enter", () => {
+    it("commits the active composing candidate with Down and Enter", async () => {
         process.env.KIME_ENABLE_HANJA = "true";
         const { element, inputCharacter } = composingController();
         composeHan(element);
         pressRightCtrl(element);
+        await settleHanjaLookup();
 
         const arrow = dispatchKeydown(element, "ArrowDown", "ArrowDown");
         const enter = dispatchKeydown(element, "Enter", "Enter");
@@ -545,11 +557,12 @@ describe("HangulImeController Hanja candidate selection (KIME_ENABLE_HANJA)", ()
         expect(enter.defaultPrevented).toBe(true);
     });
 
-    it("closes the candidate list on Escape without committing", () => {
+    it("closes the candidate list on Escape without committing", async () => {
         process.env.KIME_ENABLE_HANJA = "true";
         const { element, endComposition } = composingController();
         composeHan(element);
         pressRightCtrl(element);
+        await settleHanjaLookup();
 
         const escape = dispatchKeydown(element, "Escape", "Escape");
 
@@ -559,11 +572,12 @@ describe("HangulImeController Hanja candidate selection (KIME_ENABLE_HANJA)", ()
         expect(escape.defaultPrevented).toBe(true);
     });
 
-    it("closes the candidate list on Backspace without deleting or committing", () => {
+    it("closes the candidate list on Backspace without deleting or committing", async () => {
         process.env.KIME_ENABLE_HANJA = "true";
         const { element, deleteContentBackwards, inputCharacter } = composingController();
         composeHan(element);
         pressRightCtrl(element);
+        await settleHanjaLookup();
 
         deleteContentBackwards.mockClear();
         inputCharacter.mockClear();
@@ -575,11 +589,12 @@ describe("HangulImeController Hanja candidate selection (KIME_ENABLE_HANJA)", ()
         expect(backspace.defaultPrevented).toBe(true);
     });
 
-    it("closes the candidate list on Delete without deleting or committing", () => {
+    it("closes the candidate list on Delete without deleting or committing", async () => {
         process.env.KIME_ENABLE_HANJA = "true";
         const { element, deleteContentBackwards, inputCharacter } = composingController();
         composeHan(element);
         pressRightCtrl(element);
+        await settleHanjaLookup();
 
         deleteContentBackwards.mockClear();
         inputCharacter.mockClear();
@@ -591,9 +606,9 @@ describe("HangulImeController Hanja candidate selection (KIME_ENABLE_HANJA)", ()
         expect(del.defaultPrevented).toBe(true);
     });
 
-    it("selects candidates after a committed syllable", () => {
+    it("selects candidates after a committed syllable", async () => {
         process.env.KIME_ENABLE_HANJA = "true";
-        const { element } = controllerAfterCommittedSyllable("한");
+        const { element } = await controllerAfterCommittedSyllable("한");
 
         dispatchKeydown(element, "Digit3", "3");
 
@@ -601,9 +616,9 @@ describe("HangulImeController Hanja candidate selection (KIME_ENABLE_HANJA)", ()
         expect(document.querySelector(".kime-hanja-candidates")).toBeNull();
     });
 
-    it("shows a maxed one-page candidate list without a usable next page", () => {
+    it("shows a maxed one-page candidate list without a usable next page", async () => {
         process.env.KIME_ENABLE_HANJA = "true";
-        const { element } = controllerAfterCommittedSyllable("가");
+        const { element } = await controllerAfterCommittedSyllable("가");
 
         expect(candidateValues()).toHaveLength(9);
 
@@ -612,9 +627,9 @@ describe("HangulImeController Hanja candidate selection (KIME_ENABLE_HANJA)", ()
         expect(candidateValues()).toEqual(["家", "加", "可", "假", "價", "佳", "街", "歌", "架"]);
     });
 
-    it("wraps pages with Left and Right instead of moving between candidates", () => {
+    it("wraps pages with Left and Right instead of moving between candidates", async () => {
         process.env.KIME_ENABLE_HANJA = "true";
-        const { element } = controllerAfterCommittedSyllable("나");
+        const { element } = await controllerAfterCommittedSyllable("나");
 
         expect(activeCandidateValue()).toBe("羅");
 
@@ -633,9 +648,9 @@ describe("HangulImeController Hanja candidate selection (KIME_ENABLE_HANJA)", ()
         expect(candidateValues()).toEqual(["羅", "那", "裸", "懶", "螺", "拿", "娜", "拏", "糯"]);
     });
 
-    it("commits a numbered candidate from the visible page", () => {
+    it("commits a numbered candidate from the visible page", async () => {
         process.env.KIME_ENABLE_HANJA = "true";
-        const { element } = controllerAfterCommittedSyllable("나");
+        const { element } = await controllerAfterCommittedSyllable("나");
 
         dispatchKeydown(element, "ArrowRight", "ArrowRight");
         dispatchKeydown(element, "Digit1", "1");
@@ -643,9 +658,9 @@ describe("HangulImeController Hanja candidate selection (KIME_ENABLE_HANJA)", ()
         expect(element.value).toBe("儺");
     });
 
-    it("moves Up from the first entry on a page to the last entry on the previous page", () => {
+    it("moves Up from the first entry on a page to the last entry on the previous page", async () => {
         process.env.KIME_ENABLE_HANJA = "true";
-        const { element } = controllerAfterCommittedSyllable("나");
+        const { element } = await controllerAfterCommittedSyllable("나");
 
         dispatchKeydown(element, "ArrowRight", "ArrowRight");
         dispatchKeydown(element, "ArrowUp", "ArrowUp");
@@ -654,9 +669,9 @@ describe("HangulImeController Hanja candidate selection (KIME_ENABLE_HANJA)", ()
         expect(activeCandidateValue()).toBe("糯");
     });
 
-    it("moves Down from the last entry on a page to the first entry on the next page", () => {
+    it("moves Down from the last entry on a page to the first entry on the next page", async () => {
         process.env.KIME_ENABLE_HANJA = "true";
-        const { element } = controllerAfterCommittedSyllable("나");
+        const { element } = await controllerAfterCommittedSyllable("나");
 
         for (let i = 0; i < 9; i += 1) {
             dispatchKeydown(element, "ArrowDown", "ArrowDown");
@@ -666,23 +681,23 @@ describe("HangulImeController Hanja candidate selection (KIME_ENABLE_HANJA)", ()
         expect(activeCandidateValue()).toBe("儺");
     });
 
-    it("supports a maxed second page and a third page", () => {
+    it("supports a maxed second page and a third page", async () => {
         process.env.KIME_ENABLE_HANJA = "true";
-        const { element } = controllerAfterCommittedSyllable("다");
+        const { element } = await controllerAfterCommittedSyllable("다");
 
         dispatchKeydown(element, "ArrowRight", "ArrowRight");
         expect(candidateValues()).toHaveLength(9);
         dispatchKeydown(element, "Escape", "Escape");
 
-        const thirdPage = controllerAfterCommittedSyllable("라");
+        const thirdPage = await controllerAfterCommittedSyllable("라");
         dispatchKeydown(thirdPage.element, "ArrowRight", "ArrowRight");
         dispatchKeydown(thirdPage.element, "ArrowRight", "ArrowRight");
         expect(candidateValues()).toEqual(["籮"]);
     });
 
-    it("moves between pages two and three with Down and Up", () => {
+    it("moves between pages two and three with Down and Up", async () => {
         process.env.KIME_ENABLE_HANJA = "true";
-        const { element } = controllerAfterCommittedSyllable("라");
+        const { element } = await controllerAfterCommittedSyllable("라");
 
         dispatchKeydown(element, "ArrowRight", "ArrowRight");
         for (let i = 0; i < 9; i += 1) {
@@ -698,9 +713,9 @@ describe("HangulImeController Hanja candidate selection (KIME_ENABLE_HANJA)", ()
         expect(activeCandidateValue()).toBe("玀");
     });
 
-    it("wraps Up from the first item on the first page to the last item on the last page", () => {
+    it("wraps Up from the first item on the first page to the last item on the last page", async () => {
         process.env.KIME_ENABLE_HANJA = "true";
-        const { element } = controllerAfterCommittedSyllable("라");
+        const { element } = await controllerAfterCommittedSyllable("라");
 
         dispatchKeydown(element, "ArrowUp", "ArrowUp");
 
@@ -708,9 +723,9 @@ describe("HangulImeController Hanja candidate selection (KIME_ENABLE_HANJA)", ()
         expect(activeCandidateValue()).toBe("籮");
     });
 
-    it("wraps Down from the last item on the last page to the first item on the first page", () => {
+    it("wraps Down from the last item on the last page to the first item on the first page", async () => {
         process.env.KIME_ENABLE_HANJA = "true";
-        const { element } = controllerAfterCommittedSyllable("라");
+        const { element } = await controllerAfterCommittedSyllable("라");
 
         dispatchKeydown(element, "ArrowLeft", "ArrowLeft");
         dispatchKeydown(element, "ArrowDown", "ArrowDown");
@@ -719,9 +734,9 @@ describe("HangulImeController Hanja candidate selection (KIME_ENABLE_HANJA)", ()
         expect(activeCandidateValue()).toBe("羅");
     });
 
-    it("wraps pages with mouse buttons", () => {
+    it("wraps pages with mouse buttons", async () => {
         process.env.KIME_ENABLE_HANJA = "true";
-        controllerAfterCommittedSyllable("나");
+        await controllerAfterCommittedSyllable("나");
 
         clickPreviousPage();
         expect(candidateValues()).toEqual(["儺"]);
@@ -736,9 +751,9 @@ describe("HangulImeController Hanja candidate selection (KIME_ENABLE_HANJA)", ()
         expect(candidateValues()).toEqual(["羅", "那", "裸", "懶", "螺", "拿", "娜", "拏", "糯"]);
     });
 
-    it("moves selection with mouse wheel scrolling", () => {
+    it("moves selection with mouse wheel scrolling", async () => {
         process.env.KIME_ENABLE_HANJA = "true";
-        controllerAfterCommittedSyllable("한");
+        await controllerAfterCommittedSyllable("한");
 
         scrollCandidates(100);
         expect(activeCandidateValue()).toBe("寒");
@@ -747,9 +762,9 @@ describe("HangulImeController Hanja candidate selection (KIME_ENABLE_HANJA)", ()
         expect(activeCandidateValue()).toBe("韓");
     });
 
-    it("commits a clicked candidate from the visible page", () => {
+    it("commits a clicked candidate from the visible page", async () => {
         process.env.KIME_ENABLE_HANJA = "true";
-        const { element } = controllerAfterCommittedSyllable("나");
+        const { element } = await controllerAfterCommittedSyllable("나");
 
         dispatchKeydown(element, "ArrowRight", "ArrowRight");
         clickCandidate(0);
@@ -758,13 +773,14 @@ describe("HangulImeController Hanja candidate selection (KIME_ENABLE_HANJA)", ()
         expect(document.querySelector(".kime-hanja-candidates")).toBeNull();
     });
 
-    it("uses Right Option as the Hanja key on macOS", () => {
+    it("uses Right Option as the Hanja key on macOS", async () => {
         jest.spyOn(window.navigator, "platform", "get").mockReturnValue("MacIntel");
         process.env.KIME_ENABLE_HANJA = "true";
         const { element } = composingController();
         composeHan(element);
 
         const option = pressRightOption(element);
+        await settleHanjaLookup();
 
         expect(candidateTexts()).toEqual(["1韓", "2寒", "3恨"]);
         expect(option.defaultPrevented).toBe(true);
@@ -781,7 +797,7 @@ describe("HangulImeController Hanja candidate selection (KIME_ENABLE_HANJA)", ()
         expect(ctrl.defaultPrevented).toBe(false);
     });
 
-    it("leaves a composing syllable that isn't in the dictionary alone, even with the flag on", () => {
+    it("commits a composing syllable and shows no candidates when the lookup is empty", async () => {
         process.env.KIME_ENABLE_HANJA = "true";
         const { element, endComposition } = composingController();
         dispatchKeydown(element, "KeyR", "r"); // ㄱ
@@ -789,8 +805,69 @@ describe("HangulImeController Hanja candidate selection (KIME_ENABLE_HANJA)", ()
         dispatchKeydown(element, "KeyF", "f"); // ㄹ → 글
 
         const ctrl = pressRightCtrl(element);
+        await settleHanjaLookup();
 
-        expect(endComposition).not.toHaveBeenCalled();
-        expect(ctrl.defaultPrevented).toBe(false);
+        expect(endComposition).toHaveBeenCalledWith("글");
+        expect(document.querySelector(".kime-hanja-candidates")).toBeNull();
+        expect(ctrl.defaultPrevented).toBe(true);
+    });
+
+    it("ignores stale Hanja lookup results after later input", async () => {
+        process.env.KIME_ENABLE_HANJA = "true";
+        const candidates: readonly HanjaCandidate[] = [{ hanja: "韓", korean: "나라 이름 한, 한나라 한" }];
+        let resolveLookup!: (candidates: readonly HanjaCandidate[]) => void;
+        const provider: HanjaDictionaryProvider = {
+            lookup: jest.fn(
+                () =>
+                    new Promise<readonly HanjaCandidate[]>((resolve) => {
+                        resolveLookup = resolve;
+                    })
+            ),
+        };
+        const element = document.createElement("textarea");
+        element.value = "한";
+        element.selectionStart = 1;
+        element.selectionEnd = 1;
+        const controller = makeController(element, provider);
+        controller.activate();
+
+        const ctrl = pressRightCtrl(element);
+        const input = dispatchKeydown(element, "KeyR", "r");
+        resolveLookup(candidates);
+        await settleHanjaLookup();
+
+        expect(ctrl.defaultPrevented).toBe(true);
+        expect(input.defaultPrevented).toBe(true);
+        expect(document.querySelector(".kime-hanja-candidates")).toBeNull();
+    });
+
+    it("still opens candidates when the Hanja key is followed by blur before lookup resolves", async () => {
+        process.env.KIME_ENABLE_HANJA = "true";
+        const candidates: readonly HanjaCandidate[] = [
+            { hanja: "安", korean: "편안할 안, 어찌 안" },
+            { hanja: "岸", korean: "물가 언덕 안" },
+        ];
+        let resolveLookup!: (candidates: readonly HanjaCandidate[]) => void;
+        const provider: HanjaDictionaryProvider = {
+            lookup: jest.fn(
+                () =>
+                    new Promise<readonly HanjaCandidate[]>((resolve) => {
+                        resolveLookup = resolve;
+                    })
+            ),
+        };
+        const element = document.createElement("textarea");
+        element.value = "안";
+        element.selectionStart = 1;
+        element.selectionEnd = 1;
+        const controller = makeController(element, provider);
+        controller.activate();
+
+        pressRightCtrl(element);
+        element.dispatchEvent(new FocusEvent("blur"));
+        resolveLookup(candidates);
+        await settleHanjaLookup();
+
+        expect(candidateTexts()).toEqual(["1安", "2岸"]);
     });
 });

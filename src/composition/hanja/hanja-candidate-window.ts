@@ -1,6 +1,6 @@
 import { GlyphRect } from "../compositing-box";
 import { HANJA_CANDIDATES_PER_PAGE } from "./hanja-candidate-pager";
-import { HanjaCandidate } from "./hanja-dictionary";
+import { HanjaCandidate } from "./hanja-candidate";
 
 const HANJA_CANDIDATE_ITEM_HEIGHT_PX = 44;
 const SELECTED_CANDIDATE_BACKGROUND = "#dbeafe";
@@ -250,10 +250,12 @@ export class HanjaCandidateWindow {
             metadata.append(simplified);
         }
 
-        const pinyin = document.createElement("span");
-        pinyin.className = "kime-hanja-candidate-pinyin";
-        pinyin.textContent = candidate.pinyin;
-        metadata.append(pinyin);
+        if (candidate.pinyin) {
+            const pinyin = document.createElement("span");
+            pinyin.className = "kime-hanja-candidate-pinyin";
+            pinyin.textContent = candidate.pinyin;
+            metadata.append(pinyin);
+        }
 
         details.append(korean, metadata);
 

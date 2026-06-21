@@ -27,6 +27,10 @@ export class HanjaCandidatePager<TCandidate> {
         return candidateIndex < this.candidates.length ? candidateIndex : undefined;
     }
 
+    candidateAt(index: number): TCandidate | undefined {
+        return this.candidates[index];
+    }
+
     moveSelection(delta: number): void {
         this.selectedIndex = wrap(this.selectedIndex + delta, this.candidates.length);
     }

@@ -26,6 +26,7 @@
     "gen-manifest:chrome": "node scripts/build-manifest.mjs chrome",
     "gen-manifest:firefox": "node scripts/build-manifest.mjs firefox",
     "gen-message-keys": "node scripts/generate-message-keys.mjs",
+    "gen-hanja": "node scripts/generate-hanja-dictionary.mjs",
     "check-message-keys": "node scripts/generate-message-keys.mjs --check",
     "check-translations": "node scripts/check-translations.mjs",
     "package": "node scripts/package-help.mjs",

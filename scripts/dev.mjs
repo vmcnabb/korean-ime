@@ -253,7 +253,8 @@ const { server, testUrl } = await startTestPageServer();
 //    in watch mode (auto-rebuild + hot reload) and wait for the first build.
 const watchMode = watchRequested();
 const enableHanja = hanjaFeatureRequested();
-console.log(`[dev] Hanja conversion (Right-Ctrl): ${enableHanja ? "enabled" : "disabled"}`);
+const hanjaKeyLabel = process.platform === "darwin" ? "Right Option" : "Right Ctrl";
+console.log(`[dev] Hanja conversion (${hanjaKeyLabel}): ${enableHanja ? "enabled" : "disabled"}`);
 const buildEnv = { ...process.env, NODE_ENV: "development", KIME_ENABLE_HANJA: enableHanja ? "true" : "" };
 
 console.log("[dev] Starting...");
