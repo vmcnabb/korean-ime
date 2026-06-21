@@ -257,10 +257,15 @@ body {
 
 /* --- Focus ring ---------------------------------------------------------- */
 
+/* The focus-ring appearance, shared between real :focus-visible states and the
+   .ds-focus-ring utility — so anything that needs to *look* focused without being
+   in a real focus state (e.g. a custom "listening" indicator) renders identically
+   and tracks any future change to the ring from this one place. */
 .ds-btn:focus-visible,
 .ds-icon-btn:focus-visible,
 .ds-field:focus-visible,
-.ds-checkbox:focus-visible {
+.ds-checkbox:focus-visible,
+.ds-focus-ring {
     outline: var(--focus-ring-width) solid var(--focus-ring-color);
     outline-offset: var(--focus-ring-offset);
 }

@@ -191,7 +191,7 @@ function onCaptureKeyup(event: KeyboardEvent) {
         <div class="controls">
             <span
                 class="binding"
-                :class="{ off: !capturing && !binding, capturing }"
+                :class="{ off: !capturing && !binding, capturing, 'ds-focus-ring': capturing }"
                 :title="bindingAccessibleLabel"
                 :aria-label="bindingAccessibleLabel"
             >
@@ -262,10 +262,9 @@ function onCaptureKeyup(event: KeyboardEvent) {
 }
 
 .binding.capturing {
-    /* "Listening for a key" is an active/focused state, so reuse the shared focus
-       ring rather than a bespoke accent border. */
-    outline: var(--focus-ring-width) solid var(--focus-ring-color);
-    outline-offset: var(--focus-ring-offset);
+    /* "Listening for a key" is an active state: the focus ring comes from the
+       shared .ds-focus-ring class (applied in the template), so it tracks any
+       future change to the ring. This rule only adds the italic. */
     font-style: italic;
 }
 
