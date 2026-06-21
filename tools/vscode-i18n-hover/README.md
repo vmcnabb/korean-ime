@@ -7,17 +7,18 @@ string literals whose contextual type is `MessageKey`.
 
 ## Install
 
-From the repo root:
+From this directory:
 
 ```sh
-npm run install-i18n-vscode
+cd tools/vscode-i18n-hover
+npm run install:local
 ```
 
 This packages the extension as a VSIX, installs it into VS Code, then removes
 the generated VSIX file.
 
-Use `npm run validate:i18n-vscode` from the repo root to type-check and test the
-VS Code extension without running the browser extension's full validation gate.
+Use `npm run validate` from this directory to type-check and test the VS Code
+extension without running the browser extension's full validation gate.
 
 The extension reads `src/_locales/en/messages.json` and reloads it when the file
 changes. It is editor tooling only; it does not affect the browser extension

@@ -1,23 +1,23 @@
-import { rm, readFile } from "node:fs/promises";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-import { spawnSync } from "node:child_process";
+"use strict";
 
-const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const extensionDir = path.join(repoRoot, "tools", "vscode-i18n-hover");
-const extensionPackage = JSON.parse(await readFile(path.join(extensionDir, "package.json"), "utf8"));
+const { spawnSync } = require("node:child_process");
+const { readFileSync, rmSync } = require("node:fs");
+const path = require("node:path");
+
+const extensionDir = path.resolve(__dirname, "..");
+const extensionPackage = JSON.parse(readFileSync(path.join(extensionDir, "package.json"), "utf8"));
 const vsixFile = `${extensionPackage.name}-${extensionPackage.version}.vsix`;
 const vsixPath = path.join(extensionDir, vsixFile);
 
 let exitCode = 0;
 
 try {
-    await removeVsix();
+    removeVsix();
 
     run("npm", ["run", "build"], { cwd: extensionDir });
     run("npm", ["exec", "--", "vsce", "package", "--skip-license", "--out", vsixFile], { cwd: extensionDir });
 
-    run("code", ["--install-extension", vsixPath, "--force"], { cwd: repoRoot });
+    run("code", ["--install-extension", vsixPath, "--force"], { cwd: extensionDir });
 } catch (error) {
     if (error instanceof CommandFailedError) {
         exitCode = error.exitCode;
@@ -25,15 +25,15 @@ try {
         throw error;
     }
 } finally {
-    await removeVsix();
+    removeVsix();
 }
 
 if (exitCode !== 0) {
     process.exit(exitCode);
 }
 
-async function removeVsix() {
-    await rm(vsixPath, { force: true });
+function removeVsix() {
+    rmSync(vsixPath, { force: true });
 }
 
 function run(command, args, options) {
