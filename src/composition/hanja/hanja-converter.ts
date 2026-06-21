@@ -1,18 +1,18 @@
 import { KeyCode } from "../../keyboard/korean-keyboard-map";
 import { CompositionAdapter } from "../composition-adapters/composition-adapter";
 import { HangulCompositor } from "../hangul-compositor";
-import { lookUpHanja } from "./hanja-dictionary";
+import { HanjaCandidate, lookUpHanja } from "./hanja-dictionary";
 
 export type HanjaConversionTarget =
     | {
           kind: "composition";
           reading: string;
-          candidates: readonly string[];
+          candidates: readonly HanjaCandidate[];
       }
     | {
           kind: "previous-character";
           reading: string;
-          candidates: readonly string[];
+          candidates: readonly HanjaCandidate[];
       };
 
 /**
@@ -54,17 +54,17 @@ export function getHanjaConversionTarget(
 
 export function commitHanjaCandidate(
     target: HanjaConversionTarget,
-    candidate: string,
+    candidate: HanjaCandidate,
     compositor: HangulCompositor,
     adapter: CompositionAdapter,
     keyCode: KeyCode
 ): void {
     if (target.kind === "composition") {
-        adapter.endComposition(candidate);
+        adapter.endComposition(candidate.hanja);
         compositor.reset();
         return;
     }
 
     adapter.deleteContentBackwards();
-    adapter.inputCharacter(candidate, keyCode);
+    adapter.inputCharacter(candidate.hanja, keyCode);
 }

@@ -2,6 +2,7 @@ import { commitHanjaCandidate, getHanjaConversionTarget } from "./hanja-converte
 import { HangulCompositor } from "../hangul-compositor";
 import { CompositionAdapter } from "../composition-adapters/composition-adapter";
 import { KeyCode } from "../../keyboard/korean-keyboard-map";
+import { lookUpHanja } from "./hanja-dictionary";
 
 // A minimal stand-in for the bits of the adapter the converter touches. supportsMethods
 // defaults to true (the input/contenteditable/CKEditor adapters all support these).
@@ -29,6 +30,8 @@ function asAdapter(fake: ReturnType<typeof fakeAdapter>): CompositionAdapter {
 }
 
 describe("getHanjaConversionTarget", () => {
+    const hanCandidates = lookUpHanja("한");
+
     describe("mid-composition", () => {
         it("returns candidates for the in-progress block", () => {
             const compositor = new HangulCompositor();
@@ -38,7 +41,7 @@ describe("getHanjaConversionTarget", () => {
             expect(getHanjaConversionTarget(compositor, asAdapter(adapter))).toEqual({
                 kind: "composition",
                 reading: "한",
-                candidates: ["韓", "寒", "恨"],
+                candidates: hanCandidates,
             });
             expect(adapter.endComposition).not.toHaveBeenCalled();
             expect(compositor.isCompositing()).toBe(true);
@@ -62,7 +65,7 @@ describe("getHanjaConversionTarget", () => {
             expect(getHanjaConversionTarget(new HangulCompositor(), asAdapter(adapter))).toEqual({
                 kind: "previous-character",
                 reading: "한",
-                candidates: ["韓", "寒", "恨"],
+                candidates: hanCandidates,
             });
             expect(adapter.deleteContentBackwards).not.toHaveBeenCalled();
             expect(adapter.inputCharacter).not.toHaveBeenCalled();
@@ -93,14 +96,16 @@ describe("getHanjaConversionTarget", () => {
 });
 
 describe("commitHanjaCandidate", () => {
+    const hanCandidates = lookUpHanja("한");
+
     it("commits a selected candidate in place of the in-progress block and clears composition", () => {
         const compositor = new HangulCompositor();
         compositor.setCharacter("한");
         const adapter = fakeAdapter();
 
         commitHanjaCandidate(
-            { kind: "composition", reading: "한", candidates: ["韓", "寒", "恨"] },
-            "寒",
+            { kind: "composition", reading: "한", candidates: hanCandidates },
+            hanCandidates[1],
             compositor,
             asAdapter(adapter),
             KeyCode.Digit2
@@ -114,8 +119,8 @@ describe("commitHanjaCandidate", () => {
         const adapter = fakeAdapter({ getPreviousCharacter: jest.fn().mockReturnValue("한") });
 
         commitHanjaCandidate(
-            { kind: "previous-character", reading: "한", candidates: ["韓", "寒", "恨"] },
-            "恨",
+            { kind: "previous-character", reading: "한", candidates: hanCandidates },
+            hanCandidates[2],
             new HangulCompositor(),
             asAdapter(adapter),
             KeyCode.Digit3

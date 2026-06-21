@@ -1,12 +1,13 @@
 import { GlyphRect } from "../compositing-box";
 import { HANJA_CANDIDATES_PER_PAGE } from "./hanja-candidate-pager";
+import { HanjaCandidate } from "./hanja-dictionary";
 
-const HANJA_CANDIDATE_ITEM_HEIGHT_PX = 30;
+const HANJA_CANDIDATE_ITEM_HEIGHT_PX = 44;
 const SELECTED_CANDIDATE_BACKGROUND = "#dbeafe";
 const HOVERED_CANDIDATE_BACKGROUND = "#f3f4f6";
 
 export type HanjaCandidateWindowPage = {
-    candidates: readonly string[];
+    candidates: readonly HanjaCandidate[];
     selectedIndex: number;
     pageIndex: number;
     pageCount: number;
@@ -129,6 +130,7 @@ export class HanjaCandidateWindow {
             "background:#ffffff",
             "box-shadow:0 6px 18px rgba(0,0,0,0.18)",
             "box-sizing:border-box",
+            "max-width:calc(100vw - 8px)",
             "user-select:none",
         ].join(";");
     }
@@ -168,20 +170,23 @@ export class HanjaCandidateWindow {
         }
     }
 
-    private createCandidateItem(candidate: string, index: number): HTMLDivElement {
+    private createCandidateItem(candidate: HanjaCandidate, index: number): HTMLDivElement {
         const item = document.createElement("div");
         item.className = "kime-hanja-candidate";
         item.dataset.index = String(index);
         item.setAttribute("role", "option");
         item.style.cssText = [
-            "display:flex",
+            "display:grid",
+            "grid-template-columns:auto auto minmax(0,1fr)",
             "align-items:center",
-            "gap:6px",
+            "column-gap:8px",
+            `height:${HANJA_CANDIDATE_ITEM_HEIGHT_PX}px`,
             "padding:4px 8px",
-            "min-width:48px",
+            "min-width:220px",
             "font:14px/1.4 system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",
             "color:#111827",
             "cursor:pointer",
+            "box-sizing:border-box",
         ].join(";");
         item.addEventListener("mousedown", (event) => {
             event.preventDefault();
@@ -206,10 +211,53 @@ export class HanjaCandidateWindow {
         number.style.cssText = "min-width:10px;color:#6b7280;font-size:11px;text-align:right";
 
         const value = document.createElement("span");
-        value.textContent = candidate;
-        value.style.cssText = "font-size:18px;line-height:1.2";
+        value.className = "kime-hanja-candidate-hanja";
+        value.textContent = candidate.hanja;
+        value.style.cssText = "font-size:20px;line-height:1.1";
 
-        item.append(number, value);
+        const details = document.createElement("span");
+        details.className = "kime-hanja-candidate-details";
+        details.style.cssText = ["display:flex", "flex-direction:column", "min-width:0"].join(";");
+
+        const korean = document.createElement("span");
+        korean.className = "kime-hanja-candidate-korean";
+        korean.textContent = candidate.korean;
+        korean.style.cssText = [
+            "font-size:12px",
+            "line-height:1.25",
+            "white-space:nowrap",
+            "overflow:hidden",
+            "text-overflow:ellipsis",
+        ].join(";");
+
+        const metadata = document.createElement("span");
+        metadata.className = "kime-hanja-candidate-metadata";
+        metadata.style.cssText = [
+            "display:flex",
+            "gap:6px",
+            "font-size:11px",
+            "line-height:1.25",
+            "color:#6b7280",
+            "white-space:nowrap",
+            "overflow:hidden",
+            "text-overflow:ellipsis",
+        ].join(";");
+
+        if (candidate.simplified) {
+            const simplified = document.createElement("span");
+            simplified.className = "kime-hanja-candidate-simplified";
+            simplified.textContent = candidate.simplified;
+            metadata.append(simplified);
+        }
+
+        const pinyin = document.createElement("span");
+        pinyin.className = "kime-hanja-candidate-pinyin";
+        pinyin.textContent = candidate.pinyin;
+        metadata.append(pinyin);
+
+        details.append(korean, metadata);
+
+        item.append(number, value, details);
         return item;
     }
 

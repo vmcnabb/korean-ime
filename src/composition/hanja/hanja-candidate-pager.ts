@@ -1,9 +1,9 @@
 export const HANJA_CANDIDATES_PER_PAGE = 9;
 
-export class HanjaCandidatePager {
+export class HanjaCandidatePager<TCandidate> {
     selectedIndex = 0;
 
-    constructor(private readonly candidates: readonly string[]) {}
+    constructor(private readonly candidates: readonly TCandidate[]) {}
 
     get pageIndex(): number {
         return Math.floor(this.selectedIndex / HANJA_CANDIDATES_PER_PAGE);
@@ -17,7 +17,7 @@ export class HanjaCandidatePager {
         return this.selectedIndex - this.pageIndex * HANJA_CANDIDATES_PER_PAGE;
     }
 
-    get visibleCandidates(): readonly string[] {
+    get visibleCandidates(): readonly TCandidate[] {
         const start = this.pageIndex * HANJA_CANDIDATES_PER_PAGE;
         return this.candidates.slice(start, start + HANJA_CANDIDATES_PER_PAGE);
     }

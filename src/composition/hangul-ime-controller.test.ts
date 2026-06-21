@@ -446,20 +446,23 @@ describe("HangulImeController Hanja candidate selection (KIME_ENABLE_HANJA)", ()
     }
 
     function candidateTexts() {
-        return Array.from(document.querySelectorAll<HTMLElement>(".kime-hanja-candidate")).map((item) =>
-            item.textContent?.trim()
-        );
+        return Array.from(document.querySelectorAll<HTMLElement>(".kime-hanja-candidate")).map((item) => {
+            const number = item.querySelector("span:first-child")?.textContent;
+            const hanja = item.querySelector(".kime-hanja-candidate-hanja")?.textContent;
+            return `${number}${hanja}`;
+        });
     }
 
     function candidateValues() {
         return Array.from(document.querySelectorAll<HTMLElement>(".kime-hanja-candidate")).map(
-            (item) => item.querySelector("span:last-child")?.textContent
+            (item) => item.querySelector(".kime-hanja-candidate-hanja")?.textContent
         );
     }
 
     function activeCandidateValue() {
-        return document.querySelector<HTMLElement>('.kime-hanja-candidate[aria-selected="true"] span:last-child')
-            ?.textContent;
+        return document.querySelector<HTMLElement>(
+            '.kime-hanja-candidate[aria-selected="true"] .kime-hanja-candidate-hanja'
+        )?.textContent;
     }
 
     function controllerAfterCommittedSyllable(reading: string) {

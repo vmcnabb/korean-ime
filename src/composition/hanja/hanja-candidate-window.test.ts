@@ -1,7 +1,17 @@
 import { HanjaCandidateWindow, HanjaCandidateWindowPage } from "./hanja-candidate-window";
 import { HANJA_CANDIDATES_PER_PAGE } from "./hanja-candidate-pager";
+import { HanjaCandidate } from "./hanja-dictionary";
 
-const CANDIDATE_ITEM_HEIGHT_PX = 30;
+const CANDIDATE_ITEM_HEIGHT_PX = 44;
+
+function candidate(hanja: string, overrides: Partial<HanjaCandidate> = {}): HanjaCandidate {
+    return {
+        hanja,
+        korean: `${hanja} Korean`,
+        pinyin: `${hanja} pinyin`,
+        ...overrides,
+    };
+}
 
 function rect(left: number, top: number, width: number, height: number): DOMRect {
     return {
@@ -24,7 +34,7 @@ describe("HanjaCandidateWindow", () => {
 
     function page(overrides: Partial<HanjaCandidateWindowPage> = {}): HanjaCandidateWindowPage {
         return {
-            candidates: ["韓"],
+            candidates: [candidate("韓")],
             selectedIndex: 0,
             pageIndex: 0,
             pageCount: 1,
@@ -133,7 +143,7 @@ describe("HanjaCandidateWindow", () => {
     it("keeps a nine-item candidate list height on multi-page results", () => {
         new HanjaCandidateWindow(
             document.createElement("textarea"),
-            page({ candidates: ["儺"], pageIndex: 1, pageCount: 2 }),
+            page({ candidates: [candidate("儺")], pageIndex: 1, pageCount: 2 }),
             rect(100, 20, 10, 10),
             windowOptions()
         );
@@ -192,7 +202,7 @@ describe("HanjaCandidateWindow", () => {
         const options = windowOptions();
         new HanjaCandidateWindow(
             document.createElement("textarea"),
-            page({ candidates: ["韓", "寒", "恨"] }),
+            page({ candidates: [candidate("韓"), candidate("寒"), candidate("恨")] }),
             rect(100, 20, 10, 10),
             options
         );
@@ -202,10 +212,32 @@ describe("HanjaCandidateWindow", () => {
         expect(options.onSelectCandidate).toHaveBeenCalledWith(1);
     });
 
+    it("renders Hanja candidate metadata", () => {
+        new HanjaCandidateWindow(
+            document.createElement("textarea"),
+            page({
+                candidates: [
+                    candidate("韓", {
+                        korean: "나라 이름 한, 한나라 한",
+                        simplified: "韩",
+                        pinyin: "hán",
+                    }),
+                ],
+            }),
+            rect(100, 20, 10, 10),
+            windowOptions()
+        );
+
+        expect(document.querySelector(".kime-hanja-candidate-hanja")?.textContent).toBe("韓");
+        expect(document.querySelector(".kime-hanja-candidate-korean")?.textContent).toBe("나라 이름 한, 한나라 한");
+        expect(document.querySelector(".kime-hanja-candidate-simplified")?.textContent).toBe("韩");
+        expect(document.querySelector(".kime-hanja-candidate-pinyin")?.textContent).toBe("hán");
+    });
+
     it("highlights a hovered candidate without changing the selected candidate", () => {
         new HanjaCandidateWindow(
             document.createElement("textarea"),
-            page({ candidates: ["韓", "寒", "恨"], selectedIndex: 0 }),
+            page({ candidates: [candidate("韓"), candidate("寒"), candidate("恨")], selectedIndex: 0 }),
             rect(100, 20, 10, 10),
             windowOptions()
         );
@@ -231,7 +263,7 @@ describe("HanjaCandidateWindow", () => {
         const options = windowOptions();
         new HanjaCandidateWindow(
             document.createElement("textarea"),
-            page({ candidates: ["韓", "寒", "恨"] }),
+            page({ candidates: [candidate("韓"), candidate("寒"), candidate("恨")] }),
             rect(100, 20, 10, 10),
             options
         );

@@ -7,11 +7,12 @@ import { HanjaCandidatePager } from "./hanja/hanja-candidate-pager";
 import { HanjaCandidateWindow, HanjaCandidateWindowPage } from "./hanja/hanja-candidate-window";
 import { HanjaCompositionOverlay } from "./hanja/hanja-composition-overlay";
 import { commitHanjaCandidate, getHanjaConversionTarget, HanjaConversionTarget } from "./hanja/hanja-converter";
+import { HanjaCandidate } from "./hanja/hanja-dictionary";
 import { isDefaultHanjaKey } from "./hanja/hanja-key";
 
 type HanjaCandidateSelection = {
     target: HanjaConversionTarget;
-    pager: HanjaCandidatePager;
+    pager: HanjaCandidatePager<HanjaCandidate>;
     overlay: HanjaCompositionOverlay;
     window: HanjaCandidateWindow;
 };
@@ -510,7 +511,7 @@ export class HangulImeController {
         this.notifyOnEntry();
     }
 
-    private hanjaCandidatePage(pager: HanjaCandidatePager): HanjaCandidateWindowPage {
+    private hanjaCandidatePage(pager: HanjaCandidatePager<HanjaCandidate>): HanjaCandidateWindowPage {
         return {
             candidates: pager.visibleCandidates,
             selectedIndex: pager.selectedPageIndex,
