@@ -14,27 +14,24 @@ const inputSelector = `input:not(${nonTextInputTypes.map((t) => `[type=${t}]`).j
 export const textInputElementsSelector = `[contenteditable]:not([contenteditable=false]),textarea,${inputSelector}`;
 
 export class TextInputManager {
-    private imeControllers = new Map<HTMLElement, HangulImeController>();
+    private targetElement?: HTMLElement;
+    private imeController?: HangulImeController;
     private textEntryMode: KoreanKeyboardMode = KoreanKeyboardMode.English;
-    private removalObserver?: MutationObserver;
 
     public setMode(mode: KoreanKeyboardMode) {
         this.textEntryMode = mode;
 
-        for (const controller of this.imeControllers.values()) {
-            if (this.textEntryMode == KoreanKeyboardMode.Hangul) {
-                controller.activate();
-            } else {
-                controller.deactivate();
-            }
-        }
+        this.syncControllerMode();
     }
 
     public setActiveElement(element: EventTarget | null): SupportedCompositionFeatures | undefined {
-        if (element instanceof HTMLElement && element.matches(textInputElementsSelector)) {
-            return this.ensureController(element).getCompositionFeatures();
+        const activeElement = this.getTextInputElement(element) ?? this.getActiveElement(document);
+        if (!activeElement) {
+            this.clearActiveController();
+            return;
         }
-        return;
+
+        return this.tryGetOrCreateController(activeElement)?.getCompositionFeatures();
     }
 
     // Insert text at the caret in the active editable, replacing any selection.
@@ -63,10 +60,14 @@ export class TextInputManager {
     public enterCharacter(char: string, keyCode: KeyCode): boolean {
         const activeElement = this.getActiveElement(document);
         if (!activeElement) {
+            this.clearActiveController();
             return false;
         }
 
-        const imeController = this.ensureController(activeElement);
+        const imeController = this.tryGetOrCreateController(activeElement);
+        if (!imeController) {
+            return false;
+        }
 
         if (isHangulOrJamo(char)) {
             imeController.addJamo(char, keyCode);
@@ -82,57 +83,63 @@ export class TextInputManager {
     }
 
     /**
-     * Get (creating if necessary) the IME controller for an element, with its
-     * active state synced to the current text-entry mode. This is the single
-     * place that creates controllers; `getActiveElement` stays a pure query.
+     * Get (creating if necessary) the single IME controller for the currently
+     * focused element, with its active state synced to the current text-entry
+     * mode. When focus moves, the previous controller is disposed and a new one
+     * is created so only one window-capture listener and one handler set exist
+     * at a time.
      */
-    private ensureController(element: HTMLElement): HangulImeController {
-        let imeController = this.imeControllers.get(element);
+    private tryGetOrCreateController(element: HTMLElement): HangulImeController | undefined {
+        if (this.targetElement !== element) {
+            this.clearActiveController();
+            const compositionAdapter = CompositionAdapterFactory.createCompositionAdapter(element);
+            if (!compositionAdapter) {
+                return undefined;
+            }
+            this.targetElement = element;
+            this.imeController = new HangulImeController(element, compositionAdapter);
+        }
 
+        this.syncControllerMode();
+        return this.imeController;
+    }
+
+    private syncControllerMode() {
+        const imeController = this.imeController;
         if (!imeController) {
-            imeController = new HangulImeController(element);
-            this.imeControllers.set(element, imeController);
-            this.watchForRemoval();
+            return;
         }
 
         const isHangulMode = this.textEntryMode === KoreanKeyboardMode.Hangul;
-        if (imeController.isActive != isHangulMode) {
-            if (isHangulMode) {
-                imeController.activate();
-            } else {
-                imeController.deactivate();
-            }
-        }
-
-        return imeController;
-    }
-
-    // An element that leaves the DOM keeps its IME controller alive via this
-    // Map, and the controller holds listeners (some on `document`) that wouldn't
-    // be garbage-collected with the element. Watch for removals and tear those
-    // down. One observer per content-script frame, started lazily on first use.
-    private watchForRemoval() {
-        if (this.removalObserver) {
+        if (imeController.isActive === isHangulMode) {
             return;
         }
-        this.removalObserver = new MutationObserver(() => this.disposeDisconnectedControllers());
-        this.removalObserver.observe(document.documentElement, { childList: true, subtree: true });
+
+        if (isHangulMode) {
+            imeController.activate();
+        } else {
+            imeController.deactivate();
+        }
     }
 
-    private disposeDisconnectedControllers() {
-        for (const [element, controller] of this.imeControllers) {
-            if (!element.isConnected) {
-                controller.dispose();
-                this.imeControllers.delete(element);
-            }
+    private clearActiveController() {
+        this.imeController?.dispose();
+        this.imeController = undefined;
+        this.targetElement = undefined;
+    }
+
+    private getTextInputElement(element: EventTarget | null): HTMLElement | undefined {
+        if (element instanceof HTMLElement && element.matches(textInputElementsSelector)) {
+            return element;
         }
+        return undefined;
     }
 
     /**
      * Pure query: find the focused editable element, descending into same-origin
      * iframes/objects. Returns null if there's no match (or a cross-origin
      * boundary blocks the walk). Creates nothing — controller creation is the
-     * caller's job via `ensureController`.
+     * caller's job via `tryGetOrCreateController`.
      */
     private getActiveElement(document: Document): HTMLElement | null {
         const isActiveElementInChildDocument =
