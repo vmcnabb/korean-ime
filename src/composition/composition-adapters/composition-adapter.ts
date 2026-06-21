@@ -5,6 +5,7 @@ import { trace } from "../../decorators/trace";
 import { DummyAdapter } from "./dummy-adapter";
 import { MethodKeys } from "../../types/objects";
 import { ICompositionAdapter, SupportedCompositionFeatures } from "./composition-adapter-interface";
+import { GlyphRect } from "../compositing-box";
 
 type DispatchableEvent = KeyboardEvent | CompositionEvent | InputEvent;
 
@@ -59,6 +60,12 @@ export abstract class CompositionAdapter implements ICompositionAdapter {
      * Returns the character immediately prior to the caret. If selection is not collapsed, returns undefined.
      */
     abstract getPreviousCharacter(): string | undefined;
+
+    /**
+     * Returns the viewport rect of the character immediately prior to the caret.
+     * If selection is not collapsed or the glyph cannot be measured, returns undefined.
+     */
+    abstract getPreviousCharacterRect(): GlyphRect | undefined;
 
     /**
      * Delete selection if exists, otherwise delete the character immediately before the caret.

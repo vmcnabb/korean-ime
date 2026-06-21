@@ -194,3 +194,42 @@ describe("InputAdapter composition events", () => {
         expect(recorded.events).toHaveLength(0);
     });
 });
+
+describe("InputAdapter glyph measurement", () => {
+    beforeEach(() => {
+        (Range.prototype as { getBoundingClientRect?: () => DOMRect }).getBoundingClientRect = () =>
+            ({
+                left: 11,
+                top: 12,
+                width: 13,
+                height: 14,
+                right: 24,
+                bottom: 26,
+                x: 11,
+                y: 12,
+                toJSON: () => ({}),
+            }) as DOMRect;
+    });
+
+    afterEach(() => {
+        document.body.innerHTML = "";
+        delete (Range.prototype as { getBoundingClientRect?: () => DOMRect }).getBoundingClientRect;
+    });
+
+    it("measures the character immediately before the caret", () => {
+        const element = makeTextarea("한");
+        const adapter = makeAdapter(element);
+
+        expect(adapter.getPreviousCharacterRect()).toEqual({ left: 11, top: 12, width: 13, height: 14 });
+    });
+
+    it("cleans up the temporary mirror element after measurement", () => {
+        const element = makeTextarea("한");
+        const adapter = makeAdapter(element);
+
+        adapter.getPreviousCharacterRect();
+
+        expect(document.body.childElementCount).toBe(1);
+        expect(document.body.firstElementChild).toBe(element);
+    });
+});

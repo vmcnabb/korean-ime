@@ -3,7 +3,17 @@ import { isAltKey, isModifierKey, KeyCode, keyMap } from "../keyboard/korean-key
 import { HangulCompositor } from "./hangul-compositor";
 import { CompositionAdapterFactory } from "./composition-adapter-factory";
 import { CompositionAdapter } from "./composition-adapters/composition-adapter";
-import { convertHangulToHanja } from "./hanja/hanja-converter";
+import { HanjaCandidateWindow } from "./hanja/hanja-candidate-window";
+import { HanjaCompositionOverlay } from "./hanja/hanja-composition-overlay";
+import { commitHanjaCandidate, getHanjaConversionTarget, HanjaConversionTarget } from "./hanja/hanja-converter";
+import { isDefaultHanjaKey } from "./hanja/hanja-key";
+
+type HanjaCandidateSelection = {
+    target: HanjaConversionTarget;
+    selectedIndex: number;
+    overlay: HanjaCompositionOverlay;
+    window: HanjaCandidateWindow;
+};
 
 /**
  * Controls the Hangul IME for a given element.
@@ -13,6 +23,7 @@ export class HangulImeController {
     private _isActive = false;
     private compositor = new HangulCompositor();
     private compositionAdapter: CompositionAdapter;
+    private hanjaCandidateSelection?: HanjaCandidateSelection;
 
     private changeListeners: (() => void)[] = [];
     private eventListeners: {
@@ -25,7 +36,7 @@ export class HangulImeController {
     private lastAlt?: KeyCode.AltLeft | KeyCode.AltRight = undefined;
 
     constructor(
-        element: HTMLElement,
+        private readonly element: HTMLElement,
         compositionAdapter = CompositionAdapterFactory.createCompositionAdapter(element)
     ) {
         if (!compositionAdapter) {
@@ -67,6 +78,8 @@ export class HangulImeController {
     }
 
     deactivate() {
+        this.closeHanjaCandidateSelection();
+
         if (this.compositor.isCompositing()) {
             // Ending the composition with the current value is the correct thing to do with Korean.
             // If we implement other languages, we may need to change this.
@@ -87,6 +100,7 @@ export class HangulImeController {
         try {
             this.flushComposition();
         } finally {
+            this.closeHanjaCandidateSelection();
             this._isActive = false;
             for (const { target, type, listener, capture } of this.eventListeners) {
                 target.removeEventListener(type, listener, capture);
@@ -119,15 +133,20 @@ export class HangulImeController {
 
             const code = event.code as KeyCode;
 
-            // Temporary scaffolding for Issue 150; graduates to a Settings toggle when the feature ships.
-            if (process.env.KIME_ENABLE_HANJA === "true" && code === KeyCode.ControlRight) {
-                if (convertHangulToHanja(this.compositor, this.compositionAdapter)) {
-                    this.notifyOnEntry();
-                    event.preventDefault();
-                    event.stopPropagation();
-                    event.stopImmediatePropagation();
-                }
+            if (this.hanjaCandidateSelection && this.handleHanjaCandidateSelectionKey(event)) {
                 return;
+            }
+
+            if (this.hanjaCandidateSelection) {
+                this.closeHanjaCandidateSelection();
+            }
+
+            // Temporary scaffolding for Issues 150/181; graduates to Settings when the feature ships.
+            if (process.env.KIME_ENABLE_HANJA === "true" && isDefaultHanjaKey(event)) {
+                if (this.openHanjaCandidateSelection()) {
+                    this.cancelEvent(event);
+                    return;
+                }
             }
 
             // record which alt was down last, so we know if the "han/yong" key is down
@@ -244,6 +263,15 @@ export class HangulImeController {
             return;
         }
 
+        if (this.hanjaCandidateSelection && this.handleHanjaCandidateSelectionKey(event)) {
+            return;
+        }
+
+        if (this.hanjaCandidateSelection) {
+            this.closeHanjaCandidateSelection();
+            return;
+        }
+
         const code = event.code as KeyCode;
 
         if (code === KeyCode.Backspace) {
@@ -299,9 +327,7 @@ export class HangulImeController {
         this.compositionAdapter.deleteContentBackwards();
         this.compositionAdapter.beginComposition(character!, KeyCode.Backspace);
 
-        event.preventDefault();
-        event.stopPropagation();
-        event.stopImmediatePropagation();
+        this.cancelEvent(event);
         return true;
     }
 
@@ -320,9 +346,7 @@ export class HangulImeController {
         const jamo = event.shiftKey && key.jamo.shift ? key.jamo.shift : key.jamo.normal;
         this.addJamo(jamo, code);
 
-        event.preventDefault();
-        event.stopPropagation();
-        event.stopImmediatePropagation();
+        this.cancelEvent(event);
     }
 
     /**
@@ -342,12 +366,114 @@ export class HangulImeController {
             this.compositionAdapter.updateComposition(block, KeyCode.Backspace);
             this.notifyOnEntry();
 
-            event.preventDefault();
-            event.stopPropagation();
-            event.stopImmediatePropagation();
+            this.cancelEvent(event);
         } else {
             this.compositionAdapter.endComposition("x");
         }
+    }
+
+    private openHanjaCandidateSelection(): boolean {
+        const target = getHanjaConversionTarget(this.compositor, this.compositionAdapter);
+        if (!target) {
+            return false;
+        }
+
+        this.closeHanjaCandidateSelection();
+
+        if (target.kind === "composition") {
+            this.compositionAdapter.endComposition(target.reading);
+            this.compositor.reset();
+        }
+
+        const committedTarget: HanjaConversionTarget = {
+            ...target,
+            kind: "previous-character",
+        };
+        const overlay = new HanjaCompositionOverlay(this.element, this.compositionAdapter);
+        const overlayRect = overlay.show(target.reading);
+        this.hanjaCandidateSelection = {
+            target: committedTarget,
+            selectedIndex: 0,
+            overlay,
+            window: new HanjaCandidateWindow(this.element, target.candidates, overlayRect),
+        };
+        return true;
+    }
+
+    private handleHanjaCandidateSelectionKey(event: KeyboardEvent): boolean {
+        const selection = this.hanjaCandidateSelection;
+        if (!selection) {
+            return false;
+        }
+
+        const numberedIndex = hanjaCandidateNumberIndex(event);
+        if (numberedIndex !== undefined && numberedIndex < selection.target.candidates.length) {
+            this.commitHanjaCandidate(numberedIndex, event.code as KeyCode);
+            this.cancelEvent(event);
+            return true;
+        }
+
+        switch (event.key) {
+            case "ArrowDown":
+            case "ArrowRight":
+                this.moveHanjaCandidateSelection(1);
+                this.cancelEvent(event);
+                return true;
+
+            case "ArrowUp":
+            case "ArrowLeft":
+                this.moveHanjaCandidateSelection(-1);
+                this.cancelEvent(event);
+                return true;
+
+            case "Enter":
+                this.commitHanjaCandidate(selection.selectedIndex, event.code as KeyCode);
+                this.cancelEvent(event);
+                return true;
+
+            case "Escape":
+                this.closeHanjaCandidateSelection();
+                this.cancelEvent(event);
+                return true;
+
+            case "Backspace":
+            case "Delete":
+                this.closeHanjaCandidateSelection();
+                this.cancelEvent(event);
+                return true;
+
+            default:
+                return false;
+        }
+    }
+
+    private moveHanjaCandidateSelection(delta: number): void {
+        const selection = this.hanjaCandidateSelection;
+        if (!selection) {
+            return;
+        }
+
+        const candidateCount = selection.target.candidates.length;
+        selection.selectedIndex = (selection.selectedIndex + delta + candidateCount) % candidateCount;
+        selection.window.setActiveIndex(selection.selectedIndex);
+    }
+
+    private commitHanjaCandidate(index: number, keyCode: KeyCode): void {
+        const selection = this.hanjaCandidateSelection;
+        if (!selection) {
+            return;
+        }
+
+        const candidate = selection.target.candidates[index];
+        this.closeHanjaCandidateSelection();
+        commitHanjaCandidate(selection.target, candidate, this.compositor, this.compositionAdapter, keyCode);
+        this.notifyOnEntry();
+    }
+
+    private closeHanjaCandidateSelection(): void {
+        this.hanjaCandidateSelection?.overlay.remove();
+        this.hanjaCandidateSelection?.window.remove();
+        this.hanjaCandidateSelection = undefined;
     }
 
     // Commit and clear any in-progress composition. Runs when the controller is
@@ -356,6 +482,8 @@ export class HangulImeController {
     // inactive (Hangul typing disabled), so a focus/caret change or a physical
     // keystroke must still flush it, or the next OSK jamo attaches to a stale block.
     private flushComposition() {
+        this.closeHanjaCandidateSelection();
+
         if (!this._isActive && !this.compositor.isCompositing()) {
             return;
         }
@@ -415,4 +543,18 @@ export class HangulImeController {
         target.addEventListener(type, listener, capture);
         this.eventListeners.push({ target, type, listener, capture });
     }
+
+    private cancelEvent(event: KeyboardEvent): void {
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+    }
+}
+
+function hanjaCandidateNumberIndex(event: KeyboardEvent): number | undefined {
+    if (!/^[1-9]$/.test(event.key)) {
+        return undefined;
+    }
+
+    return Number(event.key) - 1;
 }

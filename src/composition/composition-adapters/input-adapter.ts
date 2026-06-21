@@ -1,7 +1,6 @@
 import { KeyCode } from "../../keyboard/korean-keyboard-map";
 import { CompositionAdapter } from "./composition-adapter";
-import { CompositingBox } from "./compositing-box";
-import { measureInputRangeRect } from "./input-range-rect";
+import { CompositingBox, GlyphRect } from "../compositing-box";
 
 export class InputAdapter extends CompositionAdapter {
     private isCompositing = false;
@@ -79,6 +78,15 @@ export class InputAdapter extends CompositionAdapter {
         return measureInputRangeRect(this.element, this.blockStart, this.blockStart + this.currentBlock.length);
     }
 
+    getPreviousCharacterRect() {
+        const caret = this.element.selectionStart;
+        if (!caret || caret < 1) {
+            return undefined;
+        }
+
+        return measureInputRangeRect(this.element, caret - 1, caret);
+    }
+
     inputCharacter(data: string, keyCode: KeyCode): void {
         super._inputCharacter(data, keyCode, () => {
             const element = this.element;
@@ -148,4 +156,107 @@ export class InputAdapter extends CompositionAdapter {
             }
         });
     }
+}
+
+/**
+ * Measure the on-screen rect of a character range `[start, end)` inside an
+ * `<input>`/`<textarea>`. There's no addressable DOM for the text inside a form
+ * field, so we use the well-known mirror technique: build a hidden `<div>` that
+ * replicates the field's text-layout box, measure a Range inside it, then combine
+ * that with the field's own viewport position.
+ */
+const MIRRORED_PROPERTIES: string[] = [
+    "boxSizing",
+    "borderTop",
+    "borderRight",
+    "borderBottom",
+    "borderLeft",
+    "paddingTop",
+    "paddingRight",
+    "paddingBottom",
+    "paddingLeft",
+    "paddingBlock",
+    "paddingInline",
+    "fontStyle",
+    "fontVariant",
+    "fontWeight",
+    "fontStretch",
+    "fontSize",
+    "fontSizeAdjust",
+    "lineHeight",
+    "fontFamily",
+    "textAlign",
+    "textTransform",
+    "textIndent",
+    "textRendering",
+    "letterSpacing",
+    "wordSpacing",
+    "tabSize",
+    "direction",
+    "overflowWrap",
+    "overflowClip",
+    "overflowClipMargin",
+];
+
+function measureInputRangeRect(
+    field: HTMLInputElement | HTMLTextAreaElement,
+    start: number,
+    end: number
+): GlyphRect | undefined {
+    const doc = field.ownerDocument;
+    const computed = window.getComputedStyle(field);
+    const isSingleLine = field.nodeName === "INPUT";
+
+    const mirror = doc.createElement("div");
+    const style = mirror.style as unknown as Record<string, string>;
+    for (const property of MIRRORED_PROPERTIES) {
+        style[property] = computed.getPropertyValue(toKebabCase(property));
+    }
+
+    mirror.style.position = "fixed";
+    mirror.style.top = "0";
+    mirror.style.left = "0";
+    mirror.style.visibility = "hidden";
+    mirror.style.boxSizing = "content-box";
+    mirror.style.whiteSpace = isSingleLine ? "pre" : "pre-wrap";
+    mirror.style.overflowWrap = isSingleLine ? "normal" : "break-word";
+
+    if (isSingleLine) {
+        mirror.style.width = "auto";
+    } else {
+        const paddingLeft = parseFloat(computed.paddingLeft) || 0;
+        const paddingRight = parseFloat(computed.paddingRight) || 0;
+        mirror.style.width = `${field.clientWidth - paddingLeft - paddingRight}px`;
+    }
+
+    const value = field.value;
+    if (value.length === 0) {
+        return undefined;
+    }
+
+    mirror.textContent = value;
+    doc.body.appendChild(mirror);
+
+    const range = document.createRange();
+    range.setStart(mirror.firstChild || mirror, start);
+    range.setEnd(mirror.firstChild || mirror, end);
+    const markerRect = range.getBoundingClientRect();
+
+    doc.body.removeChild(mirror);
+
+    if (markerRect.width === 0 && markerRect.height === 0) {
+        return undefined;
+    }
+
+    const fieldRect = field.getBoundingClientRect();
+    return {
+        left: markerRect.left + fieldRect.left - field.scrollLeft,
+        top: markerRect.top + fieldRect.top - field.scrollTop,
+        width: markerRect.width,
+        height: markerRect.height,
+    };
+}
+
+function toKebabCase(property: string): string {
+    return property.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
 }

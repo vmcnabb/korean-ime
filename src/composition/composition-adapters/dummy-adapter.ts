@@ -1,4 +1,5 @@
 import { ICompositionAdapter } from "./composition-adapter-interface";
+import { GlyphRect } from "../compositing-box";
 
 /**
  * This adapter is used by Composition adapter to get a list of all methods that exist in CompositionAdapter.
@@ -13,6 +14,9 @@ export class DummyAdapter implements ICompositionAdapter {
         throw new Error("Method not implemented.");
     }
     getPreviousCharacter(): string | undefined {
+        throw new Error("Method not implemented.");
+    }
+    getPreviousCharacterRect(): GlyphRect | undefined {
         throw new Error("Method not implemented.");
     }
     deleteContentBackwards(): void {

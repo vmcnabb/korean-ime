@@ -72,4 +72,13 @@ describe("ContentEditableAdapter compositing box", () => {
 
         expect(compositingBox()).toBeUndefined();
     });
+
+    it("measures the character immediately before the caret", () => {
+        const element = makeContentEditable();
+        element.textContent = "한";
+        placeCaretAtEnd(element);
+        const adapter = new ContentEditableAdapter(element);
+
+        expect(adapter.getPreviousCharacterRect()).toEqual({ left: 5, top: 6, width: 10, height: 12 });
+    });
 });
