@@ -1,0 +1,42 @@
+{
+  "name": "korean-ime-i18n-hover",
+  "publisher": "vmcnabb",
+  "displayName": "Korean IME i18n Hover",
+  "description": "Shows English Chrome i18n messages when hovering over t(\"message_key\") calls in this repo.",
+  "version": "0.0.1",
+  "private": true,
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vmcnabb/korean-ime.git",
+    "directory": "tools/vscode-i18n-hover"
+  },
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "extensionKind": [
+    "workspace"
+  ],
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished",
+    "onCommand:koreanImeI18nHover.showStatus",
+    "onLanguage:vue",
+    "onLanguage:typescript",
+    "onLanguage:javascript"
+  ],
+  "main": "./extension.js",
+  "scripts": {
+    "test": "node test/hover-utils.test.js"
+  },
+  "contributes": {
+    "commands": [
+      {
+        "command": "koreanImeI18nHover.showStatus",
+        "title": "Korean IME i18n Hover: Show Status"
+      }
+    ]
+  }
+}

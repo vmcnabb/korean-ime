@@ -1,0 +1,32 @@
+{
+    "folders": [
+        {
+            "name": "korean-ime",
+            "path": "../.."
+        },
+        {
+            "name": "vscode-i18n-hover",
+            "path": "."
+        }
+    ],
+    "launch": {
+        "version": "0.2.0",
+        "configurations": [
+            {
+                "name": "Debug i18n Hover",
+                "type": "extensionHost",
+                "request": "launch",
+                "runtimeExecutable": "${execPath}",
+                "args": [
+                    "--user-data-dir",
+                    "${workspaceFolder:vscode-i18n-hover}/../../.vscode/.i18n-hover-user-data",
+                    "--extensions-dir",
+                    "${workspaceFolder:vscode-i18n-hover}/../../.vscode/.i18n-hover-extensions",
+                    "--new-window",
+                    "--extensionDevelopmentPath=${workspaceFolder:vscode-i18n-hover}",
+                    "${workspaceFolder:korean-ime}"
+                ]
+            }
+        ]
+    }
+}
