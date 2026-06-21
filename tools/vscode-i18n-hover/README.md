@@ -24,6 +24,9 @@ The extension reads `src/_locales/en/messages.json` and reloads it when the file
 changes. It is editor tooling only; it does not affect the browser extension
 runtime.
 
+Each displayed locale includes an `open` link that opens the matching
+`messages.json` file at the translation key.
+
 English is always shown first. To show extra locales, add `i18n-hover.json` to
 the project root:
 

@@ -6,6 +6,7 @@ import * as vscode from "vscode";
 import {
     type ChromeMessageEntry,
     defaultLocale,
+    findJsonPropertyLine,
     findStringLiteralAtPosition,
     findTranslationKeyAtPosition,
     formatMessage,
@@ -14,6 +15,7 @@ import {
 import { TypeScriptMessageKeyResolver } from "./typescript-message-key";
 
 const configFileName = "i18n-hover.json";
+const openMessageCommand = "koreanImeI18nHover.openMessage";
 const messagesRelativeGlob = "src/_locales/*/messages.json";
 const supportedDocuments: vscode.DocumentSelector = [
     { scheme: "file", pattern: "**/*.vue" },
@@ -31,6 +33,23 @@ const supportedDocuments: vscode.DocumentSelector = [
 type HoverHit = {
     key: string;
     range: vscode.Range;
+};
+
+type MessageLocation = {
+    filePath: string;
+    line: number;
+};
+
+type LocalizedMessage = {
+    locale: string;
+    location: MessageLocation;
+    message: string;
+};
+
+type LocaleCatalog = {
+    keyLines: Map<string, number>;
+    messages: Record<string, ChromeMessageEntry>;
+    messagesPath: string;
 };
 
 export function activate(context: vscode.ExtensionContext): void {
@@ -52,13 +71,14 @@ export function activate(context: vscode.ExtensionContext): void {
             }
 
             const markdown = new vscode.MarkdownString();
+            markdown.isTrusted = { enabledCommands: [openMessageCommand] };
             markdown.appendMarkdown(`**Translation key**: \`${hit.key}\`\n\n`);
-            localizedMessages.forEach(({ locale, message }, index) => {
+            localizedMessages.forEach(({ locale, location, message }, index) => {
                 if (index > 0) {
                     markdown.appendMarkdown("\n\n");
                 }
 
-                markdown.appendMarkdown(`**${locale}**: `);
+                markdown.appendMarkdown(`**${locale}** [open](${createOpenMessageUri(location)}): `);
                 markdown.appendText(message);
             });
 
@@ -67,6 +87,7 @@ export function activate(context: vscode.ExtensionContext): void {
     });
 
     context.subscriptions.push(provider);
+    context.subscriptions.push(vscode.commands.registerCommand(openMessageCommand, openMessageLocation));
 
     context.subscriptions.push(
         vscode.commands.registerCommand("koreanImeI18nHover.showStatus", () => {
@@ -131,8 +152,28 @@ function isTypeScriptDocument(document: vscode.TextDocument): boolean {
     return document.languageId === "typescript" || document.languageId === "typescriptreact";
 }
 
+async function openMessageLocation(filePath: unknown, line: unknown): Promise<void> {
+    if (typeof filePath !== "string" || typeof line !== "number") {
+        return;
+    }
+
+    const document = await vscode.workspace.openTextDocument(vscode.Uri.file(filePath));
+    const safeLine = Math.max(0, Math.min(line, document.lineCount - 1));
+    const range = document.lineAt(safeLine).range;
+    const editor = await vscode.window.showTextDocument(document, {
+        preview: false,
+        selection: range,
+    });
+    editor.revealRange(range, vscode.TextEditorRevealType.InCenterIfOutsideViewport);
+}
+
+function createOpenMessageUri(location: MessageLocation): string {
+    const args = encodeURIComponent(JSON.stringify([location.filePath, location.line]));
+    return `command:${openMessageCommand}?${args}`;
+}
+
 class MessageCatalog implements vscode.Disposable {
-    #catalogs = new Map<string, Record<string, ChromeMessageEntry>>();
+    #catalogs = new Map<string, LocaleCatalog>();
     #configPath: string | undefined;
     #displayedLocales = [defaultLocale];
     #output: vscode.OutputChannel;
@@ -156,15 +197,29 @@ class MessageCatalog implements vscode.Disposable {
         vscode.workspace.onDidChangeWorkspaceFolders(() => this.#load(), undefined, context.subscriptions);
     }
 
-    getMessages(key: string): { locale: string; message: string }[] {
-        const defaultMessage = formatMessage(this.#catalogs.get(defaultLocale)?.[key]);
+    getMessages(key: string): LocalizedMessage[] {
+        const defaultMessage = formatMessage(this.#catalogs.get(defaultLocale)?.messages[key]);
         if (defaultMessage === undefined) {
             return [];
         }
 
         return this.#displayedLocales.flatMap((locale) => {
-            const message = formatMessage(this.#catalogs.get(locale)?.[key]);
-            return message === undefined ? [] : [{ locale, message }];
+            const catalog = this.#catalogs.get(locale);
+            const message = formatMessage(catalog?.messages[key]);
+            if (!catalog || message === undefined) {
+                return [];
+            }
+
+            return [
+                {
+                    locale,
+                    location: {
+                        filePath: catalog.messagesPath,
+                        line: catalog.keyLines.get(key) ?? 0,
+                    },
+                    message,
+                },
+            ];
         });
     }
 
@@ -185,7 +240,7 @@ class MessageCatalog implements vscode.Disposable {
     }
 
     get size(): number {
-        return Object.keys(this.#catalogs.get(defaultLocale) ?? {}).length;
+        return Object.keys(this.#catalogs.get(defaultLocale)?.messages ?? {}).length;
     }
 
     dispose(): void {
@@ -227,8 +282,13 @@ class MessageCatalog implements vscode.Disposable {
 
     #loadLocale(locale: string, messagesPath: string): void {
         try {
-            const messages = JSON.parse(fs.readFileSync(messagesPath, "utf8")) as Record<string, ChromeMessageEntry>;
-            this.#catalogs.set(locale, messages);
+            const text = fs.readFileSync(messagesPath, "utf8");
+            const messages = JSON.parse(text) as Record<string, ChromeMessageEntry>;
+            this.#catalogs.set(locale, {
+                keyLines: getMessageKeyLines(text, messages),
+                messages,
+                messagesPath,
+            });
         } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
             this.#output.appendLine(`[catalog] failed to read ${locale} messages from ${messagesPath}: ${message}`);
@@ -268,6 +328,15 @@ function readConfig(configPath: string | undefined, output: vscode.OutputChannel
 
 function getMessagesPath(projectRoot: string, locale: string): string {
     return path.join(projectRoot, "src", "_locales", locale, "messages.json");
+}
+
+function getMessageKeyLines(text: string, messages: Record<string, ChromeMessageEntry>): Map<string, number> {
+    return new Map(
+        Object.keys(messages).flatMap((key) => {
+            const line = findJsonPropertyLine(text, key);
+            return line === undefined ? [] : [[key, line]];
+        })
+    );
 }
 
 function extensionModeName(mode: vscode.ExtensionMode): string {

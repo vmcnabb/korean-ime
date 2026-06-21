@@ -140,3 +140,16 @@ export function getDisplayedLocales(config: unknown): string[] {
 
     return locales;
 }
+
+export function findJsonPropertyLine(text: string, key: string): number | undefined {
+    const propertyPrefix = `${JSON.stringify(key)}:`;
+    const lines = text.split(/\r?\n/);
+
+    for (let index = 0; index < lines.length; index++) {
+        if (lines[index].trimStart().startsWith(propertyPrefix)) {
+            return index;
+        }
+    }
+
+    return undefined;
+}

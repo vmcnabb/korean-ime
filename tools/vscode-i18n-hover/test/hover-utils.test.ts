@@ -6,6 +6,7 @@ import {
     findStringLiteralAtPosition,
     findTranslationKeyAtPosition,
     formatMessage,
+    findJsonPropertyLine,
     getDisplayedLocales,
 } from "../src/hover-utils";
 
@@ -125,5 +126,23 @@ describe("getDisplayedLocales", () => {
 
     it("normalizes and ignores invalid locale values", () => {
         assert.deepEqual(getDisplayedLocales({ displayed_locales: [" ko ", "", 7, null] }), ["en", "ko"]);
+    });
+});
+
+describe("findJsonPropertyLine", () => {
+    it("finds the 0-based line containing a JSON property", () => {
+        const text = ["{", '  "options_title": {', '    "message": "Options"', "  }", "}"].join("\n");
+
+        assert.equal(findJsonPropertyLine(text, "options_title"), 1);
+    });
+
+    it("handles escaped JSON property names", () => {
+        const text = ["{", '  "has\\"quote": {', '    "message": "quoted"', "  }", "}"].join("\n");
+
+        assert.equal(findJsonPropertyLine(text, 'has"quote'), 1);
+    });
+
+    it("returns undefined for absent properties", () => {
+        assert.equal(findJsonPropertyLine("{}", "options_title"), undefined);
     });
 });
