@@ -197,7 +197,9 @@ function onCaptureKeyup(event: KeyboardEvent) {
             <!-- The binding box is the capture control: activating it (click or
                  Enter/Space) starts listening for a key. It reuses .ds-field, so
                  keyboard focus inherits the shared focus ring; .ds-focus-ring
-                 forces that same ring while capturing. -->
+                 forces that same ring while capturing. Blur cancels an in-progress
+                 capture, so clicking (or otherwise moving focus) away bails out —
+                 the same as Esc. -->
             <button
                 type="button"
                 class="ds-field ds-field--compact binding"
@@ -205,6 +207,7 @@ function onCaptureKeyup(event: KeyboardEvent) {
                 :title="bindingAccessibleLabel"
                 :aria-label="bindingButtonLabel"
                 @click="startCapture"
+                @blur="stopCapture"
             >
                 {{ bindingDisplay }}
             </button>
