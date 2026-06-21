@@ -45,6 +45,11 @@ const bindingAccessibleLabel = computed(() => {
         : t("options_hanYong_toggleKey_off");
 });
 
+// The binding box is now a button; give it a self-describing accessible name
+// (field label + current value) so it reads as the toggle-key control rather
+// than a bare value when a screen reader lands on it.
+const bindingButtonLabel = computed(() => `${t("options_hanYong_toggleKey_label")}: ${bindingAccessibleLabel.value}`);
+
 const hintMessageKey = computed<MessageKey>(() =>
     keyBindingPlatform === "mac" ? "options_hanYong_toggleKey_hint_mac" : "options_hanYong_toggleKey_hint"
 );
@@ -189,16 +194,22 @@ function onCaptureKeyup(event: KeyboardEvent) {
             >
         </span>
         <div class="controls">
-            <span
-                class="binding"
-                :class="{ off: !capturing && !binding, capturing }"
+            <!-- The binding box is the capture control: activating it (click or
+                 Enter/Space) starts listening for a key. It reuses .ds-field, so
+                 keyboard focus inherits the shared focus ring; .ds-focus-ring
+                 forces that same ring while capturing. Blur cancels an in-progress
+                 capture, so clicking (or otherwise moving focus) away bails out —
+                 the same as Esc. -->
+            <button
+                type="button"
+                class="ds-field ds-field--compact binding"
+                :class="{ off: !capturing && !binding, capturing, 'ds-focus-ring': capturing }"
                 :title="bindingAccessibleLabel"
-                :aria-label="bindingAccessibleLabel"
+                :aria-label="bindingButtonLabel"
+                @click="startCapture"
+                @blur="stopCapture"
             >
                 {{ bindingDisplay }}
-            </span>
-            <button type="button" class="ds-btn ds-btn--sm" :disabled="capturing" @click="startCapture">
-                {{ t("options_hanYong_toggleKey_change") }}
             </button>
             <button type="button" class="ds-btn ds-btn--sm" :disabled="!binding && !capturing" @click="turnOff">
                 {{ t("options_hanYong_toggleKey_turnOff") }}
@@ -210,7 +221,7 @@ function onCaptureKeyup(event: KeyboardEvent) {
         <!-- Shown only while capturing, right under the controls: the capture hint,
              or the validation error if an invalid key was pressed. The general
              description lives in the heading's "?" tooltip. -->
-        <p v-if="invalid || capturing" class="feedback" :class="{ error: invalid }">
+        <p v-if="invalid || capturing" class="feedback" :class="{ error: invalid }" role="status">
             {{ invalid ? t(invalidMessageKey) : t(hintMessageKey) }}
         </p>
     </div>
@@ -248,12 +259,18 @@ function onCaptureKeyup(event: KeyboardEvent) {
 }
 
 .binding {
+    /* .ds-field provides the border, background, padding and the :focus-visible
+       ring; only the bits specific to a clickable monospace value box live here. */
     min-width: 5em;
-    padding: 0.2em 0.6em;
-    border: 1px solid var(--section-border);
-    border-radius: 4px;
+    border-radius: var(--radius-sm);
     font-family: monospace;
     text-align: center;
+    cursor: pointer;
+    appearance: none;
+}
+
+.binding:hover {
+    background-color: var(--button-hover-bg);
 }
 
 .binding.off {
@@ -262,7 +279,9 @@ function onCaptureKeyup(event: KeyboardEvent) {
 }
 
 .binding.capturing {
-    border-color: var(--toggle-on-bg);
+    /* "Listening for a key" is an active state: the focus ring comes from the
+       shared .ds-focus-ring class (applied in the template), so it tracks any
+       future change to the ring. This rule only adds the italic. */
     font-style: italic;
 }
 

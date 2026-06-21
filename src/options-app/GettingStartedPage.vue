@@ -10,8 +10,6 @@ import pinLightVideo from "url:../videos/pin-light.mp4";
 
 const loading = ref(true);
 const errorMessage = ref("");
-const typeHangulInput = ref<HTMLInputElement>();
-const otherToolsInput = ref<HTMLInputElement>();
 const pinningVideo = ref<HTMLVideoElement>();
 const showPinningVideo = ref(false);
 const optionsPageHref = getOptionsPageHref();
@@ -38,8 +36,6 @@ onMounted(async () => {
         console.error(error);
     } finally {
         loading.value = false;
-        await nextTick();
-        focusInitialChoice();
     }
 });
 
@@ -63,15 +59,6 @@ async function revealPinningVideo(): Promise<void> {
     } catch {
         // The controls remain visible if a browser blocks autoplay for any reason.
     }
-}
-
-function focusInitialChoice(): void {
-    if (selectedChoice.value === gettingStartedChoices.otherTools) {
-        otherToolsInput.value?.focus();
-        return;
-    }
-
-    typeHangulInput.value?.focus();
 }
 
 function browserHasFirefoxExtensionMenu(): boolean {
@@ -108,8 +95,8 @@ function getPreferredPinningVideoSrc(): string {
 
                 <label class="choice-card" :class="{ selected: selectedChoice === gettingStartedChoices.typeHangul }">
                     <input
-                        ref="typeHangulInput"
                         type="radio"
+                        class="visually-hidden"
                         name="getting-started-choice"
                         :checked="selectedChoice === gettingStartedChoices.typeHangul"
                         @change="choose(gettingStartedChoices.typeHangul)"
@@ -122,8 +109,8 @@ function getPreferredPinningVideoSrc(): string {
 
                 <label class="choice-card" :class="{ selected: selectedChoice === gettingStartedChoices.otherTools }">
                     <input
-                        ref="otherToolsInput"
                         type="radio"
+                        class="visually-hidden"
                         name="getting-started-choice"
                         :checked="selectedChoice === gettingStartedChoices.otherTools"
                         @change="choose(gettingStartedChoices.otherTools)"
@@ -158,18 +145,20 @@ function getPreferredPinningVideoSrc(): string {
                 </button>
             </p>
             <Transition name="pinning-video-reveal">
-                <video
-                    v-if="showPinningVideo"
-                    :id="pinningVideoId"
-                    ref="pinningVideo"
-                    class="pinning-video"
-                    :src="pinningVideoSrc"
-                    controls
-                    muted
-                    playsinline
-                    preload="metadata"
-                    :aria-label="t('gettingStarted_showIcon_videoLabel')"
-                ></video>
+                <div class="video-container"
+                    v-if="showPinningVideo">
+                    <video
+                        :id="pinningVideoId"
+                        ref="pinningVideo"
+                        class="pinning-video"
+                        :src="pinningVideoSrc"
+                        controls
+                        muted
+                        playsinline
+                        preload="metadata"
+                        :aria-label="t('gettingStarted_showIcon_videoLabel')"
+                    ></video>
+                </div>
             </Transition>
         </section>
 
@@ -208,12 +197,11 @@ legend {
 }
 
 .choice-card {
+    position: relative;
     display: grid;
-    grid-template-columns: auto 1fr;
-    gap: 0.75em;
-    align-items: start;
     margin-top: 0.75em;
-    padding: 0.85em 1em;
+    /* Trailing room so a long translated label never runs under the check. */
+    padding: 0.85em 2.6em 0.85em 1em;
     border: 1px solid var(--section-border);
     border-radius: var(--radius);
     cursor: pointer;
@@ -229,8 +217,35 @@ legend {
     background-color: var(--accent-subtle-bg);
 }
 
-.choice-card input {
-    margin-top: 0.15em;
+/* The native radio is visually hidden (it still drives state + keyboard
+   navigation), so surface keyboard focus on the card itself. */
+.choice-card:has(:focus-visible) {
+    outline: var(--focus-ring-width) solid var(--focus-ring-color);
+    outline-offset: var(--focus-ring-offset);
+}
+
+/* Selected card's border is the accent fill — stand the focus ring off it. */
+.choice-card.selected:has(:focus-visible) {
+    outline-offset: var(--focus-ring-offset-filled);
+}
+
+/* Selection is the card's border + tint plus this corner check — a shape cue, so
+   it doesn't lean on colour alone. */
+.choice-card::after {
+    content: "";
+    position: absolute;
+    top: 1.15em;
+    right: 1.05em;
+    width: 6px;
+    height: 11px;
+    border-right: 2px solid var(--toggle-on-bg);
+    border-bottom: 2px solid var(--toggle-on-bg);
+    transform: rotate(45deg) scale(0);
+    transition: transform 0.12s ease;
+}
+
+.choice-card.selected::after {
+    transform: rotate(45deg) scale(1);
 }
 
 .choice-card strong,
@@ -270,6 +285,13 @@ legend {
     margin: 0.85em 0 0;
 }
 
+.video-container {
+    display: block;
+    width: 100%;
+    max-height: 360px;
+    margin: 0;
+    object-fit: contain;
+}
 .pinning-video {
     display: block;
     width: 100%;
@@ -284,8 +306,8 @@ legend {
 .pinning-video-reveal-enter-active {
     overflow: hidden;
     transition:
-        max-height 180ms ease,
-        opacity 180ms ease;
+        max-height 1000ms ease,
+        opacity 500ms ease;
 }
 
 .pinning-video-reveal-enter-from {

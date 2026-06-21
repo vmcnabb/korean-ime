@@ -24,10 +24,16 @@
     --label-font-size: 1.1em;
     --checkbox-size: var(--label-font-size);
 
-    /* Accent / toggle / subtle states */
+    /* Accent / toggle / subtle states. The accent is the logo's violet
+       (icon_h.svg: #5a2d82→#2b1340, with a #dcbfff glyph), brightened in dark
+       mode the way the rest of the palette is. --accent-on is the ink for
+       text/icons sitting on a filled accent: white reads on the light-mode
+       violet, but the lighter dark-mode violet needs dark ink (the logo's deep
+       aubergine) to stay legible. */
     --toggle-off-bg: light-dark(#ccc, #555);
-    --toggle-on-bg: light-dark(#2563eb, #3b82f6);
-    --accent-subtle-bg: light-dark(#eef4ff, #10213d);
+    --toggle-on-bg: light-dark(#6d28d9, #a78bfa);
+    --accent-on: light-dark(white, #2b1340);
+    --accent-subtle-bg: light-dark(#f3edff, #2b1340);
     --button-hover-bg: light-dark(#f1f5f9, #292929);
     --success-color: light-dark(#168a45, #63d38a);
     --error-color: light-dark(#c0392b, #f87171);
@@ -45,7 +51,15 @@
     --radius: 8px;
     --radius-sm: 6px;
     --focus-ring-width: 2px;
-    --focus-ring-offset: 2px;
+    /* Tight ring by default (offset 0). The ring colour is its own lever,
+       decoupled from the accent fill: --focus-ring-color defaults to the accent
+       but can be retoned without touching the fills. Filled-accent controls
+       (primary button, checked checkbox, toggle-on, selected card) would merge a
+       same-colour ring into the fill, so those alone stand it off by
+       --focus-ring-offset-filled — the one place we break the tight ring. */
+    --focus-ring-offset: 0;
+    --focus-ring-offset-filled: 3px;
+    --focus-ring-color: var(--toggle-on-bg);
 }
 
 /* Base typography shared by both page contexts. Surface-specific layout (the
@@ -85,7 +99,7 @@ body {
 
 /* Filled accent button (the getting-started "show video" action). */
 .ds-btn--primary {
-    color: white;
+    color: var(--accent-on);
     font-weight: 700;
     background-color: var(--toggle-on-bg);
     border-color: var(--toggle-on-bg);
@@ -186,7 +200,7 @@ body {
     height: var(--checkbox-size);
     margin: 0;
     font: inherit;
-    color: white;
+    color: var(--accent-on);
     appearance: none;
     background-color: var(--field-bg);
     border: 1px solid var(--section-border);
@@ -243,12 +257,25 @@ body {
 
 /* --- Focus ring ---------------------------------------------------------- */
 
+/* The focus-ring appearance, shared between real :focus-visible states and the
+   .ds-focus-ring utility — so anything that needs to *look* focused without being
+   in a real focus state (e.g. a custom "listening" indicator) renders identically
+   and tracks any future change to the ring from this one place. */
 .ds-btn:focus-visible,
 .ds-icon-btn:focus-visible,
 .ds-field:focus-visible,
-.ds-checkbox:focus-visible {
-    outline: var(--focus-ring-width) solid var(--toggle-on-bg);
+.ds-checkbox:focus-visible,
+.ds-focus-ring {
+    outline: var(--focus-ring-width) solid var(--focus-ring-color);
     outline-offset: var(--focus-ring-offset);
+}
+
+/* Filled-accent controls: a same-colour ring at offset 0 merges into the violet
+   fill, so stand it off just for these. After the base rule so the override wins
+   on equal specificity. */
+.ds-btn--primary:focus-visible,
+.ds-checkbox:checked:focus-visible {
+    outline-offset: var(--focus-ring-offset-filled);
 }
 
 /* --- Accessibility helper ------------------------------------------------ */
