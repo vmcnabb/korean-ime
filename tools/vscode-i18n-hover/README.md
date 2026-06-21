@@ -16,6 +16,9 @@ npm run install-i18n-vscode
 This packages the extension as a VSIX, installs it into VS Code, then removes
 the generated VSIX file.
 
+Use `npm run validate:i18n-vscode` from the repo root to type-check and test the
+VS Code extension without running the browser extension's full validation gate.
+
 The extension reads `src/_locales/en/messages.json` and reloads it when the file
 changes. It is editor tooling only; it does not affect the browser extension
 runtime.
@@ -32,7 +35,7 @@ the `Korean IME i18n Hover` output channel.
    `t("...")` key.
 
 The workspace file includes both the repo root and this extension folder, then
-launches the extension with `tools/vscode-i18n-hover` as
+builds and launches the extension with `tools/vscode-i18n-hover` as
 `--extensionDevelopmentPath`. It uses a private VS Code user-data directory
 under `.vscode/` so the Extension Development Host can open the repo even when
 the same folder is already open in your normal VS Code window.

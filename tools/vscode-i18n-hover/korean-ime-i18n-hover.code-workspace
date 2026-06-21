@@ -16,6 +16,7 @@
                 "name": "Debug i18n Hover",
                 "type": "extensionHost",
                 "request": "launch",
+                "preLaunchTask": "Build i18n Hover",
                 "runtimeExecutable": "${execPath}",
                 "args": [
                     "--user-data-dir",
@@ -26,6 +27,18 @@
                     "--extensionDevelopmentPath=${workspaceFolder:vscode-i18n-hover}",
                     "${workspaceFolder:korean-ime}"
                 ]
+            }
+        ]
+    },
+    "tasks": {
+        "version": "2.0.0",
+        "tasks": [
+            {
+                "label": "Build i18n Hover",
+                "type": "npm",
+                "script": "build",
+                "path": "${workspaceFolder:vscode-i18n-hover}",
+                "problemMatcher": "$tsc"
             }
         ]
     }

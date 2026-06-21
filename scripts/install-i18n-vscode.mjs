@@ -14,6 +14,7 @@ let exitCode = 0;
 try {
     await removeVsix();
 
+    run("npm", ["run", "build"], { cwd: extensionDir });
     run("npm", ["exec", "--", "vsce", "package", "--skip-license", "--out", vsixFile], { cwd: extensionDir });
 
     run("code", ["--install-extension", vsixPath, "--force"], { cwd: repoRoot });

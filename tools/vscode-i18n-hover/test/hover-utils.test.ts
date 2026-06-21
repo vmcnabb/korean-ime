@@ -1,8 +1,8 @@
 "use strict";
 
-const assert = require("node:assert/strict");
-const { describe, it } = require("node:test");
-const { findStringLiteralAtPosition, findTranslationKeyAtPosition, formatMessage } = require("../hover-utils");
+import assert from "node:assert/strict";
+import { describe, it } from "node:test";
+import { findStringLiteralAtPosition, findTranslationKeyAtPosition, formatMessage } from "../src/hover-utils";
 
 describe("findTranslationKeyAtPosition", () => {
     it("finds a double-quoted t() key when hovering inside the literal", () => {

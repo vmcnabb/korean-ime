@@ -1,19 +1,44 @@
 "use strict";
 
-const path = require("node:path");
+import * as path from "node:path";
+import { createRequire } from "node:module";
+import type * as ts from "typescript";
+
+type TypeScriptModule = typeof import("typescript");
+const requireFromExtension = createRequire(__filename);
+
+export type ContextualMessageKeyHit = {
+    key: string;
+    start: number;
+    end: number;
+};
+
+type Project = {
+    configPath: string;
+    ts: TypeScriptModule;
+};
+
+type OutputChannelLike = {
+    appendLine(message: string): void;
+};
 
 const messageKeyTypePattern = /(^|[^\w$])MessageKey($|[^\w$])/;
 
-class TypeScriptMessageKeyResolver {
-    #output;
-    #projects = new Map();
-    #loggedMessages = new Set();
+export class TypeScriptMessageKeyResolver {
+    #output: OutputChannelLike | undefined;
+    #projects = new Map<string, Project | undefined>();
+    #loggedMessages = new Set<string>();
 
-    constructor(output) {
+    constructor(output?: OutputChannelLike) {
         this.#output = output;
     }
 
-    find(documentPath, documentText, offset, workspaceRoots) {
+    find(
+        documentPath: string,
+        documentText: string,
+        offset: number,
+        workspaceRoots: string[]
+    ): ContextualMessageKeyHit | undefined {
         const workspaceRoot = findOwningWorkspaceRoot(documentPath, workspaceRoots);
         if (!workspaceRoot) {
             return undefined;
@@ -33,25 +58,26 @@ class TypeScriptMessageKeyResolver {
                 offset,
             });
         } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
             this.#logOnce(
-                `semantic-hover-error:${workspaceRoot}:${error.message}`,
-                `[typescript] semantic hover failed for ${documentPath}: ${error.message}`
+                `semantic-hover-error:${workspaceRoot}:${message}`,
+                `[typescript] semantic hover failed for ${documentPath}: ${message}`
             );
             return undefined;
         }
     }
 
-    dispose() {
+    dispose(): void {
         this.#projects.clear();
     }
 
-    #getProject(workspaceRoot) {
+    #getProject(workspaceRoot: string): Project | undefined {
         if (this.#projects.has(workspaceRoot)) {
             return this.#projects.get(workspaceRoot);
         }
 
-        const ts = loadTypeScript(workspaceRoot);
-        if (!ts) {
+        const tsModule = loadTypeScript(workspaceRoot);
+        if (!tsModule) {
             this.#logOnce(
                 `typescript-missing:${workspaceRoot}`,
                 `[typescript] could not load TypeScript from ${workspaceRoot}/node_modules`
@@ -60,20 +86,23 @@ class TypeScriptMessageKeyResolver {
             return undefined;
         }
 
-        const configPath = ts.findConfigFile(workspaceRoot, ts.sys.fileExists, "tsconfig.json");
+        const configPath = tsModule.findConfigFile(workspaceRoot, tsModule.sys.fileExists, "tsconfig.json");
         if (!configPath) {
-            this.#logOnce(`tsconfig-missing:${workspaceRoot}`, `[typescript] no tsconfig.json found under ${workspaceRoot}`);
+            this.#logOnce(
+                `tsconfig-missing:${workspaceRoot}`,
+                `[typescript] no tsconfig.json found under ${workspaceRoot}`
+            );
             this.#projects.set(workspaceRoot, undefined);
             return undefined;
         }
 
-        const project = { configPath, ts };
+        const project = { configPath, ts: tsModule };
         this.#projects.set(workspaceRoot, project);
         this.#logOnce(`project:${workspaceRoot}`, `[typescript] using ${configPath}`);
         return project;
     }
 
-    #logOnce(key, message) {
+    #logOnce(key: string, message: string): void {
         if (this.#loggedMessages.has(key)) {
             return;
         }
@@ -83,7 +112,19 @@ class TypeScriptMessageKeyResolver {
     }
 }
 
-function findContextualMessageKeyAtOffset({ ts, configPath, fileName, text, offset }) {
+export function findContextualMessageKeyAtOffset({
+    ts,
+    configPath,
+    fileName,
+    text,
+    offset,
+}: {
+    ts: TypeScriptModule;
+    configPath: string;
+    fileName: string;
+    text: string;
+    offset: number;
+}): ContextualMessageKeyHit | undefined {
     const parsedConfig = readParsedConfig(ts, configPath);
     if (!parsedConfig) {
         return undefined;
@@ -116,21 +157,26 @@ function findContextualMessageKeyAtOffset({ ts, configPath, fileName, text, offs
     };
 }
 
-function readParsedConfig(ts, configPath) {
-    const config = ts.readConfigFile(configPath, ts.sys.readFile);
+function readParsedConfig(tsModule: TypeScriptModule, configPath: string): ts.ParsedCommandLine | undefined {
+    const config = tsModule.readConfigFile(configPath, tsModule.sys.readFile);
     if (config.error) {
         return undefined;
     }
 
-    return ts.parseJsonConfigFileContent(config.config, ts.sys, path.dirname(configPath));
+    return tsModule.parseJsonConfigFileContent(config.config, tsModule.sys, path.dirname(configPath));
 }
 
-function createOverlayCompilerHost(ts, options, fileName, text) {
-    const host = ts.createCompilerHost(options, true);
+function createOverlayCompilerHost(
+    tsModule: TypeScriptModule,
+    options: ts.CompilerOptions,
+    fileName: string,
+    text: string
+): ts.CompilerHost {
+    const host = tsModule.createCompilerHost(options, true);
     const originalFileExists = host.fileExists.bind(host);
     const originalGetSourceFile = host.getSourceFile.bind(host);
     const originalReadFile = host.readFile.bind(host);
-    const useCaseSensitiveFileNames = ts.sys.useCaseSensitiveFileNames;
+    const useCaseSensitiveFileNames = tsModule.sys.useCaseSensitiveFileNames;
 
     host.fileExists = (candidate) => {
         if (samePath(candidate, fileName, useCaseSensitiveFileNames)) {
@@ -140,12 +186,18 @@ function createOverlayCompilerHost(ts, options, fileName, text) {
         return originalFileExists(candidate);
     };
 
-    host.getSourceFile = (candidate, languageVersion, onError, shouldCreateNewSourceFile) => {
+    host.getSourceFile = (candidate, languageVersionOrOptions, onError, shouldCreateNewSourceFile) => {
         if (samePath(candidate, fileName, useCaseSensitiveFileNames)) {
-            return ts.createSourceFile(candidate, text, languageVersion, true, scriptKindForFile(ts, candidate));
+            return tsModule.createSourceFile(
+                candidate,
+                text,
+                languageVersionOrOptions,
+                true,
+                scriptKindForFile(tsModule, candidate)
+            );
         }
 
-        return originalGetSourceFile(candidate, languageVersion, onError, shouldCreateNewSourceFile);
+        return originalGetSourceFile(candidate, languageVersionOrOptions, onError, shouldCreateNewSourceFile);
     };
 
     host.readFile = (candidate) => {
@@ -159,31 +211,43 @@ function createOverlayCompilerHost(ts, options, fileName, text) {
     return host;
 }
 
-function findStringLiteralNodeAtOffset(ts, sourceFile, offset) {
-    let found;
+function findStringLiteralNodeAtOffset(
+    tsModule: TypeScriptModule,
+    sourceFile: ts.SourceFile,
+    offset: number
+): ts.StringLiteral | ts.NoSubstitutionTemplateLiteral | undefined {
+    let found: ts.StringLiteral | ts.NoSubstitutionTemplateLiteral | undefined;
 
-    function visit(node) {
+    function visit(node: ts.Node): void {
         if (offset < node.getStart(sourceFile) || offset > node.getEnd()) {
             return;
         }
 
-        if (isStringLiteralLike(ts, node)) {
+        if (isStringLiteralLike(tsModule, node)) {
             found = node;
         }
 
-        ts.forEachChild(node, visit);
+        tsModule.forEachChild(node, visit);
     }
 
     visit(sourceFile);
     return found;
 }
 
-function isStringLiteralLike(ts, node) {
-    return ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node);
+function isStringLiteralLike(
+    tsModule: TypeScriptModule,
+    node: ts.Node
+): node is ts.StringLiteral | ts.NoSubstitutionTemplateLiteral {
+    return tsModule.isStringLiteral(node) || tsModule.isNoSubstitutionTemplateLiteral(node);
 }
 
-function typeIncludesMessageKey(ts, checker, type, seen = new Set()) {
-    if (!type || seen.has(type)) {
+function typeIncludesMessageKey(
+    tsModule: TypeScriptModule,
+    checker: ts.TypeChecker,
+    type: ts.Type,
+    seen = new Set<ts.Type>()
+): boolean {
+    if (seen.has(type)) {
         return false;
     }
 
@@ -193,28 +257,28 @@ function typeIncludesMessageKey(ts, checker, type, seen = new Set()) {
         return true;
     }
 
-    const typeText = checker.typeToString(type, undefined, ts.TypeFormatFlags.UseAliasDefinedOutsideCurrentScope);
+    const typeText = checker.typeToString(type, undefined, tsModule.TypeFormatFlags.UseAliasDefinedOutsideCurrentScope);
     if (messageKeyTypePattern.test(typeText)) {
         return true;
     }
 
-    if (type.isUnion?.()) {
-        return type.types.some((child) => typeIncludesMessageKey(ts, checker, child, seen));
+    if (type.isUnion()) {
+        return type.types.some((child) => typeIncludesMessageKey(tsModule, checker, child, seen));
     }
 
     return false;
 }
 
-function symbolNameIsMessageKey(checker, symbol) {
+function symbolNameIsMessageKey(checker: ts.TypeChecker, symbol: ts.Symbol | undefined): boolean {
     return symbol ? checker.symbolToString(symbol) === "MessageKey" : false;
 }
 
-function loadTypeScript(workspaceRoot) {
+function loadTypeScript(workspaceRoot: string): TypeScriptModule | undefined {
     const candidates = [path.join(workspaceRoot, "node_modules", "typescript"), "typescript"];
 
     for (const candidate of candidates) {
         try {
-            return require(candidate);
+            return requireFromExtension(candidate) as TypeScriptModule;
         } catch {
             // Try the next candidate.
         }
@@ -223,7 +287,7 @@ function loadTypeScript(workspaceRoot) {
     return undefined;
 }
 
-function includeFileName(fileNames, fileName, useCaseSensitiveFileNames) {
+function includeFileName(fileNames: string[], fileName: string, useCaseSensitiveFileNames: boolean): string[] {
     if (fileNames.some((candidate) => samePath(candidate, fileName, useCaseSensitiveFileNames))) {
         return fileNames;
     }
@@ -231,53 +295,54 @@ function includeFileName(fileNames, fileName, useCaseSensitiveFileNames) {
     return [...fileNames, fileName];
 }
 
-function getSourceFile(program, fileName, useCaseSensitiveFileNames) {
+function getSourceFile(
+    program: ts.Program,
+    fileName: string,
+    useCaseSensitiveFileNames: boolean
+): ts.SourceFile | undefined {
     return (
         program.getSourceFile(fileName) ??
-        program.getSourceFiles().find((sourceFile) => samePath(sourceFile.fileName, fileName, useCaseSensitiveFileNames))
+        program
+            .getSourceFiles()
+            .find((sourceFile) => samePath(sourceFile.fileName, fileName, useCaseSensitiveFileNames))
     );
 }
 
-function findOwningWorkspaceRoot(documentPath, workspaceRoots) {
+function findOwningWorkspaceRoot(documentPath: string, workspaceRoots: string[]): string | undefined {
     return workspaceRoots
         .map((workspaceRoot) => path.resolve(workspaceRoot))
         .filter((workspaceRoot) => isPathInside(documentPath, workspaceRoot))
         .sort((left, right) => right.length - left.length)[0];
 }
 
-function isPathInside(child, parent) {
+function isPathInside(child: string, parent: string): boolean {
     const relative = path.relative(parent, path.resolve(child));
     return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
 }
 
-function samePath(left, right, useCaseSensitiveFileNames) {
+function samePath(left: string, right: string, useCaseSensitiveFileNames: boolean): boolean {
     const normalizedLeft = normalizePath(left, useCaseSensitiveFileNames);
     const normalizedRight = normalizePath(right, useCaseSensitiveFileNames);
     return normalizedLeft === normalizedRight;
 }
 
-function normalizePath(fileName, useCaseSensitiveFileNames) {
+function normalizePath(fileName: string, useCaseSensitiveFileNames: boolean): string {
     const normalized = path.normalize(path.resolve(fileName));
     return useCaseSensitiveFileNames ? normalized : normalized.toLowerCase();
 }
 
-function scriptKindForFile(ts, fileName) {
+function scriptKindForFile(tsModule: TypeScriptModule, fileName: string): ts.ScriptKind {
     if (fileName.endsWith(".tsx")) {
-        return ts.ScriptKind.TSX;
+        return tsModule.ScriptKind.TSX;
     }
 
     if (fileName.endsWith(".jsx")) {
-        return ts.ScriptKind.JSX;
+        return tsModule.ScriptKind.JSX;
     }
 
     if (fileName.endsWith(".js")) {
-        return ts.ScriptKind.JS;
+        return tsModule.ScriptKind.JS;
     }
 
-    return ts.ScriptKind.TS;
+    return tsModule.ScriptKind.TS;
 }
-
-module.exports = {
-    TypeScriptMessageKeyResolver,
-    findContextualMessageKeyAtOffset,
-};

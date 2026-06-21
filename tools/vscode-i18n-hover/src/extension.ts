@@ -1,14 +1,19 @@
 "use strict";
 
-const fs = require("node:fs");
-const path = require("node:path");
-const vscode = require("vscode");
-const { findStringLiteralAtPosition, findTranslationKeyAtPosition, formatMessage } = require("./hover-utils");
-const { TypeScriptMessageKeyResolver } = require("./typescript-message-key");
+import * as fs from "node:fs";
+import * as path from "node:path";
+import * as vscode from "vscode";
+import {
+    type ChromeMessageEntry,
+    findStringLiteralAtPosition,
+    findTranslationKeyAtPosition,
+    formatMessage,
+} from "./hover-utils";
+import { TypeScriptMessageKeyResolver } from "./typescript-message-key";
 
 const messagesRelativePath = path.join("src", "_locales", "en", "messages.json");
 const messagesRelativeGlob = "src/_locales/en/messages.json";
-const supportedDocuments = [
+const supportedDocuments: vscode.DocumentSelector = [
     { scheme: "file", pattern: "**/*.vue" },
     { scheme: "file", pattern: "**/*.ts" },
     { scheme: "file", pattern: "**/*.tsx" },
@@ -16,10 +21,17 @@ const supportedDocuments = [
     { scheme: "file", pattern: "**/*.jsx" },
     "vue",
     "typescript",
+    "typescriptreact",
+    "javascriptreact",
     "javascript",
 ];
 
-function activate(context) {
+type HoverHit = {
+    key: string;
+    range: vscode.Range;
+};
+
+export function activate(context: vscode.ExtensionContext): void {
     const output = vscode.window.createOutputChannel("Korean IME i18n Hover");
     const messages = new MessageCatalog(context, output);
     const messageKeyResolver = new TypeScriptMessageKeyResolver(output);
@@ -66,9 +78,13 @@ function activate(context) {
     );
 }
 
-function deactivate() {}
+export function deactivate(): void {}
 
-function findHoverHit(document, position, messageKeyResolver) {
+function findHoverHit(
+    document: vscode.TextDocument,
+    position: vscode.Position,
+    messageKeyResolver: TypeScriptMessageKeyResolver
+): HoverHit | undefined {
     const line = document.lineAt(position.line);
     const translationCallHit = findTranslationKeyAtPosition(line.text, position.character);
     if (translationCallHit) {
@@ -85,7 +101,12 @@ function findHoverHit(document, position, messageKeyResolver) {
     }
 
     const workspaceRoots = (vscode.workspace.workspaceFolders ?? []).map((folder) => folder.uri.fsPath);
-    const semanticHit = messageKeyResolver.find(document.uri.fsPath, document.getText(), document.offsetAt(position), workspaceRoots);
+    const semanticHit = messageKeyResolver.find(
+        document.uri.fsPath,
+        document.getText(),
+        document.offsetAt(position),
+        workspaceRoots
+    );
     if (!semanticHit) {
         return undefined;
     }
@@ -96,47 +117,51 @@ function findHoverHit(document, position, messageKeyResolver) {
     };
 }
 
-function isTypeScriptDocument(document) {
+function isTypeScriptDocument(document: vscode.TextDocument): boolean {
     return document.languageId === "typescript" || document.languageId === "typescriptreact";
 }
 
-class MessageCatalog {
-    #messages = {};
-    #messagesPath;
-    #output;
-    #watcher;
+class MessageCatalog implements vscode.Disposable {
+    #messages: Record<string, ChromeMessageEntry> = {};
+    #messagesPath: string | undefined;
+    #output: vscode.OutputChannel;
+    #watcher: vscode.FileSystemWatcher;
 
-    constructor(context, output) {
+    constructor(context: vscode.ExtensionContext, output: vscode.OutputChannel) {
         this.#output = output;
         this.#load();
 
         this.#watcher = vscode.workspace.createFileSystemWatcher(`**/${messagesRelativeGlob}`);
         this.#watcher.onDidChange(() => this.#load(), undefined, context.subscriptions);
         this.#watcher.onDidCreate(() => this.#load(), undefined, context.subscriptions);
-        this.#watcher.onDidDelete(() => {
-            this.#messages = {};
-            this.#messagesPath = undefined;
-        }, undefined, context.subscriptions);
+        this.#watcher.onDidDelete(
+            () => {
+                this.#messages = {};
+                this.#messagesPath = undefined;
+            },
+            undefined,
+            context.subscriptions
+        );
         vscode.workspace.onDidChangeWorkspaceFolders(() => this.#load(), undefined, context.subscriptions);
     }
 
-    get(key) {
+    get(key: string): ChromeMessageEntry | undefined {
         return this.#messages[key];
     }
 
-    get messagesPath() {
+    get messagesPath(): string | undefined {
         return this.#messagesPath;
     }
 
-    get size() {
+    get size(): number {
         return Object.keys(this.#messages).length;
     }
 
-    dispose() {
-        this.#watcher?.dispose();
+    dispose(): void {
+        this.#watcher.dispose();
     }
 
-    #load() {
+    #load(): void {
         const messagesPath = findMessagesPath();
         if (!messagesPath) {
             this.#messages = {};
@@ -146,18 +171,19 @@ class MessageCatalog {
         }
 
         try {
-            this.#messages = JSON.parse(fs.readFileSync(messagesPath, "utf8"));
+            this.#messages = JSON.parse(fs.readFileSync(messagesPath, "utf8")) as Record<string, ChromeMessageEntry>;
             this.#messagesPath = messagesPath;
             this.#output.appendLine(`[catalog] loaded ${this.size} keys from ${messagesPath}`);
         } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
             this.#messages = {};
             this.#messagesPath = messagesPath;
-            this.#output.appendLine(`[catalog] failed to read ${messagesPath}: ${error.message}`);
+            this.#output.appendLine(`[catalog] failed to read ${messagesPath}: ${message}`);
         }
     }
 }
 
-function findMessagesPath() {
+function findMessagesPath(): string | undefined {
     for (const folder of vscode.workspace.workspaceFolders ?? []) {
         const candidate = path.join(folder.uri.fsPath, messagesRelativePath);
         if (fs.existsSync(candidate)) {
@@ -168,7 +194,7 @@ function findMessagesPath() {
     return undefined;
 }
 
-function extensionModeName(mode) {
+function extensionModeName(mode: vscode.ExtensionMode): string {
     return (
         {
             [vscode.ExtensionMode.Production]: "Production",
@@ -177,8 +203,3 @@ function extensionModeName(mode) {
         }[mode] ?? String(mode)
     );
 }
-
-module.exports = {
-    activate,
-    deactivate,
-};

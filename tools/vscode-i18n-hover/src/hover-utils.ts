@@ -1,11 +1,26 @@
 "use strict";
 
+export type TranslationKeyHit = {
+    key: string;
+    start: number;
+    end: number;
+};
+
+export type ChromeMessageEntry = {
+    message?: unknown;
+    placeholders?: Record<string, { content?: unknown }>;
+};
+
 const translationCallPattern = /\bt\s*\(/g;
 const stringLiteralPattern = /(["'])([^"']+)\1/g;
 
-function findTranslationKeyAtPosition(text, offset) {
+export function findTranslationKeyAtPosition(text: string, offset: number): TranslationKeyHit | undefined {
     for (const match of text.matchAll(translationCallPattern)) {
         const callStart = match.index;
+        if (callStart === undefined) {
+            continue;
+        }
+
         const argsStart = callStart + match[0].length;
         const argsEnd = findClosingParen(text, argsStart);
         if (argsEnd === undefined || offset < argsStart || offset > argsEnd) {
@@ -14,7 +29,12 @@ function findTranslationKeyAtPosition(text, offset) {
 
         const args = text.slice(argsStart, argsEnd);
         for (const literalMatch of args.matchAll(stringLiteralPattern)) {
-            const literalStart = argsStart + literalMatch.index;
+            const literalIndex = literalMatch.index;
+            if (literalIndex === undefined) {
+                continue;
+            }
+
+            const literalStart = argsStart + literalIndex;
             const keyStart = literalStart + 1;
             const keyEnd = keyStart + literalMatch[2].length;
             const literalEnd = keyEnd + 1;
@@ -32,9 +52,13 @@ function findTranslationKeyAtPosition(text, offset) {
     return undefined;
 }
 
-function findStringLiteralAtPosition(text, offset) {
+export function findStringLiteralAtPosition(text: string, offset: number): TranslationKeyHit | undefined {
     for (const match of text.matchAll(stringLiteralPattern)) {
         const literalStart = match.index;
+        if (literalStart === undefined) {
+            continue;
+        }
+
         const literalEnd = literalStart + match[0].length;
         if (offset >= literalStart && offset <= literalEnd) {
             return {
@@ -48,9 +72,9 @@ function findStringLiteralAtPosition(text, offset) {
     return undefined;
 }
 
-function findClosingParen(text, start) {
+function findClosingParen(text: string, start: number): number | undefined {
     let depth = 1;
-    let quote;
+    let quote: string | undefined;
 
     for (let index = start; index < text.length; index++) {
         const char = text[index];
@@ -79,7 +103,7 @@ function findClosingParen(text, start) {
     return undefined;
 }
 
-function formatMessage(messageEntry) {
+export function formatMessage(messageEntry: ChromeMessageEntry | undefined): string | undefined {
     if (!messageEntry || typeof messageEntry.message !== "string") {
         return undefined;
     }
@@ -87,15 +111,9 @@ function formatMessage(messageEntry) {
     let message = messageEntry.message;
     for (const [name, placeholder] of Object.entries(messageEntry.placeholders ?? {})) {
         if (typeof placeholder.content === "string") {
-            message = message.replaceAll(`$${name}$`, () => placeholder.content);
+            message = message.replaceAll(`$${name}$`, () => placeholder.content as string);
         }
     }
 
     return message;
 }
-
-module.exports = {
-    findStringLiteralAtPosition,
-    findTranslationKeyAtPosition,
-    formatMessage,
-};

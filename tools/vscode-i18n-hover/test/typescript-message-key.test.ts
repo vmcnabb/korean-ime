@@ -1,12 +1,12 @@
 "use strict";
 
-const assert = require("node:assert/strict");
-const fs = require("node:fs");
-const os = require("node:os");
-const path = require("node:path");
-const { describe, it } = require("node:test");
-const ts = require("typescript");
-const { findContextualMessageKeyAtOffset } = require("../typescript-message-key");
+import assert from "node:assert/strict";
+import * as fs from "node:fs";
+import * as os from "node:os";
+import * as path from "node:path";
+import { describe, it } from "node:test";
+import * as ts from "typescript";
+import { type ContextualMessageKeyHit, findContextualMessageKeyAtOffset } from "../src/typescript-message-key";
 
 describe("findContextualMessageKeyAtOffset", () => {
     it("finds string literals contextually typed as MessageKey", () => {
@@ -82,12 +82,19 @@ describe("findContextualMessageKeyAtOffset", () => {
 
         const examplePath = path.join(project.root, "src", "example.ts");
         const text = fs.readFileSync(examplePath, "utf8");
+        const hit = find(project, examplePath, text, text.indexOf("keyboard_close"));
 
-        assert.equal(find(project, examplePath, text, text.indexOf("keyboard_close")).key, "keyboard_close");
+        assert.ok(hit);
+        assert.equal(hit.key, "keyboard_close");
     });
 });
 
-function find(project, fileName, text, offset) {
+function find(
+    project: ProjectFixture,
+    fileName: string,
+    text: string,
+    offset: number
+): ContextualMessageKeyHit | undefined {
     return findContextualMessageKeyAtOffset({
         ts,
         configPath: path.join(project.root, "tsconfig.json"),
@@ -97,7 +104,11 @@ function find(project, fileName, text, offset) {
     });
 }
 
-function createProject(files) {
+type ProjectFixture = {
+    root: string;
+};
+
+function createProject(files: Record<string, string>): ProjectFixture {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), "korean-ime-i18n-hover-"));
     fs.mkdirSync(path.join(root, "src"));
     fs.writeFileSync(
