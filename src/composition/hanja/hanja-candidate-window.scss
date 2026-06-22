@@ -20,20 +20,20 @@
     background: #fff;
     box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
     color: #111827;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-family: arial, helvetica, sans-serif;
 
-    &.has-pages .kime-hanja-candidate-list {
+    &.has-pages .candidate-list {
         min-height: calc(var(--candidate-item-height) * var(--candidates-per-page));
     }
 
-    .kime-hanja-candidate-list {
+    .candidate-list {
         display: flex;
         flex-direction: column;
     }
 
-    .kime-hanja-candidate {
+    .candidate {
         display: grid;
-        grid-template-columns: auto auto minmax(0, 1fr);
+        grid-template-columns: auto auto minmax(0, 1fr) auto;
         align-items: center;
         min-width: 220px;
         height: var(--candidate-item-height);
@@ -52,49 +52,57 @@
         &.is-hovered {
             background: #f3f4f6;
         }
+
+        span {
+            grid-row: span 2;
+        }
+
+        .can-number {
+            color: #6b7280;
+            font-size: 11px;
+            display: block;
+            text-align: right;
+            min-width: 10px;
+        }
+
+        .can-hanja {
+            display: block;
+            font-size: 20px;
+            line-height: 1.1;
+        }
+
+        .can-korean {
+            display: block;
+            overflow: hidden;
+            font-size: 12px;
+            line-height: 1.25;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .can-simplified,
+        .can-pinyin {
+            line-height: 1;
+            grid-column: 4;
+        }
+
+        .can-pinyin {
+            grid-row: 1;
+            font-size: 11px;
+            text-align: right;
+        }
+
+        .can-simplified:empty + .can-pinyin {
+            grid-row-start: 1;
+            grid-row-end: 3;
+        }
+        .can-simplified {
+            grid-row: 2;
+            font-size: 18px;
+        }
     }
 
-    .kime-hanja-candidate-number {
-        display: block;
-        min-width: 10px;
-        color: #6b7280;
-        font-size: 11px;
-        text-align: right;
-    }
-
-    .kime-hanja-candidate-hanja {
-        display: block;
-        font-size: 20px;
-        line-height: 1.1;
-    }
-
-    .kime-hanja-candidate-details {
-        display: flex;
-        min-width: 0;
-        flex-direction: column;
-    }
-
-    .kime-hanja-candidate-korean {
-        display: block;
-        overflow: hidden;
-        font-size: 12px;
-        line-height: 1.25;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-
-    .kime-hanja-candidate-metadata {
-        display: flex;
-        overflow: hidden;
-        gap: 6px;
-        color: #6b7280;
-        font-size: 11px;
-        line-height: 1.25;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-
-    .kime-hanja-page-controls {
+    .page-controls {
         display: flex;
         flex-direction: column;
         align-items: flex-start;
@@ -102,7 +110,7 @@
         padding: 3px 0 0;
     }
 
-    .kime-hanja-page-hint {
+    .page-hint {
         display: flex;
         align-items: center;
         height: 8px;
@@ -110,7 +118,7 @@
         padding-left: 3px;
     }
 
-    .kime-hanja-page-dot {
+    .page-dot {
         display: block;
         width: 4px;
         height: 4px;
@@ -123,12 +131,12 @@
         }
     }
 
-    .kime-hanja-page-buttons {
+    .page-buttons {
         display: flex;
         gap: 2px;
     }
 
-    .kime-hanja-page-button {
+    .page-button {
         display: block;
         width: 24px;
         height: 20px;

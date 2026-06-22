@@ -58,6 +58,14 @@ describe("HanjaCandidateWindow", () => {
         return document.querySelector<HTMLElement>(HANJA_CANDIDATE_WINDOW_SELECTOR)!;
     }
 
+    function candidateItems(): NodeListOf<HTMLElement> {
+        return candidateWindow().querySelectorAll<HTMLElement>(".candidate");
+    }
+
+    function pageButton(kind: "previous" | "next"): HTMLButtonElement | null {
+        return candidateWindow().querySelector<HTMLButtonElement>(`.page-button.${kind}`);
+    }
+
     beforeEach(() => {
         getBoundingClientRect = jest
             .spyOn(HTMLElement.prototype, "getBoundingClientRect")
@@ -114,8 +122,8 @@ describe("HanjaCandidateWindow", () => {
             windowOptions()
         );
 
-        expect(document.querySelector<HTMLButtonElement>(".kime-hanja-page-previous")?.tabIndex).toBe(-1);
-        expect(document.querySelector<HTMLButtonElement>(".kime-hanja-page-next")?.tabIndex).toBe(-1);
+        expect(pageButton("previous")?.tabIndex).toBe(-1);
+        expect(pageButton("next")?.tabIndex).toBe(-1);
     });
 
     it("does not render mouse page buttons for a single page", () => {
@@ -126,8 +134,8 @@ describe("HanjaCandidateWindow", () => {
             windowOptions()
         );
 
-        expect(document.querySelector(".kime-hanja-page-previous")).toBeNull();
-        expect(document.querySelector(".kime-hanja-page-next")).toBeNull();
+        expect(pageButton("previous")).toBeNull();
+        expect(pageButton("next")).toBeNull();
     });
 
     it("renders mouse page buttons below the candidate list", () => {
@@ -138,7 +146,7 @@ describe("HanjaCandidateWindow", () => {
             windowOptions()
         );
 
-        expect(candidateWindow().lastElementChild?.classList.contains("kime-hanja-page-controls")).toBe(true);
+        expect(candidateWindow().lastElementChild?.classList.contains("page-controls")).toBe(true);
     });
 
     it("marks multi-page results so styling can reserve a nine-item candidate list height", () => {
@@ -166,15 +174,15 @@ describe("HanjaCandidateWindow", () => {
             windowOptions()
         );
 
-        const controls = document.querySelector<HTMLElement>(".kime-hanja-page-controls")!;
-        const pageHint = document.querySelector<HTMLElement>(".kime-hanja-page-hint")!;
-        const buttonRow = document.querySelector<HTMLElement>(".kime-hanja-page-buttons")!;
-        const dots = Array.from(document.querySelectorAll<HTMLElement>(".kime-hanja-page-dot"));
+        const controls = candidateWindow().querySelector<HTMLElement>(".page-controls")!;
+        const pageHint = candidateWindow().querySelector<HTMLElement>(".page-hint")!;
+        const buttonRow = candidateWindow().querySelector<HTMLElement>(".page-buttons")!;
+        const dots = Array.from(candidateWindow().querySelectorAll<HTMLElement>(".page-dot"));
 
         expect(controls.firstElementChild).toBe(pageHint);
         expect(controls.lastElementChild).toBe(buttonRow);
-        expect(buttonRow.children[0]).toBe(document.querySelector(".kime-hanja-page-previous"));
-        expect(buttonRow.children[1]).toBe(document.querySelector(".kime-hanja-page-next"));
+        expect(buttonRow.children[0]).toBe(pageButton("previous"));
+        expect(buttonRow.children[1]).toBe(pageButton("next"));
         expect(dots).toHaveLength(4);
         expect(dots.map((dot) => dot.classList.contains("is-active"))).toEqual([false, false, true, false]);
     });
@@ -188,8 +196,8 @@ describe("HanjaCandidateWindow", () => {
             options
         );
 
-        document.querySelector<HTMLButtonElement>(".kime-hanja-page-previous")?.click();
-        document.querySelector<HTMLButtonElement>(".kime-hanja-page-next")?.click();
+        pageButton("previous")?.click();
+        pageButton("next")?.click();
 
         expect(options.onPreviousPage).toHaveBeenCalled();
         expect(options.onNextPage).toHaveBeenCalled();
@@ -204,7 +212,7 @@ describe("HanjaCandidateWindow", () => {
             options
         );
 
-        document.querySelectorAll<HTMLElement>(".kime-hanja-candidate")[1].click();
+        candidateItems()[1].click();
 
         expect(options.onSelectCandidate).toHaveBeenCalledWith(1);
     });
@@ -225,10 +233,10 @@ describe("HanjaCandidateWindow", () => {
             windowOptions()
         );
 
-        expect(document.querySelector(".kime-hanja-candidate-hanja")?.textContent).toBe("韓");
-        expect(document.querySelector(".kime-hanja-candidate-korean")?.textContent).toBe("나라 이름 한, 한나라 한");
-        expect(document.querySelector(".kime-hanja-candidate-simplified")?.textContent).toBe("韩");
-        expect(document.querySelector(".kime-hanja-candidate-pinyin")?.textContent).toBe("hán");
+        expect(document.querySelector(".can-hanja")?.textContent).toBe("韓");
+        expect(document.querySelector(".can-korean")?.textContent).toBe("나라 이름 한, 한나라 한");
+        expect(document.querySelector(".can-simplified")?.textContent).toBe("韩");
+        expect(document.querySelector(".can-pinyin")?.textContent).toBe("hán");
     });
 
     it("renders Korean-only Hanja candidate metadata", () => {
@@ -246,10 +254,10 @@ describe("HanjaCandidateWindow", () => {
             windowOptions()
         );
 
-        expect(document.querySelector(".kime-hanja-candidate-hanja")?.textContent).toBe("韓");
-        expect(document.querySelector(".kime-hanja-candidate-korean")?.textContent).toBe("나라 이름 한, 한나라 한");
-        expect(document.querySelector(".kime-hanja-candidate-simplified")).toBeNull();
-        expect(document.querySelector(".kime-hanja-candidate-pinyin")).toBeNull();
+        expect(document.querySelector(".can-hanja")?.textContent).toBe("韓");
+        expect(document.querySelector(".can-korean")?.textContent).toBe("나라 이름 한, 한나라 한");
+        expect(document.querySelector(".can-simplified")?.textContent).toBe("");
+        expect(document.querySelector(".can-pinyin")?.textContent).toBe("");
     });
 
     it("highlights a hovered candidate without changing the selected candidate", () => {
@@ -260,7 +268,7 @@ describe("HanjaCandidateWindow", () => {
             windowOptions()
         );
 
-        const candidates = document.querySelectorAll<HTMLElement>(".kime-hanja-candidate");
+        const candidates = candidateItems();
 
         candidates[1].dispatchEvent(new MouseEvent("mouseenter"));
 
@@ -287,7 +295,7 @@ describe("HanjaCandidateWindow", () => {
         );
 
         const mousedown = new MouseEvent("mousedown", { bubbles: true, cancelable: true });
-        document.querySelectorAll<HTMLElement>(".kime-hanja-candidate")[1].dispatchEvent(mousedown);
+        candidateItems()[1].dispatchEvent(mousedown);
 
         expect(mousedown.defaultPrevented).toBe(true);
     });

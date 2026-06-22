@@ -1,8 +1,8 @@
 import { GlyphRect } from "../compositing-box";
-import { HanjaCandidate } from "./hanja-candidate";
+import { HANJA_CANDIDATE_KEYS, HanjaCandidate } from "./hanja-candidate";
 import "./hanja-candidate-window.scss";
 
-export const HANJA_CANDIDATE_WINDOW_ID = "hanja-candidate-window-27c8a11a-b4d6-4388-9928-2d578bbb1fc";
+const HANJA_CANDIDATE_WINDOW_ID = "hanja-candidate-window-27c8a11a-b4d6-4388-9928-2d578bbb1fc";
 export const HANJA_CANDIDATE_WINDOW_SELECTOR = `#${HANJA_CANDIDATE_WINDOW_ID}`;
 
 export type HanjaCandidateWindowPage = {
@@ -18,6 +18,8 @@ type HanjaCandidateWindowOptions = {
     onMoveSelection: (delta: number) => void;
     onSelectCandidate: (visibleIndex: number) => void;
 };
+
+type PageButtonKind = "previous" | "next";
 
 export class HanjaCandidateWindow {
     private readonly root: HTMLDivElement;
@@ -38,22 +40,32 @@ export class HanjaCandidateWindow {
         this.root.id = HANJA_CANDIDATE_WINDOW_ID;
 
         this.controls = document.createElement("div");
-        this.controls.className = "kime-hanja-page-controls";
+        this.controls.className = "page-controls";
 
         this.pageHint = document.createElement("div");
-        this.pageHint.className = "kime-hanja-page-hint";
+        this.pageHint.className = "page-hint";
         this.pageHint.setAttribute("aria-hidden", "true");
 
         const buttonRow = document.createElement("div");
-        buttonRow.className = "kime-hanja-page-buttons";
+        buttonRow.className = "page-buttons";
 
-        const previousButton = createPageButton("‹", "Previous Hanja candidates", options.onPreviousPage);
-        const nextButton = createPageButton("›", "Next Hanja candidates", options.onNextPage);
+        const previousButton = createPageButton({
+            kind: "previous",
+            label: "◀",
+            ariaLabel: "Previous Hanja candidates",
+            onClick: options.onPreviousPage,
+        });
+        const nextButton = createPageButton({
+            kind: "next",
+            label: "▶",
+            ariaLabel: "Next Hanja candidates",
+            onClick: options.onNextPage,
+        });
         buttonRow.append(previousButton, nextButton);
         this.controls.append(this.pageHint, buttonRow);
 
         this.candidateList = document.createElement("div");
-        this.candidateList.className = "kime-hanja-candidate-list";
+        this.candidateList.className = "candidate-list";
         this.candidateList.setAttribute("role", "listbox");
         this.candidateList.setAttribute("aria-label", "Hanja candidates");
         this.root.addEventListener("wheel", (event) => {
@@ -88,7 +100,7 @@ export class HanjaCandidateWindow {
     }
 
     setActiveIndex(index: number): void {
-        this.candidateList.querySelectorAll<HTMLElement>(".kime-hanja-candidate").forEach((item, itemIndex) => {
+        this.candidateList.querySelectorAll<HTMLElement>(".candidate").forEach((item, itemIndex) => {
             const active = itemIndex === index;
             item.setAttribute("aria-selected", active ? "true" : "false");
             this.applyCandidateHighlight(item, itemIndex);
@@ -119,7 +131,7 @@ export class HanjaCandidateWindow {
 
         for (let index = 0; index < page.pageCount; index += 1) {
             const dot = document.createElement("span");
-            dot.className = "kime-hanja-page-dot";
+            dot.className = "page-dot";
             dot.dataset.pageIndex = String(index);
             dot.classList.toggle("is-active", index === page.pageIndex);
             this.pageHint.append(dot);
@@ -128,7 +140,7 @@ export class HanjaCandidateWindow {
 
     private createCandidateItem(candidate: HanjaCandidate, index: number): HTMLDivElement {
         const item = document.createElement("div");
-        item.className = "kime-hanja-candidate";
+        item.className = "candidate";
         item.dataset.index = String(index);
         item.setAttribute("role", "option");
         item.addEventListener("mousedown", (event) => {
@@ -150,40 +162,18 @@ export class HanjaCandidateWindow {
         });
 
         const number = document.createElement("span");
-        number.className = "kime-hanja-candidate-number";
+        number.className = "can-number";
         number.textContent = String(index + 1);
 
-        const value = document.createElement("span");
-        value.className = "kime-hanja-candidate-hanja";
-        value.textContent = candidate.hanja;
-
-        const details = document.createElement("span");
-        details.className = "kime-hanja-candidate-details";
-
-        const korean = document.createElement("span");
-        korean.className = "kime-hanja-candidate-korean";
-        korean.textContent = candidate.korean;
-
-        const metadata = document.createElement("span");
-        metadata.className = "kime-hanja-candidate-metadata";
-
-        if (candidate.simplified) {
-            const simplified = document.createElement("span");
-            simplified.className = "kime-hanja-candidate-simplified";
-            simplified.textContent = candidate.simplified;
-            metadata.append(simplified);
+        const elements: HTMLSpanElement[] = [];
+        for (const key of HANJA_CANDIDATE_KEYS) {
+            const span = document.createElement("span");
+            span.className = `can-${key}`;
+            span.textContent = candidate[key] ?? "";
+            elements.push(span);
         }
 
-        if (candidate.pinyin) {
-            const pinyin = document.createElement("span");
-            pinyin.className = "kime-hanja-candidate-pinyin";
-            pinyin.textContent = candidate.pinyin;
-            metadata.append(pinyin);
-        }
-
-        details.append(korean, metadata);
-
-        item.append(number, value, details);
+        item.append(number, ...elements);
         return item;
     }
 
@@ -194,11 +184,20 @@ export class HanjaCandidateWindow {
     }
 }
 
-function createPageButton(label: string, ariaLabel: string, onClick: () => void): HTMLButtonElement {
+function createPageButton({
+    kind,
+    label,
+    ariaLabel,
+    onClick,
+}: {
+    kind: PageButtonKind;
+    label: string;
+    ariaLabel: string;
+    onClick: () => void;
+}): HTMLButtonElement {
     const button = document.createElement("button");
-    const pageClass = label === "‹" ? "kime-hanja-page-previous" : "kime-hanja-page-next";
     button.type = "button";
-    button.className = `kime-hanja-page-button ${pageClass}`;
+    button.className = `page-button ${kind}`;
     button.textContent = label;
     button.tabIndex = -1;
     button.setAttribute("aria-label", ariaLabel);

@@ -456,24 +456,24 @@ describe("HangulImeController Hanja candidate selection (KIME_ENABLE_HANJA)", ()
     }
 
     function candidateTexts() {
-        return Array.from(
-            document.querySelectorAll<HTMLElement>(`${HANJA_CANDIDATE_WINDOW_SELECTOR} .kime-hanja-candidate`)
-        ).map((item) => {
-            const number = item.querySelector("span:first-child")?.textContent;
-            const hanja = item.querySelector(".kime-hanja-candidate-hanja")?.textContent;
-            return `${number}${hanja}`;
-        });
+        return Array.from(document.querySelectorAll<HTMLElement>(`${HANJA_CANDIDATE_WINDOW_SELECTOR} .candidate`)).map(
+            (item) => {
+                const number = item.querySelector("span:first-child")?.textContent;
+                const hanja = item.querySelector(".can-hanja")?.textContent;
+                return `${number}${hanja}`;
+            }
+        );
     }
 
     function candidateValues() {
-        return Array.from(
-            document.querySelectorAll<HTMLElement>(`${HANJA_CANDIDATE_WINDOW_SELECTOR} .kime-hanja-candidate`)
-        ).map((item) => item.querySelector(".kime-hanja-candidate-hanja")?.textContent);
+        return Array.from(document.querySelectorAll<HTMLElement>(`${HANJA_CANDIDATE_WINDOW_SELECTOR} .candidate`)).map(
+            (item) => item.querySelector(".can-hanja")?.textContent
+        );
     }
 
     function activeCandidateValue() {
         return document.querySelector<HTMLElement>(
-            `${HANJA_CANDIDATE_WINDOW_SELECTOR} .kime-hanja-candidate[aria-selected="true"] .kime-hanja-candidate-hanja`
+            `${HANJA_CANDIDATE_WINDOW_SELECTOR} .candidate[aria-selected="true"] .can-hanja`
         )?.textContent;
     }
 
@@ -490,11 +490,11 @@ describe("HangulImeController Hanja candidate selection (KIME_ENABLE_HANJA)", ()
     }
 
     function clickNextPage() {
-        document.querySelector<HTMLButtonElement>(".kime-hanja-page-next")?.click();
+        document.querySelector<HTMLButtonElement>(`${HANJA_CANDIDATE_WINDOW_SELECTOR} .page-button.next`)?.click();
     }
 
     function clickPreviousPage() {
-        document.querySelector<HTMLButtonElement>(".kime-hanja-page-previous")?.click();
+        document.querySelector<HTMLButtonElement>(`${HANJA_CANDIDATE_WINDOW_SELECTOR} .page-button.previous`)?.click();
     }
 
     function scrollCandidates(deltaY: number) {
@@ -504,9 +504,7 @@ describe("HangulImeController Hanja candidate selection (KIME_ENABLE_HANJA)", ()
     }
 
     function clickCandidate(index: number) {
-        document
-            .querySelectorAll<HTMLElement>(`${HANJA_CANDIDATE_WINDOW_SELECTOR} .kime-hanja-candidate`)
-            [index].click();
+        document.querySelectorAll<HTMLElement>(`${HANJA_CANDIDATE_WINDOW_SELECTOR} .candidate`)[index].click();
     }
 
     it("shows candidates for a composing 한 and swallows the Hanja key when the flag is on", async () => {
