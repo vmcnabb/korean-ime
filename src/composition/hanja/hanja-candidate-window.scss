@@ -1,0 +1,149 @@
+#hanja-candidate-window-27c8a11a-b4d6-4388-9928-2d578bbb1fc {
+    --candidate-item-height: 44px;
+    --candidates-per-page: 9;
+
+    &,
+    * {
+        all: unset;
+        box-sizing: border-box;
+        user-select: none;
+    }
+
+    position: fixed;
+    z-index: 2147483647;
+    display: inline-flex;
+    flex-direction: column;
+    max-width: calc(100vw - 8px);
+    padding: 3px;
+    border: 1px solid #9ca3af;
+    border-radius: 6px;
+    background: #fff;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+    color: #111827;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+    &.has-pages .kime-hanja-candidate-list {
+        min-height: calc(var(--candidate-item-height) * var(--candidates-per-page));
+    }
+
+    .kime-hanja-candidate-list {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .kime-hanja-candidate {
+        display: grid;
+        grid-template-columns: auto auto minmax(0, 1fr);
+        align-items: center;
+        min-width: 220px;
+        height: var(--candidate-item-height);
+        padding: 4px 8px;
+        column-gap: 8px;
+        background: transparent;
+        color: #111827;
+        font-size: 14px;
+        line-height: 1.4;
+        cursor: pointer;
+
+        &.is-selected {
+            background: #dbeafe;
+        }
+
+        &.is-hovered {
+            background: #f3f4f6;
+        }
+    }
+
+    .kime-hanja-candidate-number {
+        display: block;
+        min-width: 10px;
+        color: #6b7280;
+        font-size: 11px;
+        text-align: right;
+    }
+
+    .kime-hanja-candidate-hanja {
+        display: block;
+        font-size: 20px;
+        line-height: 1.1;
+    }
+
+    .kime-hanja-candidate-details {
+        display: flex;
+        min-width: 0;
+        flex-direction: column;
+    }
+
+    .kime-hanja-candidate-korean {
+        display: block;
+        overflow: hidden;
+        font-size: 12px;
+        line-height: 1.25;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .kime-hanja-candidate-metadata {
+        display: flex;
+        overflow: hidden;
+        gap: 6px;
+        color: #6b7280;
+        font-size: 11px;
+        line-height: 1.25;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .kime-hanja-page-controls {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 3px;
+        padding: 3px 0 0;
+    }
+
+    .kime-hanja-page-hint {
+        display: flex;
+        align-items: center;
+        height: 8px;
+        gap: 3px;
+        padding-left: 3px;
+    }
+
+    .kime-hanja-page-dot {
+        display: block;
+        width: 4px;
+        height: 4px;
+        border-radius: 999px;
+        background: #6b7280;
+
+        &.is-active {
+            width: 7px;
+            height: 7px;
+        }
+    }
+
+    .kime-hanja-page-buttons {
+        display: flex;
+        gap: 2px;
+    }
+
+    .kime-hanja-page-button {
+        display: block;
+        width: 24px;
+        height: 20px;
+        padding: 0;
+        border: 1px solid #d1d5db;
+        border-radius: 4px;
+        background: #f9fafb;
+        color: #374151;
+        font-size: 14px;
+        line-height: 1;
+        text-align: center;
+        cursor: pointer;
+
+        &:hover {
+            background: #f3f4f6;
+        }
+    }
+}

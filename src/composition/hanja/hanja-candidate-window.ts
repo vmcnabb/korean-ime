@@ -1,10 +1,9 @@
 import { GlyphRect } from "../compositing-box";
-import { HANJA_CANDIDATES_PER_PAGE } from "./hanja-candidate-pager";
 import { HanjaCandidate } from "./hanja-candidate";
+import "./hanja-candidate-window.scss";
 
-const HANJA_CANDIDATE_ITEM_HEIGHT_PX = 44;
-const SELECTED_CANDIDATE_BACKGROUND = "#dbeafe";
-const HOVERED_CANDIDATE_BACKGROUND = "#f3f4f6";
+export const HANJA_CANDIDATE_WINDOW_ID = "hanja-candidate-window-27c8a11a-b4d6-4388-9928-2d578bbb1fc";
+export const HANJA_CANDIDATE_WINDOW_SELECTOR = `#${HANJA_CANDIDATE_WINDOW_ID}`;
 
 export type HanjaCandidateWindowPage = {
     candidates: readonly HanjaCandidate[];
@@ -36,33 +35,17 @@ export class HanjaCandidateWindow {
     ) {
         this.onSelectCandidate = options.onSelectCandidate;
         this.root = document.createElement("div");
-        this.root.className = "kime-hanja-candidates";
-        this.applyBaseStyle();
+        this.root.id = HANJA_CANDIDATE_WINDOW_ID;
 
         this.controls = document.createElement("div");
         this.controls.className = "kime-hanja-page-controls";
-        this.controls.style.cssText = [
-            "display:flex",
-            "flex-direction:column",
-            "align-items:flex-start",
-            "gap:3px",
-            "padding:3px 0 0",
-        ].join(";");
 
         this.pageHint = document.createElement("div");
         this.pageHint.className = "kime-hanja-page-hint";
         this.pageHint.setAttribute("aria-hidden", "true");
-        this.pageHint.style.cssText = [
-            "display:flex",
-            "align-items:center",
-            "gap:3px",
-            "height:8px",
-            "padding-left:3px",
-        ].join(";");
 
         const buttonRow = document.createElement("div");
         buttonRow.className = "kime-hanja-page-buttons";
-        buttonRow.style.cssText = ["display:flex", "gap:2px"].join(";");
 
         const previousButton = createPageButton("‹", "Previous Hanja candidates", options.onPreviousPage);
         const nextButton = createPageButton("›", "Next Hanja candidates", options.onNextPage);
@@ -73,7 +56,6 @@ export class HanjaCandidateWindow {
         this.candidateList.className = "kime-hanja-candidate-list";
         this.candidateList.setAttribute("role", "listbox");
         this.candidateList.setAttribute("aria-label", "Hanja candidates");
-        this.candidateList.style.cssText = "display:flex;flex-direction:column";
         this.root.addEventListener("wheel", (event) => {
             event.preventDefault();
             event.stopPropagation();
@@ -94,12 +76,11 @@ export class HanjaCandidateWindow {
             this.candidateList.append(this.createCandidateItem(candidate, index));
         });
 
+        this.root.classList.toggle("has-pages", page.pageCount > 1);
         if (page.pageCount > 1) {
-            this.candidateList.style.minHeight = `${HANJA_CANDIDATES_PER_PAGE * HANJA_CANDIDATE_ITEM_HEIGHT_PX}px`;
             this.updatePageHint(page);
             this.root.append(this.controls);
         } else {
-            this.candidateList.style.minHeight = "";
             this.controls.remove();
         }
 
@@ -116,23 +97,6 @@ export class HanjaCandidateWindow {
 
     remove(): void {
         this.root.remove();
-    }
-
-    private applyBaseStyle(): void {
-        this.root.style.cssText = [
-            "position:fixed",
-            "z-index:2147483647",
-            "display:inline-flex",
-            "flex-direction:column",
-            "padding:3px",
-            "border:1px solid #9ca3af",
-            "border-radius:6px",
-            "background:#ffffff",
-            "box-shadow:0 6px 18px rgba(0,0,0,0.18)",
-            "box-sizing:border-box",
-            "max-width:calc(100vw - 8px)",
-            "user-select:none",
-        ].join(";");
     }
 
     private position(anchor: HTMLElement, overlayRect?: GlyphRect): void {
@@ -157,15 +121,7 @@ export class HanjaCandidateWindow {
             const dot = document.createElement("span");
             dot.className = "kime-hanja-page-dot";
             dot.dataset.pageIndex = String(index);
-            const active = index === page.pageIndex;
-            const size = active ? 7 : 4;
-            dot.style.cssText = [
-                "display:block",
-                `width:${size}px`,
-                `height:${size}px`,
-                "border-radius:999px",
-                "background:#6b7280",
-            ].join(";");
+            dot.classList.toggle("is-active", index === page.pageIndex);
             this.pageHint.append(dot);
         }
     }
@@ -175,19 +131,6 @@ export class HanjaCandidateWindow {
         item.className = "kime-hanja-candidate";
         item.dataset.index = String(index);
         item.setAttribute("role", "option");
-        item.style.cssText = [
-            "display:grid",
-            "grid-template-columns:auto auto minmax(0,1fr)",
-            "align-items:center",
-            "column-gap:8px",
-            `height:${HANJA_CANDIDATE_ITEM_HEIGHT_PX}px`,
-            "padding:4px 8px",
-            "min-width:220px",
-            "font:14px/1.4 system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",
-            "color:#111827",
-            "cursor:pointer",
-            "box-sizing:border-box",
-        ].join(";");
         item.addEventListener("mousedown", (event) => {
             event.preventDefault();
             event.stopPropagation();
@@ -207,41 +150,22 @@ export class HanjaCandidateWindow {
         });
 
         const number = document.createElement("span");
+        number.className = "kime-hanja-candidate-number";
         number.textContent = String(index + 1);
-        number.style.cssText = "min-width:10px;color:#6b7280;font-size:11px;text-align:right";
 
         const value = document.createElement("span");
         value.className = "kime-hanja-candidate-hanja";
         value.textContent = candidate.hanja;
-        value.style.cssText = "font-size:20px;line-height:1.1";
 
         const details = document.createElement("span");
         details.className = "kime-hanja-candidate-details";
-        details.style.cssText = ["display:flex", "flex-direction:column", "min-width:0"].join(";");
 
         const korean = document.createElement("span");
         korean.className = "kime-hanja-candidate-korean";
         korean.textContent = candidate.korean;
-        korean.style.cssText = [
-            "font-size:12px",
-            "line-height:1.25",
-            "white-space:nowrap",
-            "overflow:hidden",
-            "text-overflow:ellipsis",
-        ].join(";");
 
         const metadata = document.createElement("span");
         metadata.className = "kime-hanja-candidate-metadata";
-        metadata.style.cssText = [
-            "display:flex",
-            "gap:6px",
-            "font-size:11px",
-            "line-height:1.25",
-            "color:#6b7280",
-            "white-space:nowrap",
-            "overflow:hidden",
-            "text-overflow:ellipsis",
-        ].join(";");
 
         if (candidate.simplified) {
             const simplified = document.createElement("span");
@@ -264,33 +188,20 @@ export class HanjaCandidateWindow {
     }
 
     private applyCandidateHighlight(item: HTMLElement, itemIndex: number): void {
-        if (item.getAttribute("aria-selected") === "true") {
-            item.style.background = SELECTED_CANDIDATE_BACKGROUND;
-            return;
-        }
-
-        item.style.background = itemIndex === this.hoveredIndex ? HOVERED_CANDIDATE_BACKGROUND : "transparent";
+        const selected = item.getAttribute("aria-selected") === "true";
+        item.classList.toggle("is-selected", selected);
+        item.classList.toggle("is-hovered", !selected && itemIndex === this.hoveredIndex);
     }
 }
 
 function createPageButton(label: string, ariaLabel: string, onClick: () => void): HTMLButtonElement {
     const button = document.createElement("button");
+    const pageClass = label === "‹" ? "kime-hanja-page-previous" : "kime-hanja-page-next";
     button.type = "button";
-    button.className = label === "‹" ? "kime-hanja-page-previous" : "kime-hanja-page-next";
+    button.className = `kime-hanja-page-button ${pageClass}`;
     button.textContent = label;
     button.tabIndex = -1;
     button.setAttribute("aria-label", ariaLabel);
-    button.style.cssText = [
-        "width:24px",
-        "height:20px",
-        "border:1px solid #d1d5db",
-        "border-radius:4px",
-        "background:#f9fafb",
-        "color:#374151",
-        "font:14px/1 system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",
-        "padding:0",
-        "cursor:pointer",
-    ].join(";");
 
     button.addEventListener("mousedown", (event) => {
         event.preventDefault();
