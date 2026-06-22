@@ -22,7 +22,6 @@
   ],
   "activationEvents": [
     "onStartupFinished",
-    "onCommand:koreanImeI18nHover.showStatus",
     "onLanguage:vue",
     "onLanguage:typescript",
     "onLanguage:typescriptreact",

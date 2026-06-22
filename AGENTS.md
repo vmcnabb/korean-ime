@@ -33,7 +33,7 @@ git pull` first if you do check locally.
 | `npm run build:firefox` | Firefox build to `dist-firefox/` (see Firefox build note below) |
 | `npm run lint:firefox` | `web-ext lint` the Firefox build in `dist-firefox/` |
 | `npm run build-dev:chrome` | Unoptimized dev Chrome build to `dist-chrome-dev/` |
-| `npm run dev:chrome` | One-off dev build + launch Chrome on a fresh throwaway profile, auto-load the extension over CDP, open a test page (no watcher; re-run to rebuild — see `scripts/dev.mjs`). Add `--watch` for a live-reloading Parcel watcher. |
+| `npm run dev:chrome` | One-off dev build + launch Chrome on a fresh throwaway profile, auto-load the extension over CDP, open a test page (no watcher; re-run to rebuild — see `scripts/dev-chrome.mjs`). Add `--watch` for a live-reloading Parcel watcher. |
 | `npm run dev:firefox` | One-off dev build (to `dist-firefox-dev/`, patched) + launch Firefox via `web-ext` with the extension as a temporary add-on on a throwaway profile, open a test page (see `scripts/dev-firefox.mjs`). Add `--watch` to rebuild → re-patch → reload on change. Set `FIREFOX_PATH` to override the binary. |
 | `npm run check` | Type-check only (`tsc --noEmit`) |
 | `npm run lint` / `lint:fix` | ESLint (flat config in `eslint.config.mjs`) |

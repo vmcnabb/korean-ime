@@ -4,6 +4,7 @@ import { TextInputManager } from "./text-input-manager";
 import { debugLog } from "../debug-log";
 import { KoreanKeyboardMode } from "../extension-state/korean-keyboard-mode";
 import { ContentScriptRequestAction, ContentScriptRequestMessage } from "../messaging/content-to-service-messages";
+import { ServiceWorkerHanjaDictionaryProviderClient } from "./hanja-dictionary-provider-client";
 import {
     ContentScriptBroadcastAction,
     ContentScriptBroadcastMessage,
@@ -27,7 +28,7 @@ export class ContentScriptController {
     // toggles modes. Loaded from local storage and re-read when it changes.
     private toggleKeyBinding: KeyBinding | null = null;
     private textEntryMode = KoreanKeyboardMode.English;
-    private textInputManager = new TextInputManager();
+    private textInputManager = new TextInputManager(new ServiceWorkerHanjaDictionaryProviderClient());
     private keyboardController?: OnScreenKeyboardController;
     // The keyboard's first show is gated on its saved layout arriving, so a
     // restored position never appears at the default corner and then jumps.

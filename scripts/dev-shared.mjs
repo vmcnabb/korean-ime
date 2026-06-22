@@ -1,4 +1,4 @@
-// Shared helpers for the per-browser dev launchers (dev.mjs / dev-firefox.mjs):
+// Shared helpers for the per-browser dev launchers (dev-chrome.mjs / dev-firefox.mjs):
 // flag parsing, the localhost test page + server, and process-tree teardown.
 
 import { createServer } from "node:http";
@@ -8,16 +8,28 @@ import { basename } from "node:path";
 // Watch mode (Parcel watch + auto-reload) is opt-in:
 // `npm run dev:<browser> -- --watch` (flag reaches argv) or
 // `npm run dev:<browser> --watch` (npm exposes it as npm_config_watch).
-export function watchRequested() {
+function watchRequested() {
     if (process.argv.slice(2).includes("--watch")) return true;
     const cfg = process.env.npm_config_watch;
     return cfg !== undefined && cfg !== "false" && cfg !== "0";
 }
 
+// The Hanja feature (#150) is gated behind a build-time flag, off by default.
+// Turn it on for a dev session with `npm run dev:<browser> -- --enable-hanja`
+// (flag reaches argv) or `npm run dev:<browser> --enable-hanja` (npm exposes it
+// as npm_config_enable_hanja). The dev launcher passes KIME_ENABLE_HANJA through
+// to Parcel, which inlines it at build time.
+function hanjaFeatureRequested() {
+    if (process.argv.slice(2).includes("--enable-hanja")) return true;
+    const cfg = process.env.npm_config_enable_hanja;
+    if (cfg !== undefined && cfg !== "false" && cfg !== "0") return true;
+    return process.env.KIME_ENABLE_HANJA === "true";
+}
+
 // Optional UI locale for the dev browser, for testing i18n strings.
 // `npm run dev:<browser> -- --locale=ko` (flag reaches argv) or
 // `npm run dev:<browser> --locale=ko` (npm exposes it as npm_config_locale).
-export function requestedLocale() {
+function requestedLocale() {
     const fromArgv = process.argv.slice(2).find((a) => a.startsWith("--locale="));
     if (fromArgv) return fromArgv.slice("--locale=".length);
     return process.env.npm_config_locale || undefined;
@@ -30,7 +42,7 @@ function truthyNpmFlag(value) {
 // Optional color scheme for testing light/dark UI without changing the OS theme.
 // `npm run dev:<browser> -- --dark` / `--light` (flag reaches argv), or
 // `npm run dev:<browser> --dark` / `--light` (npm exposes npm_config_dark/light).
-export function requestedColorScheme() {
+function requestedColorScheme() {
     const args = process.argv.slice(2);
     const dark = args.includes("--dark") || truthyNpmFlag(process.env.npm_config_dark);
     const light = args.includes("--light") || truthyNpmFlag(process.env.npm_config_light);
@@ -42,6 +54,15 @@ export function requestedColorScheme() {
     if (dark) return "dark";
     if (light) return "light";
     return undefined;
+}
+
+export function getDevFlags() {
+    return {
+        watch: watchRequested(),
+        enableHanja: hanjaFeatureRequested(),
+        locale: requestedLocale(),
+        colorScheme: requestedColorScheme(),
+    };
 }
 
 // child.kill() only kills the immediate process. On Windows, killing the whole

@@ -81,7 +81,7 @@ Press `F5` with one of these configs selected:
 2. **Debug Options Page in Dev Chrome** for the extension settings page
 3. **Debug Popup Converter in Dev Chrome** for the popup converter window
 
-Stopping any of those debug sessions from VS Code also shuts down the matching Chrome/dev task. (If VS Code keeps auto-attaching to `scripts/dev.mjs`, set the terminal's **Auto Attach** to **Only With Flag** — it only targets the Node launcher, not Chrome.)
+Stopping any of those debug sessions from VS Code also shuts down the matching Chrome/dev task. (If VS Code keeps auto-attaching to `scripts/dev-chrome.mjs`, set the terminal's **Auto Attach** to **Only With Flag** — it only targets the Node launcher, not Chrome.)
 
 ### Releasing
 

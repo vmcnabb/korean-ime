@@ -31,6 +31,16 @@ describe("isContentScriptRequestMessage", () => {
         ).toBe(true);
     });
 
+    it("should return true for a valid HanjaLookup message", () => {
+        expect(
+            isContentScriptRequestMessage({
+                type: "contentScriptRequest",
+                action: ContentScriptRequestAction.HanjaLookup,
+                data: { reading: "한" },
+            })
+        ).toBe(true);
+    });
+
     it("should return false for a wrong type", () => {
         expect(
             isContentScriptRequestMessage({

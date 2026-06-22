@@ -4,6 +4,7 @@ import { CompositionAdapterFactory } from "../composition/composition-adapter-fa
 import { isHangulOrJamo } from "../composition/hangul-maps";
 import { KeyCode } from "../keyboard/korean-keyboard-map";
 import { SupportedCompositionFeatures } from "../composition/composition-adapters/composition-adapter-interface";
+import { HanjaDictionaryProvider, StaticHanjaDictionaryProvider } from "../composition/hanja/hanja-dictionary-provider";
 
 const nonTextInputTypes = ["button", "checkbox", "file", "hidden", "image", "radio", "range", "submit", "password"];
 const inputSelector = `input:not(${nonTextInputTypes.map((t) => `[type=${t}]`).join(",")})`;
@@ -17,6 +18,10 @@ export class TextInputManager {
     private targetElement?: HTMLElement;
     private imeController?: HangulImeController;
     private textEntryMode: KoreanKeyboardMode = KoreanKeyboardMode.English;
+
+    constructor(
+        private readonly hanjaDictionaryProvider: HanjaDictionaryProvider = new StaticHanjaDictionaryProvider()
+    ) {}
 
     public setMode(mode: KoreanKeyboardMode) {
         this.textEntryMode = mode;
@@ -97,7 +102,7 @@ export class TextInputManager {
                 return undefined;
             }
             this.targetElement = element;
-            this.imeController = new HangulImeController(element, compositionAdapter);
+            this.imeController = new HangulImeController(element, compositionAdapter, this.hanjaDictionaryProvider);
         }
 
         this.syncControllerMode();

@@ -1,0 +1,168 @@
+#hanja-candidate-window-27c8a11a-b4d6-4388-9928-2d578bbb1fc {
+    --candidate-item-height: 44px;
+    --candidates-per-page: 9;
+    --text-primary: light-dark(#1a1a1a, #e5e5e5);
+    --description-color: light-dark(#666, #999);
+    --field-bg: light-dark(white, #141414);
+    --section-bg: light-dark(#f9f9f9, #1e1e1e);
+    --section-border: light-dark(#ddd, #333);
+    --button-hover-bg: light-dark(#f1f5f9, #292929);
+    --accent-subtle-bg: light-dark(#f3edff, #2b1340);
+    --radius-sm: 6px;
+    --dropdown-shadow: light-dark(0 6px 18px rgba(0, 0, 0, 0.18), 0 8px 22px rgba(0, 0, 0, 0.5));
+
+    &,
+    * {
+        all: unset;
+        box-sizing: border-box;
+        user-select: none;
+    }
+
+    position: fixed;
+    z-index: 2147483647;
+    color-scheme: light dark;
+    display: inline-flex;
+    flex-direction: column;
+    max-width: calc(100vw - 8px);
+    padding: 3px;
+    border: 1px solid var(--section-border);
+    border-radius: var(--radius-sm);
+    background: var(--field-bg);
+    box-shadow: var(--dropdown-shadow);
+    color: var(--text-primary);
+    font-family: Arial, Helvetica, sans-serif;
+
+    &.has-pages .candidate-list {
+        min-height: calc(var(--candidate-item-height) * var(--candidates-per-page));
+    }
+
+    .candidate-list {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .candidate {
+        display: grid;
+        grid-template-columns: auto auto minmax(0, 1fr) auto;
+        align-items: center;
+        min-width: 220px;
+        height: var(--candidate-item-height);
+        padding: 4px 8px;
+        column-gap: 8px;
+        background: transparent;
+        color: var(--text-primary);
+        font-size: 14px;
+        line-height: 1.4;
+        cursor: pointer;
+
+        &.is-selected {
+            background: var(--accent-subtle-bg);
+        }
+
+        &.is-hovered {
+            background: var(--button-hover-bg);
+        }
+
+        span {
+            grid-row: span 2;
+        }
+
+        .can-number {
+            color: var(--description-color);
+            font-size: 11px;
+            display: block;
+            text-align: right;
+            min-width: 10px;
+        }
+
+        .can-hanja {
+            display: block;
+            font-size: 20px;
+            line-height: 1.1;
+        }
+
+        .can-korean {
+            display: block;
+            overflow: hidden;
+            font-size: 12px;
+            line-height: 1.25;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .can-simplified,
+        .can-pinyin {
+            line-height: 1;
+            grid-column: 4;
+        }
+
+        .can-pinyin {
+            grid-row: 1;
+            color: var(--description-color);
+            font-size: 11px;
+            text-align: right;
+        }
+
+        .can-simplified:empty + .can-pinyin {
+            grid-row-start: 1;
+            grid-row-end: 3;
+        }
+        .can-simplified {
+            grid-row: 2;
+            font-size: 18px;
+        }
+    }
+
+    .page-controls {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 3px;
+        padding: 3px 0 0;
+    }
+
+    .page-hint {
+        display: flex;
+        align-items: center;
+        height: 8px;
+        gap: 3px;
+        padding-left: 3px;
+    }
+
+    .page-dot {
+        display: block;
+        width: 4px;
+        height: 4px;
+        border-radius: 999px;
+        background: var(--description-color);
+
+        &.is-active {
+            width: 7px;
+            height: 7px;
+        }
+    }
+
+    .page-buttons {
+        display: flex;
+        gap: 2px;
+    }
+
+    .page-button {
+        display: block;
+        width: 24px;
+        height: 20px;
+        padding: 0;
+        border: 1px solid var(--section-border);
+        border-radius: 4px;
+        background: var(--section-bg);
+        color: var(--text-primary);
+        font-size: 14px;
+        line-height: 1;
+        text-align: center;
+        cursor: pointer;
+
+        &:hover {
+            background: var(--button-hover-bg);
+        }
+    }
+}

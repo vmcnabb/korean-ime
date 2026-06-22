@@ -7,6 +7,8 @@ import { KoreanKeyboardMode } from "../extension-state/korean-keyboard-mode";
 import { ServiceScriptMessageAction } from "../messaging/service-to-content-messages";
 import { ContentScriptRequestAction } from "../messaging/content-to-service-messages";
 
+jest.mock("../composition/hanja/hanja-candidate-window.scss", () => ({}), { virtual: true });
+
 jest.mock("../settings/settings-store", () => ({
     loadSettings: jest.fn().mockResolvedValue({ onScreenKeyboard: { layout: "full-us" } }),
 }));

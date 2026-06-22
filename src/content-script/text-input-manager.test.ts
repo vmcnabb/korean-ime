@@ -3,6 +3,8 @@ import { HangulImeController } from "../composition/hangul-ime-controller";
 import { KeyCode } from "../keyboard/korean-keyboard-map";
 import { CompositionAdapterFactory } from "../composition/composition-adapter-factory";
 
+jest.mock("../composition/hanja/hanja-candidate-window.scss", () => ({}), { virtual: true });
+
 function element(html: string): HTMLElement {
     const wrapper = document.createElement("div");
     wrapper.innerHTML = html;

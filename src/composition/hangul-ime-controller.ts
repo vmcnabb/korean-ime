@@ -7,7 +7,8 @@ import { HanjaCandidatePager } from "./hanja/hanja-candidate-pager";
 import { HanjaCandidateWindow, HanjaCandidateWindowPage } from "./hanja/hanja-candidate-window";
 import { HanjaCompositionOverlay } from "./hanja/hanja-composition-overlay";
 import { commitHanjaCandidate, getHanjaConversionTarget, HanjaConversionTarget } from "./hanja/hanja-converter";
-import { HanjaCandidate } from "./hanja/hanja-dictionary";
+import { HanjaCandidate } from "./hanja/hanja-candidate";
+import { HanjaDictionaryProvider, StaticHanjaDictionaryProvider } from "./hanja/hanja-dictionary-provider";
 import { isDefaultHanjaKey } from "./hanja/hanja-key";
 
 type HanjaCandidateSelection = {
@@ -26,6 +27,7 @@ export class HangulImeController {
     private compositor = new HangulCompositor();
     private compositionAdapter: CompositionAdapter;
     private hanjaCandidateSelection?: HanjaCandidateSelection;
+    private hanjaLookupGeneration = 0;
 
     private changeListeners: (() => void)[] = [];
     private eventListeners: {
@@ -39,7 +41,8 @@ export class HangulImeController {
 
     constructor(
         private readonly element: HTMLElement,
-        compositionAdapter = CompositionAdapterFactory.createCompositionAdapter(element)
+        compositionAdapter = CompositionAdapterFactory.createCompositionAdapter(element),
+        private readonly hanjaDictionaryProvider: HanjaDictionaryProvider = new StaticHanjaDictionaryProvider()
     ) {
         if (!compositionAdapter) {
             throw new Error("Could not create composition adapter for element");
@@ -80,6 +83,7 @@ export class HangulImeController {
     }
 
     deactivate() {
+        this.invalidateHanjaLookup();
         this.closeHanjaCandidateSelection();
 
         if (this.compositor.isCompositing()) {
@@ -100,6 +104,7 @@ export class HangulImeController {
      */
     dispose() {
         try {
+            this.invalidateHanjaLookup();
             this.flushComposition();
         } finally {
             this.closeHanjaCandidateSelection();
@@ -145,11 +150,12 @@ export class HangulImeController {
 
             // Temporary scaffolding for Issues 150/181; graduates to Settings when the feature ships.
             if (process.env.KIME_ENABLE_HANJA === "true" && isDefaultHanjaKey(event)) {
-                if (this.openHanjaCandidateSelection()) {
-                    this.cancelEvent(event);
+                if (this.startHanjaCandidateSelection(event)) {
                     return;
                 }
             }
+
+            this.invalidateHanjaLookup();
 
             // record which alt was down last, so we know if the "han/yong" key is down
             if (isAltKey(code)) {
@@ -244,8 +250,13 @@ export class HangulImeController {
             // selection the guard already handled this jamo and stopped the event.
             this.handleJamoKey(event);
         },
-        blur: () => this.flushComposition(),
-        mousedown: () => this.flushComposition(),
+        blur: () => {
+            this.flushComposition();
+        },
+        mousedown: () => {
+            this.invalidateHanjaLookup();
+            this.flushComposition();
+        },
     };
 
     /**
@@ -374,13 +385,15 @@ export class HangulImeController {
         }
     }
 
-    private openHanjaCandidateSelection(): boolean {
+    private startHanjaCandidateSelection(event: KeyboardEvent): boolean {
         const target = getHanjaConversionTarget(this.compositor, this.compositionAdapter);
         if (!target) {
             return false;
         }
 
         this.closeHanjaCandidateSelection();
+        const lookupGeneration = this.beginHanjaLookup();
+        this.cancelEvent(event);
 
         if (target.kind === "composition") {
             this.compositionAdapter.endComposition(target.reading);
@@ -391,11 +404,28 @@ export class HangulImeController {
             ...target,
             kind: "previous-character",
         };
+        void this.openHanjaCandidateSelection(committedTarget, lookupGeneration);
+        return true;
+    }
+
+    private async openHanjaCandidateSelection(target: HanjaConversionTarget, lookupGeneration: number): Promise<void> {
+        let candidates: readonly HanjaCandidate[];
+        try {
+            candidates = await this.hanjaDictionaryProvider.lookup(target.reading);
+        } catch (error) {
+            console.error(error);
+            return;
+        }
+
+        if (lookupGeneration !== this.hanjaLookupGeneration || candidates.length === 0 || !this._isActive) {
+            return;
+        }
+
         const overlay = new HanjaCompositionOverlay(this.element, this.compositionAdapter);
         const overlayRect = overlay.show(target.reading);
-        const pager = new HanjaCandidatePager(target.candidates);
+        const pager = new HanjaCandidatePager(candidates);
         this.hanjaCandidateSelection = {
-            target: committedTarget,
+            target,
             pager,
             overlay,
             window: new HanjaCandidateWindow(this.element, this.hanjaCandidatePage(pager), overlayRect, {
@@ -405,7 +435,6 @@ export class HangulImeController {
                 onSelectCandidate: (visibleIndex) => this.commitVisibleHanjaCandidate(visibleIndex, KeyCode.Lang2),
             }),
         };
-        return true;
     }
 
     private handleHanjaCandidateSelectionKey(event: KeyboardEvent): boolean {
@@ -505,7 +534,11 @@ export class HangulImeController {
             return;
         }
 
-        const candidate = selection.target.candidates[index];
+        const candidate = selection.pager.candidateAt(index);
+        if (!candidate) {
+            return;
+        }
+
         this.closeHanjaCandidateSelection();
         commitHanjaCandidate(selection.target, candidate, this.compositor, this.compositionAdapter, keyCode);
         this.notifyOnEntry();
@@ -524,6 +557,15 @@ export class HangulImeController {
         this.hanjaCandidateSelection?.overlay.remove();
         this.hanjaCandidateSelection?.window.remove();
         this.hanjaCandidateSelection = undefined;
+    }
+
+    private beginHanjaLookup(): number {
+        this.hanjaLookupGeneration += 1;
+        return this.hanjaLookupGeneration;
+    }
+
+    private invalidateHanjaLookup(): void {
+        this.hanjaLookupGeneration += 1;
     }
 
     // Commit and clear any in-progress composition. Runs when the controller is

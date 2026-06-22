@@ -25,14 +25,7 @@
 import { spawn, spawnSync } from "node:child_process";
 import { resolve } from "node:path";
 import webExt from "web-ext";
-import {
-    killFirefoxByProfile,
-    killTree,
-    requestedColorScheme,
-    requestedLocale,
-    startTestPageServer,
-    watchRequested,
-} from "./dev-shared.mjs";
+import { getDevFlags, killFirefoxByProfile, killTree, startTestPageServer } from "./dev-shared.mjs";
 
 const root = process.cwd();
 // Dev builds go to dist-firefox-dev/ so they can never be mistaken for, or
@@ -89,11 +82,17 @@ const testUrl = startedServer.testUrl;
 
 // 2. Build the extension. Default: a one-off build. With --watch: start Parcel
 //    in watch mode and patch the manifest after the first build.
-const watchMode = watchRequested();
-const buildEnv = { ...process.env, NODE_ENV: "development" };
+const devFlags = getDevFlags();
+const hanjaKeyLabel = process.platform === "darwin" ? "Right Option" : "Right Ctrl";
+console.log(`[dev] Hanja conversion (${hanjaKeyLabel}): ${devFlags.enableHanja ? "enabled" : "disabled"}`);
+const buildEnv = {
+    ...process.env,
+    NODE_ENV: "development",
+    KIME_ENABLE_HANJA: devFlags.enableHanja ? "true" : "",
+};
 
 console.log("[dev] Starting...");
-if (watchMode) {
+if (devFlags.watch) {
     console.log("[dev] Starting Parcel in watch mode…");
     watch = spawn("npm", ["run", "start:firefox"], {
         shell: true,
@@ -147,8 +146,6 @@ if (watchMode) {
 
 // 3. Launch Firefox with the extension as a temporary add-on. web-ext creates a
 //    throwaway profile; noReload because we drive reloads ourselves (see above).
-const locale = requestedLocale();
-const colorScheme = requestedColorScheme();
 const runParams = {
     sourceDir: distDir,
     target: ["firefox-desktop"],
@@ -158,14 +155,16 @@ const runParams = {
 };
 if (process.env.FIREFOX_PATH) runParams.firefox = process.env.FIREFOX_PATH;
 // intl.locale.requested sets the Firefox UI locale chrome.i18n resolves against.
-if (locale || colorScheme) {
+if (devFlags.locale || devFlags.colorScheme) {
     runParams.pref = {
-        ...(locale ? { "intl.locale.requested": locale } : {}),
+        ...(devFlags.locale ? { "intl.locale.requested": devFlags.locale } : {}),
         // Drives the content `prefers-color-scheme` result in the dev profile.
         // 0 = light, 1 = dark.
-        ...(colorScheme ? { "ui.systemUsesDarkTheme": colorScheme === "dark" ? 1 : 0 } : {}),
+        ...(devFlags.colorScheme ? { "ui.systemUsesDarkTheme": devFlags.colorScheme === "dark" ? 1 : 0 } : {}),
         // Explicit content override: 0 = dark, 1 = light, 2 = system, 3 = browser theme.
-        ...(colorScheme ? { "layout.css.prefers-color-scheme.content-override": colorScheme === "dark" ? 0 : 1 } : {}),
+        ...(devFlags.colorScheme
+            ? { "layout.css.prefers-color-scheme.content-override": devFlags.colorScheme === "dark" ? 0 : 1 }
+            : {}),
     };
 }
 
@@ -203,16 +202,16 @@ if (firefoxProfileDirs.length > 0) {
 // Stop the dev session when Firefox is closed.
 runner.registerCleanup(() => shutdown(0));
 
-if (locale) {
-    console.log(`[dev] UI locale: ${locale}`);
+if (devFlags.locale) {
+    console.log(`[dev] UI locale: ${devFlags.locale}`);
 }
-if (colorScheme) {
-    console.log(`[dev] Color scheme: ${colorScheme}`);
+if (devFlags.colorScheme) {
+    console.log(`[dev] Color scheme: ${devFlags.colorScheme}`);
 }
 console.log(`\n[dev] Extension:    ${distDir}`);
 console.log(`[dev] Test page:    ${testUrl}`);
 console.log(
-    watchMode
+    devFlags.watch
         ? "[dev] Watch mode: edit & save to rebuild (re-patches + reloads). Close Firefox or press Ctrl+C to stop.\n"
         : "[dev] Re-run `npm run dev:firefox` after changes to rebuild (or add --watch). Close Firefox or press Ctrl+C to stop.\n"
 );

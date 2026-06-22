@@ -1,18 +1,16 @@
 import { KeyCode } from "../../keyboard/korean-keyboard-map";
 import { CompositionAdapter } from "../composition-adapters/composition-adapter";
 import { HangulCompositor } from "../hangul-compositor";
-import { HanjaCandidate, lookUpHanja } from "./hanja-dictionary";
+import { HanjaCandidate } from "./hanja-candidate";
 
 export type HanjaConversionTarget =
     | {
           kind: "composition";
           reading: string;
-          candidates: readonly HanjaCandidate[];
       }
     | {
           kind: "previous-character";
           reading: string;
-          candidates: readonly HanjaCandidate[];
       };
 
 /**
@@ -31,12 +29,11 @@ export function getHanjaConversionTarget(
 ): HanjaConversionTarget | undefined {
     if (compositor.isCompositing()) {
         const reading = compositor.getCurrentChar();
-        const candidates = lookUpHanja(reading);
-        if (candidates.length === 0) {
+        if (!isSingleHangulSyllable(reading)) {
             return undefined;
         }
 
-        return { kind: "composition", reading, candidates };
+        return { kind: "composition", reading };
     }
 
     if (!adapter.supportsMethods("getPreviousCharacter", "deleteContentBackwards", "inputCharacter")) {
@@ -48,8 +45,7 @@ export function getHanjaConversionTarget(
         return undefined;
     }
 
-    const candidates = lookUpHanja(reading);
-    return candidates.length === 0 ? undefined : { kind: "previous-character", reading, candidates };
+    return isSingleHangulSyllable(reading) ? { kind: "previous-character", reading } : undefined;
 }
 
 export function commitHanjaCandidate(
@@ -67,4 +63,17 @@ export function commitHanjaCandidate(
 
     adapter.deleteContentBackwards();
     adapter.inputCharacter(candidate.hanja, keyCode);
+}
+
+function isSingleHangulSyllable(text: string): boolean {
+    if ([...text].length !== 1) {
+        return false;
+    }
+
+    const codePoint = text.codePointAt(0);
+    if (codePoint === undefined) {
+        return false;
+    }
+
+    return codePoint >= 0xac00 && codePoint <= 0xd7a3;
 }
