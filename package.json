@@ -32,7 +32,7 @@
     "package": "node scripts/package-help.mjs",
     "package:chrome": "npm run validate && npm run build:chrome && node scripts/package.mjs chrome",
     "package:firefox": "npm run validate && npm run build:firefox && npm run lint:firefox && node scripts/package.mjs firefox",
-    "dev:chrome": "node scripts/dev.mjs",
+    "dev:chrome": "node scripts/dev-chrome.mjs",
     "dev:firefox": "node scripts/dev-firefox.mjs",
     "prepare": "husky && node scripts/build-manifest.mjs chrome && node scripts/generate-message-keys.mjs"
   },

@@ -66,7 +66,7 @@ if (!(await waitForSessionFileToClear())) {
 
 rmSync(sessionFile, { force: true });
 
-// dev.mjs uses a throwaway profile dir and normally removes it on shutdown, but
+// dev-chrome.mjs uses a throwaway profile dir and normally removes it on shutdown, but
 // if we had to hard-kill it the dir can be left behind. Best-effort cleanup.
 if (typeof session.profileDir === "string" && session.profileDir) {
     try {

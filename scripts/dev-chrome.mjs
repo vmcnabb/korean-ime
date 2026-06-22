@@ -34,15 +34,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import * as ChromeLauncher from "chrome-launcher";
-import {
-    killChromeByProfile,
-    killStrayDevChromes,
-    killTree,
-    requestedColorScheme,
-    requestedLocale,
-    startTestPageServer,
-    watchRequested,
-} from "./dev-shared.mjs";
+import { getDevFlags, killChromeByProfile, killStrayDevChromes, killTree, startTestPageServer } from "./dev-shared.mjs";
 
 const root = process.cwd();
 const DEFAULT_CHROME_DEBUG_PORT = 9222;
@@ -50,18 +42,6 @@ const DEFAULT_CHROME_DEBUG_PORT = 9222;
 // clobber, the production dist-chrome/ that `npm run package:chrome` ships. Keep
 // this in sync with the --dist-dir in the "start:chrome" npm script.
 const distDir = resolve(root, "dist-chrome-dev");
-
-// The Hanja feature (#150) is gated behind a build-time flag, off by default.
-// Turn it on for this dev session with `npm run dev:chrome -- --enable-hanja`
-// (flag reaches argv) or `npm run dev:chrome --enable-hanja` (npm exposes it as
-// npm_config_enable_hanja). The build reads KIME_ENABLE_HANJA, which we set on the
-// spawned Parcel process below; Parcel inlines it at build time.
-function hanjaFeatureRequested() {
-    if (process.argv.slice(2).includes("--enable-hanja")) return true;
-    const cfg = process.env.npm_config_enable_hanja;
-    if (cfg !== undefined && cfg !== "false" && cfg !== "0") return true;
-    return process.env.KIME_ENABLE_HANJA === "true";
-}
 
 function getChromeDebugPort() {
     const rawPort = process.env.KIME_CHROME_DEBUG_PORT ?? process.env.CHROME_DEBUG_PORT;
@@ -251,14 +231,17 @@ const { server, testUrl } = await startTestPageServer();
 
 // 2. Build the extension. Default: a one-off build. With --watch: start Parcel
 //    in watch mode (auto-rebuild + hot reload) and wait for the first build.
-const watchMode = watchRequested();
-const enableHanja = hanjaFeatureRequested();
+const devFlags = getDevFlags();
 const hanjaKeyLabel = process.platform === "darwin" ? "Right Option" : "Right Ctrl";
-console.log(`[dev] Hanja conversion (${hanjaKeyLabel}): ${enableHanja ? "enabled" : "disabled"}`);
-const buildEnv = { ...process.env, NODE_ENV: "development", KIME_ENABLE_HANJA: enableHanja ? "true" : "" };
+console.log(`[dev] Hanja conversion (${hanjaKeyLabel}): ${devFlags.enableHanja ? "enabled" : "disabled"}`);
+const buildEnv = {
+    ...process.env,
+    NODE_ENV: "development",
+    KIME_ENABLE_HANJA: devFlags.enableHanja ? "true" : "",
+};
 
 console.log("[dev] Starting...");
-if (watchMode) {
+if (devFlags.watch) {
     console.log("[dev] Starting Parcel in watch mode…");
     watch = spawn("npm", ["run", "start:chrome"], {
         shell: true,
@@ -315,8 +298,6 @@ removeSessionFile();
 // unpacked" by hand since we load over CDP below. Cleaned up on shutdown.
 profileDir = mkdtempSync(join(tmpdir(), "kime-dev-"));
 
-const locale = requestedLocale();
-const colorScheme = requestedColorScheme();
 const args = [
     `--user-data-dir=${profileDir}`,
     // The port is kept for VS Code debugging and /json polling; the *pipe* (fd
@@ -330,7 +311,7 @@ const args = [
     "--no-default-browser-check",
     // --lang sets the UI locale chrome.i18n resolves against. Every run uses a
     // fresh profile, so a locale change always takes effect.
-    ...(locale ? [`--lang=${locale}`] : []),
+    ...(devFlags.locale ? [`--lang=${devFlags.locale}`] : []),
     // NB: --dark / --light are NOT forced with a Chrome switch. Chrome only ships
     // --force-dark-mode (there is no --force-light-mode), so we emulate
     // prefers-color-scheme over CDP after launch instead — see below. That works
@@ -340,11 +321,11 @@ const args = [
     "about:blank",
 ];
 
-if (locale) {
-    console.log(`[dev] UI locale: ${locale}`);
+if (devFlags.locale) {
+    console.log(`[dev] UI locale: ${devFlags.locale}`);
 }
-if (colorScheme) {
-    console.log(`[dev] Color scheme: ${colorScheme}`);
+if (devFlags.colorScheme) {
+    console.log(`[dev] Color scheme: ${devFlags.colorScheme}`);
 }
 
 // fd 0-2 ignored; fd 3/4 are the CDP pipe (--remote-debugging-pipe).
@@ -374,13 +355,13 @@ try {
     // automatically; the on-screen keyboard renders into the page target, so it's
     // covered by emulating that page. Enabled before the test page is created
     // below so the page is caught on attach.
-    if (colorScheme) {
+    if (devFlags.colorScheme) {
         cdp.on("Target.attachedToTarget", ({ targetInfo, sessionId }) => {
             const type = targetInfo?.type;
             if (type !== "page" && type !== "iframe") return;
             cdp.send(
                 "Emulation.setEmulatedMedia",
-                { features: [{ name: "prefers-color-scheme", value: colorScheme }] },
+                { features: [{ name: "prefers-color-scheme", value: devFlags.colorScheme }] },
                 sessionId
             ).catch(() => {
                 /* target may have closed before we could emulate it */
@@ -418,7 +399,7 @@ console.log(`[dev] Debug port:   ${chromeDebugPort}`);
 console.log(`[dev] Test page:    ${testUrl}`);
 console.log("[dev] VS Code debugger target ready.");
 console.log(
-    watchMode
+    devFlags.watch
         ? "[dev] Watch mode: edit & save to rebuild (auto-reloads). Close Chrome or press Ctrl+C to stop.\n"
         : "[dev] Re-run `npm run dev:chrome` after changes to rebuild (or add --watch). Close Chrome or press Ctrl+C to stop.\n"
 );
