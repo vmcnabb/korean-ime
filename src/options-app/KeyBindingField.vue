@@ -1,80 +1,25 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from "vue";
+import { computed, onMounted, onUnmounted, ref, toRefs } from "vue";
 import { t, type MessageKey } from "../i18n";
 import {
     KeyBinding,
-    KeyBindingPlatform,
     currentKeyBindingPlatform,
-    defaultToggleKeyBindingForPlatform,
     formatKeyBinding,
     formatModifierKeyPrefix,
     isValidImeActionKeyBinding,
-    keyBindingsCollide,
     keyBindingFromEvent,
 } from "../keyboard/key-binding";
 import { KeyCode, isModifierKey } from "../keyboard/korean-keyboard-map";
-import { TOGGLE_KEY_STORAGE_KEY, loadToggleKeyBinding, saveToggleKeyBinding } from "../settings/toggle-key-store";
-import { HANJA_KEY_STORAGE_KEY, loadHanjaKeyBinding, saveHanjaKeyBinding } from "../settings/hanja-key-store";
-import { defaultHanjaKeyBindingForPlatform } from "../composition/hanja/hanja-key";
 import { api } from "../platform/browser-api";
-import { ImeKeySettingKind, notifyKeyBindingUnbound } from "./key-binding-events";
+import { KeyBindingFieldConfig, resolveKeyBindingCollision } from "./key-binding-settings";
 
-const props = withDefaults(
-    defineProps<{
-        kind?: ImeKeySettingKind;
-    }>(),
-    { kind: "hanYong" }
-);
+// One configurable IME key, supplied by the parent section as data (see
+// key-binding-settings.ts). The component knows nothing feature-specific.
+const props = defineProps<{
+    config: KeyBindingFieldConfig;
+}>();
 
-type KeySettingConfig = {
-    kind: ImeKeySettingKind;
-    storageKey: string;
-    loadBinding: () => Promise<KeyBinding | null>;
-    saveBinding: (binding: KeyBinding | null) => Promise<void>;
-    defaultBindingForPlatform: (platform: KeyBindingPlatform) => KeyBinding;
-    labelKey: MessageKey;
-    descriptionKey: MessageKey;
-    peerKind: ImeKeySettingKind;
-    peerUnboundMessageKey: MessageKey;
-};
-
-const keySettingConfigs: Record<ImeKeySettingKind, KeySettingConfig> = {
-    hanYong: {
-        kind: "hanYong",
-        storageKey: TOGGLE_KEY_STORAGE_KEY,
-        loadBinding: loadToggleKeyBinding,
-        saveBinding: saveToggleKeyBinding,
-        defaultBindingForPlatform: defaultToggleKeyBindingForPlatform,
-        labelKey: "options_hanYong_toggleKey_label",
-        descriptionKey: "options_hanYong_toggleKey_description",
-        peerKind: "hanja",
-        peerUnboundMessageKey: "options_keyBinding_hanjaUnbound",
-    },
-    hanja: {
-        kind: "hanja",
-        storageKey: HANJA_KEY_STORAGE_KEY,
-        loadBinding: loadHanjaKeyBinding,
-        saveBinding: saveHanjaKeyBinding,
-        defaultBindingForPlatform: defaultHanjaKeyBindingForPlatform,
-        labelKey: "options_hanja_conversionKey_label",
-        descriptionKey: "options_hanja_conversionKey_description",
-        peerKind: "hanYong",
-        peerUnboundMessageKey: "options_keyBinding_hanYongUnbound",
-    },
-};
-
-const config = computed(() => keySettingConfigs[props.kind]);
-// The Hanja key only exists when its feature flag is on; with the flag off there
-// is no reachable Hanja setting to collide with, so the toggle key has no peer.
-// (`process.env.KIME_ENABLE_HANJA` is inlined at build time, so the off case
-// compiles to a constant.)
-const peerConfig = computed<KeySettingConfig | null>(() => {
-    const peerKind = config.value.peerKind;
-    if (peerKind === "hanja" && process.env.KIME_ENABLE_HANJA !== "true") {
-        return null;
-    }
-    return keySettingConfigs[peerKind];
-});
+const { config } = toRefs(props);
 
 const binding = ref<KeyBinding | null>(null);
 const capturing = ref(false);
@@ -113,7 +58,7 @@ const bindingAccessibleLabel = computed(() => {
 });
 
 // The binding box is now a button; give it a self-describing accessible name
-// (field label + current value) so it reads as the toggle-key control rather
+// (field label + current value) so it reads as the key-binding control rather
 // than a bare value when a screen reader lands on it.
 const bindingButtonLabel = computed(() => `${t(config.value.labelKey)}: ${bindingAccessibleLabel.value}`);
 
@@ -149,27 +94,11 @@ async function reloadBinding() {
 async function persist(next: KeyBinding | null) {
     statusMessage.value = "";
     statusWarning.value = false;
-    const collisionStatus = next ? await unbindCollidingPeer(next) : "";
+    const collisionStatus = next ? await resolveKeyBindingCollision(config.value, next) : "";
     binding.value = next;
     await config.value.saveBinding(next);
     statusMessage.value = collisionStatus;
     statusWarning.value = !!collisionStatus;
-}
-
-async function unbindCollidingPeer(next: KeyBinding): Promise<string> {
-    const peer = peerConfig.value;
-    if (!peer) {
-        return "";
-    }
-
-    const other = await peer.loadBinding();
-    if (!other || !keyBindingsCollide(next, other)) {
-        return "";
-    }
-
-    await peer.saveBinding(null);
-    notifyKeyBindingUnbound(peer.kind);
-    return t(config.value.peerUnboundMessageKey, formatKeyBinding(other, { platform: keyBindingPlatform }));
 }
 
 function turnOff() {
@@ -289,7 +218,7 @@ function onCaptureKeyup(event: KeyboardEvent) {
 </script>
 
 <template>
-    <div class="toggle-key">
+    <div class="key-binding-field">
         <span class="label">
             {{ t(config.labelKey) }}
             <span
@@ -340,7 +269,7 @@ function onCaptureKeyup(event: KeyboardEvent) {
 
 <style scoped>
 /* `.label` typography is shared globally in options-page.vue */
-.toggle-key .label {
+.key-binding-field .label {
     display: block;
 }
 

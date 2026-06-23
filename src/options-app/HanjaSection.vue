@@ -3,7 +3,8 @@ import { settings } from "./use-settings";
 import { t } from "../i18n";
 import LabeledCheckbox from "./LabeledCheckbox.vue";
 import ToggleSwitch from "./ToggleSwitch.vue";
-import ToggleKeySetting from "./ToggleKeySetting.vue";
+import KeyBindingField from "./KeyBindingField.vue";
+import { hanjaKeyConfig } from "./key-binding-settings";
 import { useKeyBindingFlash } from "./use-key-binding-flash";
 
 const { keyBindingFlash } = useKeyBindingFlash("hanja");
@@ -19,7 +20,7 @@ const { keyBindingFlash } = useKeyBindingFlash("hanja");
         </div>
         <template v-if="settings.hanja.enabled">
             <div class="setting" :class="{ 'key-binding-flash': keyBindingFlash }">
-                <ToggleKeySetting kind="hanja" />
+                <KeyBindingField :config="hanjaKeyConfig" />
             </div>
             <div class="setting">
                 <LabeledCheckbox

@@ -5,7 +5,8 @@ import { t } from "../i18n";
 import SelectSetting from "./SelectSetting.vue";
 import LabeledCheckbox from "./LabeledCheckbox.vue";
 import ToggleSwitch from "./ToggleSwitch.vue";
-import ToggleKeySetting from "./ToggleKeySetting.vue";
+import KeyBindingField from "./KeyBindingField.vue";
+import { hanYongKeyConfig } from "./key-binding-settings";
 import { useKeyBindingFlash } from "./use-key-binding-flash";
 
 const persistenceOptions: { value: Persistence; name: string }[] = [
@@ -27,7 +28,7 @@ const { keyBindingFlash } = useKeyBindingFlash("hanYong");
         </div>
         <template v-if="settings.hanYong.enabled">
             <div class="setting" :class="{ 'key-binding-flash': keyBindingFlash }">
-                <ToggleKeySetting kind="hanYong" />
+                <KeyBindingField :config="hanYongKeyConfig" />
             </div>
             <div class="setting">
                 <LabeledCheckbox
