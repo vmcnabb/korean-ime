@@ -1,4 +1,4 @@
-import { HangulImeController } from "./hangul-ime-controller";
+import { HangulImeController, HanjaImeOptions } from "./hangul-ime-controller";
 import { InputAdapter } from "./composition-adapters/input-adapter";
 import { ContentEditableAdapter } from "./composition-adapters/content-editable-adapter";
 import { KeyCode } from "../keyboard/korean-keyboard-map";
@@ -21,8 +21,12 @@ function dispatchKeydown(target: EventTarget, code: string, key: string): Keyboa
 // Track every controller and dispose them all after each test to keep tests
 // isolated.
 const liveControllers: HangulImeController[] = [];
-function makeController(element: HTMLElement, hanjaDictionaryProvider?: HanjaDictionaryProvider): HangulImeController {
-    const controller = new HangulImeController(element, undefined, hanjaDictionaryProvider);
+function makeController(
+    element: HTMLElement,
+    hanjaDictionaryProvider?: HanjaDictionaryProvider,
+    hanjaOptions?: Partial<HanjaImeOptions>
+): HangulImeController {
+    const controller = new HangulImeController(element, undefined, hanjaDictionaryProvider, hanjaOptions);
     liveControllers.push(controller);
     return controller;
 }
@@ -597,7 +601,7 @@ describe("HangulImeController Hanja candidate selection (KIME_ENABLE_HANJA)", ()
 
     // Drive composition state in jsdom by stubbing the adapter's DOM mutations, then
     // type the jamo for a syllable so the compositor is genuinely mid-composition.
-    function composingController() {
+    function composingController(hanjaOptions?: Partial<HanjaImeOptions>) {
         jest.spyOn(InputAdapter.prototype, "beginComposition").mockImplementation(() => {});
         jest.spyOn(InputAdapter.prototype, "updateComposition").mockImplementation(() => {});
         const endComposition = jest.spyOn(InputAdapter.prototype, "endComposition").mockImplementation(() => {});
@@ -607,7 +611,7 @@ describe("HangulImeController Hanja candidate selection (KIME_ENABLE_HANJA)", ()
         const inputCharacter = jest.spyOn(InputAdapter.prototype, "inputCharacter").mockImplementation(() => {});
 
         const element = document.createElement("textarea");
-        const controller = makeController(element);
+        const controller = makeController(element, undefined, hanjaOptions);
         controller.activate();
         return { element, endComposition, deleteContentBackwards, inputCharacter };
     }
@@ -971,6 +975,42 @@ describe("HangulImeController Hanja candidate selection (KIME_ENABLE_HANJA)", ()
 
         expect(candidateTexts()).toEqual(["1韓", "2寒", "3恨"]);
         expect(option.defaultPrevented).toBe(true);
+    });
+
+    it("does not open candidates when Hanja conversion is disabled", async () => {
+        process.env.KIME_ENABLE_HANJA = "true";
+        const { element, endComposition } = composingController({ enabled: false });
+        composeHan(element);
+
+        const ctrl = pressRightCtrl(element);
+        await settleHanjaLookup();
+
+        expect(endComposition).not.toHaveBeenCalledWith("한");
+        expect(document.querySelector(HANJA_CANDIDATE_WINDOW_SELECTOR)).toBeNull();
+        expect(ctrl.defaultPrevented).toBe(false);
+    });
+
+    it("uses a configured Hanja key binding", async () => {
+        process.env.KIME_ENABLE_HANJA = "true";
+        const { element } = composingController({
+            keyBinding: { code: KeyCode.KeyH, ctrl: false, alt: true, shift: false, meta: false },
+        });
+        composeHan(element);
+
+        const rightCtrl = pressRightCtrl(element);
+        const altH = new KeyboardEvent("keydown", {
+            code: "KeyH",
+            key: "h",
+            altKey: true,
+            bubbles: true,
+            cancelable: true,
+        });
+        element.dispatchEvent(altH);
+        await settleHanjaLookup();
+
+        expect(rightCtrl.defaultPrevented).toBe(false);
+        expect(candidateTexts()).toEqual(["1韓", "2寒", "3恨"]);
+        expect(altH.defaultPrevented).toBe(true);
     });
 
     it("does nothing when the flag is off (Right-Ctrl is just a modifier)", () => {

@@ -20,6 +20,7 @@ import { routeByAction } from "../messaging/route-message";
 import { currentOskSite } from "./osk-site";
 import { loadSettings, saveSettings } from "../settings/settings-store";
 import { TOGGLE_KEY_STORAGE_KEY, loadToggleKeyBinding } from "../settings/toggle-key-store";
+import { HANJA_KEY_STORAGE_KEY, loadHanjaKeyBinding } from "../settings/hanja-key-store";
 import { LayoutId } from "../extension-state/osk-layout";
 
 export class ContentScriptController {
@@ -27,6 +28,10 @@ export class ContentScriptController {
     // The per-machine toggle key (see toggle-key-store); null means no key
     // toggles modes. Loaded from local storage and re-read when it changes.
     private toggleKeyBinding: KeyBinding | null = null;
+    private hanjaKeyBinding: KeyBinding | null = null;
+    private isHanjaEnabled = true;
+    private showHanjaSimplified = true;
+    private showHanjaPinyin = true;
     private textEntryMode = KoreanKeyboardMode.English;
     private textInputManager = new TextInputManager(new ServiceWorkerHanjaDictionaryProviderClient());
     private keyboardController?: OnScreenKeyboardController;
@@ -58,6 +63,8 @@ export class ContentScriptController {
         this.requestState();
         void this.loadToggleKey();
         this.watchToggleKey();
+        void this.loadHanjaKey();
+        this.watchHanjaKey();
 
         // Only the top window hosts the keyboard, so only it needs the saved
         // position layout (the reply gates the first show — see
@@ -150,8 +157,27 @@ export class ContentScriptController {
         });
     }
 
+    /** Load the per-machine Hanja conversion key binding (see hanja-key-store). */
+    private async loadHanjaKey() {
+        this.hanjaKeyBinding = await loadHanjaKeyBinding();
+        this.syncHanjaOptions();
+    }
+
+    /** Re-read the Hanja key when it changes — the options page writes it to local storage. */
+    private watchHanjaKey() {
+        api.storage.onChanged.addListener((changes, area) => {
+            if (area === "local" && HANJA_KEY_STORAGE_KEY in changes) {
+                this.loadHanjaKey().catch((error) => debugLog("loadHanjaKey failed:", error));
+            }
+        });
+    }
+
     private handleTabStateMessage(message: TabStateMessage) {
         this.isHanYongEnabled = message.data.isHanYongEnabled;
+        this.isHanjaEnabled = message.data.isHanjaEnabled;
+        this.showHanjaSimplified = message.data.showHanjaSimplified;
+        this.showHanjaPinyin = message.data.showHanjaPinyin;
+        this.syncHanjaOptions();
 
         // Tell the on-screen keyboard about the master state first, so it can
         // reset its independent (master-off) mode when the regime changes.
@@ -176,6 +202,15 @@ export class ContentScriptController {
 
         this.shouldShowOsk = message.data.isOnScreenKeyboardEnabled;
         this.updateOskVisibility();
+    }
+
+    private syncHanjaOptions() {
+        this.textInputManager.setHanjaOptions({
+            enabled: this.isHanjaEnabled,
+            keyBinding: this.hanjaKeyBinding,
+            showSimplified: this.showHanjaSimplified,
+            showPinyin: this.showHanjaPinyin,
+        });
     }
 
     // Show the keyboard only once it's both wanted and its saved layout has been

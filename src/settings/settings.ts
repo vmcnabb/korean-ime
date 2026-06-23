@@ -28,19 +28,29 @@ export interface HanYongSettings extends FeatureSettings {
     enabled: boolean;
 }
 
+export interface HanjaSettings {
+    /** Whether Hanja conversion is enabled. */
+    enabled: boolean;
+    /** Show simplified Chinese metadata for each candidate when available. */
+    showSimplified: boolean;
+    /** Show pinyin metadata for each candidate when available. */
+    showPinyin: boolean;
+}
+
 /**
  * The extension's settings. A plain, typed object — persisted to
  * `chrome.storage.sync` (see `settings-store.ts`) and edited by the options
  * page. Every context reads the same global config from storage; there is no
  * per-tab dimension here (live per-tab state lives in `StateManager`).
  *
- * The Han/Yong toggle **key** is deliberately *not* here: it is stored per
- * machine in `api.storage.local` (see `toggle-key-store.ts`), so it doesn't
+ * The Han/Yong toggle **key** and Hanja conversion **key** are deliberately
+ * *not* here: they are stored per machine in `api.storage.local`, so they don't
  * sync across machines whose keyboards differ.
  */
 export interface Settings {
     onScreenKeyboard: OnScreenKeyboardSettings;
     hanYong: HanYongSettings;
+    hanja: HanjaSettings;
 }
 
 export const defaultSettings: Settings = {
@@ -53,6 +63,11 @@ export const defaultSettings: Settings = {
         enabled: true,
         persistence: Persistence.AlwaysOff,
         syncAcrossTabs: false,
+    },
+    hanja: {
+        enabled: true,
+        showSimplified: true,
+        showPinyin: true,
     },
 };
 

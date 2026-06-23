@@ -1,4 +1,4 @@
-import { HangulImeController } from "../composition/hangul-ime-controller";
+import { HangulImeController, HanjaImeOptions } from "../composition/hangul-ime-controller";
 import { KoreanKeyboardMode } from "../extension-state/korean-keyboard-mode";
 import { CompositionAdapterFactory } from "../composition/composition-adapter-factory";
 import { isHangulOrJamo } from "../composition/hangul-maps";
@@ -23,6 +23,7 @@ export class TextInputManager {
     // recreation on focus change and is applied to each new controller. Defaults to
     // the platform default until the content script pushes the user's binding.
     private toggleKeyBinding: KeyBinding | null = defaultToggleKeyBindingForPlatform();
+    private hanjaOptions: Partial<HanjaImeOptions> = {};
 
     constructor(
         private readonly hanjaDictionaryProvider: HanjaDictionaryProvider = new StaticHanjaDictionaryProvider()
@@ -42,6 +43,11 @@ export class TextInputManager {
     public setToggleKeyBinding(binding: KeyBinding | null) {
         this.toggleKeyBinding = binding;
         this.imeController?.setToggleKeyBinding(binding);
+    }
+
+    public setHanjaOptions(options: Partial<HanjaImeOptions>) {
+        this.hanjaOptions = { ...this.hanjaOptions, ...options };
+        this.imeController?.setHanjaOptions(this.hanjaOptions);
     }
 
     public setActiveElement(element: EventTarget | null): SupportedCompositionFeatures | undefined {
@@ -117,7 +123,12 @@ export class TextInputManager {
                 return undefined;
             }
             this.targetElement = element;
-            this.imeController = new HangulImeController(element, compositionAdapter, this.hanjaDictionaryProvider);
+            this.imeController = new HangulImeController(
+                element,
+                compositionAdapter,
+                this.hanjaDictionaryProvider,
+                this.hanjaOptions
+            );
             this.imeController.setToggleKeyBinding(this.toggleKeyBinding);
         }
 

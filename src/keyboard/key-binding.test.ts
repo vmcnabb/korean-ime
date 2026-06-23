@@ -5,8 +5,9 @@ import {
     defaultToggleKeyBinding,
     formatKeyBinding,
     formatModifierKeyPrefix,
+    isValidImeActionKeyBinding,
     isModifierOnlyBinding,
-    isValidToggleKeyBinding,
+    keyBindingsCollide,
     keyBindingPlatformFromNavigator,
     keyBindingFromEvent,
     matchesKeyBinding,
@@ -59,40 +60,40 @@ describe("isModifierOnlyBinding", () => {
     });
 });
 
-describe("isValidToggleKeyBinding", () => {
+describe("isValidImeActionKeyBinding", () => {
     it("allows a lone Ctrl or Alt key on all platforms", () => {
-        expect(isValidToggleKeyBinding(binding(KeyCode.AltRight, { alt: true }))).toBe(true);
-        expect(isValidToggleKeyBinding(binding(KeyCode.ControlRight, { ctrl: true }))).toBe(true);
+        expect(isValidImeActionKeyBinding(binding(KeyCode.AltRight, { alt: true }))).toBe(true);
+        expect(isValidImeActionKeyBinding(binding(KeyCode.ControlRight, { ctrl: true }))).toBe(true);
     });
 
     it("allows a printable key combined with Ctrl or Alt on all platforms", () => {
-        expect(isValidToggleKeyBinding(binding(KeyCode.KeyS, { alt: true }))).toBe(true);
-        expect(isValidToggleKeyBinding(binding(KeyCode.Space, { ctrl: true }))).toBe(true);
-        expect(isValidToggleKeyBinding(binding(KeyCode.KeyS, { ctrl: true, shift: true }))).toBe(true);
-        expect(isValidToggleKeyBinding(binding(KeyCode.Space, { ctrl: true, meta: true }))).toBe(true);
+        expect(isValidImeActionKeyBinding(binding(KeyCode.KeyS, { alt: true }))).toBe(true);
+        expect(isValidImeActionKeyBinding(binding(KeyCode.Space, { ctrl: true }))).toBe(true);
+        expect(isValidImeActionKeyBinding(binding(KeyCode.KeyS, { ctrl: true, shift: true }))).toBe(true);
+        expect(isValidImeActionKeyBinding(binding(KeyCode.Space, { ctrl: true, meta: true }))).toBe(true);
     });
 
     it("rejects a bare printable key", () => {
-        expect(isValidToggleKeyBinding(binding(KeyCode.KeyS))).toBe(false);
+        expect(isValidImeActionKeyBinding(binding(KeyCode.KeyS))).toBe(false);
     });
 
     it("rejects Shift- or Meta-only combinations by default", () => {
-        expect(isValidToggleKeyBinding(binding(KeyCode.KeyS, { shift: true }))).toBe(false);
-        expect(isValidToggleKeyBinding(binding(KeyCode.Space, { meta: true }))).toBe(false);
-        expect(isValidToggleKeyBinding(binding(KeyCode.ShiftLeft, { shift: true }))).toBe(false);
-        expect(isValidToggleKeyBinding(binding(KeyCode.MetaLeft, { meta: true }))).toBe(false);
+        expect(isValidImeActionKeyBinding(binding(KeyCode.KeyS, { shift: true }))).toBe(false);
+        expect(isValidImeActionKeyBinding(binding(KeyCode.Space, { meta: true }))).toBe(false);
+        expect(isValidImeActionKeyBinding(binding(KeyCode.ShiftLeft, { shift: true }))).toBe(false);
+        expect(isValidImeActionKeyBinding(binding(KeyCode.MetaLeft, { meta: true }))).toBe(false);
     });
 
     it("allows a lone Command key on macOS", () => {
-        expect(isValidToggleKeyBinding(binding(KeyCode.MetaLeft, { meta: true }), "mac")).toBe(true);
-        expect(isValidToggleKeyBinding(binding(KeyCode.MetaRight, { meta: true }), "mac")).toBe(true);
+        expect(isValidImeActionKeyBinding(binding(KeyCode.MetaLeft, { meta: true }), "mac")).toBe(true);
+        expect(isValidImeActionKeyBinding(binding(KeyCode.MetaRight, { meta: true }), "mac")).toBe(true);
     });
 
     it("requires Control or Option for normal-key combinations on macOS", () => {
-        expect(isValidToggleKeyBinding(binding(KeyCode.KeyS, { meta: true }), "mac")).toBe(false);
-        expect(isValidToggleKeyBinding(binding(KeyCode.KeyK, { shift: true, meta: true }), "mac")).toBe(false);
-        expect(isValidToggleKeyBinding(binding(KeyCode.KeyC, { meta: true, alt: true }), "mac")).toBe(true);
-        expect(isValidToggleKeyBinding(binding(KeyCode.Space, { meta: true, ctrl: true }), "mac")).toBe(true);
+        expect(isValidImeActionKeyBinding(binding(KeyCode.KeyS, { meta: true }), "mac")).toBe(false);
+        expect(isValidImeActionKeyBinding(binding(KeyCode.KeyK, { shift: true, meta: true }), "mac")).toBe(false);
+        expect(isValidImeActionKeyBinding(binding(KeyCode.KeyC, { meta: true, alt: true }), "mac")).toBe(true);
+        expect(isValidImeActionKeyBinding(binding(KeyCode.Space, { meta: true, ctrl: true }), "mac")).toBe(true);
     });
 });
 
@@ -113,6 +114,32 @@ describe("matchesKeyBinding", () => {
         expect(matchesKeyBinding(event(KeyCode.KeyS, { altKey: true }), altS)).toBe(true);
         expect(matchesKeyBinding(event(KeyCode.KeyS, { altKey: true, ctrlKey: true }), altS)).toBe(false);
         expect(matchesKeyBinding(event(KeyCode.KeyS), altS)).toBe(false);
+    });
+});
+
+describe("keyBindingsCollide", () => {
+    it("collides modifier-only bindings by physical key code", () => {
+        expect(
+            keyBindingsCollide(
+                binding(KeyCode.ControlRight, { ctrl: true }),
+                binding(KeyCode.ControlRight, { ctrl: true, alt: true })
+            )
+        ).toBe(true);
+    });
+
+    it("collides printable combos only when the full modifier state matches", () => {
+        expect(keyBindingsCollide(binding(KeyCode.KeyS, { alt: true }), binding(KeyCode.KeyS, { alt: true }))).toBe(
+            true
+        );
+        expect(
+            keyBindingsCollide(binding(KeyCode.KeyS, { alt: true }), binding(KeyCode.KeyS, { alt: true, ctrl: true }))
+        ).toBe(false);
+    });
+
+    it("does not collide different physical keys", () => {
+        expect(keyBindingsCollide(binding(KeyCode.KeyS, { alt: true }), binding(KeyCode.KeyD, { alt: true }))).toBe(
+            false
+        );
     });
 });
 

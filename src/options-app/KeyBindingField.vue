@@ -1,25 +1,40 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from "vue";
+import { computed, onMounted, onUnmounted, ref, toRefs } from "vue";
 import { t, type MessageKey } from "../i18n";
 import {
     KeyBinding,
     currentKeyBindingPlatform,
-    defaultToggleKeyBindingForPlatform,
     formatKeyBinding,
     formatModifierKeyPrefix,
-    isValidToggleKeyBinding,
+    isValidImeActionKeyBinding,
     keyBindingFromEvent,
 } from "../keyboard/key-binding";
 import { KeyCode, isModifierKey } from "../keyboard/korean-keyboard-map";
-import { loadToggleKeyBinding, saveToggleKeyBinding } from "../settings/toggle-key-store";
+import { api } from "../platform/browser-api";
+import { KeyBindingFieldConfig, resolveKeyBindingCollision } from "./key-binding-settings";
+
+// One configurable IME key, supplied by the parent section as data (see
+// key-binding-settings.ts). The component knows nothing feature-specific.
+const props = defineProps<{
+    config: KeyBindingFieldConfig;
+}>();
+
+const { config } = toRefs(props);
 
 const binding = ref<KeyBinding | null>(null);
 const capturing = ref(false);
 const invalid = ref(false);
+const statusMessage = ref("");
+const statusWarning = ref(false);
+// While a collision notice is shown, the storage key of the peer we unbound, so
+// the notice can clear once that peer is rebound. Null when no notice is shown.
+let collisionPeerStorageKey: string | null = null;
 // Live "Ctrl + Shift +" prefix shown while modifiers are held mid-capture.
 const captureProgress = ref("");
 const captureProgressAccessible = ref("");
 const keyBindingPlatform = currentKeyBindingPlatform();
+let storageChangeListener: ((changes: Record<string, chrome.storage.StorageChange>, areaName: string) => void) | null =
+    null;
 
 // A bare modifier keydown is ambiguous: pressed and released alone it's a
 // lone-modifier binding (e.g. Right Alt); held while another key arrives it's
@@ -29,56 +44,95 @@ let pendingModifier: KeyBinding | null = null;
 
 const bindingDisplay = computed(() => {
     if (capturing.value) {
-        return captureProgress.value || t("options_hanYong_toggleKey_capturing");
+        return captureProgress.value || t("options_keyBinding_capturing");
     }
     return binding.value
         ? formatKeyBinding(binding.value, { platform: keyBindingPlatform })
-        : t("options_hanYong_toggleKey_off");
+        : t("options_keyBinding_off");
 });
 
 const bindingAccessibleLabel = computed(() => {
     if (capturing.value) {
-        return captureProgressAccessible.value || t("options_hanYong_toggleKey_capturing");
+        return captureProgressAccessible.value || t("options_keyBinding_capturing");
     }
     return binding.value
         ? formatKeyBinding(binding.value, { platform: keyBindingPlatform, labelMode: "accessible" })
-        : t("options_hanYong_toggleKey_off");
+        : t("options_keyBinding_off");
 });
 
 // The binding box is now a button; give it a self-describing accessible name
-// (field label + current value) so it reads as the toggle-key control rather
+// (field label + current value) so it reads as the key-binding control rather
 // than a bare value when a screen reader lands on it.
-const bindingButtonLabel = computed(() => `${t("options_hanYong_toggleKey_label")}: ${bindingAccessibleLabel.value}`);
+const bindingButtonLabel = computed(() => `${t(config.value.labelKey)}: ${bindingAccessibleLabel.value}`);
 
 const hintMessageKey = computed<MessageKey>(() =>
-    keyBindingPlatform === "mac" ? "options_hanYong_toggleKey_hint_mac" : "options_hanYong_toggleKey_hint"
+    keyBindingPlatform === "mac" ? "options_keyBinding_hint_mac" : "options_keyBinding_hint"
 );
 const invalidMessageKey = computed<MessageKey>(() =>
-    keyBindingPlatform === "mac" ? "options_hanYong_toggleKey_invalid_mac" : "options_hanYong_toggleKey_invalid"
+    keyBindingPlatform === "mac" ? "options_keyBinding_invalid_mac" : "options_keyBinding_invalid"
 );
 
 onMounted(async () => {
-    binding.value = await loadToggleKeyBinding();
+    await reloadBinding();
+    storageChangeListener = (changes, areaName) => {
+        if (areaName !== "local") {
+            return;
+        }
+        if (config.value.storageKey in changes) {
+            reloadBinding().catch((error) => console.error("reloadBinding failed:", error));
+        }
+        // Our "X was unbound" notice is stale once X is given a new binding, so
+        // drop it then. A non-null newValue means a rebind; the original unbind we
+        // caused writes null, so it never clears its own freshly shown notice.
+        if (collisionPeerStorageKey && changes[collisionPeerStorageKey]?.newValue != null) {
+            clearStatus();
+        }
+    };
+    api.storage.onChanged.addListener(storageChangeListener);
 });
 
-onUnmounted(stopCapture);
+onUnmounted(() => {
+    stopCapture();
+    if (storageChangeListener) {
+        api.storage.onChanged.removeListener(storageChangeListener);
+        storageChangeListener = null;
+    }
+});
 
-function persist(next: KeyBinding | null) {
+async function reloadBinding() {
+    binding.value = await config.value.loadBinding();
+}
+
+function clearStatus() {
+    statusMessage.value = "";
+    statusWarning.value = false;
+    collisionPeerStorageKey = null;
+}
+
+async function persist(next: KeyBinding | null) {
+    clearStatus();
+    const collision = next ? await resolveKeyBindingCollision(config.value, next) : null;
     binding.value = next;
-    void saveToggleKeyBinding(next);
+    await config.value.saveBinding(next);
+    if (collision) {
+        statusMessage.value = collision.message;
+        statusWarning.value = true;
+        collisionPeerStorageKey = collision.unboundStorageKey;
+    }
 }
 
 function turnOff() {
     stopCapture();
-    persist(null);
+    void persist(null);
 }
 
 function resetToDefault() {
     stopCapture();
-    persist(defaultToggleKeyBindingForPlatform(keyBindingPlatform));
+    void persist(config.value.defaultBindingForPlatform(keyBindingPlatform));
 }
 
 function startCapture() {
+    clearStatus();
     invalid.value = false;
     captureProgress.value = "";
     captureProgressAccessible.value = "";
@@ -99,7 +153,7 @@ function stopCapture() {
 }
 
 function finishCapture(captured: KeyBinding) {
-    persist(captured);
+    void persist(captured);
     stopCapture();
 }
 
@@ -147,7 +201,7 @@ function onCaptureKeydown(event: KeyboardEvent) {
     // A non-modifier key (with any held modifiers) completes the combo.
     pendingModifier = null;
     const captured = keyBindingFromEvent(event);
-    if (!isValidToggleKeyBinding(captured, keyBindingPlatform)) {
+    if (!isValidImeActionKeyBinding(captured, keyBindingPlatform)) {
         invalid.value = true; // invalid binding — keep capturing
         captureProgress.value = "";
         captureProgressAccessible.value = "";
@@ -167,7 +221,7 @@ function onCaptureKeyup(event: KeyboardEvent) {
     if (pendingModifier?.code === event.code && modifierCount(event) === 0) {
         const captured = pendingModifier;
         pendingModifier = null;
-        if (!isValidToggleKeyBinding(captured, keyBindingPlatform)) {
+        if (!isValidImeActionKeyBinding(captured, keyBindingPlatform)) {
             invalid.value = true; // e.g. lone Shift / Win on non-Mac
             captureProgress.value = "";
             captureProgressAccessible.value = "";
@@ -183,13 +237,13 @@ function onCaptureKeyup(event: KeyboardEvent) {
 </script>
 
 <template>
-    <div class="toggle-key">
+    <div class="key-binding-field">
         <span class="label">
-            {{ t("options_hanYong_toggleKey_label") }}
+            {{ t(config.labelKey) }}
             <span
                 class="help"
-                :title="t('options_hanYong_toggleKey_description')"
-                :aria-label="t('options_hanYong_toggleKey_description')"
+                :title="t(config.descriptionKey)"
+                :aria-label="t(config.descriptionKey)"
                 >?</span
             >
         </span>
@@ -212,24 +266,29 @@ function onCaptureKeyup(event: KeyboardEvent) {
                 {{ bindingDisplay }}
             </button>
             <button type="button" class="ds-btn ds-btn--sm" :disabled="!binding && !capturing" @click="turnOff">
-                {{ t("options_hanYong_toggleKey_turnOff") }}
+                {{ t("options_keyBinding_turnOff") }}
             </button>
             <button type="button" class="ds-btn ds-btn--sm" @click="resetToDefault">
-                {{ t("options_hanYong_toggleKey_reset") }}
+                {{ t("options_keyBinding_reset") }}
             </button>
         </div>
         <!-- Shown only while capturing, right under the controls: the capture hint,
              or the validation error if an invalid key was pressed. The general
              description lives in the heading's "?" tooltip. -->
-        <p v-if="invalid || capturing" class="feedback" :class="{ error: invalid }" role="status">
-            {{ invalid ? t(invalidMessageKey) : t(hintMessageKey) }}
+        <p
+            v-if="invalid || capturing || statusMessage"
+            class="feedback"
+            :class="{ error: invalid, warning: statusWarning && !invalid }"
+            role="status"
+        >
+            {{ invalid ? t(invalidMessageKey) : statusMessage || t(hintMessageKey) }}
         </p>
     </div>
 </template>
 
 <style scoped>
 /* `.label` typography is shared globally in options-page.vue */
-.toggle-key .label {
+.key-binding-field .label {
     display: block;
 }
 
@@ -296,5 +355,10 @@ function onCaptureKeyup(event: KeyboardEvent) {
 .feedback.error {
     font-style: normal;
     color: var(--error-color);
+}
+
+.feedback.warning {
+    font-style: normal;
+    color: var(--warning-text-color);
 }
 </style>

@@ -75,9 +75,10 @@ beforeEach(() => {
 });
 
 function withSettings(
-    overrides: Omit<Partial<Settings>, "onScreenKeyboard" | "hanYong"> & {
+    overrides: Omit<Partial<Settings>, "onScreenKeyboard" | "hanYong" | "hanja"> & {
         onScreenKeyboard?: Partial<Settings["onScreenKeyboard"]>;
         hanYong?: Partial<Settings["hanYong"]>;
+        hanja?: Partial<Settings["hanja"]>;
     }
 ) {
     sync = {
@@ -85,6 +86,7 @@ function withSettings(
         ...overrides,
         onScreenKeyboard: { ...defaultSettings.onScreenKeyboard, ...overrides.onScreenKeyboard },
         hanYong: { ...defaultSettings.hanYong, ...overrides.hanYong },
+        hanja: { ...defaultSettings.hanja, ...overrides.hanja },
     };
 }
 
@@ -103,6 +105,17 @@ describe("fresh-session seeding from persistence", () => {
         await manager.sendStateToTab(1);
 
         expect(lastSentTo(1)?.isHanYongEnabled).toBe(true);
+    });
+
+    it("enables Hanja conversion display by default", async () => {
+        withSettings({});
+        const manager = new StateManager();
+
+        await manager.sendStateToTab(1);
+
+        expect(lastSentTo(1)?.isHanjaEnabled).toBe(true);
+        expect(lastSentTo(1)?.showHanjaSimplified).toBe(true);
+        expect(lastSentTo(1)?.showHanjaPinyin).toBe(true);
     });
 
     it("AlwaysOff starts the feature off", async () => {
@@ -404,6 +417,22 @@ describe("sync across tabs", () => {
         expect(lastSentTo(2)?.isHanYongEnabled).toBe(true);
         expect(lastSentTo(2)?.koreanKeyboardMode).toBe(KoreanKeyboardMode.Hangul);
         expect(lastSentTo(2)?.isOnScreenKeyboardEnabled).toBe(true);
+    });
+
+    it("pushes Hanja setting changes to open tabs immediately", async () => {
+        withSettings({});
+        tabs = [{ id: 1, active: true }, { id: 2 }];
+        const manager = new StateManager();
+
+        withSettings({ hanja: { enabled: false, showSimplified: false, showPinyin: true } });
+        await manager.onSettingsChanged();
+
+        expect(lastSentTo(1)?.isHanjaEnabled).toBe(false);
+        expect(lastSentTo(1)?.showHanjaSimplified).toBe(false);
+        expect(lastSentTo(1)?.showHanjaPinyin).toBe(true);
+        expect(lastSentTo(2)?.isHanjaEnabled).toBe(false);
+        expect(lastSentTo(2)?.showHanjaSimplified).toBe(false);
+        expect(lastSentTo(2)?.showHanjaPinyin).toBe(true);
     });
 });
 

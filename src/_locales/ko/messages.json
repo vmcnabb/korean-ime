@@ -124,28 +124,28 @@
     "options_hanYong_toggleKey_change": {
         "message": "변경"
     },
-    "options_hanYong_toggleKey_capturing": {
+    "options_keyBinding_capturing": {
         "message": "키를 누르세요…"
     },
-    "options_hanYong_toggleKey_hint": {
+    "options_keyBinding_hint": {
         "message": "사용할 키 또는 조합을 누르세요. 일반 키는 Ctrl 또는 Alt와 함께 사용해야 합니다. 취소하려면 Esc를 누르세요."
     },
-    "options_hanYong_toggleKey_hint_mac": {
+    "options_keyBinding_hint_mac": {
         "message": "사용할 키 또는 조합을 누르세요. Mac에서는 Command, Control, Option을 단독으로 사용할 수 있습니다. 일반 키에는 Control 또는 Option이 포함되어야 하며 Command를 추가할 수 있습니다. 취소하려면 Esc를 누르세요."
     },
-    "options_hanYong_toggleKey_turnOff": {
+    "options_keyBinding_turnOff": {
         "message": "끄기"
     },
-    "options_hanYong_toggleKey_reset": {
+    "options_keyBinding_reset": {
         "message": "기본값으로 재설정"
     },
-    "options_hanYong_toggleKey_off": {
+    "options_keyBinding_off": {
         "message": "꺼짐"
     },
-    "options_hanYong_toggleKey_invalid": {
+    "options_keyBinding_invalid": {
         "message": "일반 키는 Ctrl 또는 Alt와 함께 사용해야 합니다."
     },
-    "options_hanYong_toggleKey_invalid_mac": {
+    "options_keyBinding_invalid_mac": {
         "message": "Command, Control, Option은 단독으로 사용하거나, 일반 키와 함께 Control 또는 Option을 포함해야 합니다."
     },
     "options_hanYong_syncAcrossTabs_label": {
@@ -156,6 +156,49 @@
     },
     "options_hanYong_hint": {
         "message": "한글과 로마자 입력을 전환합니다."
+    },
+    "options_hanja_heading": {
+        "message": "한자 변환"
+    },
+    "options_hanja_hint": {
+        "message": "한글 음절을 한자 후보로 변환합니다."
+    },
+    "options_hanja_disabled_hint": {
+        "message": "끄면 한자 변환 키가 동작하지 않습니다."
+    },
+    "options_hanja_conversionKey_label": {
+        "message": "변환 키"
+    },
+    "options_hanja_conversionKey_description": {
+        "message": "한자 후보를 여는 키 또는 조합입니다. 기본값은 Mac에서는 오른쪽 Option, 그 외에서는 오른쪽 Ctrl이며, 이 컴퓨터에만 저장됩니다."
+    },
+    "options_hanja_showSimplified_label": {
+        "message": "간체자 표시"
+    },
+    "options_hanja_showSimplified_description": {
+        "message": "가능한 경우 각 한자 후보 옆에 중국어 간체자를 표시합니다."
+    },
+    "options_hanja_showPinyin_label": {
+        "message": "병음 표시"
+    },
+    "options_hanja_showPinyin_description": {
+        "message": "가능한 경우 각 한자 후보 옆에 중국어 병음을 표시합니다."
+    },
+    "options_keyBinding_hanYongUnbound": {
+        "message": "$key$이(가) 한/영 전환 키에서 해제되었습니다.",
+        "placeholders": {
+            "key": {
+                "content": "$1"
+            }
+        }
+    },
+    "options_keyBinding_hanjaUnbound": {
+        "message": "$key$이(가) 한자 변환 키에서 해제되었습니다.",
+        "placeholders": {
+            "key": {
+                "content": "$1"
+            }
+        }
     },
     "options_persistence_label": {
         "message": "브라우저를 시작할 때"

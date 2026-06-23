@@ -5,13 +5,17 @@ import { t } from "../i18n";
 import SelectSetting from "./SelectSetting.vue";
 import LabeledCheckbox from "./LabeledCheckbox.vue";
 import ToggleSwitch from "./ToggleSwitch.vue";
-import ToggleKeySetting from "./ToggleKeySetting.vue";
+import KeyBindingField from "./KeyBindingField.vue";
+import { hanYongKeyConfig } from "./key-binding-settings";
+import { useKeyBindingFlash } from "./use-key-binding-flash";
 
 const persistenceOptions: { value: Persistence; name: string }[] = [
     { value: Persistence.AlwaysOff, name: t("options_hanYong_startOff") },
     { value: Persistence.AlwaysOn, name: t("options_hanYong_startOn") },
     { value: Persistence.KeepLastState, name: t("options_hanYong_restore") },
 ];
+
+const { keyBindingFlash } = useKeyBindingFlash("hanYong");
 </script>
 
 <template>
@@ -23,8 +27,8 @@ const persistenceOptions: { value: Persistence; name: string }[] = [
             <p v-else class="description section-hint">{{ t("options_hanYong_disabled_hint") }}</p>
         </div>
         <template v-if="settings.hanYong.enabled">
-            <div class="setting">
-                <ToggleKeySetting />
+            <div class="setting" :class="{ 'key-binding-flash': keyBindingFlash }">
+                <KeyBindingField :config="hanYongKeyConfig" />
             </div>
             <div class="setting">
                 <LabeledCheckbox

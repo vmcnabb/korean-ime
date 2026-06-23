@@ -1,10 +1,24 @@
-import { currentKeyBindingPlatform, KeyBindingPlatform } from "../../keyboard/key-binding";
+import { currentKeyBindingPlatform, KeyBinding, KeyBindingPlatform } from "../../keyboard/key-binding";
 import { KeyCode } from "../../keyboard/korean-keyboard-map";
 
-export function defaultHanjaKeyCodeForPlatform(platform: KeyBindingPlatform = currentKeyBindingPlatform()): KeyCode {
-    return platform === "mac" ? KeyCode.AltRight : KeyCode.ControlRight;
-}
+export const defaultHanjaKeyBinding: KeyBinding = {
+    code: KeyCode.ControlRight,
+    ctrl: true,
+    alt: false,
+    shift: false,
+    meta: false,
+};
 
-export function isDefaultHanjaKey(event: { code: string }): boolean {
-    return event.code === defaultHanjaKeyCodeForPlatform();
+export const macDefaultHanjaKeyBinding: KeyBinding = {
+    code: KeyCode.AltRight,
+    ctrl: false,
+    alt: true,
+    shift: false,
+    meta: false,
+};
+
+export function defaultHanjaKeyBindingForPlatform(
+    platform: KeyBindingPlatform = currentKeyBindingPlatform()
+): KeyBinding {
+    return { ...(platform === "mac" ? macDefaultHanjaKeyBinding : defaultHanjaKeyBinding) };
 }

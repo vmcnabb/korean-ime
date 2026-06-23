@@ -40,6 +40,7 @@ describe("loadSettings", () => {
     it("overlays stored values, keeping defaults for untouched keys", async () => {
         stored({
             hanYong: { persistence: Persistence.KeepLastState, syncAcrossTabs: true },
+            hanja: { enabled: false, showPinyin: false },
         });
 
         const settings = await loadSettings();
@@ -47,6 +48,9 @@ describe("loadSettings", () => {
         expect(settings.hanYong.persistence).toBe(Persistence.KeepLastState);
         expect(settings.hanYong.syncAcrossTabs).toBe(true);
         expect(settings.hanYong.enabled).toBe(true);
+        expect(settings.hanja.enabled).toBe(false);
+        expect(settings.hanja.showSimplified).toBe(true);
+        expect(settings.hanja.showPinyin).toBe(false);
         expect(settings.onScreenKeyboard.persistence).toBe(Persistence.AlwaysOff);
     });
 
@@ -101,6 +105,12 @@ describe("loadSettings", () => {
         stored({ hanYong: { persistence: Persistence.KeepLastState } });
 
         expect((await loadSettings()).hanYong.enabled).toBe(true);
+    });
+
+    it("keeps Hanja defaults when older stored settings omit them", async () => {
+        stored({ hanYong: { persistence: Persistence.KeepLastState } });
+
+        expect((await loadSettings()).hanja).toEqual(defaultSettings.hanja);
     });
 });
 

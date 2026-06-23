@@ -26,13 +26,13 @@
     "options_hanYong_toggleKey_description": {
         "message": "A tecla ou combinação que alterna entre hangul e inglês. A tecla predefinida é Command direito no Mac e Alt direito nos outros sistemas. Esta configuração é guardada apenas neste computador."
     },
-    "options_hanYong_toggleKey_hint_mac": {
+    "options_keyBinding_hint_mac": {
         "message": "Prima a sua tecla ou combinação. No Mac, Command, Control ou Option podem ser usados isoladamente. Uma tecla normal deve incluir Control ou Option; Command pode ser adicionado. Prima Esc para cancelar."
     },
-    "options_hanYong_toggleKey_invalid_mac": {
+    "options_keyBinding_invalid_mac": {
         "message": "Use Command, Control ou Option isoladamente, ou inclua Control ou Option com uma tecla normal."
     },
-    "options_hanYong_toggleKey_reset": {
+    "options_keyBinding_reset": {
         "message": "Repor a predefinição"
     },
     "options_hanYong_syncAcrossTabs_label": {

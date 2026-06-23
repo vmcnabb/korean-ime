@@ -12,11 +12,22 @@ export type HanjaCandidateWindowPage = {
     pageCount: number;
 };
 
+export type HanjaCandidateDisplayOptions = {
+    showSimplified: boolean;
+    showPinyin: boolean;
+};
+
+export const defaultHanjaCandidateDisplayOptions: HanjaCandidateDisplayOptions = {
+    showSimplified: true,
+    showPinyin: true,
+};
+
 type HanjaCandidateWindowOptions = {
     onPreviousPage: () => void;
     onNextPage: () => void;
     onMoveSelection: (delta: number) => void;
     onSelectCandidate: (visibleIndex: number) => void;
+    displayOptions?: HanjaCandidateDisplayOptions;
 };
 
 type PageButtonKind = "previous" | "next";
@@ -27,6 +38,7 @@ export class HanjaCandidateWindow {
     private readonly controls: HTMLDivElement;
     private readonly pageHint: HTMLDivElement;
     private readonly onSelectCandidate: (visibleIndex: number) => void;
+    private displayOptions: HanjaCandidateDisplayOptions;
     private hoveredIndex: number | undefined;
 
     constructor(
@@ -36,6 +48,7 @@ export class HanjaCandidateWindow {
         options: HanjaCandidateWindowOptions
     ) {
         this.onSelectCandidate = options.onSelectCandidate;
+        this.displayOptions = options.displayOptions ?? defaultHanjaCandidateDisplayOptions;
         this.root = document.createElement("div");
         this.root.id = HANJA_CANDIDATE_WINDOW_ID;
 
@@ -97,6 +110,10 @@ export class HanjaCandidateWindow {
         }
 
         this.setActiveIndex(page.selectedIndex);
+    }
+
+    setDisplayOptions(displayOptions: HanjaCandidateDisplayOptions): void {
+        this.displayOptions = displayOptions;
     }
 
     setActiveIndex(index: number): void {
@@ -165,8 +182,15 @@ export class HanjaCandidateWindow {
         number.className = "can-number";
         number.textContent = String(index + 1);
 
+        const visibleKeys = HANJA_CANDIDATE_KEYS.filter(
+            (key) =>
+                key === "hanja" ||
+                key === "korean" ||
+                (key === "simplified" && this.displayOptions.showSimplified) ||
+                (key === "pinyin" && this.displayOptions.showPinyin)
+        );
         const elements: HTMLSpanElement[] = [];
-        for (const key of HANJA_CANDIDATE_KEYS) {
+        for (const key of visibleKeys) {
             const span = document.createElement("span");
             span.className = `can-${key}`;
             span.textContent = candidate[key] ?? "";

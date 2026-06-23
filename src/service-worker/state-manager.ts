@@ -451,6 +451,9 @@ export class StateManager {
 
         return {
             isHanYongEnabled,
+            isHanjaEnabled: settings.hanja.enabled,
+            showHanjaSimplified: settings.hanja.showSimplified,
+            showHanjaPinyin: settings.hanja.showPinyin,
             isOnScreenKeyboardEnabled: tabState.isOnScreenKeyboardEnabled ?? false,
             koreanKeyboardMode:
                 isHanYongEnabled && tabState.koreanKeyboardMode === KoreanKeyboardMode.Hangul

@@ -1,9 +1,13 @@
 <script setup lang="ts">
-import { onMounted } from "vue";
+import { defineAsyncComponent, onMounted } from "vue";
 import { initSettings } from "./use-settings";
 import { t } from "../i18n";
 import OnScreenKeyboardSection from "./OnScreenKeyboardSection.vue";
 import HanYongSection from "./HanYongSection.vue";
+
+const HanjaSection =
+    process.env.KIME_ENABLE_HANJA === "true" ? defineAsyncComponent(() => import("./HanjaSection.vue")) : undefined;
+const showHanjaSection = !!HanjaSection;
 
 onMounted(initSettings);
 </script>
@@ -12,6 +16,7 @@ onMounted(initSettings);
     <main class="options-page">
         <h1>{{ t("options_title") }}</h1>
         <HanYongSection />
+        <HanjaSection v-if="showHanjaSection" />
         <OnScreenKeyboardSection />
     </main>
 </template>
@@ -62,6 +67,23 @@ section {
     background-color: var(--section-bg);
     border: 1px solid var(--section-border);
     border-radius: var(--radius);
+}
+
+div.setting.key-binding-flash {
+    border-radius: var(--radius-sm);
+    animation: key-binding-flash 1500ms ease-out;
+}
+
+@keyframes key-binding-flash {
+    0%,
+    66.666% {
+        background-color: var(--warning-bg-color);
+        box-shadow: 0 0 0 3px var(--warning-bg-color);
+    }
+    100% {
+        background-color: transparent;
+        box-shadow: none;
+    }
 }
 
 section h2 {
