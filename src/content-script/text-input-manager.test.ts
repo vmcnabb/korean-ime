@@ -1,6 +1,7 @@
 import { TextInputManager, textInputElementsSelector } from "./text-input-manager";
 import { HangulImeController } from "../composition/hangul-ime-controller";
 import { KeyCode } from "../keyboard/korean-keyboard-map";
+import { macDefaultToggleKeyBinding } from "../keyboard/key-binding";
 import { CompositionAdapterFactory } from "../composition/composition-adapter-factory";
 
 jest.mock("../composition/hanja/hanja-candidate-window.scss", () => ({}), { virtual: true });
@@ -202,5 +203,37 @@ describe("TextInputManager.enterCharacter", () => {
         expect(handled).toBe(true);
         expect(dispose).toHaveBeenCalledTimes(1);
         expect(addCharacter).toHaveBeenCalledWith("a", KeyCode.KeyA);
+    });
+});
+
+describe("TextInputManager.setToggleKeyBinding", () => {
+    afterEach(() => {
+        jest.restoreAllMocks();
+        document.body.innerHTML = "";
+    });
+
+    it("forwards a binding change to the live controller", () => {
+        const setToggleKeyBinding = jest.spyOn(HangulImeController.prototype, "setToggleKeyBinding");
+        const manager = new TextInputManager();
+        const textarea = document.createElement("textarea");
+        document.body.appendChild(textarea);
+        manager.setActiveElement(textarea); // creates the controller
+
+        setToggleKeyBinding.mockClear();
+        manager.setToggleKeyBinding(macDefaultToggleKeyBinding);
+
+        expect(setToggleKeyBinding).toHaveBeenCalledWith(macDefaultToggleKeyBinding);
+    });
+
+    it("applies the current binding to a controller created later", () => {
+        const setToggleKeyBinding = jest.spyOn(HangulImeController.prototype, "setToggleKeyBinding");
+        const manager = new TextInputManager();
+        manager.setToggleKeyBinding(macDefaultToggleKeyBinding); // no controller yet
+
+        const textarea = document.createElement("textarea");
+        document.body.appendChild(textarea);
+        manager.setActiveElement(textarea); // controller created now
+
+        expect(setToggleKeyBinding).toHaveBeenCalledWith(macDefaultToggleKeyBinding);
     });
 });

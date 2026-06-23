@@ -136,6 +136,9 @@ export class ContentScriptController {
     /** Load the per-machine Han/Yong toggle key binding (see toggle-key-store). */
     private async loadToggleKey() {
         this.toggleKeyBinding = await loadToggleKeyBinding();
+        // The IME controller needs the binding too, to know when the toggle key is
+        // being held as the IME key rather than a Ctrl/Cmd/Alt modifier.
+        this.textInputManager.setToggleKeyBinding(this.toggleKeyBinding);
     }
 
     /** Re-read the toggle key when it changes — the options page writes it to local storage. */
@@ -201,7 +204,7 @@ export class ContentScriptController {
                     // A printable-key combo (e.g. Alt+S) must be swallowed fully so the
                     // character doesn't also reach the page or the IME. A modifier-only
                     // key (e.g. the default Right Alt/Command) is left to propagate so the IME can
-                    // still track it (see HangulImeController's `lastAlt`).
+                    // still track it (see HangulImeController's `lastModifierKey`).
                     if (!isModifierOnlyBinding(binding)) {
                         e.stopImmediatePropagation();
                     }

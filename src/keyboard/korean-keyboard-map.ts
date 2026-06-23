@@ -100,6 +100,35 @@ export function isAltKey(code: KeyCode): code is KeyCode.AltLeft | KeyCode.AltRi
     return [KeyCode.AltLeft, KeyCode.AltRight].includes(code);
 }
 
+/**
+ * Whether the modifier flag corresponding to a (modifier) key `code` is currently
+ * held, per the event's live modifier state. Maps each side's Alt/Control/Meta/Shift
+ * key to its `*Key` flag. Returns false for any non-modifier code. Used to tell
+ * whether a specific physical modifier — e.g. the configured Han/Yong toggle key —
+ * is still down, which `event.code` alone (the key being pressed now) can't answer.
+ */
+export function isModifierKeyActive(
+    event: { ctrlKey: boolean; altKey: boolean; shiftKey: boolean; metaKey: boolean },
+    code: KeyCode
+): boolean {
+    switch (code) {
+        case KeyCode.AltLeft:
+        case KeyCode.AltRight:
+            return event.altKey;
+        case KeyCode.ControlLeft:
+        case KeyCode.ControlRight:
+            return event.ctrlKey;
+        case KeyCode.MetaLeft:
+        case KeyCode.MetaRight:
+            return event.metaKey;
+        case KeyCode.ShiftLeft:
+        case KeyCode.ShiftRight:
+            return event.shiftKey;
+        default:
+            return false;
+    }
+}
+
 export const keyMap: Record<KeyCode, KeyRecord> = {
     [KeyCode.KeyQ]: {
         normal: "q",

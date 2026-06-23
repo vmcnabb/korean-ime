@@ -2,6 +2,7 @@ import { HangulImeController } from "./hangul-ime-controller";
 import { InputAdapter } from "./composition-adapters/input-adapter";
 import { ContentEditableAdapter } from "./composition-adapters/content-editable-adapter";
 import { KeyCode } from "../keyboard/korean-keyboard-map";
+import { KeyBinding, defaultToggleKeyBinding, macDefaultToggleKeyBinding } from "../keyboard/key-binding";
 import { HanjaDictionaryProvider } from "./hanja/hanja-dictionary-provider";
 import { HanjaCandidate } from "./hanja/hanja-candidate";
 import { HANJA_CANDIDATE_WINDOW_SELECTOR } from "./hanja/hanja-candidate-window";
@@ -111,6 +112,163 @@ describe("HangulImeController functional keys during composition", () => {
         const r = dispatchKeydown(element, "KeyR", "r");
 
         expect(r.defaultPrevented).toBe(true);
+    });
+});
+
+describe("HangulImeController lets Cmd/Ctrl shortcut chords through in Hangul mode", () => {
+    afterEach(() => jest.restoreAllMocks());
+
+    function activeControllerOnTextarea() {
+        const beginComposition = jest.spyOn(InputAdapter.prototype, "beginComposition").mockImplementation(() => {});
+        jest.spyOn(InputAdapter.prototype, "updateComposition").mockImplementation(() => {});
+        jest.spyOn(InputAdapter.prototype, "endComposition").mockImplementation(() => {});
+
+        const element = document.createElement("textarea");
+        const controller = makeController(element);
+        controller.activate();
+        return { element, beginComposition };
+    }
+
+    // KeyC's jamo is ㅊ: without the fix this composed instead of triggering the
+    // shortcut, swallowing the key.
+    function pressC(element: HTMLElement, modifiers: { ctrlKey?: boolean; metaKey?: boolean }) {
+        const event = new KeyboardEvent("keydown", {
+            code: "KeyC",
+            key: "c",
+            bubbles: true,
+            cancelable: true,
+            ...modifiers,
+        });
+        element.dispatchEvent(event);
+        return event;
+    }
+
+    // Regression (macOS): in Hangul mode, Cmd+C used to compose the jamo ㅊ instead of
+    // copying, because the shortcut bypass only checked ctrlKey, not metaKey (Command).
+    it("does not compose Cmd+C (metaKey) and lets it reach the browser", () => {
+        const { element, beginComposition } = activeControllerOnTextarea();
+
+        const event = pressC(element, { metaKey: true });
+
+        expect(beginComposition).not.toHaveBeenCalled();
+        expect(event.defaultPrevented).toBe(false);
+    });
+
+    // Ctrl shortcuts (Windows/Linux) keep working exactly as before.
+    it("does not compose Ctrl+C (ctrlKey) and lets it reach the browser", () => {
+        const { element, beginComposition } = activeControllerOnTextarea();
+
+        const event = pressC(element, { ctrlKey: true });
+
+        expect(beginComposition).not.toHaveBeenCalled();
+        expect(event.defaultPrevented).toBe(false);
+    });
+});
+
+describe("HangulImeController treats a held toggle key as the IME key, not a modifier", () => {
+    afterEach(() => jest.restoreAllMocks());
+
+    function controllerOnTextarea(binding: KeyBinding | null) {
+        const beginComposition = jest.spyOn(InputAdapter.prototype, "beginComposition").mockImplementation(() => {});
+        jest.spyOn(InputAdapter.prototype, "updateComposition").mockImplementation(() => {});
+        jest.spyOn(InputAdapter.prototype, "endComposition").mockImplementation(() => {});
+        const inputCharacter = jest.spyOn(InputAdapter.prototype, "inputCharacter").mockImplementation(() => {});
+
+        const element = document.createElement("textarea");
+        const controller = makeController(element);
+        controller.setToggleKeyBinding(binding);
+        return { element, controller, beginComposition, inputCharacter };
+    }
+
+    // A bare modifier keydown: only its `code` is tracked (as the last modifier),
+    // which is how the controller tells the toggle key from its other-side sibling.
+    function pressModifier(element: HTMLElement, code: string) {
+        element.dispatchEvent(new KeyboardEvent("keydown", { code, key: "Meta", bubbles: true, cancelable: true }));
+    }
+
+    // KeyC's jamo is ㅊ, so a successful compose is observable via beginComposition.
+    function pressC(element: HTMLElement, modifiers: { ctrlKey?: boolean; altKey?: boolean; metaKey?: boolean }) {
+        const event = new KeyboardEvent("keydown", {
+            code: "KeyC",
+            key: "c",
+            bubbles: true,
+            cancelable: true,
+            ...modifiers,
+        });
+        element.dispatchEvent(event);
+        return event;
+    }
+
+    // Inactive (English) + the Mac toggle (Right Command) held: it's the IME key, so
+    // the letter is typed instead of letting Cmd+letter act as a shortcut/menu.
+    it("inserts the letter literally when the Right Command toggle is held — inactive", () => {
+        const { element, inputCharacter } = controllerOnTextarea(macDefaultToggleKeyBinding); // not activated
+
+        pressModifier(element, "MetaRight");
+        const event = pressC(element, { metaKey: true });
+
+        expect(inputCharacter).toHaveBeenCalledWith("c", KeyCode.KeyC);
+        expect(event.defaultPrevented).toBe(true);
+    });
+
+    // Active (Hangul) + the toggle held: it must compose the jamo, NOT be treated as a
+    // Cmd shortcut (the companion to Part 1 — metaKey alone would otherwise pass through).
+    it("composes the jamo when the Right Command toggle is held — active", () => {
+        const { element, controller, beginComposition } = controllerOnTextarea(macDefaultToggleKeyBinding);
+        controller.activate();
+
+        pressModifier(element, "MetaRight");
+        const event = pressC(element, { metaKey: true }); // KeyC → ㅊ
+
+        expect(beginComposition).toHaveBeenCalledWith("ㅊ", KeyCode.KeyC);
+        expect(event.defaultPrevented).toBe(true);
+    });
+
+    // The OTHER Command (Left) is a real modifier, so Cmd+C is a real shortcut and must
+    // pass through — this is the actual reported bug's happy path.
+    it("passes a real Cmd+C through when the held Command is not the toggle key — active", () => {
+        const { element, controller, beginComposition } = controllerOnTextarea(macDefaultToggleKeyBinding);
+        controller.activate();
+
+        pressModifier(element, "MetaLeft");
+        const event = pressC(element, { metaKey: true });
+
+        expect(beginComposition).not.toHaveBeenCalled();
+        expect(event.defaultPrevented).toBe(false);
+    });
+
+    // Regression: the default Right Alt toggle keeps its long-standing behavior.
+    it("still inserts the letter when the default Right Alt toggle is held — inactive", () => {
+        const { element, inputCharacter } = controllerOnTextarea(defaultToggleKeyBinding); // Right Alt
+
+        pressModifier(element, "AltRight");
+        const event = pressC(element, { altKey: true });
+
+        expect(inputCharacter).toHaveBeenCalledWith("c", KeyCode.KeyC);
+        expect(event.defaultPrevented).toBe(true);
+    });
+
+    // The flag check guards against a stale last-modifier: once the toggle key is
+    // released, a plain letter is left to the browser.
+    it("does not insert once the toggle key has been released — inactive", () => {
+        const { element, inputCharacter } = controllerOnTextarea(macDefaultToggleKeyBinding);
+
+        pressModifier(element, "MetaRight"); // pressed...
+        const event = pressC(element, { metaKey: false }); // ...but no longer held
+
+        expect(inputCharacter).not.toHaveBeenCalled();
+        expect(event.defaultPrevented).toBe(false);
+    });
+
+    // With the toggle turned off, the key is an ordinary modifier again.
+    it("does not insert when the toggle key is turned off (null)", () => {
+        const { element, inputCharacter } = controllerOnTextarea(null);
+
+        pressModifier(element, "MetaRight");
+        const event = pressC(element, { metaKey: true });
+
+        expect(inputCharacter).not.toHaveBeenCalled();
+        expect(event.defaultPrevented).toBe(false);
     });
 });
 
@@ -331,6 +489,30 @@ describe("HangulImeController intercepts the first jamo over a selection in the 
         expect(beginComposition).toHaveBeenCalledWith("ㅇ", KeyCode.KeyD); // still composed...
         expect(keydown.defaultPrevented).toBe(true);
         expect(reachedBodyCapture).toBe(true); // ...but via the bubble path, not capture
+    });
+
+    // Regression (macOS): Cmd+C over a selection must reach the browser so copy works.
+    // The capture guard must NOT begin composition — otherwise it deletes the selection
+    // and types the jamo ㅊ over it instead of copying.
+    it("leaves a Cmd-chord over a selection to the browser (does not begin composition)", () => {
+        const { element, beginComposition } = activeContentEditable("Hello Anyeon.");
+        selectWithin(element.firstChild as Node, 6, 12); // select "Anyeon"
+
+        let reachedBodyCapture = false;
+        document.body.addEventListener("keydown", () => (reachedBodyCapture = true), true);
+
+        const keydown = new KeyboardEvent("keydown", {
+            code: "KeyC", // jamo ㅊ
+            key: "c",
+            metaKey: true,
+            bubbles: true,
+            cancelable: true,
+        });
+        element.dispatchEvent(keydown);
+
+        expect(beginComposition).not.toHaveBeenCalled();
+        expect(keydown.defaultPrevented).toBe(false);
+        expect(reachedBodyCapture).toBe(true); // not intercepted at window-capture
     });
 });
 

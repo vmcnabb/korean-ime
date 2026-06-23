@@ -1,5 +1,6 @@
 import { ContentScriptController } from "./content-script-controller";
 import { OnScreenKeyboardController } from "./on-screen-keyboard/on-screen-keyboard-controller";
+import { TextInputManager } from "./text-input-manager";
 import { KeyCode } from "../keyboard/korean-keyboard-map";
 import { KeyBinding, defaultToggleKeyBinding } from "../keyboard/key-binding";
 import { loadToggleKeyBinding } from "../settings/toggle-key-store";
@@ -180,6 +181,16 @@ describe("ContentScriptController toggle-key handling", () => {
 
         expect(keydown.preventDefault).not.toHaveBeenCalled();
         expect(sendMessage).not.toHaveBeenCalled();
+    });
+
+    // The IME controller needs the binding too (to know when the toggle key is held as
+    // the IME key rather than a modifier), so the loaded binding is pushed to the manager.
+    it("pushes the loaded toggle binding to the text input manager", async () => {
+        const setToggleKeyBinding = jest.spyOn(TextInputManager.prototype, "setToggleKeyBinding");
+
+        await initController(altS);
+
+        expect(setToggleKeyBinding).toHaveBeenCalledWith(altS);
     });
 });
 
