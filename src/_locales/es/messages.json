@@ -157,6 +157,49 @@
     "options_hanYong_hint": {
         "message": "Alterna entre la entrada de hangul y la latina."
     },
+    "options_hanja_heading": {
+        "message": "Conversión a hanja"
+    },
+    "options_hanja_hint": {
+        "message": "Convierte sílabas hangul en candidatos hanja."
+    },
+    "options_hanja_disabled_hint": {
+        "message": "Cuando está desactivado, la tecla de conversión a hanja no hace nada."
+    },
+    "options_hanja_conversionKey_label": {
+        "message": "Tecla de conversión"
+    },
+    "options_hanja_conversionKey_description": {
+        "message": "La tecla o combinación que abre los candidatos hanja. El valor predeterminado es Opción derecha en Mac y Ctrl derecha en otros sistemas, y se guarda solo en este equipo."
+    },
+    "options_hanja_showSimplified_label": {
+        "message": "Mostrar chino simplificado"
+    },
+    "options_hanja_showSimplified_description": {
+        "message": "Muestra la forma en chino simplificado junto a cada candidato hanja cuando esté disponible."
+    },
+    "options_hanja_showPinyin_label": {
+        "message": "Mostrar pinyin"
+    },
+    "options_hanja_showPinyin_description": {
+        "message": "Muestra el pinyin mandarín junto a cada candidato hanja cuando esté disponible."
+    },
+    "options_keyBinding_hanYongUnbound": {
+        "message": "$key$ se desvinculó de la tecla de alternancia Han/Yong.",
+        "placeholders": {
+            "key": {
+                "content": "$1"
+            }
+        }
+    },
+    "options_keyBinding_hanjaUnbound": {
+        "message": "$key$ se desvinculó de la tecla de conversión a hanja.",
+        "placeholders": {
+            "key": {
+                "content": "$1"
+            }
+        }
+    },
     "options_persistence_label": {
         "message": "Al iniciar el navegador"
     },

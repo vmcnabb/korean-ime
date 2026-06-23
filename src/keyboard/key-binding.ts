@@ -94,12 +94,16 @@ function isMetaKey(code: KeyCode): boolean {
  * as toggle keys are Ctrl/Control and Alt/Option everywhere, plus Command on
  * macOS.
  */
-export function isValidToggleKeyBinding(binding: KeyBinding, platform: KeyBindingPlatform = "default"): boolean {
+export function isValidImeActionKeyBinding(binding: KeyBinding, platform: KeyBindingPlatform = "default"): boolean {
     if (isModifierOnlyBinding(binding)) {
         return isControlOrAltKey(binding.code) || (platform === "mac" && isMetaKey(binding.code));
     }
 
     return binding.ctrl || binding.alt;
+}
+
+export function isValidToggleKeyBinding(binding: KeyBinding, platform: KeyBindingPlatform = "default"): boolean {
+    return isValidImeActionKeyBinding(binding, platform);
 }
 
 /**
@@ -128,6 +132,23 @@ export function matchesKeyBinding(
         event.altKey === binding.alt &&
         event.shiftKey === binding.shift &&
         event.metaKey === binding.meta
+    );
+}
+
+export function keyBindingsCollide(first: KeyBinding, second: KeyBinding): boolean {
+    if (first.code !== second.code) {
+        return false;
+    }
+
+    if (isModifierOnlyBinding(first) || isModifierOnlyBinding(second)) {
+        return true;
+    }
+
+    return (
+        first.ctrl === second.ctrl &&
+        first.alt === second.alt &&
+        first.shift === second.shift &&
+        first.meta === second.meta
     );
 }
 

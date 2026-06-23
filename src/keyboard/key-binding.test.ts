@@ -5,8 +5,10 @@ import {
     defaultToggleKeyBinding,
     formatKeyBinding,
     formatModifierKeyPrefix,
+    isValidImeActionKeyBinding,
     isModifierOnlyBinding,
     isValidToggleKeyBinding,
+    keyBindingsCollide,
     keyBindingPlatformFromNavigator,
     keyBindingFromEvent,
     matchesKeyBinding,
@@ -96,6 +98,13 @@ describe("isValidToggleKeyBinding", () => {
     });
 });
 
+describe("isValidImeActionKeyBinding", () => {
+    it("uses the same validity rules as the Han/Yong toggle key", () => {
+        expect(isValidImeActionKeyBinding(binding(KeyCode.ControlRight, { ctrl: true }))).toBe(true);
+        expect(isValidImeActionKeyBinding(binding(KeyCode.KeyS))).toBe(false);
+    });
+});
+
 describe("matchesKeyBinding", () => {
     it("matches the default Right Alt on code alone, ignoring extra modifiers (e.g. AltGr's Ctrl)", () => {
         expect(matchesKeyBinding(event(KeyCode.AltRight, { altKey: true }), defaultToggleKeyBinding)).toBe(true);
@@ -113,6 +122,32 @@ describe("matchesKeyBinding", () => {
         expect(matchesKeyBinding(event(KeyCode.KeyS, { altKey: true }), altS)).toBe(true);
         expect(matchesKeyBinding(event(KeyCode.KeyS, { altKey: true, ctrlKey: true }), altS)).toBe(false);
         expect(matchesKeyBinding(event(KeyCode.KeyS), altS)).toBe(false);
+    });
+});
+
+describe("keyBindingsCollide", () => {
+    it("collides modifier-only bindings by physical key code", () => {
+        expect(
+            keyBindingsCollide(
+                binding(KeyCode.ControlRight, { ctrl: true }),
+                binding(KeyCode.ControlRight, { ctrl: true, alt: true })
+            )
+        ).toBe(true);
+    });
+
+    it("collides printable combos only when the full modifier state matches", () => {
+        expect(keyBindingsCollide(binding(KeyCode.KeyS, { alt: true }), binding(KeyCode.KeyS, { alt: true }))).toBe(
+            true
+        );
+        expect(
+            keyBindingsCollide(binding(KeyCode.KeyS, { alt: true }), binding(KeyCode.KeyS, { alt: true, ctrl: true }))
+        ).toBe(false);
+    });
+
+    it("does not collide different physical keys", () => {
+        expect(keyBindingsCollide(binding(KeyCode.KeyS, { alt: true }), binding(KeyCode.KeyD, { alt: true }))).toBe(
+            false
+        );
     });
 });
 

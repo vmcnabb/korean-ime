@@ -1,16 +1,25 @@
 ﻿import { isKimeEvent } from "../messaging/dom-events";
 import { isModifierKey, isModifierKeyActive, KeyCode, keyMap } from "../keyboard/korean-keyboard-map";
-import { KeyBinding, defaultToggleKeyBindingForPlatform, isModifierOnlyBinding } from "../keyboard/key-binding";
+import {
+    KeyBinding,
+    defaultToggleKeyBindingForPlatform,
+    isModifierOnlyBinding,
+    matchesKeyBinding,
+} from "../keyboard/key-binding";
 import { HangulCompositor } from "./hangul-compositor";
 import { CompositionAdapterFactory } from "./composition-adapter-factory";
 import { CompositionAdapter } from "./composition-adapters/composition-adapter";
 import { HanjaCandidatePager } from "./hanja/hanja-candidate-pager";
-import { HanjaCandidateWindow, HanjaCandidateWindowPage } from "./hanja/hanja-candidate-window";
+import {
+    HanjaCandidateDisplayOptions,
+    HanjaCandidateWindow,
+    HanjaCandidateWindowPage,
+} from "./hanja/hanja-candidate-window";
 import { HanjaCompositionOverlay } from "./hanja/hanja-composition-overlay";
 import { commitHanjaCandidate, getHanjaConversionTarget, HanjaConversionTarget } from "./hanja/hanja-converter";
 import { HanjaCandidate } from "./hanja/hanja-candidate";
 import { HanjaDictionaryProvider, StaticHanjaDictionaryProvider } from "./hanja/hanja-dictionary-provider";
-import { isDefaultHanjaKey } from "./hanja/hanja-key";
+import { defaultHanjaKeyBindingForPlatform } from "./hanja/hanja-key";
 
 type HanjaCandidateSelection = {
     target: HanjaConversionTarget;
@@ -18,6 +27,22 @@ type HanjaCandidateSelection = {
     overlay: HanjaCompositionOverlay;
     window: HanjaCandidateWindow;
 };
+
+export type HanjaImeOptions = {
+    enabled: boolean;
+    keyBinding: KeyBinding | null;
+    showSimplified: boolean;
+    showPinyin: boolean;
+};
+
+function defaultHanjaImeOptions(): HanjaImeOptions {
+    return {
+        enabled: true,
+        keyBinding: defaultHanjaKeyBindingForPlatform(),
+        showSimplified: true,
+        showPinyin: true,
+    };
+}
 
 /**
  * Controls the Hangul IME for a given element.
@@ -29,6 +54,7 @@ export class HangulImeController {
     private compositionAdapter: CompositionAdapter;
     private hanjaCandidateSelection?: HanjaCandidateSelection;
     private hanjaLookupGeneration = 0;
+    private hanjaOptions: HanjaImeOptions;
 
     private changeListeners: (() => void)[] = [];
     private eventListeners: {
@@ -53,13 +79,15 @@ export class HangulImeController {
     constructor(
         private readonly element: HTMLElement,
         compositionAdapter = CompositionAdapterFactory.createCompositionAdapter(element),
-        private readonly hanjaDictionaryProvider: HanjaDictionaryProvider = new StaticHanjaDictionaryProvider()
+        private readonly hanjaDictionaryProvider: HanjaDictionaryProvider = new StaticHanjaDictionaryProvider(),
+        hanjaOptions: Partial<HanjaImeOptions> = {}
     ) {
         if (!compositionAdapter) {
             throw new Error("Could not create composition adapter for element");
         }
 
         this.compositionAdapter = compositionAdapter;
+        this.hanjaOptions = { ...defaultHanjaImeOptions(), ...hanjaOptions };
 
         // Backspace during composition must be intercepted in the *capture* phase, on
         // window (the earliest point in event propagation). Rich editors like Word for
@@ -141,6 +169,25 @@ export class HangulImeController {
         this.toggleKeyBinding = binding;
     }
 
+    setHanjaOptions(options: Partial<HanjaImeOptions>) {
+        const previousDisplayOptions = this.hanjaCandidateDisplayOptions();
+        this.hanjaOptions = { ...this.hanjaOptions, ...options };
+
+        if (!this.hanjaOptions.enabled || !this.hanjaOptions.keyBinding) {
+            this.invalidateHanjaLookup();
+            this.closeHanjaCandidateSelection();
+            return;
+        }
+
+        const nextDisplayOptions = this.hanjaCandidateDisplayOptions();
+        if (
+            previousDisplayOptions.showSimplified !== nextDisplayOptions.showSimplified ||
+            previousDisplayOptions.showPinyin !== nextDisplayOptions.showPinyin
+        ) {
+            this.refreshHanjaCandidateWindow();
+        }
+    }
+
     private notifyOnEntry() {
         this.changeListeners.forEach((listener) => {
             try {
@@ -168,8 +215,12 @@ export class HangulImeController {
                 this.closeHanjaCandidateSelection();
             }
 
-            // Temporary scaffolding for Issues 150/181; graduates to Settings when the feature ships.
-            if (process.env.KIME_ENABLE_HANJA === "true" && isDefaultHanjaKey(event)) {
+            if (
+                process.env.KIME_ENABLE_HANJA === "true" &&
+                this.hanjaOptions.enabled &&
+                this.hanjaOptions.keyBinding &&
+                matchesKeyBinding(event, this.hanjaOptions.keyBinding)
+            ) {
                 if (this.startHanjaCandidateSelection(event)) {
                     return;
                 }
@@ -475,6 +526,7 @@ export class HangulImeController {
                 onNextPage: () => this.moveHanjaCandidatePage(1),
                 onMoveSelection: (delta) => this.moveHanjaCandidateSelection(delta),
                 onSelectCandidate: (visibleIndex) => this.commitVisibleHanjaCandidate(visibleIndex, KeyCode.Lang2),
+                displayOptions: this.hanjaCandidateDisplayOptions(),
             }),
         };
     }
@@ -543,7 +595,7 @@ export class HangulImeController {
         }
 
         selection.pager.moveSelection(delta);
-        selection.window.update(this.hanjaCandidatePage(selection.pager));
+        this.refreshHanjaCandidateWindow();
     }
 
     private moveHanjaCandidatePage(delta: number): void {
@@ -553,7 +605,7 @@ export class HangulImeController {
         }
 
         selection.pager.movePage(delta);
-        selection.window.update(this.hanjaCandidatePage(selection.pager));
+        this.refreshHanjaCandidateWindow();
     }
 
     private commitVisibleHanjaCandidate(visibleIndex: number, keyCode: KeyCode): void {
@@ -593,6 +645,23 @@ export class HangulImeController {
             pageIndex: pager.pageIndex,
             pageCount: pager.pageCount,
         };
+    }
+
+    private hanjaCandidateDisplayOptions(): HanjaCandidateDisplayOptions {
+        return {
+            showSimplified: this.hanjaOptions.showSimplified,
+            showPinyin: this.hanjaOptions.showPinyin,
+        };
+    }
+
+    private refreshHanjaCandidateWindow(): void {
+        const selection = this.hanjaCandidateSelection;
+        if (!selection) {
+            return;
+        }
+
+        selection.window.setDisplayOptions(this.hanjaCandidateDisplayOptions());
+        selection.window.update(this.hanjaCandidatePage(selection.pager));
     }
 
     private closeHanjaCandidateSelection(): void {

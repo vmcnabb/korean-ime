@@ -1,26 +1,18 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref } from "vue";
 import { settings } from "./use-settings";
-import { Persistence } from "../settings/settings";
 import { t } from "../i18n";
-import SelectSetting from "./SelectSetting.vue";
 import LabeledCheckbox from "./LabeledCheckbox.vue";
 import ToggleSwitch from "./ToggleSwitch.vue";
 import ToggleKeySetting from "./ToggleKeySetting.vue";
 import { KeyBindingUnboundEventDetail, keyBindingUnboundEvent } from "./key-binding-events";
-
-const persistenceOptions: { value: Persistence; name: string }[] = [
-    { value: Persistence.AlwaysOff, name: t("options_hanYong_startOff") },
-    { value: Persistence.AlwaysOn, name: t("options_hanYong_startOn") },
-    { value: Persistence.KeepLastState, name: t("options_hanYong_restore") },
-];
 
 const keyBindingFlash = ref(false);
 let flashTimeout: number | undefined;
 
 function onKeyBindingUnbound(event: Event) {
     const detail = (event as CustomEvent<KeyBindingUnboundEventDetail>).detail;
-    if (detail.kind !== "hanYong") {
+    if (detail.kind !== "hanja") {
         return;
     }
 
@@ -44,27 +36,27 @@ onUnmounted(() => {
 <template>
     <section>
         <div class="section-header">
-            <ToggleSwitch v-model="settings.hanYong.enabled" :ariaLabel="t('options_hanYong_heading')" />
-            <h2>{{ t("options_hanYong_heading") }}</h2>
-            <p v-if="settings.hanYong.enabled" class="description section-hint">{{ t("options_hanYong_hint") }}</p>
-            <p v-else class="description section-hint">{{ t("options_hanYong_disabled_hint") }}</p>
+            <ToggleSwitch v-model="settings.hanja.enabled" :ariaLabel="t('options_hanja_heading')" />
+            <h2>{{ t("options_hanja_heading") }}</h2>
+            <p v-if="settings.hanja.enabled" class="description section-hint">{{ t("options_hanja_hint") }}</p>
+            <p v-else class="description section-hint">{{ t("options_hanja_disabled_hint") }}</p>
         </div>
-        <template v-if="settings.hanYong.enabled">
+        <template v-if="settings.hanja.enabled">
             <div class="setting" :class="{ 'key-binding-flash': keyBindingFlash }">
-                <ToggleKeySetting kind="hanYong" />
+                <ToggleKeySetting kind="hanja" />
             </div>
             <div class="setting">
                 <LabeledCheckbox
-                    v-model="settings.hanYong.syncAcrossTabs"
-                    :label="t('options_hanYong_syncAcrossTabs_label')"
-                    :description="t('options_hanYong_syncAcrossTabs_description')"
+                    v-model="settings.hanja.showSimplified"
+                    :label="t('options_hanja_showSimplified_label')"
+                    :description="t('options_hanja_showSimplified_description')"
                 />
             </div>
             <div class="setting">
-                <SelectSetting
-                    v-model="settings.hanYong.persistence"
-                    :label="t('options_persistence_label')"
-                    :options="persistenceOptions"
+                <LabeledCheckbox
+                    v-model="settings.hanja.showPinyin"
+                    :label="t('options_hanja_showPinyin_label')"
+                    :description="t('options_hanja_showPinyin_description')"
                 />
             </div>
         </template>

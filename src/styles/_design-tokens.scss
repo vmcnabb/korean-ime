@@ -43,6 +43,8 @@
     --button-hover-bg: light-dark(#f1f5f9, #292929);
     --success-color: light-dark(#168a45, #63d38a);
     --error-color: light-dark(#c0392b, #f87171);
+    --warning-bg-color: light-dark(#ffecd0, #503000);
+    --warning-text-color: light-dark(#ff9800, #ff9800);
 
     /* Notice / error banners (were inline light-dark() literals in
        GettingStartedPage). */

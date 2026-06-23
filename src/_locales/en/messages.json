@@ -157,6 +157,49 @@
     "options_hanYong_hint": {
         "message": "Switches between Hangul and Latin input."
     },
+    "options_hanja_heading": {
+        "message": "Hanja conversion"
+    },
+    "options_hanja_hint": {
+        "message": "Converts Hangul syllables to Hanja candidates."
+    },
+    "options_hanja_disabled_hint": {
+        "message": "When off, the Hanja conversion key does nothing."
+    },
+    "options_hanja_conversionKey_label": {
+        "message": "Conversion key"
+    },
+    "options_hanja_conversionKey_description": {
+        "message": "The key or combination that opens Hanja candidates. The default is Right Option on Mac and Right Ctrl elsewhere, and it is saved on this computer only."
+    },
+    "options_hanja_showSimplified_label": {
+        "message": "Show Simplified Chinese"
+    },
+    "options_hanja_showSimplified_description": {
+        "message": "Show the Simplified Chinese form beside each Hanja candidate when available."
+    },
+    "options_hanja_showPinyin_label": {
+        "message": "Show Pinyin"
+    },
+    "options_hanja_showPinyin_description": {
+        "message": "Show Mandarin pinyin beside each Hanja candidate when available."
+    },
+    "options_keyBinding_hanYongUnbound": {
+        "message": "$key$ was unbound from the Han/Yong toggle key.",
+        "placeholders": {
+            "key": {
+                "content": "$1"
+            }
+        }
+    },
+    "options_keyBinding_hanjaUnbound": {
+        "message": "$key$ was unbound from the Hanja conversion key.",
+        "placeholders": {
+            "key": {
+                "content": "$1"
+            }
+        }
+    },
     "options_persistence_label": {
         "message": "When the browser starts"
     },

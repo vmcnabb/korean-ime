@@ -4,6 +4,7 @@ import { TextInputManager } from "./text-input-manager";
 import { KeyCode } from "../keyboard/korean-keyboard-map";
 import { KeyBinding, defaultToggleKeyBinding } from "../keyboard/key-binding";
 import { loadToggleKeyBinding } from "../settings/toggle-key-store";
+import { loadHanjaKeyBinding } from "../settings/hanja-key-store";
 import { KoreanKeyboardMode } from "../extension-state/korean-keyboard-mode";
 import { ServiceScriptMessageAction } from "../messaging/service-to-content-messages";
 import { ContentScriptRequestAction } from "../messaging/content-to-service-messages";
@@ -17,6 +18,11 @@ jest.mock("../settings/settings-store", () => ({
 jest.mock("../settings/toggle-key-store", () => ({
     TOGGLE_KEY_STORAGE_KEY: "hanYongToggleKey",
     loadToggleKeyBinding: jest.fn(),
+}));
+
+jest.mock("../settings/hanja-key-store", () => ({
+    HANJA_KEY_STORAGE_KEY: "hanjaConversionKey",
+    loadHanjaKeyBinding: jest.fn(),
 }));
 
 jest.mock("./on-screen-keyboard/on-screen-keyboard-controller", () => ({
@@ -73,6 +79,7 @@ describe("ContentScriptController toggle-key handling", () => {
     // test's controller fire on a later test's events.
     async function initController(binding: KeyBinding | null) {
         (loadToggleKeyBinding as jest.Mock).mockResolvedValue(binding);
+        (loadHanjaKeyBinding as jest.Mock).mockResolvedValue(null);
         const add = jest.spyOn(document, "addEventListener").mockImplementation((type, handler, opts) => {
             if (opts === true && type === "keydown") {
                 keydownHandler = handler as never;
@@ -94,6 +101,9 @@ describe("ContentScriptController toggle-key handling", () => {
             action: ServiceScriptMessageAction.UpdateState,
             data: {
                 isHanYongEnabled: enabled,
+                isHanjaEnabled: true,
+                showHanjaSimplified: true,
+                showHanjaPinyin: true,
                 isOnScreenKeyboardEnabled: false,
                 koreanKeyboardMode: KoreanKeyboardMode.English,
             },
@@ -201,6 +211,7 @@ describe("ContentScriptController on-screen-keyboard layout", () => {
     beforeEach(() => {
         (OnScreenKeyboardController as unknown as jest.Mock).mockClear();
         (loadToggleKeyBinding as jest.Mock).mockResolvedValue(defaultToggleKeyBinding);
+        (loadHanjaKeyBinding as jest.Mock).mockResolvedValue(null);
         listeners = [];
         sendMessage = jest.fn();
         Object.assign(globalThis, {
@@ -220,6 +231,9 @@ describe("ContentScriptController on-screen-keyboard layout", () => {
         action: ServiceScriptMessageAction.UpdateState,
         data: {
             isHanYongEnabled: false,
+            isHanjaEnabled: true,
+            showHanjaSimplified: true,
+            showHanjaPinyin: true,
             isOnScreenKeyboardEnabled,
             koreanKeyboardMode: KoreanKeyboardMode.English,
         },

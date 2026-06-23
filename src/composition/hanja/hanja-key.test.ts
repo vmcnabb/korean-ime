@@ -1,9 +1,26 @@
 import { KeyCode } from "../../keyboard/korean-keyboard-map";
-import { defaultHanjaKeyCodeForPlatform } from "./hanja-key";
+import { defaultHanjaKeyBinding, defaultHanjaKeyBindingForPlatform, macDefaultHanjaKeyBinding } from "./hanja-key";
 
-describe("defaultHanjaKeyCodeForPlatform", () => {
+describe("defaultHanjaKeyBindingForPlatform", () => {
     it("uses Right Ctrl by default and Right Option on macOS", () => {
-        expect(defaultHanjaKeyCodeForPlatform("default")).toBe(KeyCode.ControlRight);
-        expect(defaultHanjaKeyCodeForPlatform("mac")).toBe(KeyCode.AltRight);
+        expect(defaultHanjaKeyBindingForPlatform("default")).toEqual({
+            code: KeyCode.ControlRight,
+            ctrl: true,
+            alt: false,
+            shift: false,
+            meta: false,
+        });
+        expect(defaultHanjaKeyBindingForPlatform("mac")).toEqual({
+            code: KeyCode.AltRight,
+            ctrl: false,
+            alt: true,
+            shift: false,
+            meta: false,
+        });
+    });
+
+    it("returns fresh copies of the shared defaults", () => {
+        expect(defaultHanjaKeyBindingForPlatform("default")).not.toBe(defaultHanjaKeyBinding);
+        expect(defaultHanjaKeyBindingForPlatform("mac")).not.toBe(macDefaultHanjaKeyBinding);
     });
 });

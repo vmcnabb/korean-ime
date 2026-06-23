@@ -157,6 +157,49 @@
     "options_hanYong_hint": {
         "message": "ハングル入力とラテン文字入力を切り替えます。"
     },
+    "options_hanja_heading": {
+        "message": "漢字変換"
+    },
+    "options_hanja_hint": {
+        "message": "ハングル音節を漢字候補に変換します。"
+    },
+    "options_hanja_disabled_hint": {
+        "message": "オフにすると、漢字変換キーは何も動作しません。"
+    },
+    "options_hanja_conversionKey_label": {
+        "message": "変換キー"
+    },
+    "options_hanja_conversionKey_description": {
+        "message": "漢字候補を開くキーまたは組み合わせです。既定値はMacでは右Option、それ以外では右Ctrlで、このコンピューターにのみ保存されます。"
+    },
+    "options_hanja_showSimplified_label": {
+        "message": "簡体字を表示"
+    },
+    "options_hanja_showSimplified_description": {
+        "message": "利用できる場合、各漢字候補の横に中国語の簡体字を表示します。"
+    },
+    "options_hanja_showPinyin_label": {
+        "message": "ピンインを表示"
+    },
+    "options_hanja_showPinyin_description": {
+        "message": "利用できる場合、各漢字候補の横に中国語のピンインを表示します。"
+    },
+    "options_keyBinding_hanYongUnbound": {
+        "message": "$key$ は한/영切り替えキーから解除されました。",
+        "placeholders": {
+            "key": {
+                "content": "$1"
+            }
+        }
+    },
+    "options_keyBinding_hanjaUnbound": {
+        "message": "$key$ は漢字変換キーから解除されました。",
+        "placeholders": {
+            "key": {
+                "content": "$1"
+            }
+        }
+    },
     "options_persistence_label": {
         "message": "ブラウザの起動時"
     },

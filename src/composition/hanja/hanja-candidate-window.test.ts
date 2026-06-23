@@ -260,6 +260,65 @@ describe("HanjaCandidateWindow", () => {
         expect(document.querySelector(".can-pinyin")?.textContent).toBe("");
     });
 
+    it("hides Simplified Chinese and Pinyin metadata when disabled", () => {
+        new HanjaCandidateWindow(
+            document.createElement("textarea"),
+            page({
+                candidates: [
+                    candidate("韓", {
+                        korean: "나라 이름 한, 한나라 한",
+                        simplified: "韩",
+                        pinyin: "hán",
+                    }),
+                ],
+            }),
+            rect(100, 20, 10, 10),
+            {
+                ...windowOptions(),
+                displayOptions: { showSimplified: false, showPinyin: false },
+            }
+        );
+
+        expect(document.querySelector(".can-hanja")?.textContent).toBe("韓");
+        expect(document.querySelector(".can-korean")?.textContent).toBe("나라 이름 한, 한나라 한");
+        expect(document.querySelector(".can-simplified")).toBeNull();
+        expect(document.querySelector(".can-pinyin")).toBeNull();
+    });
+
+    it("can update metadata visibility for an already-open candidate window", () => {
+        const window = new HanjaCandidateWindow(
+            document.createElement("textarea"),
+            page({
+                candidates: [
+                    candidate("韓", {
+                        korean: "나라 이름 한, 한나라 한",
+                        simplified: "韩",
+                        pinyin: "hán",
+                    }),
+                ],
+            }),
+            rect(100, 20, 10, 10),
+            windowOptions()
+        );
+
+        window.setDisplayOptions({ showSimplified: false, showPinyin: true });
+        window.update(
+            page({
+                candidates: [
+                    candidate("韓", {
+                        korean: "나라 이름 한, 한나라 한",
+                        simplified: "韩",
+                        pinyin: "hán",
+                    }),
+                ],
+            })
+        );
+
+        expect(document.querySelector(".can-korean")?.textContent).toBe("나라 이름 한, 한나라 한");
+        expect(document.querySelector(".can-simplified")).toBeNull();
+        expect(document.querySelector(".can-pinyin")?.textContent).toBe("hán");
+    });
+
     it("highlights a hovered candidate without changing the selected candidate", () => {
         new HanjaCandidateWindow(
             document.createElement("textarea"),
