@@ -1,5 +1,6 @@
 ﻿import { isKimeEvent } from "../messaging/dom-events";
-import { isAltKey, isModifierKey, KeyCode, keyMap } from "../keyboard/korean-keyboard-map";
+import { isModifierKey, isModifierKeyActive, KeyCode, keyMap } from "../keyboard/korean-keyboard-map";
+import { KeyBinding, defaultToggleKeyBindingForPlatform, isModifierOnlyBinding } from "../keyboard/key-binding";
 import { HangulCompositor } from "./hangul-compositor";
 import { CompositionAdapterFactory } from "./composition-adapter-factory";
 import { CompositionAdapter } from "./composition-adapters/composition-adapter";
@@ -37,7 +38,17 @@ export class HangulImeController {
         capture: boolean;
     }[] = [];
 
-    private lastAlt?: KeyCode.AltLeft | KeyCode.AltRight = undefined;
+    // The most recent modifier key pressed (any side). Combined with the event's live
+    // modifier flags, this lets isToggleKeyHeld tell the configured toggle key apart
+    // from its same-type sibling on the other side — `event.code` is the key pressed
+    // now, and a flag like `metaKey` doesn't say which side is down.
+    private lastModifierKey?: KeyCode = undefined;
+
+    // The configured Han/Yong toggle key. When it's a modifier-only key (e.g. Right
+    // Alt, or Right Command on macOS) and held down, it acts as the IME key rather
+    // than a Ctrl/Cmd/Alt modifier. Defaults to the platform default; the content
+    // script pushes the user's actual binding via setToggleKeyBinding.
+    private toggleKeyBinding: KeyBinding | null = defaultToggleKeyBindingForPlatform();
 
     constructor(
         private readonly element: HTMLElement,
@@ -121,6 +132,15 @@ export class HangulImeController {
         return this.compositionAdapter.getSupportedMethods();
     }
 
+    /**
+     * Set the configured Han/Yong toggle key (or null when the user turned it off).
+     * Pushed in by the content script so the controller knows which physical modifier
+     * key currently acts as the IME key rather than a Ctrl/Cmd/Alt modifier.
+     */
+    setToggleKeyBinding(binding: KeyBinding | null) {
+        this.toggleKeyBinding = binding;
+    }
+
     private notifyOnEntry() {
         this.changeListeners.forEach((listener) => {
             try {
@@ -157,14 +177,11 @@ export class HangulImeController {
 
             this.invalidateHanjaLookup();
 
-            // record which alt was down last, so we know if the "han/yong" key is down
-            if (isAltKey(code)) {
-                this.lastAlt = code;
-                return;
-            }
-
-            // don't process modifier keys
+            // Record the most recent modifier key (any side) and stop — modifier keys
+            // aren't text. Tracking which one lets isToggleKeyHeld tell the configured
+            // toggle key apart from its same-type sibling on the other side.
             if (isModifierKey(code)) {
+                this.lastModifierKey = code;
                 return;
             }
 
@@ -175,13 +192,13 @@ export class HangulImeController {
                 // otherwise the next OSK jamo would attach to a stale block.
                 this.flushComposition();
 
-                if (event.altKey && this.lastAlt === KeyCode.AltRight) {
-                    // insert character manually when "han/yong" key is down so that a menu isn't triggered
+                if (this.isToggleKeyHeld(event)) {
+                    // The configured toggle key (e.g. Right Alt, or Right Command on
+                    // macOS) is held: it's the IME key, not a modifier, so insert the
+                    // character instead of letting the OS treat Alt/Cmd+key as a
+                    // shortcut or menu trigger.
                     this.compositionAdapter.inputCharacter(event.key, code);
-
-                    event.preventDefault();
-                    event.stopPropagation();
-                    event.stopImmediatePropagation();
+                    this.cancelEvent(event);
                     return;
                 }
 
@@ -217,7 +234,7 @@ export class HangulImeController {
             // don't interfere with shortcuts, functional keys (Tab, Enter, …), or keys we
             // don't understand — commit any in-progress composition and let the browser
             // handle them natively
-            if (!key || hasShortcutModifier(event) || !isCharacterKey) {
+            if (!key || this.isShortcutChord(event) || !isCharacterKey) {
                 if (this.compositor.isCompositing()) {
                     this.compositionAdapter.endComposition(this.compositor.getCurrentChar());
                     this.compositor.reset();
@@ -312,7 +329,32 @@ export class HangulImeController {
 
     private isJamoKey(event: KeyboardEvent): boolean {
         const code = event.code as KeyCode;
-        return !hasShortcutModifier(event) && event.key.length === 1 && !!keyMap[code]?.jamo;
+        return !this.isShortcutChord(event) && event.key.length === 1 && !!keyMap[code]?.jamo;
+    }
+
+    /**
+     * Whether the configured Han/Yong toggle key is a modifier-only key that is
+     * currently held. When true, that key is acting as the IME key, not as a
+     * Ctrl/Cmd/Alt modifier, so a letter pressed with it should be composed/typed
+     * rather than treated as a browser shortcut. We require both that the toggle key
+     * was the last modifier pressed (so it's that side, not its sibling) and that its
+     * modifier flag is still down (so it wasn't already released).
+     */
+    private isToggleKeyHeld(event: KeyboardEvent): boolean {
+        const binding = this.toggleKeyBinding;
+        if (!binding || !isModifierOnlyBinding(binding)) {
+            return false;
+        }
+        return this.lastModifierKey === binding.code && isModifierKeyActive(event, binding.code);
+    }
+
+    /**
+     * Whether the event is a browser/OS shortcut chord the IME must not consume: a
+     * Ctrl/Cmd modifier is held and it isn't the toggle key being held (which would
+     * make it the IME key, not a modifier — see isToggleKeyHeld).
+     */
+    private isShortcutChord(event: KeyboardEvent): boolean {
+        return hasShortcutModifier(event) && !this.isToggleKeyHeld(event);
     }
 
     private hasNonCollapsedSelection(): boolean {

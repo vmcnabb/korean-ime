@@ -3,6 +3,7 @@ import { KoreanKeyboardMode } from "../extension-state/korean-keyboard-mode";
 import { CompositionAdapterFactory } from "../composition/composition-adapter-factory";
 import { isHangulOrJamo } from "../composition/hangul-maps";
 import { KeyCode } from "../keyboard/korean-keyboard-map";
+import { KeyBinding, defaultToggleKeyBindingForPlatform } from "../keyboard/key-binding";
 import { SupportedCompositionFeatures } from "../composition/composition-adapters/composition-adapter-interface";
 import { HanjaDictionaryProvider, StaticHanjaDictionaryProvider } from "../composition/hanja/hanja-dictionary-provider";
 
@@ -18,6 +19,10 @@ export class TextInputManager {
     private targetElement?: HTMLElement;
     private imeController?: HangulImeController;
     private textEntryMode: KoreanKeyboardMode = KoreanKeyboardMode.English;
+    // The configured Han/Yong toggle key, kept here so it survives controller
+    // recreation on focus change and is applied to each new controller. Defaults to
+    // the platform default until the content script pushes the user's binding.
+    private toggleKeyBinding: KeyBinding | null = defaultToggleKeyBindingForPlatform();
 
     constructor(
         private readonly hanjaDictionaryProvider: HanjaDictionaryProvider = new StaticHanjaDictionaryProvider()
@@ -27,6 +32,16 @@ export class TextInputManager {
         this.textEntryMode = mode;
 
         this.syncControllerMode();
+    }
+
+    /**
+     * Set the configured Han/Yong toggle key (null when turned off). Stored so it
+     * applies to controllers created later (on focus change) and forwarded to the
+     * live controller so a rebind takes effect immediately.
+     */
+    public setToggleKeyBinding(binding: KeyBinding | null) {
+        this.toggleKeyBinding = binding;
+        this.imeController?.setToggleKeyBinding(binding);
     }
 
     public setActiveElement(element: EventTarget | null): SupportedCompositionFeatures | undefined {
@@ -103,6 +118,7 @@ export class TextInputManager {
             }
             this.targetElement = element;
             this.imeController = new HangulImeController(element, compositionAdapter, this.hanjaDictionaryProvider);
+            this.imeController.setToggleKeyBinding(this.toggleKeyBinding);
         }
 
         this.syncControllerMode();
