@@ -124,28 +124,28 @@
     "options_hanYong_toggleKey_change": {
         "message": "変更"
     },
-    "options_hanYong_toggleKey_capturing": {
+    "options_keyBinding_capturing": {
         "message": "キーを押してください…"
     },
-    "options_hanYong_toggleKey_hint": {
+    "options_keyBinding_hint": {
         "message": "使用するキーまたは組み合わせを押してください。通常のキーはCtrlまたはAltと組み合わせる必要があります。キャンセルするにはEscを押してください。"
     },
-    "options_hanYong_toggleKey_hint_mac": {
+    "options_keyBinding_hint_mac": {
         "message": "使用するキーまたは組み合わせを押してください。MacではCommand、Control、Optionを単独で使用できます。通常のキーにはControlまたはOptionを含める必要があり、Commandも追加できます。キャンセルするにはEscを押してください。"
     },
-    "options_hanYong_toggleKey_turnOff": {
+    "options_keyBinding_turnOff": {
         "message": "オフにする"
     },
-    "options_hanYong_toggleKey_reset": {
+    "options_keyBinding_reset": {
         "message": "既定値にリセット"
     },
-    "options_hanYong_toggleKey_off": {
+    "options_keyBinding_off": {
         "message": "オフ"
     },
-    "options_hanYong_toggleKey_invalid": {
+    "options_keyBinding_invalid": {
         "message": "通常のキーはCtrlまたはAltと組み合わせる必要があります。"
     },
-    "options_hanYong_toggleKey_invalid_mac": {
+    "options_keyBinding_invalid_mac": {
         "message": "Command、Control、Optionは単独で使用するか、通常のキーにはControlまたはOptionを含めてください。"
     },
     "options_hanYong_syncAcrossTabs_label": {

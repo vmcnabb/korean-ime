@@ -44,7 +44,9 @@
     --success-color: light-dark(#168a45, #63d38a);
     --error-color: light-dark(#c0392b, #f87171);
     --warning-bg-color: light-dark(#ffecd0, #503000);
-    --warning-text-color: light-dark(#ff9800, #ff9800);
+    /* Light value is a darker amber than the dark value so warning text keeps
+       AA contrast on the light section background (#ff9800 alone is ~2:1). */
+    --warning-text-color: light-dark(#9a5b00, #ff9800);
 
     /* Notice / error banners (were inline light-dark() literals in
        GettingStartedPage). */

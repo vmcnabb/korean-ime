@@ -124,28 +124,28 @@
     "options_hanYong_toggleKey_change": {
         "message": "Cambiar"
     },
-    "options_hanYong_toggleKey_capturing": {
+    "options_keyBinding_capturing": {
         "message": "Pulse una tecla…"
     },
-    "options_hanYong_toggleKey_hint": {
+    "options_keyBinding_hint": {
         "message": "Pulse su tecla o combinación. Una tecla normal debe combinarse con Ctrl o Alt. Pulse Esc para cancelar."
     },
-    "options_hanYong_toggleKey_hint_mac": {
+    "options_keyBinding_hint_mac": {
         "message": "Pulse su tecla o combinación. En Mac, Comando, Control u Opción pueden usarse solas. Una tecla normal debe incluir Control u Opción; se puede añadir Comando. Pulse Esc para cancelar."
     },
-    "options_hanYong_toggleKey_turnOff": {
+    "options_keyBinding_turnOff": {
         "message": "Desactivar"
     },
-    "options_hanYong_toggleKey_reset": {
+    "options_keyBinding_reset": {
         "message": "Restablecer el valor predeterminado"
     },
-    "options_hanYong_toggleKey_off": {
+    "options_keyBinding_off": {
         "message": "Desactivado"
     },
-    "options_hanYong_toggleKey_invalid": {
+    "options_keyBinding_invalid": {
         "message": "Una tecla normal debe combinarse con Ctrl o Alt."
     },
-    "options_hanYong_toggleKey_invalid_mac": {
+    "options_keyBinding_invalid_mac": {
         "message": "Use Comando, Control u Opción solas, o incluya Control u Opción con una tecla normal."
     },
     "options_hanYong_syncAcrossTabs_label": {

@@ -64,7 +64,17 @@ const keySettingConfigs: Record<ImeKeySettingKind, KeySettingConfig> = {
 };
 
 const config = computed(() => keySettingConfigs[props.kind]);
-const peerConfig = computed(() => keySettingConfigs[config.value.peerKind]);
+// The Hanja key only exists when its feature flag is on; with the flag off there
+// is no reachable Hanja setting to collide with, so the toggle key has no peer.
+// (`process.env.KIME_ENABLE_HANJA` is inlined at build time, so the off case
+// compiles to a constant.)
+const peerConfig = computed<KeySettingConfig | null>(() => {
+    const peerKind = config.value.peerKind;
+    if (peerKind === "hanja" && process.env.KIME_ENABLE_HANJA !== "true") {
+        return null;
+    }
+    return keySettingConfigs[peerKind];
+});
 
 const binding = ref<KeyBinding | null>(null);
 const capturing = ref(false);
@@ -86,20 +96,20 @@ let pendingModifier: KeyBinding | null = null;
 
 const bindingDisplay = computed(() => {
     if (capturing.value) {
-        return captureProgress.value || t("options_hanYong_toggleKey_capturing");
+        return captureProgress.value || t("options_keyBinding_capturing");
     }
     return binding.value
         ? formatKeyBinding(binding.value, { platform: keyBindingPlatform })
-        : t("options_hanYong_toggleKey_off");
+        : t("options_keyBinding_off");
 });
 
 const bindingAccessibleLabel = computed(() => {
     if (capturing.value) {
-        return captureProgressAccessible.value || t("options_hanYong_toggleKey_capturing");
+        return captureProgressAccessible.value || t("options_keyBinding_capturing");
     }
     return binding.value
         ? formatKeyBinding(binding.value, { platform: keyBindingPlatform, labelMode: "accessible" })
-        : t("options_hanYong_toggleKey_off");
+        : t("options_keyBinding_off");
 });
 
 // The binding box is now a button; give it a self-describing accessible name
@@ -108,10 +118,10 @@ const bindingAccessibleLabel = computed(() => {
 const bindingButtonLabel = computed(() => `${t(config.value.labelKey)}: ${bindingAccessibleLabel.value}`);
 
 const hintMessageKey = computed<MessageKey>(() =>
-    keyBindingPlatform === "mac" ? "options_hanYong_toggleKey_hint_mac" : "options_hanYong_toggleKey_hint"
+    keyBindingPlatform === "mac" ? "options_keyBinding_hint_mac" : "options_keyBinding_hint"
 );
 const invalidMessageKey = computed<MessageKey>(() =>
-    keyBindingPlatform === "mac" ? "options_hanYong_toggleKey_invalid_mac" : "options_hanYong_toggleKey_invalid"
+    keyBindingPlatform === "mac" ? "options_keyBinding_invalid_mac" : "options_keyBinding_invalid"
 );
 
 onMounted(async () => {
@@ -148,6 +158,10 @@ async function persist(next: KeyBinding | null) {
 
 async function unbindCollidingPeer(next: KeyBinding): Promise<string> {
     const peer = peerConfig.value;
+    if (!peer) {
+        return "";
+    }
+
     const other = await peer.loadBinding();
     if (!other || !keyBindingsCollide(next, other)) {
         return "";
@@ -304,10 +318,10 @@ function onCaptureKeyup(event: KeyboardEvent) {
                 {{ bindingDisplay }}
             </button>
             <button type="button" class="ds-btn ds-btn--sm" :disabled="!binding && !capturing" @click="turnOff">
-                {{ t("options_hanYong_toggleKey_turnOff") }}
+                {{ t("options_keyBinding_turnOff") }}
             </button>
             <button type="button" class="ds-btn ds-btn--sm" @click="resetToDefault">
-                {{ t("options_hanYong_toggleKey_reset") }}
+                {{ t("options_keyBinding_reset") }}
             </button>
         </div>
         <!-- Shown only while capturing, right under the controls: the capture hint,

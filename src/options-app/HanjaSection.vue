@@ -1,36 +1,12 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from "vue";
 import { settings } from "./use-settings";
 import { t } from "../i18n";
 import LabeledCheckbox from "./LabeledCheckbox.vue";
 import ToggleSwitch from "./ToggleSwitch.vue";
 import ToggleKeySetting from "./ToggleKeySetting.vue";
-import { KeyBindingUnboundEventDetail, keyBindingUnboundEvent } from "./key-binding-events";
+import { useKeyBindingFlash } from "./use-key-binding-flash";
 
-const keyBindingFlash = ref(false);
-let flashTimeout: number | undefined;
-
-function onKeyBindingUnbound(event: Event) {
-    const detail = (event as CustomEvent<KeyBindingUnboundEventDetail>).detail;
-    if (detail.kind !== "hanja") {
-        return;
-    }
-
-    keyBindingFlash.value = false;
-    window.clearTimeout(flashTimeout);
-    window.requestAnimationFrame(() => {
-        keyBindingFlash.value = true;
-        flashTimeout = window.setTimeout(() => {
-            keyBindingFlash.value = false;
-        }, 1500);
-    });
-}
-
-onMounted(() => window.addEventListener(keyBindingUnboundEvent, onKeyBindingUnbound));
-onUnmounted(() => {
-    window.removeEventListener(keyBindingUnboundEvent, onKeyBindingUnbound);
-    window.clearTimeout(flashTimeout);
-});
+const { keyBindingFlash } = useKeyBindingFlash("hanja");
 </script>
 
 <template>

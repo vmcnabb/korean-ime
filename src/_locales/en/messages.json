@@ -124,28 +124,28 @@
     "options_hanYong_toggleKey_change": {
         "message": "Change"
     },
-    "options_hanYong_toggleKey_capturing": {
+    "options_keyBinding_capturing": {
         "message": "Press a key…"
     },
-    "options_hanYong_toggleKey_hint": {
+    "options_keyBinding_hint": {
         "message": "Press your key or combination. A normal key must be combined with Ctrl or Alt. Press Esc to cancel."
     },
-    "options_hanYong_toggleKey_hint_mac": {
+    "options_keyBinding_hint_mac": {
         "message": "Press your key or combination. On Mac, Command, Control, or Option can be used by itself. A normal key must include Control or Option; Command may be added. Press Esc to cancel."
     },
-    "options_hanYong_toggleKey_turnOff": {
+    "options_keyBinding_turnOff": {
         "message": "Turn off"
     },
-    "options_hanYong_toggleKey_reset": {
+    "options_keyBinding_reset": {
         "message": "Reset to default"
     },
-    "options_hanYong_toggleKey_off": {
+    "options_keyBinding_off": {
         "message": "Off"
     },
-    "options_hanYong_toggleKey_invalid": {
+    "options_keyBinding_invalid": {
         "message": "A normal key must be combined with Ctrl or Alt."
     },
-    "options_hanYong_toggleKey_invalid_mac": {
+    "options_keyBinding_invalid_mac": {
         "message": "Use Command, Control, or Option by itself, or include Control or Option with a normal key."
     },
     "options_hanYong_syncAcrossTabs_label": {

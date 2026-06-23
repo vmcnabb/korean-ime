@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from "vue";
 import { settings } from "./use-settings";
 import { Persistence } from "../settings/settings";
 import { t } from "../i18n";
@@ -7,7 +6,7 @@ import SelectSetting from "./SelectSetting.vue";
 import LabeledCheckbox from "./LabeledCheckbox.vue";
 import ToggleSwitch from "./ToggleSwitch.vue";
 import ToggleKeySetting from "./ToggleKeySetting.vue";
-import { KeyBindingUnboundEventDetail, keyBindingUnboundEvent } from "./key-binding-events";
+import { useKeyBindingFlash } from "./use-key-binding-flash";
 
 const persistenceOptions: { value: Persistence; name: string }[] = [
     { value: Persistence.AlwaysOff, name: t("options_hanYong_startOff") },
@@ -15,30 +14,7 @@ const persistenceOptions: { value: Persistence; name: string }[] = [
     { value: Persistence.KeepLastState, name: t("options_hanYong_restore") },
 ];
 
-const keyBindingFlash = ref(false);
-let flashTimeout: number | undefined;
-
-function onKeyBindingUnbound(event: Event) {
-    const detail = (event as CustomEvent<KeyBindingUnboundEventDetail>).detail;
-    if (detail.kind !== "hanYong") {
-        return;
-    }
-
-    keyBindingFlash.value = false;
-    window.clearTimeout(flashTimeout);
-    window.requestAnimationFrame(() => {
-        keyBindingFlash.value = true;
-        flashTimeout = window.setTimeout(() => {
-            keyBindingFlash.value = false;
-        }, 1500);
-    });
-}
-
-onMounted(() => window.addEventListener(keyBindingUnboundEvent, onKeyBindingUnbound));
-onUnmounted(() => {
-    window.removeEventListener(keyBindingUnboundEvent, onKeyBindingUnbound);
-    window.clearTimeout(flashTimeout);
-});
+const { keyBindingFlash } = useKeyBindingFlash("hanYong");
 </script>
 
 <template>

@@ -102,10 +102,6 @@ export function isValidImeActionKeyBinding(binding: KeyBinding, platform: KeyBin
     return binding.ctrl || binding.alt;
 }
 
-export function isValidToggleKeyBinding(binding: KeyBinding, platform: KeyBindingPlatform = "default"): boolean {
-    return isValidImeActionKeyBinding(binding, platform);
-}
-
 /**
  * Whether a keydown/keyup event matches a binding.
  *
