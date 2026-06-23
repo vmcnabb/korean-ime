@@ -14,3 +14,13 @@ export function isKimeEvent<T extends Event>(event: T | KimeEvent): event is Kim
 export function setAsKimeEvent(event: Event) {
     (event as KimeEvent).isKimeEvent = true;
 }
+
+/**
+ * Fully swallow a keyboard event so neither the page nor a rich editor acts on
+ * the key we've handled ourselves. Shared by the composition and Hanja paths.
+ */
+export function cancelEvent(event: Event) {
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
+}

@@ -827,6 +827,38 @@ describe("HangulImeController Hanja candidate selection (KIME_ENABLE_HANJA)", ()
         expect(element.value).toBe("韓");
     });
 
+    // The candidate window can be open while inactive, so candidate keys must be
+    // intercepted in the capture phase (ahead of a rich editor) regardless of mode —
+    // not just by the bubble handler. A body capture listener fires only if the
+    // event got past window-capture.
+    it("intercepts candidate keys in the capture phase while inactive", async () => {
+        process.env.KIME_ENABLE_HANJA = "true";
+        const element = document.createElement("textarea");
+        element.value = "한";
+        element.selectionStart = element.selectionEnd = 1;
+        document.body.appendChild(element); // connected so the window-capture guard runs
+        const controller = makeController(element); // deliberately NOT activated
+        expect(controller.isActive).toBe(false);
+
+        pressRightCtrl(element);
+        await settleHanjaLookup();
+        expect(document.querySelector(HANJA_CANDIDATE_WINDOW_SELECTOR)).not.toBeNull();
+
+        let reachedBodyCapture = false;
+        document.body.addEventListener("keydown", () => (reachedBodyCapture = true), true);
+
+        const arrow = new KeyboardEvent("keydown", {
+            code: "ArrowDown",
+            key: "ArrowDown",
+            bubbles: true,
+            cancelable: true,
+        });
+        element.dispatchEvent(arrow);
+
+        expect(arrow.defaultPrevented).toBe(true); // handled
+        expect(reachedBodyCapture).toBe(false); // intercepted at window-capture, not left to the editor
+    });
+
     // The active-state guard was dropped, but staleness must still hold: a mode
     // change mid-lookup bumps the lookup generation, so the resolved window is
     // discarded rather than shown late.
