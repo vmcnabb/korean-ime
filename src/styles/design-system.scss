@@ -1,0 +1,23 @@
+// Page-surface entry for the extension's own UI: the Vue options /
+// getting-started app (imported from src/options-app/options-app.ts) and the
+// romanize popup (used by src/service-worker/popup-converter/popup-converter.scss).
+//
+// It wires the shared design tokens onto `:root` and pulls in base typography
+// plus the reusable control primitives. Both layers live in their own partials
+// so injected content-script overlays can reuse the *tokens* alone — under their
+// own isolated root — without dragging global `:root`, `body`, or `.ds-*` rules
+// into arbitrary host pages:
+//   - tokens:     _design-tokens.scss      (the design-token-vars mixin)
+//   - primitives: _control-primitives.scss (body + .ds-* + utilities)
+//
+// NOT a consumer: the on-screen keyboard
+// (src/content-script/on-screen-keyboard/). It injects into arbitrary web pages
+// under an `all: unset` reset and intentionally keeps its own self-contained
+// palette, so these page-level :root tokens can't (and shouldn't) reach it.
+
+@use "design-tokens";
+@use "control-primitives";
+
+:root {
+    @include design-tokens.design-token-vars;
+}

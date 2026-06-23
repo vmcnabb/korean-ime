@@ -17,7 +17,7 @@ onMounted(initSettings);
 </template>
 
 <!-- Design tokens, base typography and the .label / .description utility text
-     are shared in src/styles/design-system.css (imported in options-app.ts).
+     are shared in src/styles/design-system.scss (imported in options-app.ts).
      This file keeps only the options-app layout. The section card and heading
      rules are element selectors so the child-component <section>s and the
      getting-started page pick them up too. -->
