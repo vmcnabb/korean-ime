@@ -26,6 +26,9 @@ const capturing = ref(false);
 const invalid = ref(false);
 const statusMessage = ref("");
 const statusWarning = ref(false);
+// While a collision notice is shown, the storage key of the peer we unbound, so
+// the notice can clear once that peer is rebound. Null when no notice is shown.
+let collisionPeerStorageKey: string | null = null;
 // Live "Ctrl + Shift +" prefix shown while modifiers are held mid-capture.
 const captureProgress = ref("");
 const captureProgressAccessible = ref("");
@@ -72,8 +75,17 @@ const invalidMessageKey = computed<MessageKey>(() =>
 onMounted(async () => {
     await reloadBinding();
     storageChangeListener = (changes, areaName) => {
-        if (areaName === "local" && config.value.storageKey in changes) {
+        if (areaName !== "local") {
+            return;
+        }
+        if (config.value.storageKey in changes) {
             reloadBinding().catch((error) => console.error("reloadBinding failed:", error));
+        }
+        // Our "X was unbound" notice is stale once X is given a new binding, so
+        // drop it then. A non-null newValue means a rebind; the original unbind we
+        // caused writes null, so it never clears its own freshly shown notice.
+        if (collisionPeerStorageKey && changes[collisionPeerStorageKey]?.newValue != null) {
+            clearStatus();
         }
     };
     api.storage.onChanged.addListener(storageChangeListener);
@@ -91,14 +103,22 @@ async function reloadBinding() {
     binding.value = await config.value.loadBinding();
 }
 
-async function persist(next: KeyBinding | null) {
+function clearStatus() {
     statusMessage.value = "";
     statusWarning.value = false;
-    const collisionStatus = next ? await resolveKeyBindingCollision(config.value, next) : "";
+    collisionPeerStorageKey = null;
+}
+
+async function persist(next: KeyBinding | null) {
+    clearStatus();
+    const collision = next ? await resolveKeyBindingCollision(config.value, next) : null;
     binding.value = next;
     await config.value.saveBinding(next);
-    statusMessage.value = collisionStatus;
-    statusWarning.value = !!collisionStatus;
+    if (collision) {
+        statusMessage.value = collision.message;
+        statusWarning.value = true;
+        collisionPeerStorageKey = collision.unboundStorageKey;
+    }
 }
 
 function turnOff() {
@@ -112,8 +132,7 @@ function resetToDefault() {
 }
 
 function startCapture() {
-    statusMessage.value = "";
-    statusWarning.value = false;
+    clearStatus();
     invalid.value = false;
     captureProgress.value = "";
     captureProgressAccessible.value = "";

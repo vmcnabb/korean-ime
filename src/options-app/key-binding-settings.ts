@@ -69,14 +69,26 @@ export const keyBindingFieldConfigs: readonly KeyBindingFieldConfig[] = [
     ...(process.env.KIME_ENABLE_HANJA === "true" ? [hanjaKeyConfig] : []),
 ];
 
+export type KeyBindingCollision = {
+    /** The storage key of the key that was unbound — so the field that triggered
+     *  the collision can drop its notice once that key is rebound. */
+    unboundStorageKey: string;
+    /** A message naming what was unbound, to show on the triggering field. */
+    message: string;
+};
+
 /**
  * Resolve a collision for a key the user is about to set. If `next` would fire on
  * the same keydown as another configured key's current binding, that other key is
  * unbound (a physical key can't drive two IME actions), its field is flashed, and
- * a message naming what was unbound is returned. Scans every *other* available
- * key, so it scales as more keys are added. Returns "" when there is no collision.
+ * the unbound key + a message naming it are returned. Scans every *other*
+ * available key, so it scales as more keys are added. Returns null when there is
+ * no collision.
  */
-export async function resolveKeyBindingCollision(self: KeyBindingFieldConfig, next: KeyBinding): Promise<string> {
+export async function resolveKeyBindingCollision(
+    self: KeyBindingFieldConfig,
+    next: KeyBinding
+): Promise<KeyBindingCollision | null> {
     const platform = currentKeyBindingPlatform();
 
     for (const other of keyBindingFieldConfigs) {
@@ -88,9 +100,12 @@ export async function resolveKeyBindingCollision(self: KeyBindingFieldConfig, ne
         if (otherBinding && keyBindingsCollide(next, otherBinding)) {
             await other.saveBinding(null);
             notifyKeyBindingUnbound(other.kind);
-            return t(other.unboundMessageKey, formatKeyBinding(otherBinding, { platform }));
+            return {
+                unboundStorageKey: other.storageKey,
+                message: t(other.unboundMessageKey, formatKeyBinding(otherBinding, { platform })),
+            };
         }
     }
 
-    return "";
+    return null;
 }
