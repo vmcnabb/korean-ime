@@ -1,16 +1,12 @@
-#hanja-candidate-window-27c8a11a-b4d6-4388-9928-2d578bbb1fc {
-    --candidate-item-height: 44px;
-    --candidates-per-page: 9;
-    --text-primary: light-dark(#1a1a1a, #e5e5e5);
-    --description-color: light-dark(#666, #999);
-    --field-bg: light-dark(white, #141414);
-    --section-bg: light-dark(#f9f9f9, #1e1e1e);
-    --section-border: light-dark(#ddd, #333);
-    --button-hover-bg: light-dark(#f1f5f9, #292929);
-    --accent-subtle-bg: light-dark(#f3edff, #2b1340);
-    --radius-sm: 6px;
-    --dropdown-shadow: light-dark(0 6px 18px rgba(0, 0, 0, 0.18), 0 8px 22px rgba(0, 0, 0, 0.5));
+// Shared design tokens, scoped to this overlay's unique root only. Including the
+// token mixin (rather than copying values) keeps a single source of truth with
+// the page surfaces while leaking nothing into the host page. It must come
+// *after* the `all: unset` reset below: `all` clears `color-scheme` (which the
+// mixin sets, and which light-dark() needs) back to initial, but it leaves
+// custom properties alone.
+@use "../../styles/design-tokens";
 
+#hanja-candidate-window-27c8a11a-b4d6-4388-9928-2d578bbb1fc {
     &,
     * {
         all: unset;
@@ -18,9 +14,15 @@
         user-select: none;
     }
 
+    @include design-tokens.design-token-vars;
+
+    /* Overlay-local tokens (not part of the shared page-surface set). */
+    --candidate-item-height: 44px;
+    --candidates-per-page: 9;
+    --dropdown-shadow: light-dark(0 6px 18px rgba(0, 0, 0, 0.18), 0 8px 22px rgba(0, 0, 0, 0.5));
+
     position: fixed;
     z-index: 2147483647;
-    color-scheme: light dark;
     display: inline-flex;
     flex-direction: column;
     max-width: calc(100vw - 8px);

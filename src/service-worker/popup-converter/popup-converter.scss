@@ -1,7 +1,8 @@
-/* Design tokens, base typography and the shared control primitives
-   (.ds-btn, .ds-icon-btn, .ds-circle-btn, .ds-pill, .ds-field, .visually-hidden,
-   the focus ring) all live here. This file keeps only popup-specific layout. */
-@import "../../styles/design-system.css";
+// Pull in the page-surface design system: :root tokens, base typography and the
+// shared control primitives (.ds-btn, .ds-icon-btn, .ds-circle-btn, .ds-pill,
+// .ds-field, .visually-hidden, the focus ring). This file keeps only
+// popup-specific layout.
+@use "../../styles/design-system";
 
 html,
 body {

@@ -1,5 +1,5 @@
 import { createApp } from "vue";
-import "../styles/design-system.css";
+import "../styles/design-system.scss";
 import { gettingStartedView } from "../getting-started-route";
 import GettingStartedPage from "./GettingStartedPage.vue";
 import OptionsPage from "./options-page.vue";
