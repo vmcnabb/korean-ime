@@ -217,7 +217,7 @@ export class HangulImeController {
             // don't interfere with shortcuts, functional keys (Tab, Enter, …), or keys we
             // don't understand — commit any in-progress composition and let the browser
             // handle them natively
-            if (!key || event.ctrlKey || !isCharacterKey) {
+            if (!key || hasShortcutModifier(event) || !isCharacterKey) {
                 if (this.compositor.isCompositing()) {
                     this.compositionAdapter.endComposition(this.compositor.getCurrentChar());
                     this.compositor.reset();
@@ -312,7 +312,7 @@ export class HangulImeController {
 
     private isJamoKey(event: KeyboardEvent): boolean {
         const code = event.code as KeyCode;
-        return !event.ctrlKey && event.key.length === 1 && !!keyMap[code]?.jamo;
+        return !hasShortcutModifier(event) && event.key.length === 1 && !!keyMap[code]?.jamo;
     }
 
     private hasNonCollapsedSelection(): boolean {
@@ -641,6 +641,17 @@ export class HangulImeController {
         event.stopPropagation();
         event.stopImmediatePropagation();
     }
+}
+
+/**
+ * Whether a key event carries a shortcut modifier, meaning it's a browser/OS
+ * shortcut (copy, paste, select-all, …) rather than text input — so the IME must
+ * step aside and let the browser handle it. `ctrlKey` covers Ctrl shortcuts
+ * (Windows/Linux); `metaKey` covers Command shortcuts (macOS). A modifier+letter
+ * chord is never an intended jamo on any platform, so both bypass composition.
+ */
+function hasShortcutModifier(event: KeyboardEvent): boolean {
+    return event.ctrlKey || event.metaKey;
 }
 
 function hanjaCandidateNumberIndex(event: KeyboardEvent): number | undefined {

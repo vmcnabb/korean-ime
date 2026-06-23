@@ -114,6 +114,56 @@ describe("HangulImeController functional keys during composition", () => {
     });
 });
 
+describe("HangulImeController lets Cmd/Ctrl shortcut chords through in Hangul mode", () => {
+    afterEach(() => jest.restoreAllMocks());
+
+    function activeControllerOnTextarea() {
+        const beginComposition = jest.spyOn(InputAdapter.prototype, "beginComposition").mockImplementation(() => {});
+        jest.spyOn(InputAdapter.prototype, "updateComposition").mockImplementation(() => {});
+        jest.spyOn(InputAdapter.prototype, "endComposition").mockImplementation(() => {});
+
+        const element = document.createElement("textarea");
+        const controller = makeController(element);
+        controller.activate();
+        return { element, beginComposition };
+    }
+
+    // KeyC's jamo is ㅊ: without the fix this composed instead of triggering the
+    // shortcut, swallowing the key.
+    function pressC(element: HTMLElement, modifiers: { ctrlKey?: boolean; metaKey?: boolean }) {
+        const event = new KeyboardEvent("keydown", {
+            code: "KeyC",
+            key: "c",
+            bubbles: true,
+            cancelable: true,
+            ...modifiers,
+        });
+        element.dispatchEvent(event);
+        return event;
+    }
+
+    // Regression (macOS): in Hangul mode, Cmd+C used to compose the jamo ㅊ instead of
+    // copying, because the shortcut bypass only checked ctrlKey, not metaKey (Command).
+    it("does not compose Cmd+C (metaKey) and lets it reach the browser", () => {
+        const { element, beginComposition } = activeControllerOnTextarea();
+
+        const event = pressC(element, { metaKey: true });
+
+        expect(beginComposition).not.toHaveBeenCalled();
+        expect(event.defaultPrevented).toBe(false);
+    });
+
+    // Ctrl shortcuts (Windows/Linux) keep working exactly as before.
+    it("does not compose Ctrl+C (ctrlKey) and lets it reach the browser", () => {
+        const { element, beginComposition } = activeControllerOnTextarea();
+
+        const event = pressC(element, { ctrlKey: true });
+
+        expect(beginComposition).not.toHaveBeenCalled();
+        expect(event.defaultPrevented).toBe(false);
+    });
+});
+
 describe("HangulImeController flushes OSK-driven compositions while inactive", () => {
     afterEach(() => jest.restoreAllMocks());
 
@@ -331,6 +381,30 @@ describe("HangulImeController intercepts the first jamo over a selection in the 
         expect(beginComposition).toHaveBeenCalledWith("ㅇ", KeyCode.KeyD); // still composed...
         expect(keydown.defaultPrevented).toBe(true);
         expect(reachedBodyCapture).toBe(true); // ...but via the bubble path, not capture
+    });
+
+    // Regression (macOS): Cmd+C over a selection must reach the browser so copy works.
+    // The capture guard must NOT begin composition — otherwise it deletes the selection
+    // and types the jamo ㅊ over it instead of copying.
+    it("leaves a Cmd-chord over a selection to the browser (does not begin composition)", () => {
+        const { element, beginComposition } = activeContentEditable("Hello Anyeon.");
+        selectWithin(element.firstChild as Node, 6, 12); // select "Anyeon"
+
+        let reachedBodyCapture = false;
+        document.body.addEventListener("keydown", () => (reachedBodyCapture = true), true);
+
+        const keydown = new KeyboardEvent("keydown", {
+            code: "KeyC", // jamo ㅊ
+            key: "c",
+            metaKey: true,
+            bubbles: true,
+            cancelable: true,
+        });
+        element.dispatchEvent(keydown);
+
+        expect(beginComposition).not.toHaveBeenCalled();
+        expect(keydown.defaultPrevented).toBe(false);
+        expect(reachedBodyCapture).toBe(true); // not intercepted at window-capture
     });
 });
 
