@@ -510,7 +510,12 @@ export class HangulImeController {
             return;
         }
 
-        if (lookupGeneration !== this.hanjaLookupGeneration || candidates.length === 0 || !this._isActive) {
+        // Deliberately not gated on `_isActive`: Hanja conversion is independent of
+        // Han/Yong mode (it converts existing Hangul, including text from the OS
+        // IME while our Hangul typing is off), matching the Microsoft IME, where the
+        // Hanja key works in 영 mode too. Staleness from a mode change mid-lookup is
+        // still covered — `deactivate()` bumps `hanjaLookupGeneration`.
+        if (lookupGeneration !== this.hanjaLookupGeneration || candidates.length === 0) {
             return;
         }
 
