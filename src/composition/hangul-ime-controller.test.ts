@@ -613,7 +613,7 @@ describe("HangulImeController Hanja candidate selection (KIME_ENABLE_HANJA)", ()
         const element = document.createElement("textarea");
         const controller = makeController(element, undefined, hanjaOptions);
         controller.activate();
-        return { element, endComposition, deleteContentBackwards, inputCharacter };
+        return { element, controller, endComposition, deleteContentBackwards, inputCharacter };
     }
 
     function composeHan(element: HTMLElement) {
@@ -804,6 +804,41 @@ describe("HangulImeController Hanja candidate selection (KIME_ENABLE_HANJA)", ()
         dispatchKeydown(element, "Digit3", "3");
 
         expect(element.value).toBe("恨");
+        expect(document.querySelector(HANJA_CANDIDATE_WINDOW_SELECTOR)).toBeNull();
+    });
+
+    // Hanja conversion is independent of Han/Yong mode: it must work on a preceding
+    // Hangul syllable even when the controller is inactive (영 mode, or our Hangul
+    // typing disabled while the OS IME supplies the Hangul).
+    it("opens candidates and commits while inactive", async () => {
+        process.env.KIME_ENABLE_HANJA = "true";
+        const element = document.createElement("textarea");
+        element.value = "한";
+        element.selectionStart = element.selectionEnd = 1;
+        const controller = makeController(element); // deliberately NOT activated
+        expect(controller.isActive).toBe(false);
+
+        pressRightCtrl(element);
+        await settleHanjaLookup();
+
+        expect(candidateValues()).toEqual(["韓", "寒", "恨"]);
+
+        dispatchKeydown(element, "Digit1", "1");
+        expect(element.value).toBe("韓");
+    });
+
+    // The active-state guard was dropped, but staleness must still hold: a mode
+    // change mid-lookup bumps the lookup generation, so the resolved window is
+    // discarded rather than shown late.
+    it("does not open a stale candidate window when the mode changes mid-lookup", async () => {
+        process.env.KIME_ENABLE_HANJA = "true";
+        const { element, controller } = composingController();
+        composeHan(element);
+
+        pressRightCtrl(element); // starts the async lookup
+        controller.deactivate(); // mode change bumps the lookup generation
+        await settleHanjaLookup();
+
         expect(document.querySelector(HANJA_CANDIDATE_WINDOW_SELECTOR)).toBeNull();
     });
 
