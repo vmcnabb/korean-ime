@@ -96,13 +96,13 @@
         .can-pinyin {
             line-height: 1;
             grid-column: 4;
+            text-align: right;
         }
 
         .can-pinyin {
             grid-row: 1;
             color: var(--description-color);
             font-size: 11px;
-            text-align: right;
         }
 
         .can-simplified:empty + .can-pinyin {
