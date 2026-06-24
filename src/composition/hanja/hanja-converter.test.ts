@@ -1,5 +1,4 @@
 import { commitHanjaCandidate, getHanjaConversionTarget } from "./hanja-converter";
-import { HangulCompositor } from "../hangul-compositor";
 import { CompositionAdapter } from "../composition-adapters/composition-adapter";
 import { KeyCode } from "../../keyboard/korean-keyboard-map";
 import { HanjaCandidate } from "./hanja-candidate";
@@ -18,7 +17,6 @@ function fakeAdapter(
         getPreviousCharacter: jest.Mock;
         deleteContentBackwards: jest.Mock;
         inputCharacter: jest.Mock;
-        endComposition: jest.Mock;
     }> = {}
 ) {
     return {
@@ -26,7 +24,6 @@ function fakeAdapter(
         getPreviousCharacter: jest.fn(),
         deleteContentBackwards: jest.fn(),
         inputCharacter: jest.fn(),
-        endComposition: jest.fn(),
         ...overrides,
     };
 }
@@ -36,36 +33,11 @@ function asAdapter(fake: ReturnType<typeof fakeAdapter>): CompositionAdapter {
 }
 
 describe("getHanjaConversionTarget", () => {
-    describe("mid-composition", () => {
-        it("returns the reading for the in-progress block", () => {
-            const compositor = new HangulCompositor();
-            compositor.setCharacter("한");
-            const adapter = fakeAdapter();
-
-            expect(getHanjaConversionTarget(compositor, asAdapter(adapter))).toEqual({
-                kind: "composition",
-                reading: "한",
-            });
-            expect(adapter.endComposition).not.toHaveBeenCalled();
-            expect(compositor.isCompositing()).toBe(true);
-        });
-
-        it("leaves a non-syllable composing block untouched and reports no target", () => {
-            const compositor = new HangulCompositor();
-            compositor.addJamo("ㄱ");
-            const adapter = fakeAdapter();
-
-            expect(getHanjaConversionTarget(compositor, asAdapter(adapter))).toBeUndefined();
-            expect(adapter.endComposition).not.toHaveBeenCalled();
-            expect(compositor.isCompositing()).toBe(true); // composition preserved
-        });
-    });
-
     describe("after a committed syllable", () => {
         it("returns the reading for the preceding syllable", () => {
             const adapter = fakeAdapter({ getPreviousCharacter: jest.fn().mockReturnValue("한") });
 
-            expect(getHanjaConversionTarget(new HangulCompositor(), asAdapter(adapter))).toEqual({
+            expect(getHanjaConversionTarget(asAdapter(adapter))).toEqual({
                 kind: "previous-character",
                 reading: "한",
             });
@@ -76,7 +48,7 @@ describe("getHanjaConversionTarget", () => {
         it("does nothing when the preceding character is not a Hangul syllable", () => {
             const adapter = fakeAdapter({ getPreviousCharacter: jest.fn().mockReturnValue("a") });
 
-            expect(getHanjaConversionTarget(new HangulCompositor(), asAdapter(adapter))).toBeUndefined();
+            expect(getHanjaConversionTarget(asAdapter(adapter))).toBeUndefined();
             expect(adapter.deleteContentBackwards).not.toHaveBeenCalled();
             expect(adapter.inputCharacter).not.toHaveBeenCalled();
         });
@@ -84,47 +56,24 @@ describe("getHanjaConversionTarget", () => {
         it("does nothing when there is no preceding character", () => {
             const adapter = fakeAdapter({ getPreviousCharacter: jest.fn().mockReturnValue(undefined) });
 
-            expect(getHanjaConversionTarget(new HangulCompositor(), asAdapter(adapter))).toBeUndefined();
+            expect(getHanjaConversionTarget(asAdapter(adapter))).toBeUndefined();
             expect(adapter.inputCharacter).not.toHaveBeenCalled();
         });
 
         it("bails out (without reading the document) on an adapter that can't replace the previous char", () => {
             const adapter = fakeAdapter({ supportsMethods: jest.fn().mockReturnValue(false) });
 
-            expect(getHanjaConversionTarget(new HangulCompositor(), asAdapter(adapter))).toBeUndefined();
+            expect(getHanjaConversionTarget(asAdapter(adapter))).toBeUndefined();
             expect(adapter.getPreviousCharacter).not.toHaveBeenCalled();
         });
     });
 });
 
 describe("commitHanjaCandidate", () => {
-    it("commits a selected candidate in place of the in-progress block and clears composition", () => {
-        const compositor = new HangulCompositor();
-        compositor.setCharacter("한");
-        const adapter = fakeAdapter();
-
-        commitHanjaCandidate(
-            { kind: "composition", reading: "한" },
-            hanCandidates[1],
-            compositor,
-            asAdapter(adapter),
-            KeyCode.Digit2
-        );
-
-        expect(adapter.endComposition).toHaveBeenCalledWith("寒");
-        expect(compositor.isCompositing()).toBe(false);
-    });
-
     it("replaces the preceding syllable with the selected candidate", () => {
         const adapter = fakeAdapter({ getPreviousCharacter: jest.fn().mockReturnValue("한") });
 
-        commitHanjaCandidate(
-            { kind: "previous-character", reading: "한" },
-            hanCandidates[2],
-            new HangulCompositor(),
-            asAdapter(adapter),
-            KeyCode.Digit3
-        );
+        commitHanjaCandidate(hanCandidates[2], asAdapter(adapter), KeyCode.Digit3);
 
         expect(adapter.deleteContentBackwards).toHaveBeenCalled();
         expect(adapter.inputCharacter).toHaveBeenCalledWith("恨", KeyCode.Digit3);

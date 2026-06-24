@@ -1,7 +1,6 @@
 import { KeyBinding, matchesKeyBinding } from "../../keyboard/key-binding";
 import { KeyCode } from "../../keyboard/korean-keyboard-map";
 import { cancelEvent } from "../../messaging/dom-events";
-import { HangulCompositor } from "../hangul-compositor";
 import { CompositionAdapter } from "../composition-adapters/composition-adapter";
 import { HanjaCandidate } from "./hanja-candidate";
 import { HanjaCandidatePager } from "./hanja-candidate-pager";
@@ -37,14 +36,13 @@ type HanjaCandidateSelection = {
 
 /**
  * Owns the Hanja conversion lifecycle for one element: deciding whether a key
- * starts a conversion, resolving the target, the dictionary lookup (with
- * staleness tracking), and the candidate window/overlay/pager plus its
+ * starts a conversion, resolving the committed-text target, the dictionary
+ * lookup (with staleness tracking), and the candidate window/overlay/pager plus its
  * navigation, paging, and commit.
  *
  * Deliberately independent of the IME's Han/Yong (active) mode: the owning
- * {@link HangulImeController} simply offers it each keydown. It converts existing
- * Hangul — a composing syllable or the character before the caret — including
- * text typed by the OS IME while our Hangul typing is off.
+ * key listener simply offers it each keydown. It converts existing committed
+ * Hangul, including text typed by the OS IME while our Hangul typing is off.
  */
 export class HanjaCandidateController {
     private selection?: HanjaCandidateSelection;
@@ -53,7 +51,6 @@ export class HanjaCandidateController {
 
     constructor(
         private readonly element: HTMLElement,
-        private readonly compositor: HangulCompositor,
         private readonly adapter: CompositionAdapter,
         private readonly dictionaryProvider: HanjaDictionaryProvider,
         private readonly onCommitted: () => void,
@@ -86,18 +83,13 @@ export class HanjaCandidateController {
     }
 
     /**
-     * If this keydown is the configured Hanja key (and the feature is on) and
-     * there's a convertible Hangul syllable, open the candidate window. Returns
-     * whether the key was consumed.
+     * Pure query: whether this keydown is the configured Hanja key and the feature is on.
      */
-    tryStartConversion(event: KeyboardEvent): boolean {
+    isConversionKey(event: KeyboardEvent): boolean {
         if (process.env.KIME_ENABLE_HANJA !== "true" || !this.options.enabled || !this.options.keyBinding) {
             return false;
         }
-        if (!matchesKeyBinding(event, this.options.keyBinding)) {
-            return false;
-        }
-        return this.start(event);
+        return matchesKeyBinding(event, this.options.keyBinding);
     }
 
     /**
@@ -128,27 +120,21 @@ export class HanjaCandidateController {
         this.selection = undefined;
     }
 
-    private start(event: KeyboardEvent): boolean {
-        const target = getHanjaConversionTarget(this.compositor, this.adapter);
-        if (!target) {
-            return false;
-        }
-
+    /**
+     * Start a conversion from already-committed text. The key is consumed even when
+     * there is no convertible target, matching native IME behavior for the Hanja key.
+     */
+    startConversion(event: KeyboardEvent): void {
         this.close();
         const lookupGeneration = this.beginLookup();
         cancelEvent(event);
 
-        if (target.kind === "composition") {
-            this.adapter.endComposition(target.reading);
-            this.compositor.reset();
+        const target = getHanjaConversionTarget(this.adapter);
+        if (!target) {
+            return;
         }
 
-        const committedTarget: HanjaConversionTarget = {
-            ...target,
-            kind: "previous-character",
-        };
-        void this.openCandidates(committedTarget, lookupGeneration);
-        return true;
+        void this.openCandidates(target, lookupGeneration);
     }
 
     private async openCandidates(target: HanjaConversionTarget, lookupGeneration: number): Promise<void> {
@@ -288,7 +274,7 @@ export class HanjaCandidateController {
         }
 
         this.close();
-        commitHanjaCandidate(selection.target, candidate, this.compositor, this.adapter, keyCode);
+        commitHanjaCandidate(candidate, this.adapter, keyCode);
         this.onCommitted();
     }
 

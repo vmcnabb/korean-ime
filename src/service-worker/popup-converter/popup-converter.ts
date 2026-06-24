@@ -1,4 +1,8 @@
-import { HangulImeController } from "../../composition/hangul-ime-controller";
+import { CompositionAdapterFactory } from "../../composition/composition-adapter-factory";
+import { HangulController } from "../../composition/hangul-controller";
+import { KeyListener } from "../../composition/key-listener";
+import { HanjaCandidateController } from "../../composition/hanja/hanja-candidate-controller";
+import { StaticHanjaDictionaryProvider } from "../../composition/hanja/hanja-dictionary-provider";
 import { KoreanKeyboardMode } from "../../extension-state/korean-keyboard-mode";
 import { KeyBinding, isModifierOnlyBinding, matchesKeyBinding } from "../../keyboard/key-binding";
 import {
@@ -30,7 +34,18 @@ let copyFeedbackTimer: number | undefined;
 
 setupLocalization();
 setupInputModeToggleKey();
-const he = new HangulImeController(original);
+const compositionAdapter = CompositionAdapterFactory.createCompositionAdapter(original);
+if (!compositionAdapter) {
+    throw new Error("Could not create composition adapter for popup converter");
+}
+const hangulController = new HangulController(compositionAdapter);
+const hanjaController = new HanjaCandidateController(
+    original,
+    compositionAdapter,
+    new StaticHanjaDictionaryProvider(),
+    doRomanize
+);
+new KeyListener(compositionAdapter, hangulController, hanjaController);
 setInputMode(KoreanKeyboardMode.Hangul);
 updateCounts();
 void populateFromStorage();
@@ -75,7 +90,7 @@ function doRomanize() {
     updateCounts();
 }
 
-he.onEntry(() => doRomanize());
+hangulController.onEntry(() => doRomanize());
 original.addEventListener("input", doRomanize);
 
 // Paste as plain text only — the input is a contenteditable, so a default paste
@@ -138,9 +153,11 @@ function setInputMode(mode: KoreanKeyboardMode) {
     inputMode = mode;
 
     if (isHangulInputMode(mode)) {
-        he.activate();
+        hangulController.activate();
     } else {
-        he.deactivate();
+        hanjaController.cancelPendingLookup();
+        hanjaController.close();
+        hangulController.deactivate();
     }
 
     const isHangul = isHangulInputMode(mode);

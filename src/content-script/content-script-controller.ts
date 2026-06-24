@@ -238,8 +238,8 @@ export class ContentScriptController {
 
                     // A printable-key combo (e.g. Alt+S) must be swallowed fully so the
                     // character doesn't also reach the page or the IME. A modifier-only
-                    // key (e.g. the default Right Alt/Command) is left to propagate so the IME can
-                    // still track it (see HangulImeController's `lastModifierKey`).
+                    // key (e.g. the default Right Alt/Command) is left to propagate so Hangul can
+                    // still track it (see HangulController's `lastModifierKey`).
                     if (!isModifierOnlyBinding(binding)) {
                         e.stopImmediatePropagation();
                     }

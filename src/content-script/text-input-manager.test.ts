@@ -1,5 +1,5 @@
 import { TextInputManager, textInputElementsSelector } from "./text-input-manager";
-import { HangulImeController } from "../composition/hangul-ime-controller";
+import { HangulController } from "../composition/hangul-controller";
 import { KeyCode } from "../keyboard/korean-keyboard-map";
 import { macDefaultToggleKeyBinding } from "../keyboard/key-binding";
 import { CompositionAdapterFactory } from "../composition/composition-adapter-factory";
@@ -69,7 +69,7 @@ describe("TextInputManager.setActiveElement", () => {
     });
 
     it("disposes the current controller when focus moves to another editable", () => {
-        const dispose = jest.spyOn(HangulImeController.prototype, "dispose");
+        const dispose = jest.spyOn(HangulController.prototype, "dispose");
         const manager = new TextInputManager();
 
         const first = document.createElement("textarea");
@@ -83,7 +83,7 @@ describe("TextInputManager.setActiveElement", () => {
     });
 
     it("reuses the current controller when the same editable is reported twice", () => {
-        const dispose = jest.spyOn(HangulImeController.prototype, "dispose");
+        const dispose = jest.spyOn(HangulController.prototype, "dispose");
         const manager = new TextInputManager();
 
         const textarea = document.createElement("textarea");
@@ -96,7 +96,7 @@ describe("TextInputManager.setActiveElement", () => {
     });
 
     it("disposes the current controller when focus leaves editable input", () => {
-        const dispose = jest.spyOn(HangulImeController.prototype, "dispose");
+        const dispose = jest.spyOn(HangulController.prototype, "dispose");
         const manager = new TextInputManager();
 
         const textarea = document.createElement("textarea");
@@ -130,7 +130,7 @@ describe("TextInputManager.setActiveElement", () => {
     });
 
     it("clears the current controller when the focused editable has no adapter", () => {
-        const dispose = jest.spyOn(HangulImeController.prototype, "dispose");
+        const dispose = jest.spyOn(HangulController.prototype, "dispose");
         const createAdapter = jest.spyOn(CompositionAdapterFactory, "createCompositionAdapter");
         const manager = new TextInputManager();
 
@@ -159,7 +159,7 @@ describe("TextInputManager.enterCharacter", () => {
     });
 
     it("clears a stale controller when no editable element is focused", () => {
-        const dispose = jest.spyOn(HangulImeController.prototype, "dispose");
+        const dispose = jest.spyOn(HangulController.prototype, "dispose");
         const manager = new TextInputManager();
 
         const textarea = document.createElement("textarea");
@@ -171,7 +171,7 @@ describe("TextInputManager.enterCharacter", () => {
     });
 
     it("creates a controller for the focused element and routes the character", () => {
-        const addCharacter = jest.spyOn(HangulImeController.prototype, "addCharacter").mockImplementation(() => {});
+        const addCharacter = jest.spyOn(HangulController.prototype, "addCharacter").mockImplementation(() => {});
         const manager = new TextInputManager();
 
         const input = document.createElement("input");
@@ -187,8 +187,8 @@ describe("TextInputManager.enterCharacter", () => {
     });
 
     it("replaces the controller with one for the focused element before routing the character", () => {
-        const dispose = jest.spyOn(HangulImeController.prototype, "dispose");
-        const addCharacter = jest.spyOn(HangulImeController.prototype, "addCharacter").mockImplementation(() => {});
+        const dispose = jest.spyOn(HangulController.prototype, "dispose");
+        const addCharacter = jest.spyOn(HangulController.prototype, "addCharacter").mockImplementation(() => {});
         const manager = new TextInputManager();
 
         const first = document.createElement("textarea");
@@ -213,7 +213,7 @@ describe("TextInputManager.setToggleKeyBinding", () => {
     });
 
     it("forwards a binding change to the live controller", () => {
-        const setToggleKeyBinding = jest.spyOn(HangulImeController.prototype, "setToggleKeyBinding");
+        const setToggleKeyBinding = jest.spyOn(HangulController.prototype, "setToggleKeyBinding");
         const manager = new TextInputManager();
         const textarea = document.createElement("textarea");
         document.body.appendChild(textarea);
@@ -226,7 +226,7 @@ describe("TextInputManager.setToggleKeyBinding", () => {
     });
 
     it("applies the current binding to a controller created later", () => {
-        const setToggleKeyBinding = jest.spyOn(HangulImeController.prototype, "setToggleKeyBinding");
+        const setToggleKeyBinding = jest.spyOn(HangulController.prototype, "setToggleKeyBinding");
         const manager = new TextInputManager();
         manager.setToggleKeyBinding(macDefaultToggleKeyBinding); // no controller yet
 
