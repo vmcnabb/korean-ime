@@ -78,6 +78,11 @@ export class KeyListener {
             this.hangul.handleKey(event);
         },
         blur: () => {
+            // Only flush Hangul composition; deliberately leave an open Hanja candidate
+            // window alone (see #206). Incidental focus loss — Tab away, switching
+            // apps/tabs, or a focus shift caused by opening the window itself — should
+            // not dismiss it. A deliberate mousedown elsewhere still closes it, as do a
+            // focus change to another field, a mode toggle, and disposal.
             this.hangul.flushComposition();
         },
         mousedown: () => {
