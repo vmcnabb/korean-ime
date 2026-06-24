@@ -1,48 +1,15 @@
-﻿import { isKimeEvent } from "../messaging/dom-events";
+﻿import { cancelEvent, isKimeEvent } from "../messaging/dom-events";
 import { isModifierKey, isModifierKeyActive, KeyCode, keyMap } from "../keyboard/korean-keyboard-map";
-import {
-    KeyBinding,
-    defaultToggleKeyBindingForPlatform,
-    isModifierOnlyBinding,
-    matchesKeyBinding,
-} from "../keyboard/key-binding";
+import { KeyBinding, defaultToggleKeyBindingForPlatform, isModifierOnlyBinding } from "../keyboard/key-binding";
 import { HangulCompositor } from "./hangul-compositor";
 import { CompositionAdapterFactory } from "./composition-adapter-factory";
 import { CompositionAdapter } from "./composition-adapters/composition-adapter";
-import { HanjaCandidatePager } from "./hanja/hanja-candidate-pager";
-import {
-    HanjaCandidateDisplayOptions,
-    HanjaCandidateWindow,
-    HanjaCandidateWindowPage,
-} from "./hanja/hanja-candidate-window";
-import { HanjaCompositionOverlay } from "./hanja/hanja-composition-overlay";
-import { commitHanjaCandidate, getHanjaConversionTarget, HanjaConversionTarget } from "./hanja/hanja-converter";
-import { HanjaCandidate } from "./hanja/hanja-candidate";
+import { HanjaCandidateController, type HanjaImeOptions } from "./hanja/hanja-candidate-controller";
 import { HanjaDictionaryProvider, StaticHanjaDictionaryProvider } from "./hanja/hanja-dictionary-provider";
-import { defaultHanjaKeyBindingForPlatform } from "./hanja/hanja-key";
 
-type HanjaCandidateSelection = {
-    target: HanjaConversionTarget;
-    pager: HanjaCandidatePager<HanjaCandidate>;
-    overlay: HanjaCompositionOverlay;
-    window: HanjaCandidateWindow;
-};
-
-export type HanjaImeOptions = {
-    enabled: boolean;
-    keyBinding: KeyBinding | null;
-    showSimplified: boolean;
-    showPinyin: boolean;
-};
-
-function defaultHanjaImeOptions(): HanjaImeOptions {
-    return {
-        enabled: true,
-        keyBinding: defaultHanjaKeyBindingForPlatform(),
-        showSimplified: true,
-        showPinyin: true,
-    };
-}
+// Re-exported so existing importers (TextInputManager, tests) keep resolving it
+// from here even though it now lives with the Hanja controller.
+export type { HanjaImeOptions } from "./hanja/hanja-candidate-controller";
 
 /**
  * Controls the Hangul IME for a given element.
@@ -52,9 +19,7 @@ export class HangulImeController {
     private _isActive = false;
     private compositor = new HangulCompositor();
     private compositionAdapter: CompositionAdapter;
-    private hanjaCandidateSelection?: HanjaCandidateSelection;
-    private hanjaLookupGeneration = 0;
-    private hanjaOptions: HanjaImeOptions;
+    private hanja: HanjaCandidateController;
 
     private changeListeners: (() => void)[] = [];
     private eventListeners: {
@@ -79,7 +44,7 @@ export class HangulImeController {
     constructor(
         private readonly element: HTMLElement,
         compositionAdapter = CompositionAdapterFactory.createCompositionAdapter(element),
-        private readonly hanjaDictionaryProvider: HanjaDictionaryProvider = new StaticHanjaDictionaryProvider(),
+        hanjaDictionaryProvider: HanjaDictionaryProvider = new StaticHanjaDictionaryProvider(),
         hanjaOptions: Partial<HanjaImeOptions> = {}
     ) {
         if (!compositionAdapter) {
@@ -87,7 +52,14 @@ export class HangulImeController {
         }
 
         this.compositionAdapter = compositionAdapter;
-        this.hanjaOptions = { ...defaultHanjaImeOptions(), ...hanjaOptions };
+        this.hanja = new HanjaCandidateController(
+            this.element,
+            this.compositor,
+            this.compositionAdapter,
+            hanjaDictionaryProvider,
+            () => this.notifyOnEntry(),
+            hanjaOptions
+        );
 
         // Backspace during composition must be intercepted in the *capture* phase, on
         // window (the earliest point in event propagation). Rich editors like Word for
@@ -122,8 +94,8 @@ export class HangulImeController {
     }
 
     deactivate() {
-        this.invalidateHanjaLookup();
-        this.closeHanjaCandidateSelection();
+        this.hanja.cancelPendingLookup();
+        this.hanja.close();
 
         if (this.compositor.isCompositing()) {
             // Ending the composition with the current value is the correct thing to do with Korean.
@@ -143,10 +115,10 @@ export class HangulImeController {
      */
     dispose() {
         try {
-            this.invalidateHanjaLookup();
+            this.hanja.cancelPendingLookup();
             this.flushComposition();
         } finally {
-            this.closeHanjaCandidateSelection();
+            this.hanja.close();
             this._isActive = false;
             for (const { target, type, listener, capture } of this.eventListeners) {
                 target.removeEventListener(type, listener, capture);
@@ -170,22 +142,7 @@ export class HangulImeController {
     }
 
     setHanjaOptions(options: Partial<HanjaImeOptions>) {
-        const previousDisplayOptions = this.hanjaCandidateDisplayOptions();
-        this.hanjaOptions = { ...this.hanjaOptions, ...options };
-
-        if (!this.hanjaOptions.enabled || !this.hanjaOptions.keyBinding) {
-            this.invalidateHanjaLookup();
-            this.closeHanjaCandidateSelection();
-            return;
-        }
-
-        const nextDisplayOptions = this.hanjaCandidateDisplayOptions();
-        if (
-            previousDisplayOptions.showSimplified !== nextDisplayOptions.showSimplified ||
-            previousDisplayOptions.showPinyin !== nextDisplayOptions.showPinyin
-        ) {
-            this.refreshHanjaCandidateWindow();
-        }
+        this.hanja.setOptions(options);
     }
 
     private notifyOnEntry() {
@@ -207,26 +164,17 @@ export class HangulImeController {
 
             const code = event.code as KeyCode;
 
-            if (this.hanjaCandidateSelection && this.handleHanjaCandidateSelectionKey(event)) {
+            // Give the Hanja controller first dibs: it consumes candidate-window keys
+            // (and closes the window on any other key), then may start a conversion.
+            if (this.hanja.handleKey(event)) {
                 return;
             }
 
-            if (this.hanjaCandidateSelection) {
-                this.closeHanjaCandidateSelection();
+            if (this.hanja.tryStartConversion(event)) {
+                return;
             }
 
-            if (
-                process.env.KIME_ENABLE_HANJA === "true" &&
-                this.hanjaOptions.enabled &&
-                this.hanjaOptions.keyBinding &&
-                matchesKeyBinding(event, this.hanjaOptions.keyBinding)
-            ) {
-                if (this.startHanjaCandidateSelection(event)) {
-                    return;
-                }
-            }
-
-            this.invalidateHanjaLookup();
+            this.hanja.cancelPendingLookup();
 
             // Record the most recent modifier key (any side) and stop — modifier keys
             // aren't text. Tracking which one lets isToggleKeyHeld tell the configured
@@ -249,7 +197,7 @@ export class HangulImeController {
                     // character instead of letting the OS treat Alt/Cmd+key as a
                     // shortcut or menu trigger.
                     this.compositionAdapter.inputCharacter(event.key, code);
-                    this.cancelEvent(event);
+                    cancelEvent(event);
                     return;
                 }
 
@@ -322,7 +270,7 @@ export class HangulImeController {
             this.flushComposition();
         },
         mousedown: () => {
-            this.invalidateHanjaLookup();
+            this.hanja.cancelPendingLookup();
             this.flushComposition();
         },
     };
@@ -340,16 +288,20 @@ export class HangulImeController {
      * Everything else is left to the bubble-phase handler.
      */
     private keydownCaptureGuard = (event: KeyboardEvent): void => {
-        if (isKimeEvent(event) || !this._isActive) {
+        if (isKimeEvent(event)) {
             return;
         }
 
-        if (this.hanjaCandidateSelection && this.handleHanjaCandidateSelectionKey(event)) {
+        // The candidate window can be open regardless of Han/Yong mode, so handle it
+        // here (ahead of the editor) without gating on `_isActive`. A candidate key is
+        // consumed; any other key closes the window — either way the guard is done.
+        if (this.hanja.isOpen) {
+            this.hanja.handleKey(event);
             return;
         }
 
-        if (this.hanjaCandidateSelection) {
-            this.closeHanjaCandidateSelection();
+        // The composition-capture handling below only applies while Hangul typing is active.
+        if (!this._isActive) {
             return;
         }
 
@@ -433,7 +385,7 @@ export class HangulImeController {
         this.compositionAdapter.deleteContentBackwards();
         this.compositionAdapter.beginComposition(character!, KeyCode.Backspace);
 
-        this.cancelEvent(event);
+        cancelEvent(event);
         return true;
     }
 
@@ -452,7 +404,7 @@ export class HangulImeController {
         const jamo = event.shiftKey && key.jamo.shift ? key.jamo.shift : key.jamo.normal;
         this.addJamo(jamo, code);
 
-        this.cancelEvent(event);
+        cancelEvent(event);
     }
 
     /**
@@ -472,216 +424,10 @@ export class HangulImeController {
             this.compositionAdapter.updateComposition(block, KeyCode.Backspace);
             this.notifyOnEntry();
 
-            this.cancelEvent(event);
+            cancelEvent(event);
         } else {
             this.compositionAdapter.endComposition("x");
         }
-    }
-
-    private startHanjaCandidateSelection(event: KeyboardEvent): boolean {
-        const target = getHanjaConversionTarget(this.compositor, this.compositionAdapter);
-        if (!target) {
-            return false;
-        }
-
-        this.closeHanjaCandidateSelection();
-        const lookupGeneration = this.beginHanjaLookup();
-        this.cancelEvent(event);
-
-        if (target.kind === "composition") {
-            this.compositionAdapter.endComposition(target.reading);
-            this.compositor.reset();
-        }
-
-        const committedTarget: HanjaConversionTarget = {
-            ...target,
-            kind: "previous-character",
-        };
-        void this.openHanjaCandidateSelection(committedTarget, lookupGeneration);
-        return true;
-    }
-
-    private async openHanjaCandidateSelection(target: HanjaConversionTarget, lookupGeneration: number): Promise<void> {
-        let candidates: readonly HanjaCandidate[];
-        try {
-            candidates = await this.hanjaDictionaryProvider.lookup(target.reading);
-        } catch (error) {
-            console.error(error);
-            return;
-        }
-
-        // Deliberately not gated on `_isActive`: Hanja conversion is independent of
-        // Han/Yong mode (it converts existing Hangul, including text from the OS
-        // IME while our Hangul typing is off), matching the Microsoft IME, where the
-        // Hanja key works in 영 mode too. Staleness from a mode change mid-lookup is
-        // still covered — `deactivate()` bumps `hanjaLookupGeneration`.
-        if (lookupGeneration !== this.hanjaLookupGeneration || candidates.length === 0) {
-            return;
-        }
-
-        const overlay = new HanjaCompositionOverlay(this.element, this.compositionAdapter);
-        const overlayRect = overlay.show(target.reading);
-        const pager = new HanjaCandidatePager(candidates);
-        this.hanjaCandidateSelection = {
-            target,
-            pager,
-            overlay,
-            window: new HanjaCandidateWindow(this.element, this.hanjaCandidatePage(pager), overlayRect, {
-                onPreviousPage: () => this.moveHanjaCandidatePage(-1),
-                onNextPage: () => this.moveHanjaCandidatePage(1),
-                onMoveSelection: (delta) => this.moveHanjaCandidateSelection(delta),
-                onSelectCandidate: (visibleIndex) => this.commitVisibleHanjaCandidate(visibleIndex, KeyCode.Lang2),
-                displayOptions: this.hanjaCandidateDisplayOptions(),
-            }),
-        };
-    }
-
-    private handleHanjaCandidateSelectionKey(event: KeyboardEvent): boolean {
-        const selection = this.hanjaCandidateSelection;
-        if (!selection) {
-            return false;
-        }
-
-        const numberedIndex = hanjaCandidateNumberIndex(event);
-        const candidateIndex =
-            numberedIndex === undefined ? undefined : selection.pager.selectByVisibleIndex(numberedIndex);
-        if (candidateIndex !== undefined) {
-            this.commitHanjaCandidate(candidateIndex, event.code as KeyCode);
-            this.cancelEvent(event);
-            return true;
-        }
-
-        switch (event.key) {
-            case "ArrowDown":
-                this.moveHanjaCandidateSelection(1);
-                this.cancelEvent(event);
-                return true;
-
-            case "ArrowUp":
-                this.moveHanjaCandidateSelection(-1);
-                this.cancelEvent(event);
-                return true;
-
-            case "ArrowRight":
-                this.moveHanjaCandidatePage(1);
-                this.cancelEvent(event);
-                return true;
-
-            case "ArrowLeft":
-                this.moveHanjaCandidatePage(-1);
-                this.cancelEvent(event);
-                return true;
-
-            case "Enter":
-                this.commitHanjaCandidate(selection.pager.selectedIndex, event.code as KeyCode);
-                this.cancelEvent(event);
-                return true;
-
-            case "Escape":
-                this.closeHanjaCandidateSelection();
-                this.cancelEvent(event);
-                return true;
-
-            case "Backspace":
-            case "Delete":
-                this.closeHanjaCandidateSelection();
-                this.cancelEvent(event);
-                return true;
-
-            default:
-                return false;
-        }
-    }
-
-    private moveHanjaCandidateSelection(delta: number): void {
-        const selection = this.hanjaCandidateSelection;
-        if (!selection) {
-            return;
-        }
-
-        selection.pager.moveSelection(delta);
-        this.refreshHanjaCandidateWindow();
-    }
-
-    private moveHanjaCandidatePage(delta: number): void {
-        const selection = this.hanjaCandidateSelection;
-        if (!selection) {
-            return;
-        }
-
-        selection.pager.movePage(delta);
-        this.refreshHanjaCandidateWindow();
-    }
-
-    private commitVisibleHanjaCandidate(visibleIndex: number, keyCode: KeyCode): void {
-        const selection = this.hanjaCandidateSelection;
-        if (!selection) {
-            return;
-        }
-
-        const candidateIndex = selection.pager.selectByVisibleIndex(visibleIndex);
-        if (candidateIndex === undefined) {
-            return;
-        }
-
-        this.commitHanjaCandidate(candidateIndex, keyCode);
-    }
-
-    private commitHanjaCandidate(index: number, keyCode: KeyCode): void {
-        const selection = this.hanjaCandidateSelection;
-        if (!selection) {
-            return;
-        }
-
-        const candidate = selection.pager.candidateAt(index);
-        if (!candidate) {
-            return;
-        }
-
-        this.closeHanjaCandidateSelection();
-        commitHanjaCandidate(selection.target, candidate, this.compositor, this.compositionAdapter, keyCode);
-        this.notifyOnEntry();
-    }
-
-    private hanjaCandidatePage(pager: HanjaCandidatePager<HanjaCandidate>): HanjaCandidateWindowPage {
-        return {
-            candidates: pager.visibleCandidates,
-            selectedIndex: pager.selectedPageIndex,
-            pageIndex: pager.pageIndex,
-            pageCount: pager.pageCount,
-        };
-    }
-
-    private hanjaCandidateDisplayOptions(): HanjaCandidateDisplayOptions {
-        return {
-            showSimplified: this.hanjaOptions.showSimplified,
-            showPinyin: this.hanjaOptions.showPinyin,
-        };
-    }
-
-    private refreshHanjaCandidateWindow(): void {
-        const selection = this.hanjaCandidateSelection;
-        if (!selection) {
-            return;
-        }
-
-        selection.window.setDisplayOptions(this.hanjaCandidateDisplayOptions());
-        selection.window.update(this.hanjaCandidatePage(selection.pager));
-    }
-
-    private closeHanjaCandidateSelection(): void {
-        this.hanjaCandidateSelection?.overlay.remove();
-        this.hanjaCandidateSelection?.window.remove();
-        this.hanjaCandidateSelection = undefined;
-    }
-
-    private beginHanjaLookup(): number {
-        this.hanjaLookupGeneration += 1;
-        return this.hanjaLookupGeneration;
-    }
-
-    private invalidateHanjaLookup(): void {
-        this.hanjaLookupGeneration += 1;
     }
 
     // Commit and clear any in-progress composition. Runs when the controller is
@@ -690,7 +436,7 @@ export class HangulImeController {
     // inactive (Hangul typing disabled), so a focus/caret change or a physical
     // keystroke must still flush it, or the next OSK jamo attaches to a stale block.
     private flushComposition() {
-        this.closeHanjaCandidateSelection();
+        this.hanja.close();
 
         if (!this._isActive && !this.compositor.isCompositing()) {
             return;
@@ -751,12 +497,6 @@ export class HangulImeController {
         target.addEventListener(type, listener, capture);
         this.eventListeners.push({ target, type, listener, capture });
     }
-
-    private cancelEvent(event: KeyboardEvent): void {
-        event.preventDefault();
-        event.stopPropagation();
-        event.stopImmediatePropagation();
-    }
 }
 
 /**
@@ -768,12 +508,4 @@ export class HangulImeController {
  */
 function hasShortcutModifier(event: KeyboardEvent): boolean {
     return event.ctrlKey || event.metaKey;
-}
-
-function hanjaCandidateNumberIndex(event: KeyboardEvent): number | undefined {
-    if (!/^[1-9]$/.test(event.key)) {
-        return undefined;
-    }
-
-    return Number(event.key) - 1;
 }

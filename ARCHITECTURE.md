@@ -121,9 +121,9 @@ flowchart LR
     end
 
     opts -->|write settings| sync
-    opts -->|write toggle key| local
+    opts -->|write key bindings| local
     csc <-->|read / write arrangement| sync
-    csc -->|read toggle key| local
+    csc -->|read key bindings| local
     sm <-->|tab + live state| session
     sm <-->|lastState| local
     sync -->|read settings| sm
@@ -133,15 +133,15 @@ flowchart LR
 
     sync -. "onChanged ⇒ re-derive & push state" .-> sm
     sync -. "onChanged ⇒ re-apply arrangement" .-> csc
-    local -. "onChanged ⇒ reload toggle key" .-> csc
+    local -. "onChanged ⇒ reload key bindings" .-> csc
 ```
 
 - **`sync`** — the user's `Settings` (incl. the keyboard's key arrangement).
   Roams across devices.
 - **`local`** — per-device things: the remembered `lastState` (for "keep last
-  state"), the Han/Yong **toggle key** binding, and the keyboard's pixel
-  **position** per site. These are device-specific, so they deliberately don't
-  roam.
+  state"), the **key bindings** (the Han/Yong toggle key and the Hanja conversion
+  key), and the keyboard's pixel **position** per site. These are device-specific,
+  so they deliberately don't roam.
 - **`session`** — per-tab runtime state (`tabState-<id>`), the global `liveState`
   new tabs inherit, the `focusedFrame-<id>` used to route keys, and the handed-off
   romanize **popup text**. Cleared on browser close.
@@ -160,13 +160,14 @@ flowchart TB
     factory -->|CKEditor| ckAd["CkEditorAdapter"]
     factory -. "Google Docs ⇒ no adapter (unsupported)" .-> none(("∅"))
 
-    tim --> ime["HangulImeController"]
+    tim --> ime["HangulImeController<br/>(keystroke interpreter)"]
     ime --> compositor["HangulCompositor<br/>jamo ⇒ syllable blocks"]
     compositor --> blocks["hangul-block / hangul-maps"]
     ime --> box["compositing-box<br/>(composing overlay)"]
     ime --> adapter["chosen CompositionAdapter"]
     adapter --> el["Editable element"]
 
+    ime --> hanja["HanjaCandidateController<br/>(Hanja lifecycle)"]
     subgraph hanjaUI["Hanja conversion (on the convert key)"]
         hkey["hanja-key"]
         conv["hanja-converter"]
@@ -174,8 +175,8 @@ flowchart TB
         win["hanja-candidate-window"]
         ov["hanja-composition-overlay"]
     end
-    ime --> hanjaUI
-    ime --> client["Hanja provider client<br/>→ service worker lookup"]
+    hanja --> hanjaUI
+    hanja --> client["Hanja provider client<br/>→ service worker lookup"]
 ```
 
 - **`TextInputManager`** owns one `HangulImeController` for the focused element,
@@ -183,7 +184,10 @@ flowchart TB
   `CompositionAdapterFactory` based on the editor type (plain input,
   contentEditable, CKEditor). **Google Docs gets no adapter** and is unsupported.
 - **`HangulCompositor`** is the heart: it assembles jamo into syllable blocks.
-- **Hanja** conversion is layered on top: pressing the convert key asks the
-  service-worker dictionary (via the client), then drives the candidate window,
-  pager, and overlay.
+- **`HanjaCandidateController`** owns the whole Hanja conversion lifecycle —
+  whether a key starts a conversion, the service-worker dictionary lookup (via the
+  client), and the candidate window, pager, and overlay. `HangulImeController`
+  just offers it each keydown. It's deliberately independent of Han/Yong mode, so
+  it converts existing Hangul (including text typed by the OS IME) even while our
+  Hangul typing is off.
 ```
