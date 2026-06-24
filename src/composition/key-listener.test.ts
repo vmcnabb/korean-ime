@@ -1,9 +1,12 @@
-import { HangulImeController, HanjaImeOptions } from "./hangul-ime-controller";
+import { CompositionAdapterFactory } from "./composition-adapter-factory";
 import { InputAdapter } from "./composition-adapters/input-adapter";
 import { ContentEditableAdapter } from "./composition-adapters/content-editable-adapter";
+import { HangulController } from "./hangul-controller";
+import { HanjaCandidateController, HanjaImeOptions } from "./hanja/hanja-candidate-controller";
+import { KeyListener } from "./key-listener";
 import { KeyCode } from "../keyboard/korean-keyboard-map";
 import { KeyBinding, defaultToggleKeyBinding, macDefaultToggleKeyBinding } from "../keyboard/key-binding";
-import { HanjaDictionaryProvider } from "./hanja/hanja-dictionary-provider";
+import { HanjaDictionaryProvider, StaticHanjaDictionaryProvider } from "./hanja/hanja-dictionary-provider";
 import { HanjaCandidate } from "./hanja/hanja-candidate";
 import { HANJA_CANDIDATE_WINDOW_SELECTOR } from "./hanja/hanja-candidate-window";
 
@@ -15,24 +18,50 @@ function dispatchKeydown(target: EventTarget, code: string, key: string): Keyboa
     return event;
 }
 
-// Each controller registers a capture-phase keydown listener on `window`. Tests
+// Each KeyListener registers a capture-phase keydown listener on `window`. Tests
 // don't route controllers through TextInputManager, so without cleanup a
-// controller from one test keeps reacting to keystrokes dispatched by the next.
-// Track every controller and dispose them all after each test to keep tests
+// listener from one test keeps reacting to keystrokes dispatched by the next.
+// Track every listener and dispose them all after each test to keep tests
 // isolated.
-const liveControllers: HangulImeController[] = [];
+const liveListeners: KeyListener[] = [];
+
+function makeControllerFixture(
+    element: HTMLElement,
+    hanjaDictionaryProvider?: HanjaDictionaryProvider,
+    hanjaOptions?: Partial<HanjaImeOptions>
+): {
+    hangul: HangulController;
+    hanja: HanjaCandidateController;
+    listener: KeyListener;
+} {
+    const compositionAdapter = CompositionAdapterFactory.createCompositionAdapter(element);
+    if (!compositionAdapter) {
+        throw new Error("Could not create composition adapter for test element");
+    }
+
+    const hangul = new HangulController(compositionAdapter);
+    const hanja = new HanjaCandidateController(
+        element,
+        compositionAdapter,
+        hanjaDictionaryProvider ?? new StaticHanjaDictionaryProvider(),
+        () => {},
+        hanjaOptions
+    );
+    const listener = new KeyListener(compositionAdapter, hangul, hanja);
+    liveListeners.push(listener);
+    return { hangul, hanja, listener };
+}
+
 function makeController(
     element: HTMLElement,
     hanjaDictionaryProvider?: HanjaDictionaryProvider,
     hanjaOptions?: Partial<HanjaImeOptions>
-): HangulImeController {
-    const controller = new HangulImeController(element, undefined, hanjaDictionaryProvider, hanjaOptions);
-    liveControllers.push(controller);
-    return controller;
+): HangulController {
+    return makeControllerFixture(element, hanjaDictionaryProvider, hanjaOptions).hangul;
 }
 afterEach(() => {
-    liveControllers.forEach((controller) => controller.dispose());
-    liveControllers.length = 0;
+    liveListeners.forEach((listener) => listener.dispose());
+    liveListeners.length = 0;
 });
 
 function makeContentEditable(): HTMLElement {
@@ -43,7 +72,7 @@ function makeContentEditable(): HTMLElement {
     return element;
 }
 
-describe("HangulImeController", () => {
+describe("KeyListener", () => {
     afterEach(() => jest.restoreAllMocks());
 
     it("dispose() removes the listeners it registered, including the one on document", () => {
@@ -53,14 +82,14 @@ describe("HangulImeController", () => {
         const documentAdd = jest.spyOn(document, "addEventListener");
         const documentRemove = jest.spyOn(document, "removeEventListener");
 
-        const controller = makeController(element);
+        const { listener } = makeControllerFixture(element);
 
         // contenteditable routes mousedown to `document`; keydown/blur to the element
         const mousedownAdd = documentAdd.mock.calls.find(([type]) => type === "mousedown");
         expect(mousedownAdd).toBeDefined();
         expect(elementAdd.mock.calls.map(([type]) => type)).toEqual(expect.arrayContaining(["keydown", "blur"]));
 
-        controller.dispose();
+        listener.dispose();
 
         // the document mousedown listener (the one that would otherwise leak) is
         // detached using the same reference that was attached
@@ -73,7 +102,7 @@ describe("HangulImeController", () => {
     });
 });
 
-describe("HangulImeController functional keys during composition", () => {
+describe("KeyListener functional keys during composition", () => {
     afterEach(() => jest.restoreAllMocks());
 
     function activeControllerOnTextarea() {
@@ -119,7 +148,7 @@ describe("HangulImeController functional keys during composition", () => {
     });
 });
 
-describe("HangulImeController lets Cmd/Ctrl shortcut chords through in Hangul mode", () => {
+describe("KeyListener lets Cmd/Ctrl shortcut chords through in Hangul mode", () => {
     afterEach(() => jest.restoreAllMocks());
 
     function activeControllerOnTextarea() {
@@ -169,7 +198,7 @@ describe("HangulImeController lets Cmd/Ctrl shortcut chords through in Hangul mo
     });
 });
 
-describe("HangulImeController treats a held toggle key as the IME key, not a modifier", () => {
+describe("KeyListener treats a held toggle key as the IME key, not a modifier", () => {
     afterEach(() => jest.restoreAllMocks());
 
     function controllerOnTextarea(binding: KeyBinding | null) {
@@ -276,7 +305,7 @@ describe("HangulImeController treats a held toggle key as the IME key, not a mod
     });
 });
 
-describe("HangulImeController flushes OSK-driven compositions while inactive", () => {
+describe("KeyListener flushes OSK-driven compositions while inactive", () => {
     afterEach(() => jest.restoreAllMocks());
 
     // Mirrors "Hangul typing disabled": the on-screen keyboard drives composition
@@ -333,7 +362,7 @@ describe("HangulImeController flushes OSK-driven compositions while inactive", (
     });
 });
 
-describe("HangulImeController intercepts Backspace during composition in the capture phase", () => {
+describe("KeyListener intercepts Backspace during composition in the capture phase", () => {
     afterEach(() => {
         jest.restoreAllMocks();
         document.body.innerHTML = "";
@@ -418,7 +447,7 @@ describe("HangulImeController intercepts Backspace during composition in the cap
     });
 });
 
-describe("HangulImeController intercepts the first jamo over a selection in the capture phase", () => {
+describe("KeyListener intercepts the first jamo over a selection in the capture phase", () => {
     afterEach(() => {
         jest.restoreAllMocks();
         document.body.innerHTML = "";
@@ -520,7 +549,7 @@ describe("HangulImeController intercepts the first jamo over a selection in the 
     });
 });
 
-describe("HangulImeController intercepts Shift+Backspace in the capture phase", () => {
+describe("KeyListener intercepts Shift+Backspace in the capture phase", () => {
     afterEach(() => {
         jest.restoreAllMocks();
         document.body.innerHTML = "";
@@ -592,28 +621,24 @@ describe("HangulImeController intercepts Shift+Backspace in the capture phase", 
     });
 });
 
-describe("HangulImeController Hanja candidate selection (KIME_ENABLE_HANJA)", () => {
+describe("KeyListener Hanja candidate selection (KIME_ENABLE_HANJA)", () => {
     afterEach(() => {
         jest.restoreAllMocks();
         delete process.env.KIME_ENABLE_HANJA;
         document.body.innerHTML = "";
     });
 
-    // Drive composition state in jsdom by stubbing the adapter's DOM mutations, then
-    // type the jamo for a syllable so the compositor is genuinely mid-composition.
+    // Use real textarea mutations here: Hanja conversion now reads the committed
+    // previous character through the adapter after KeyListener ends Hangul composition.
     function composingController(hanjaOptions?: Partial<HanjaImeOptions>) {
-        jest.spyOn(InputAdapter.prototype, "beginComposition").mockImplementation(() => {});
-        jest.spyOn(InputAdapter.prototype, "updateComposition").mockImplementation(() => {});
-        const endComposition = jest.spyOn(InputAdapter.prototype, "endComposition").mockImplementation(() => {});
-        const deleteContentBackwards = jest
-            .spyOn(InputAdapter.prototype, "deleteContentBackwards")
-            .mockImplementation(() => {});
-        const inputCharacter = jest.spyOn(InputAdapter.prototype, "inputCharacter").mockImplementation(() => {});
+        const endComposition = jest.spyOn(InputAdapter.prototype, "endComposition");
+        const deleteContentBackwards = jest.spyOn(InputAdapter.prototype, "deleteContentBackwards");
+        const inputCharacter = jest.spyOn(InputAdapter.prototype, "inputCharacter");
 
         const element = document.createElement("textarea");
-        const controller = makeController(element, undefined, hanjaOptions);
+        const { hangul: controller, hanja } = makeControllerFixture(element, undefined, hanjaOptions);
         controller.activate();
-        return { element, controller, endComposition, deleteContentBackwards, inputCharacter };
+        return { element, controller, hanja, endComposition, deleteContentBackwards, inputCharacter };
     }
 
     function composeHan(element: HTMLElement) {
@@ -864,11 +889,13 @@ describe("HangulImeController Hanja candidate selection (KIME_ENABLE_HANJA)", ()
     // discarded rather than shown late.
     it("does not open a stale candidate window when the mode changes mid-lookup", async () => {
         process.env.KIME_ENABLE_HANJA = "true";
-        const { element, controller } = composingController();
+        const { element, controller, hanja } = composingController();
         composeHan(element);
 
         pressRightCtrl(element); // starts the async lookup
-        controller.deactivate(); // mode change bumps the lookup generation
+        hanja.cancelPendingLookup(); // mode change bumps the lookup generation
+        hanja.close();
+        controller.deactivate();
         await settleHanjaLookup();
 
         expect(document.querySelector(HANJA_CANDIDATE_WINDOW_SELECTOR)).toBeNull();
@@ -1102,6 +1129,7 @@ describe("HangulImeController Hanja candidate selection (KIME_ENABLE_HANJA)", ()
         await settleHanjaLookup();
 
         expect(endComposition).toHaveBeenCalledWith("글");
+        expect(element.value).toBe("글");
         expect(document.querySelector(HANJA_CANDIDATE_WINDOW_SELECTOR)).toBeNull();
         expect(ctrl.defaultPrevented).toBe(true);
     });

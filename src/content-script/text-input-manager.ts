@@ -1,4 +1,6 @@
-import { HangulImeController, HanjaImeOptions } from "../composition/hangul-ime-controller";
+import { HangulController } from "../composition/hangul-controller";
+import { HanjaCandidateController, HanjaImeOptions } from "../composition/hanja/hanja-candidate-controller";
+import { KeyListener } from "../composition/key-listener";
 import { KoreanKeyboardMode } from "../extension-state/korean-keyboard-mode";
 import { CompositionAdapterFactory } from "../composition/composition-adapter-factory";
 import { isHangulOrJamo } from "../composition/hangul-maps";
@@ -17,7 +19,9 @@ export const textInputElementsSelector = `[contenteditable]:not([contenteditable
 
 export class TextInputManager {
     private targetElement?: HTMLElement;
-    private imeController?: HangulImeController;
+    private hangulController?: HangulController;
+    private hanjaController?: HanjaCandidateController;
+    private keyListener?: KeyListener;
     private textEntryMode: KoreanKeyboardMode = KoreanKeyboardMode.English;
     // The configured Han/Yong toggle key, kept here so it survives controller
     // recreation on focus change and is applied to each new controller. Defaults to
@@ -42,12 +46,12 @@ export class TextInputManager {
      */
     public setToggleKeyBinding(binding: KeyBinding | null) {
         this.toggleKeyBinding = binding;
-        this.imeController?.setToggleKeyBinding(binding);
+        this.hangulController?.setToggleKeyBinding(binding);
     }
 
     public setHanjaOptions(options: Partial<HanjaImeOptions>) {
         this.hanjaOptions = { ...this.hanjaOptions, ...options };
-        this.imeController?.setHanjaOptions(this.hanjaOptions);
+        this.hanjaController?.setOptions(this.hanjaOptions);
     }
 
     public setActiveElement(element: EventTarget | null): SupportedCompositionFeatures | undefined {
@@ -90,18 +94,18 @@ export class TextInputManager {
             return false;
         }
 
-        const imeController = this.tryGetOrCreateController(activeElement);
-        if (!imeController) {
+        const hangulController = this.tryGetOrCreateController(activeElement);
+        if (!hangulController) {
             return false;
         }
 
         if (isHangulOrJamo(char)) {
-            imeController.addJamo(char, keyCode);
+            hangulController.addJamo(char, keyCode);
         } else {
             if (KeyCode.Backspace === keyCode) {
-                imeController.handleBackspace();
+                hangulController.handleBackspace();
             } else {
-                imeController.addCharacter(char, keyCode);
+                hangulController.addCharacter(char, keyCode);
             }
         }
 
@@ -109,13 +113,13 @@ export class TextInputManager {
     }
 
     /**
-     * Get (creating if necessary) the single IME controller for the currently
+     * Get (creating if necessary) the single Hangul controller for the currently
      * focused element, with its active state synced to the current text-entry
-     * mode. When focus moves, the previous controller is disposed and a new one
+     * mode. When focus moves, the previous listener/controllers are disposed and a new set
      * is created so only one window-capture listener and one handler set exist
      * at a time.
      */
-    private tryGetOrCreateController(element: HTMLElement): HangulImeController | undefined {
+    private tryGetOrCreateController(element: HTMLElement): HangulController | undefined {
         if (this.targetElement !== element) {
             this.clearActiveController();
             const compositionAdapter = CompositionAdapterFactory.createCompositionAdapter(element);
@@ -123,40 +127,47 @@ export class TextInputManager {
                 return undefined;
             }
             this.targetElement = element;
-            this.imeController = new HangulImeController(
+            this.hangulController = new HangulController(compositionAdapter);
+            this.hanjaController = new HanjaCandidateController(
                 element,
                 compositionAdapter,
                 this.hanjaDictionaryProvider,
+                () => {},
                 this.hanjaOptions
             );
-            this.imeController.setToggleKeyBinding(this.toggleKeyBinding);
+            this.keyListener = new KeyListener(compositionAdapter, this.hangulController, this.hanjaController);
+            this.hangulController.setToggleKeyBinding(this.toggleKeyBinding);
         }
 
         this.syncControllerMode();
-        return this.imeController;
+        return this.hangulController;
     }
 
     private syncControllerMode() {
-        const imeController = this.imeController;
-        if (!imeController) {
+        const hangulController = this.hangulController;
+        if (!hangulController) {
             return;
         }
 
         const isHangulMode = this.textEntryMode === KoreanKeyboardMode.Hangul;
-        if (imeController.isActive === isHangulMode) {
+        if (hangulController.isActive === isHangulMode) {
             return;
         }
 
         if (isHangulMode) {
-            imeController.activate();
+            hangulController.activate();
         } else {
-            imeController.deactivate();
+            this.hanjaController?.cancelPendingLookup();
+            this.hanjaController?.close();
+            hangulController.deactivate();
         }
     }
 
     private clearActiveController() {
-        this.imeController?.dispose();
-        this.imeController = undefined;
+        this.keyListener?.dispose();
+        this.keyListener = undefined;
+        this.hanjaController = undefined;
+        this.hangulController = undefined;
         this.targetElement = undefined;
     }
 
