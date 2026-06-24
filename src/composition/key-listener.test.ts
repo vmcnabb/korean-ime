@@ -852,6 +852,24 @@ describe("KeyListener Hanja candidate selection (KIME_ENABLE_HANJA)", () => {
         expect(element.value).toBe("韓");
     });
 
+    // Deliberate behaviour (#206): incidental focus loss must not dismiss an open
+    // candidate window — only a mousedown / focus change / mode toggle / disposal does.
+    it("keeps an open candidate window open on blur", async () => {
+        process.env.KIME_ENABLE_HANJA = "true";
+        const element = document.createElement("textarea");
+        element.value = "한";
+        element.selectionStart = element.selectionEnd = 1;
+        makeController(element);
+
+        pressRightCtrl(element);
+        await settleHanjaLookup();
+        expect(document.querySelector(HANJA_CANDIDATE_WINDOW_SELECTOR)).not.toBeNull();
+
+        element.dispatchEvent(new FocusEvent("blur"));
+
+        expect(document.querySelector(HANJA_CANDIDATE_WINDOW_SELECTOR)).not.toBeNull();
+    });
+
     // The candidate window can be open while inactive, so candidate keys must be
     // intercepted in the capture phase (ahead of a rich editor) regardless of mode —
     // not just by the bubble handler. A body capture listener fires only if the
