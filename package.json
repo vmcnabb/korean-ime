@@ -16,7 +16,7 @@
     "build:firefox": "node scripts/gen-assets.mjs && wxt build -b firefox --mv3",
     "zip": "node scripts/gen-assets.mjs && wxt zip",
     "zip:firefox": "node scripts/gen-assets.mjs && wxt zip -b firefox --mv3",
-    "clean": "rimraf .output .wxt obj coverage src/images src/videos src/public src/content-script/on-screen-keyboard/mode-icons.ts",
+    "clean": "rimraf .output .wxt obj coverage src/images src/videos public src/content-script/on-screen-keyboard/mode-icons.ts",
     "check": "tsc --noEmit",
     "lint": "eslint src scripts *.mjs",
     "lint:fix": "eslint src scripts *.mjs --fix",
