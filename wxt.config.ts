@@ -31,6 +31,15 @@ export default defineConfig({
             ...(process.env.KIME_DEV_COLOR_SCHEME === "dark" ? ["--force-dark-mode"] : []),
         ],
         firefoxPref: {
+            // Suppress Firefox's own first-run UI on the throwaway dev profile
+            // web-ext recreates each launch: the "Welcome to Firefox" / Terms of
+            // Use modal, the onboarding flow, and the what's-new page. web-ext's
+            // built-in prefs predate the Terms-of-Use modal, so add these. Dev
+            // profile only — never touches the user's real Firefox.
+            "browser.aboutwelcome.enabled": false,
+            "browser.preonboarding.enabled": false,
+            "datareporting.policy.dataSubmissionPolicyBypassNotification": true,
+            "browser.startup.homepage_override.mstone": "ignore",
             ...(process.env.KIME_DEV_LOCALE ? { "intl.locale.requested": process.env.KIME_DEV_LOCALE } : {}),
             ...(process.env.KIME_DEV_COLOR_SCHEME
                 ? {
