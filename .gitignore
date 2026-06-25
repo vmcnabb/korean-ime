@@ -16,3 +16,11 @@ node_modules
 coverage/
 *.zip
 .chrome-profile/
+# Stray Parcel-era artifacts — the project uses WXT now, but guard against
+# leftovers (from old commands or branches) being committed.
+.parcel-cache/
+dist-chrome/
+dist-chrome-dev/
+dist-firefox/
+dist-firefox-dev/
+src/manifest.json
