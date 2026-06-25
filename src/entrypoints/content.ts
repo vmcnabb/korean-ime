@@ -1,3 +1,4 @@
+import "../platform/process-shim";
 import { defineContentScript } from "wxt/utils/define-content-script";
 import { ContentScriptController } from "../content-script/content-script-controller";
 

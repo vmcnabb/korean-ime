@@ -1,3 +1,4 @@
+import "../../platform/process-shim";
 import { CompositionAdapterFactory } from "../../composition/composition-adapter-factory";
 import { HangulController } from "../../composition/hangul-controller";
 import { KeyListener } from "../../composition/key-listener";

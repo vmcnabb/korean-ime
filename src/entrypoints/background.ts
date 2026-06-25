@@ -1,3 +1,4 @@
+import "../platform/process-shim";
 import { defineBackground } from "wxt/utils/define-background";
 
 // The service worker registers its listeners at module-evaluation time (MV3

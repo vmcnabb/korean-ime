@@ -10,6 +10,17 @@ export default defineConfig({
     // tests rely on that. Auto-imports would create ambiguity with no upside.
     imports: false,
     modules: ["@wxt-dev/module-vue"],
+    // Parcel auto-polyfilled `process` and inlined `process.env.*`. Vite handles
+    // `process.env.NODE_ENV` natively (dev + build), but custom keys are only
+    // statically replaced at *build* time — so define KIME_ENABLE_HANJA here so
+    // production folds it to a constant and tree-shakes the gated Hanja UI. In
+    // dev, Vite leaves it as a runtime read, which the process shim covers (see
+    // src/platform/process-shim.ts). KIME_ENABLE_HANJA is read from the build env.
+    vite: () => ({
+        define: {
+            "process.env.KIME_ENABLE_HANJA": JSON.stringify(process.env.KIME_ENABLE_HANJA ?? "false"),
+        },
+    }),
     manifest: ({ browser }) => ({
         name: "__MSG_extension_name__",
         short_name: "__MSG_extension_short_name__",

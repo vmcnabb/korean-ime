@@ -1,3 +1,4 @@
+import "../platform/process-shim";
 import { createApp } from "vue";
 import "../styles/design-system.scss";
 import { gettingStartedView } from "../getting-started-route";
