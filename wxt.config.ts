@@ -10,6 +10,11 @@ export default defineConfig({
     // tests rely on that. Auto-imports would create ambiguity with no upside.
     imports: false,
     modules: ["@wxt-dev/module-vue"],
+    // Open the localhost test page (served by scripts/dev.mjs) in the dev
+    // browser on launch, so the content script injects into a real http page.
+    webExt: {
+        startUrls: ["http://localhost:3344/"],
+    },
     // Parcel auto-polyfilled `process` and inlined `process.env.*`. Vite handles
     // `process.env.NODE_ENV` natively (dev + build), but custom keys are only
     // statically replaced at *build* time — so define KIME_ENABLE_HANJA here so
