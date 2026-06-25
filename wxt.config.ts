@@ -56,6 +56,30 @@ export default defineConfig({
             "process.env.KIME_ENABLE_HANJA": JSON.stringify(process.env.KIME_ENABLE_HANJA ?? "false"),
         },
     }),
+    hooks: {
+        // Firefox MV3 dev: WXT registers content scripts at runtime
+        // (scripting.registerContentScripts, for HMR) instead of in the manifest,
+        // but Firefox doesn't honour that registration in dev, so the script never
+        // injects. Re-add it statically. Scoped to serve + firefox + mv3 only:
+        // Chrome's runtime registration works there (re-adding would double-inject),
+        // and the production build already lists content_scripts. The cost is no
+        // content-script HMR in Firefox dev (a full reload picks up changes).
+        "build:manifestGenerated": (wxt, manifest) => {
+            const { command, browser, manifestVersion } = wxt.config;
+            if (command !== "serve" || browser !== "firefox" || manifestVersion !== 3) {
+                return;
+            }
+            manifest.content_scripts ??= [];
+            manifest.content_scripts.push({
+                matches: ["<all_urls>"],
+                all_frames: true,
+                match_about_blank: true,
+                run_at: "document_idle",
+                js: ["content-scripts/content.js"],
+                css: ["content-scripts/content.css"],
+            });
+        },
+    },
     manifest: ({ browser }) => ({
         name: "__MSG_extension_name__",
         short_name: "__MSG_extension_short_name__",
