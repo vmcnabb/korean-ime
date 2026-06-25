@@ -26,3 +26,13 @@ declare module "*?url" {
     const value: string;
     export default value;
 }
+
+// Vite exposes build-time env on import.meta.env. The project tsc doesn't pull
+// in WXT's generated types, so declare the keys the source reads.
+interface ImportMetaEnv {
+    readonly VITE_ENABLE_HANJA?: string;
+}
+
+interface ImportMeta {
+    readonly env: ImportMetaEnv;
+}

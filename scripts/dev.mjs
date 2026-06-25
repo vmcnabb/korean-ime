@@ -2,10 +2,17 @@
 // http(s) pages, not file:/about:/data: URLs) and runs `wxt`, which builds,
 // loads the extension into a throwaway browser profile, and opens the test page
 // — wxt.config.ts `webExt.startUrls` points at the port below. Browser launch
-// and teardown are WXT/web-ext's job now, so this is just the page + server
-// (the Parcel-era dev-chrome/dev-firefox/dev-shared did all of that by hand).
+// and teardown are WXT/web-ext's job now, so this is just the page + server +
+// flag plumbing (the Parcel-era dev-chrome/dev-firefox/dev-shared did all of
+// that by hand).
 //
-// Args are forwarded to wxt, e.g. `node scripts/dev.mjs -b firefox --mv3`.
+// Session flags (after `--`, e.g. `npm run dev -- --dark --locale=ko`):
+//   --enable-hanja   build with the gated Hanja feature on (KIME_ENABLE_HANJA)
+//   --locale=<code>  force the browser UI locale chrome.i18n resolves against
+//   --dark / --light force prefers-color-scheme without changing the OS theme
+//                    (Chrome only forces dark — it has no --force-light-mode)
+// The flags are read by wxt.config.ts from the env vars set below; remaining
+// args (e.g. `-b firefox --mv3`) are forwarded to wxt untouched.
 
 import { spawn } from "node:child_process";
 import { createServer } from "node:http";
@@ -50,6 +57,38 @@ const TEST_PAGE = `<!DOCTYPE html>
 </body>
 </html>`;
 
+// Flags arrive either after `--` (in argv) or, for `npm run dev --dark`, as
+// npm_config_* env vars. Support both, mirroring the old launcher.
+const argv = process.argv.slice(2);
+const npmConfig = (name) => process.env[`npm_config_${name.replace(/-/g, "_")}`];
+const isTruthy = (value) => value !== undefined && value !== "" && value !== "false" && value !== "0";
+const hasFlag = (name) => argv.includes(`--${name}`) || isTruthy(npmConfig(name));
+const flagValue = (name) => {
+    const prefix = `--${name}=`;
+    return argv.find((arg) => arg.startsWith(prefix))?.slice(prefix.length) ?? npmConfig(name) ?? undefined;
+};
+
+const enableHanja = hasFlag("enable-hanja") || process.env.KIME_ENABLE_HANJA === "true";
+const locale = flagValue("locale");
+const dark = hasFlag("dark");
+const light = hasFlag("light");
+
+if (dark && light) {
+    console.error("[dev] choose either --dark or --light, not both.");
+    process.exit(1);
+}
+const colorScheme = dark ? "dark" : light ? "light" : undefined;
+
+// wxt.config.ts reads these (build-time KIME_ENABLE_HANJA define + webExt args).
+const env = { ...process.env };
+if (enableHanja) env.KIME_ENABLE_HANJA = "true";
+if (locale) env.KIME_DEV_LOCALE = locale;
+if (colorScheme) env.KIME_DEV_COLOR_SCHEME = colorScheme;
+
+// Forward only wxt's own args (e.g. `-b firefox --mv3`); strip our flags.
+const ours = new Set(["--enable-hanja", "--dark", "--light"]);
+const wxtArgs = argv.filter((arg) => !ours.has(arg) && !arg.startsWith("--locale="));
+
 const server = createServer((_req, res) => {
     res.writeHead(200, { "content-type": "text/html; charset=utf-8" });
     res.end(TEST_PAGE);
@@ -57,9 +96,12 @@ const server = createServer((_req, res) => {
 
 server.listen(PORT, "127.0.0.1", () => {
     console.log(`[dev] test page → http://localhost:${PORT}/`);
+    if (enableHanja) console.log("[dev] Hanja feature: enabled");
+    if (locale) console.log(`[dev] UI locale: ${locale}`);
+    if (colorScheme) console.log(`[dev] Color scheme: ${colorScheme}`);
 });
 
-const wxt = spawn("wxt", process.argv.slice(2), { stdio: "inherit", shell: true });
+const wxt = spawn("wxt", wxtArgs, { stdio: "inherit", shell: true, env });
 
 const shutdown = () => {
     server.close();

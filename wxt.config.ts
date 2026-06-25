@@ -1,5 +1,13 @@
 import { defineConfig } from "wxt";
 
+// Single input for the gated Hanja feature: KIME_ENABLE_HANJA (set by
+// `--enable-hanja` in dev, or `KIME_ENABLE_HANJA=true npm run build`). Mirror it
+// to VITE_ENABLE_HANJA so Vite exposes it on import.meta.env for the dev process
+// shim (custom defines don't fold in the dev server; VITE_* env does).
+if (process.env.KIME_ENABLE_HANJA && !process.env.VITE_ENABLE_HANJA) {
+    process.env.VITE_ENABLE_HANJA = process.env.KIME_ENABLE_HANJA;
+}
+
 // WXT replaces the bespoke Parcel pipeline: manifest generation
 // (manifest.base.json + build-manifest.mjs), the Firefox background patch, and
 // the dev launchers. The manifest below is the former manifest.base.json plus
@@ -10,10 +18,28 @@ export default defineConfig({
     // tests rely on that. Auto-imports would create ambiguity with no upside.
     imports: false,
     modules: ["@wxt-dev/module-vue"],
-    // Open the localhost test page (served by scripts/dev.mjs) in the dev
-    // browser on launch, so the content script injects into a real http page.
+    // Dev browser launch. Opens the localhost test page (served by
+    // scripts/dev.mjs) so the content script injects into a real http page, and
+    // applies the session flags dev.mjs forwards via env vars: --locale sets the
+    // UI locale chrome.i18n resolves against; --dark/--light force
+    // prefers-color-scheme without touching the OS theme (Chrome has no
+    // --force-light-mode, so light is Firefox-only — the old launcher used CDP).
     webExt: {
         startUrls: ["http://localhost:3344/"],
+        chromiumArgs: [
+            ...(process.env.KIME_DEV_LOCALE ? [`--lang=${process.env.KIME_DEV_LOCALE}`] : []),
+            ...(process.env.KIME_DEV_COLOR_SCHEME === "dark" ? ["--force-dark-mode"] : []),
+        ],
+        firefoxPref: {
+            ...(process.env.KIME_DEV_LOCALE ? { "intl.locale.requested": process.env.KIME_DEV_LOCALE } : {}),
+            ...(process.env.KIME_DEV_COLOR_SCHEME
+                ? {
+                      "ui.systemUsesDarkTheme": process.env.KIME_DEV_COLOR_SCHEME === "dark" ? 1 : 0,
+                      "layout.css.prefers-color-scheme.content-override":
+                          process.env.KIME_DEV_COLOR_SCHEME === "dark" ? 0 : 1,
+                  }
+                : {}),
+        },
     },
     // Parcel auto-polyfilled `process` and inlined `process.env.*`. Vite handles
     // `process.env.NODE_ENV` natively (dev + build), but custom keys are only
@@ -23,6 +49,10 @@ export default defineConfig({
     // src/platform/process-shim.ts). KIME_ENABLE_HANJA is read from the build env.
     vite: () => ({
         define: {
+            // For production: replaces the source reads so the gated Hanja UI
+            // tree-shakes. Vite doesn't apply custom process.env.* defines in the
+            // dev server, so __KIME_ENABLE_HANJA__ (a plain identifier, which Vite
+            // *does* replace in dev) carries the value to the process shim there.
             "process.env.KIME_ENABLE_HANJA": JSON.stringify(process.env.KIME_ENABLE_HANJA ?? "false"),
         },
     }),
