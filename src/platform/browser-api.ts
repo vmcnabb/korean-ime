@@ -25,14 +25,6 @@ const resolveApi = (): typeof chrome => {
 
 export const api: typeof chrome = new Proxy({} as typeof chrome, {
     get(_target, prop) {
-        const target = resolveApi();
-        // MV2 (used for the Firefox dev build) exposes `browserAction` instead of
-        // the MV3 `action` API. Both share the surface we use (onClicked, setIcon,
-        // setTitle), so normalize to `api.action` for every context. Production is
-        // MV3 everywhere, where `action` is present and this fallback is unused.
-        if (prop === "action") {
-            return target.action ?? (target as unknown as { browserAction?: typeof chrome.action }).browserAction;
-        }
-        return target[prop as keyof typeof chrome];
+        return resolveApi()[prop as keyof typeof chrome];
     },
 });
