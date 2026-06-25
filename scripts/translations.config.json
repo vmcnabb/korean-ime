@@ -1,6 +1,6 @@
 {
     "localesDir": "src/_locales",
-    "manifestBase": "src/manifest.base.json",
+    "manifestBase": "wxt.config.ts",
     "defaultLocale": "en",
     "requiredLocales": ["ko", "es", "ja", "pt"]
 }

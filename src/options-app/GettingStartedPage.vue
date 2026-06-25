@@ -5,8 +5,8 @@ import { api } from "../platform/browser-api";
 import { GettingStartedChoice, gettingStartedChoices } from "./getting-started-model";
 import { t, type MessageKey } from "../i18n";
 import { initSettings, settings } from "./use-settings";
-import pinDarkVideo from "url:../videos/pin-dark.mp4";
-import pinLightVideo from "url:../videos/pin-light.mp4";
+import pinDarkVideo from "../videos/pin-dark.mp4?url";
+import pinLightVideo from "../videos/pin-light.mp4?url";
 
 const loading = ref(true);
 const errorMessage = ref("");

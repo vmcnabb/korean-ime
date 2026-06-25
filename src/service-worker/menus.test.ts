@@ -3,10 +3,6 @@
  */
 import { createMenus, menus } from "./menus";
 
-// createMenus reaches romanize-menu-actions → a `url:` HTML asset import that
-// Parcel resolves at build time; stub it for the test.
-jest.mock("url:./popup-converter/popup-converter.html", () => "popup.html", { virtual: true });
-
 let created: { id?: string }[];
 let removeAllCalls: number;
 let removeAllCompleted: boolean;

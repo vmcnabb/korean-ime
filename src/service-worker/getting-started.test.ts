@@ -47,7 +47,7 @@ describe("setupGettingStartedOnInstall", () => {
 
         installListener({ reason: "install" } as chrome.runtime.InstalledDetails);
 
-        expect(chrome.runtime.getURL).toHaveBeenCalledWith("options-app/index.html?view=getting-started");
+        expect(chrome.runtime.getURL).toHaveBeenCalledWith("options.html?view=getting-started");
     });
 
     it("does not open the getting-started page on update", () => {

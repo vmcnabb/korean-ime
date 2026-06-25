@@ -2,7 +2,6 @@ import { ServiceScriptMessage, ServiceScriptMessageAction } from "../messaging/s
 import { PopupConverterData, popupConverterDataKey } from "./popup-converter/popup-converter-data";
 import { romanize } from "../romanization/romanize";
 import { sendMessageToTab } from "./send-message-to-tab";
-import popupConverter from "url:./popup-converter/popup-converter.html";
 import { api } from "../platform/browser-api";
 import { loadPopupWindowSize, trackPopupWindowSize } from "./popup-converter/popup-window-size";
 
@@ -15,7 +14,7 @@ export async function romanizeInPopup(event: chrome.contextMenus.OnClickData) {
 
     const popupSize = await loadPopupWindowSize();
     const newWindow = await api.windows.create({
-        url: popupConverter,
+        url: api.runtime.getURL("/romanize-popup.html"),
         type: "popup",
         width: popupSize.width,
         height: popupSize.height,

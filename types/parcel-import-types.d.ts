@@ -20,7 +20,9 @@ declare module "*.scss" {}
 
 declare module "*.css" {}
 
-declare module "url:*" {
+// Vite asset imports with the `?url` suffix resolve to a URL string
+// (icons, videos, the generated Hanja .data dictionaries).
+declare module "*?url" {
     const value: string;
     export default value;
 }

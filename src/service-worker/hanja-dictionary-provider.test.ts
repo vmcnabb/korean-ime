@@ -1,7 +1,7 @@
 import { GeneratedHanjaDictionaryProvider } from "./hanja-dictionary-provider";
 
-jest.mock("url:../hanja-dictionary/single-syllable.data", () => "single-syllable.data", { virtual: true });
-jest.mock("url:../hanja-dictionary/hanja-hanzi.data", () => "hanja-hanzi.data", { virtual: true });
+jest.mock("../hanja-dictionary/single-syllable.data?url", () => "single-syllable.data", { virtual: true });
+jest.mock("../hanja-dictionary/hanja-hanzi.data?url", () => "hanja-hanzi.data", { virtual: true });
 
 function okJson(data: unknown) {
     return {

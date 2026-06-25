@@ -10,15 +10,14 @@ import { Persistence, Settings, defaultSettings } from "../settings/settings";
 import { KoreanKeyboardMode } from "../extension-state/korean-keyboard-mode";
 import { TabState } from "../extension-state/tab-state";
 
-// `url:` asset imports reached transitively (state-manager → menus →
-// romanize-menu-actions). Parcel resolves these at build time; stub them here.
-jest.mock("url:../images/icon16h.png", () => "icon16h", { virtual: true });
-jest.mock("url:../images/icon24h.png", () => "icon24h", { virtual: true });
-jest.mock("url:../images/icon32h.png", () => "icon32h", { virtual: true });
-jest.mock("url:../images/icon16a.png", () => "icon16a", { virtual: true });
-jest.mock("url:../images/icon24a.png", () => "icon24a", { virtual: true });
-jest.mock("url:../images/icon32a.png", () => "icon32a", { virtual: true });
-jest.mock("url:./popup-converter/popup-converter.html", () => "popup.html", { virtual: true });
+// `?url` asset imports reached transitively (state-manager imports the action
+// icons). Vite resolves these at build time; stub them here.
+jest.mock("../images/icon16h.png?url", () => "icon16h", { virtual: true });
+jest.mock("../images/icon24h.png?url", () => "icon24h", { virtual: true });
+jest.mock("../images/icon32h.png?url", () => "icon32h", { virtual: true });
+jest.mock("../images/icon16a.png?url", () => "icon16a", { virtual: true });
+jest.mock("../images/icon24a.png?url", () => "icon24a", { virtual: true });
+jest.mock("../images/icon32a.png?url", () => "icon32a", { virtual: true });
 
 // In-memory stand-ins for the three storage areas the manager touches.
 let sync: Record<string, unknown>;
