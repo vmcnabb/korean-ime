@@ -4,7 +4,12 @@ import { cancelEvent } from "../../messaging/dom-events";
 import { CompositionAdapter } from "../composition-adapters/composition-adapter";
 import { HanjaCandidate } from "./hanja-candidate";
 import { HanjaCandidatePager } from "./hanja-candidate-pager";
-import { HanjaCandidateDisplayOptions, HanjaCandidateWindow, HanjaCandidateWindowPage } from "./hanja-candidate-window";
+import {
+    HanjaCandidateDisplayOptions,
+    HanjaCandidateSelectionModifiers,
+    HanjaCandidateWindow,
+    HanjaCandidateWindowPage,
+} from "./hanja-candidate-window";
 import { HanjaCompositionOverlay } from "./hanja-composition-overlay";
 import { commitHanjaCandidate, getHanjaConversionTarget, HanjaConversionTarget } from "./hanja-converter";
 import { HanjaDictionaryProvider } from "./hanja-dictionary-provider";
@@ -48,6 +53,8 @@ export class HanjaCandidateController {
     private selection?: HanjaCandidateSelection;
     private lookupGeneration = 0;
     private options: HanjaImeOptions;
+    private readonly heldShiftKeys = new Set<KeyCode>();
+    private isSelectingSimplified = false;
 
     constructor(
         private readonly element: HTMLElement,
@@ -76,7 +83,8 @@ export class HanjaCandidateController {
         const nextDisplayOptions = this.displayOptions();
         if (
             previousDisplayOptions.showSimplified !== nextDisplayOptions.showSimplified ||
-            previousDisplayOptions.showPinyin !== nextDisplayOptions.showPinyin
+            previousDisplayOptions.showPinyin !== nextDisplayOptions.showPinyin ||
+            previousDisplayOptions.selectSimplified !== nextDisplayOptions.selectSimplified
         ) {
             this.refresh();
         }
@@ -99,14 +107,33 @@ export class HanjaCandidateController {
      * that key fall through to normal handling.
      */
     handleKey(event: KeyboardEvent): boolean {
+        const shiftKey = this.syncShiftStateFromKeydown(event);
         if (!this.selection) {
             return false;
+        }
+        if (shiftKey) {
+            cancelEvent(event);
+            return true;
         }
         if (this.handleSelectionKey(event)) {
             return true;
         }
         this.close();
         return false;
+    }
+
+    /**
+     * Keep simplified-form highlighting in sync when Shift is released. Returns
+     * true only when an open candidate window consumed the keyup.
+     */
+    handleKeyUp(event: KeyboardEvent): boolean {
+        const shiftKey = this.syncShiftStateFromKeyup(event);
+        if (!this.selection || !shiftKey) {
+            return false;
+        }
+
+        cancelEvent(event);
+        return true;
     }
 
     /** Invalidate any in-flight lookup so its window never opens (e.g. a mode change). */
@@ -118,6 +145,8 @@ export class HanjaCandidateController {
         this.selection?.overlay.remove();
         this.selection?.window.remove();
         this.selection = undefined;
+        this.isSelectingSimplified = false;
+        this.heldShiftKeys.clear();
     }
 
     /**
@@ -126,6 +155,7 @@ export class HanjaCandidateController {
      */
     startConversion(event: KeyboardEvent): void {
         this.close();
+        this.syncShiftStateFromKeydown(event);
         const lookupGeneration = this.beginLookup();
         cancelEvent(event);
 
@@ -165,7 +195,8 @@ export class HanjaCandidateController {
                 onPreviousPage: () => this.movePage(-1),
                 onNextPage: () => this.movePage(1),
                 onMoveSelection: (delta) => this.moveSelection(delta),
-                onSelectCandidate: (visibleIndex) => this.commitVisible(visibleIndex, KeyCode.Lang2),
+                onSelectCandidate: (visibleIndex, modifiers) =>
+                    this.commitVisible(visibleIndex, KeyCode.Lang2, modifiers),
                 displayOptions: this.displayOptions(),
             }),
         };
@@ -181,7 +212,7 @@ export class HanjaCandidateController {
         const candidateIndex =
             numberedIndex === undefined ? undefined : selection.pager.selectByVisibleIndex(numberedIndex);
         if (candidateIndex !== undefined) {
-            this.commit(candidateIndex, event.code as KeyCode);
+            this.commit(candidateIndex, event.code as KeyCode, this.isSelectingSimplified);
             cancelEvent(event);
             return true;
         }
@@ -208,7 +239,7 @@ export class HanjaCandidateController {
                 return true;
 
             case "Enter":
-                this.commit(selection.pager.selectedIndex, event.code as KeyCode);
+                this.commit(selection.pager.selectedIndex, event.code as KeyCode, this.isSelectingSimplified);
                 cancelEvent(event);
                 return true;
 
@@ -248,7 +279,11 @@ export class HanjaCandidateController {
         this.refresh();
     }
 
-    private commitVisible(visibleIndex: number, keyCode: KeyCode): void {
+    private commitVisible(
+        visibleIndex: number,
+        keyCode: KeyCode,
+        modifiers: HanjaCandidateSelectionModifiers = { shiftKey: this.isSelectingSimplified }
+    ): void {
         const selection = this.selection;
         if (!selection) {
             return;
@@ -259,10 +294,10 @@ export class HanjaCandidateController {
             return;
         }
 
-        this.commit(candidateIndex, keyCode);
+        this.commit(candidateIndex, keyCode, modifiers.shiftKey);
     }
 
-    private commit(index: number, keyCode: KeyCode): void {
+    private commit(index: number, keyCode: KeyCode, useSimplified = this.isSelectingSimplified): void {
         const selection = this.selection;
         if (!selection) {
             return;
@@ -274,7 +309,9 @@ export class HanjaCandidateController {
         }
 
         this.close();
-        commitHanjaCandidate(candidate, this.adapter, keyCode);
+        commitHanjaCandidate(candidate, this.adapter, keyCode, {
+            useSimplified: this.options.showSimplified && useSimplified,
+        });
         this.onCommitted();
     }
 
@@ -291,6 +328,7 @@ export class HanjaCandidateController {
         return {
             showSimplified: this.options.showSimplified,
             showPinyin: this.options.showPinyin,
+            selectSimplified: this.options.showSimplified && this.isSelectingSimplified,
         };
     }
 
@@ -308,12 +346,69 @@ export class HanjaCandidateController {
         this.lookupGeneration += 1;
         return this.lookupGeneration;
     }
+
+    private syncShiftStateFromKeydown(event: KeyboardEvent): boolean {
+        const code = event.code as KeyCode;
+        if (isShiftKey(code)) {
+            this.heldShiftKeys.add(code);
+        } else if (!event.shiftKey) {
+            this.heldShiftKeys.clear();
+        }
+
+        this.setSelectingSimplified(event.shiftKey || this.heldShiftKeys.size > 0);
+        return isShiftKey(code);
+    }
+
+    private syncShiftStateFromKeyup(event: KeyboardEvent): boolean {
+        const code = event.code as KeyCode;
+        if (!isShiftKey(code)) {
+            if (!event.shiftKey) {
+                this.setSelectingSimplified(false);
+            }
+            return false;
+        }
+
+        this.heldShiftKeys.delete(code);
+        this.setSelectingSimplified(event.shiftKey || this.heldShiftKeys.size > 0);
+        return true;
+    }
+
+    private setSelectingSimplified(active: boolean): void {
+        const next = this.options.showSimplified && active;
+        if (this.isSelectingSimplified === next) {
+            return;
+        }
+
+        this.isSelectingSimplified = next;
+        this.refresh();
+    }
 }
 
 function hanjaCandidateNumberIndex(event: KeyboardEvent): number | undefined {
     if (!/^[1-9]$/.test(event.key)) {
-        return undefined;
+        return digitKeyIndex(event.code);
     }
 
     return Number(event.key) - 1;
+}
+
+const digitKeyCodes = [
+    KeyCode.Digit1,
+    KeyCode.Digit2,
+    KeyCode.Digit3,
+    KeyCode.Digit4,
+    KeyCode.Digit5,
+    KeyCode.Digit6,
+    KeyCode.Digit7,
+    KeyCode.Digit8,
+    KeyCode.Digit9,
+] as const;
+
+function digitKeyIndex(code: string): number | undefined {
+    const index = digitKeyCodes.indexOf(code as (typeof digitKeyCodes)[number]);
+    return index === -1 ? undefined : index;
+}
+
+function isShiftKey(code: KeyCode): code is KeyCode.ShiftLeft | KeyCode.ShiftRight {
+    return code === KeyCode.ShiftLeft || code === KeyCode.ShiftRight;
 }

@@ -12,8 +12,24 @@ import { HANJA_CANDIDATE_WINDOW_SELECTOR } from "./hanja/hanja-candidate-window"
 
 jest.mock("./hanja/hanja-candidate-window.scss", () => ({}), { virtual: true });
 
-function dispatchKeydown(target: EventTarget, code: string, key: string): KeyboardEvent {
-    const event = new KeyboardEvent("keydown", { code, key, bubbles: true, cancelable: true });
+function dispatchKeydown(
+    target: EventTarget,
+    code: string,
+    key: string,
+    init: Omit<KeyboardEventInit, "code" | "key"> = {}
+): KeyboardEvent {
+    const event = new KeyboardEvent("keydown", { code, key, bubbles: true, cancelable: true, ...init });
+    target.dispatchEvent(event);
+    return event;
+}
+
+function dispatchKeyup(
+    target: EventTarget,
+    code: string,
+    key: string,
+    init: Omit<KeyboardEventInit, "code" | "key"> = {}
+): KeyboardEvent {
+    const event = new KeyboardEvent("keyup", { code, key, bubbles: true, cancelable: true, ...init });
     target.dispatchEvent(event);
     return event;
 }
@@ -744,16 +760,51 @@ describe("KeyListener Hanja candidate selection (KIME_ENABLE_HANJA)", () => {
         )?.textContent;
     }
 
-    async function controllerAfterCommittedSyllable(reading: string) {
+    async function controllerAfterCommittedSyllable(
+        reading: string,
+        options: {
+            hanjaOptions?: Partial<HanjaImeOptions>;
+            provider?: HanjaDictionaryProvider;
+        } = {}
+    ) {
         const element = document.createElement("textarea");
         element.value = reading;
         element.selectionStart = reading.length;
         element.selectionEnd = reading.length;
-        const controller = makeController(element);
+        const controller = makeController(element, options.provider, options.hanjaOptions);
         controller.activate();
         pressRightCtrl(element);
         await settleHanjaLookup();
         return { element };
+    }
+
+    function simplifiedProvider(): HanjaDictionaryProvider {
+        return new StaticHanjaDictionaryProvider(
+            new Map([
+                [
+                    "한",
+                    [
+                        { hanja: "韓", korean: "나라 이름 한, 한나라 한", simplified: "韩", pinyin: "hán" },
+                        { hanja: "寒", korean: "찰 한" },
+                        { hanja: "漢", korean: "한수 한", simplified: "汉", pinyin: "hàn" },
+                    ],
+                ],
+            ])
+        );
+    }
+
+    function simplifiedValues() {
+        return Array.from(
+            document.querySelectorAll<HTMLElement>(`${HANJA_CANDIDATE_WINDOW_SELECTOR} .can-simplified`)
+        ).map((item) => item.textContent);
+    }
+
+    function highlightedSimplifiedValues() {
+        return Array.from(
+            document.querySelectorAll<HTMLElement>(
+                `${HANJA_CANDIDATE_WINDOW_SELECTOR} .can-simplified.is-selecting-simplified`
+            )
+        ).map((item) => item.textContent);
     }
 
     function clickNextPage() {
@@ -772,6 +823,12 @@ describe("KeyListener Hanja candidate selection (KIME_ENABLE_HANJA)", () => {
 
     function clickCandidate(index: number) {
         document.querySelectorAll<HTMLElement>(`${HANJA_CANDIDATE_WINDOW_SELECTOR} .candidate`)[index].click();
+    }
+
+    function shiftClickCandidate(index: number) {
+        document
+            .querySelectorAll<HTMLElement>(`${HANJA_CANDIDATE_WINDOW_SELECTOR} .candidate`)
+            [index].dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true, shiftKey: true }));
     }
 
     it("shows candidates for a composing 한 and swallows the Hanja key when the flag is on", async () => {
@@ -885,6 +942,73 @@ describe("KeyListener Hanja candidate selection (KIME_ENABLE_HANJA)", () => {
         dispatchKeydown(element, "Digit3", "3");
 
         expect(element.value).toBe("恨");
+        expect(document.querySelector(HANJA_CANDIDATE_WINDOW_SELECTOR)).toBeNull();
+    });
+
+    it("highlights simplified forms while either Shift key is held", async () => {
+        process.env.KIME_ENABLE_HANJA = "true";
+        const { element } = await controllerAfterCommittedSyllable("한", { provider: simplifiedProvider() });
+
+        expect(simplifiedValues()).toEqual(["韩", "", "汉"]);
+        expect(highlightedSimplifiedValues()).toEqual([]);
+
+        const leftDown = dispatchKeydown(element, "ShiftLeft", "Shift", { shiftKey: true });
+        const rightDown = dispatchKeydown(element, "ShiftRight", "Shift", { shiftKey: true });
+        const leftUp = dispatchKeyup(element, "ShiftLeft", "Shift", { shiftKey: true });
+
+        expect(highlightedSimplifiedValues()).toEqual(["韩", "汉"]);
+
+        const rightUp = dispatchKeyup(element, "ShiftRight", "Shift", { shiftKey: false });
+
+        expect(highlightedSimplifiedValues()).toEqual([]);
+        expect(leftDown.defaultPrevented).toBe(true);
+        expect(rightDown.defaultPrevented).toBe(true);
+        expect(leftUp.defaultPrevented).toBe(true);
+        expect(rightUp.defaultPrevented).toBe(true);
+    });
+
+    it("commits the simplified form when a numbered candidate is chosen while Shift is down", async () => {
+        process.env.KIME_ENABLE_HANJA = "true";
+        const { element } = await controllerAfterCommittedSyllable("한", { provider: simplifiedProvider() });
+
+        const digit = dispatchKeydown(element, "Digit1", "!", { shiftKey: true });
+
+        expect(element.value).toBe("韩");
+        expect(document.querySelector(HANJA_CANDIDATE_WINDOW_SELECTOR)).toBeNull();
+        expect(digit.defaultPrevented).toBe(true);
+    });
+
+    it("falls back to normal Hanja when a shifted candidate has no simplified form", async () => {
+        process.env.KIME_ENABLE_HANJA = "true";
+        const { element } = await controllerAfterCommittedSyllable("한", { provider: simplifiedProvider() });
+
+        dispatchKeydown(element, "Digit2", "@", { shiftKey: true });
+
+        expect(element.value).toBe("寒");
+    });
+
+    it("does not select simplified forms when simplified display is disabled", async () => {
+        process.env.KIME_ENABLE_HANJA = "true";
+        const { element } = await controllerAfterCommittedSyllable("한", {
+            hanjaOptions: { showSimplified: false },
+            provider: simplifiedProvider(),
+        });
+
+        expect(simplifiedValues()).toEqual([]);
+        dispatchKeydown(element, "ShiftLeft", "Shift", { shiftKey: true });
+        expect(highlightedSimplifiedValues()).toEqual([]);
+        dispatchKeydown(element, "Digit1", "!", { shiftKey: true });
+
+        expect(element.value).toBe("韓");
+    });
+
+    it("commits the simplified form when a candidate is shift-clicked", async () => {
+        process.env.KIME_ENABLE_HANJA = "true";
+        const { element } = await controllerAfterCommittedSyllable("한", { provider: simplifiedProvider() });
+
+        shiftClickCandidate(2);
+
+        expect(element.value).toBe("汉");
         expect(document.querySelector(HANJA_CANDIDATE_WINDOW_SELECTOR)).toBeNull();
     });
 

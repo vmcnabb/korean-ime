@@ -112,6 +112,13 @@
         .can-simplified {
             grid-row: 2;
             font-size: 18px;
+
+            &.is-selecting-simplified {
+                border-radius: 3px;
+                background: var(--toggle-on-bg);
+                box-shadow: 0 0 0 2px var(--toggle-on-bg);
+                color: var(--accent-on);
+            }
         }
     }
 

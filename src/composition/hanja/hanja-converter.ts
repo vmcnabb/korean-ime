@@ -7,6 +7,10 @@ export type HanjaConversionTarget = {
     reading: string;
 };
 
+export type CommitHanjaCandidateOptions = {
+    useSimplified?: boolean;
+};
+
 /**
  * Hanja conversion — the distinct phase that turns an already-composed Hangul
  * syllable into Hanja. The key listener commits any in-progress Hangul block before
@@ -25,9 +29,17 @@ export function getHanjaConversionTarget(adapter: CompositionAdapter): HanjaConv
     return isSingleHangulSyllable(reading) ? { kind: "previous-character", reading } : undefined;
 }
 
-export function commitHanjaCandidate(candidate: HanjaCandidate, adapter: CompositionAdapter, keyCode: KeyCode): void {
+export function commitHanjaCandidate(
+    candidate: HanjaCandidate,
+    adapter: CompositionAdapter,
+    keyCode: KeyCode,
+    options: CommitHanjaCandidateOptions = {}
+): void {
     adapter.deleteContentBackwards();
-    adapter.inputCharacter(candidate.hanja, keyCode);
+    adapter.inputCharacter(
+        options.useSimplified && candidate.simplified ? candidate.simplified : candidate.hanja,
+        keyCode
+    );
 }
 
 function isSingleHangulSyllable(text: string): boolean {

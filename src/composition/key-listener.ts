@@ -141,7 +141,7 @@ export class KeyListener {
         }
 
         try {
-            this.toggleKeyupConsumer?.(event);
+            this.dispatchKeyup(event);
         } finally {
             this.notifyObservers("keyup", event);
         }
@@ -174,6 +174,16 @@ export class KeyListener {
             activeRoute.hanja.cancelPendingLookup();
             activeRoute.hangul.handleKey(event);
         }
+    }
+
+    private dispatchKeyup(event: KeyboardEvent): void {
+        const activeRoute = this.routeForEvent(event);
+
+        if (activeRoute?.hanja.handleKeyUp(event)) {
+            return;
+        }
+
+        this.toggleKeyupConsumer?.(event);
     }
 
     private blur = (): void => {
