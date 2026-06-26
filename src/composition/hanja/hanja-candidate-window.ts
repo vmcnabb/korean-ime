@@ -15,18 +15,24 @@ export type HanjaCandidateWindowPage = {
 export type HanjaCandidateDisplayOptions = {
     showSimplified: boolean;
     showPinyin: boolean;
+    selectSimplified?: boolean;
 };
 
 export const defaultHanjaCandidateDisplayOptions: HanjaCandidateDisplayOptions = {
     showSimplified: true,
     showPinyin: true,
+    selectSimplified: false,
+};
+
+export type HanjaCandidateSelectionModifiers = {
+    shiftKey: boolean;
 };
 
 type HanjaCandidateWindowOptions = {
     onPreviousPage: () => void;
     onNextPage: () => void;
     onMoveSelection: (delta: number) => void;
-    onSelectCandidate: (visibleIndex: number) => void;
+    onSelectCandidate: (visibleIndex: number, modifiers: HanjaCandidateSelectionModifiers) => void;
     displayOptions?: HanjaCandidateDisplayOptions;
 };
 
@@ -37,7 +43,7 @@ export class HanjaCandidateWindow {
     private readonly candidateList: HTMLDivElement;
     private readonly controls: HTMLDivElement;
     private readonly pageHint: HTMLDivElement;
-    private readonly onSelectCandidate: (visibleIndex: number) => void;
+    private readonly onSelectCandidate: (visibleIndex: number, modifiers: HanjaCandidateSelectionModifiers) => void;
     private displayOptions: HanjaCandidateDisplayOptions;
     private hoveredIndex: number | undefined;
 
@@ -175,7 +181,7 @@ export class HanjaCandidateWindow {
         item.addEventListener("click", (event) => {
             event.preventDefault();
             event.stopPropagation();
-            this.onSelectCandidate(index);
+            this.onSelectCandidate(index, { shiftKey: event.shiftKey });
         });
 
         const number = document.createElement("span");
@@ -194,6 +200,9 @@ export class HanjaCandidateWindow {
             const span = document.createElement("span");
             span.className = `can-${key}`;
             span.textContent = candidate[key] ?? "";
+            if (key === "simplified" && candidate.simplified) {
+                span.classList.toggle("is-selecting-simplified", this.displayOptions.selectSimplified === true);
+            }
             elements.push(span);
         }
 

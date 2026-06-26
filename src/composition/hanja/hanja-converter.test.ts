@@ -78,4 +78,27 @@ describe("commitHanjaCandidate", () => {
         expect(adapter.deleteContentBackwards).toHaveBeenCalled();
         expect(adapter.inputCharacter).toHaveBeenCalledWith("恨", KeyCode.Digit3);
     });
+
+    it("replaces the preceding syllable with the simplified form when requested", () => {
+        const adapter = fakeAdapter({ getPreviousCharacter: jest.fn().mockReturnValue("한") });
+
+        commitHanjaCandidate(
+            { hanja: "韓", korean: "나라 이름 한, 한나라 한", simplified: "韩" },
+            asAdapter(adapter),
+            KeyCode.Digit1,
+            { useSimplified: true }
+        );
+
+        expect(adapter.deleteContentBackwards).toHaveBeenCalled();
+        expect(adapter.inputCharacter).toHaveBeenCalledWith("韩", KeyCode.Digit1);
+    });
+
+    it("falls back to Hanja when simplified selection is requested but unavailable", () => {
+        const adapter = fakeAdapter({ getPreviousCharacter: jest.fn().mockReturnValue("한") });
+
+        commitHanjaCandidate(hanCandidates[1], asAdapter(adapter), KeyCode.Digit2, { useSimplified: true });
+
+        expect(adapter.deleteContentBackwards).toHaveBeenCalled();
+        expect(adapter.inputCharacter).toHaveBeenCalledWith("寒", KeyCode.Digit2);
+    });
 });

@@ -214,7 +214,21 @@ describe("HanjaCandidateWindow", () => {
 
         candidateItems()[1].click();
 
-        expect(options.onSelectCandidate).toHaveBeenCalledWith(1);
+        expect(options.onSelectCandidate).toHaveBeenCalledWith(1, { shiftKey: false });
+    });
+
+    it("passes the Shift state when a candidate is clicked", () => {
+        const options = windowOptions();
+        new HanjaCandidateWindow(
+            document.createElement("textarea"),
+            page({ candidates: [candidate("韓"), candidate("寒"), candidate("恨")] }),
+            rect(100, 20, 10, 10),
+            options
+        );
+
+        candidateItems()[1].dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true, shiftKey: true }));
+
+        expect(options.onSelectCandidate).toHaveBeenCalledWith(1, { shiftKey: true });
     });
 
     it("renders Hanja candidate metadata", () => {
@@ -283,6 +297,32 @@ describe("HanjaCandidateWindow", () => {
         expect(document.querySelector(".can-korean")?.textContent).toBe("나라 이름 한, 한나라 한");
         expect(document.querySelector(".can-simplified")).toBeNull();
         expect(document.querySelector(".can-pinyin")).toBeNull();
+    });
+
+    it("marks displayed simplified forms when simplified selection is active", () => {
+        new HanjaCandidateWindow(
+            document.createElement("textarea"),
+            page({
+                candidates: [
+                    candidate("韓", {
+                        korean: "나라 이름 한, 한나라 한",
+                        simplified: "韩",
+                        pinyin: "hán",
+                    }),
+                    candidate("寒"),
+                ],
+            }),
+            rect(100, 20, 10, 10),
+            {
+                ...windowOptions(),
+                displayOptions: { showSimplified: true, showPinyin: true, selectSimplified: true },
+            }
+        );
+
+        const simplified = Array.from(document.querySelectorAll<HTMLElement>(".can-simplified"));
+
+        expect(simplified.map((item) => item.textContent)).toEqual(["韩", ""]);
+        expect(simplified.map((item) => item.classList.contains("is-selecting-simplified"))).toEqual([true, false]);
     });
 
     it("can update metadata visibility for an already-open candidate window", () => {
