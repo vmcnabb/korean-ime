@@ -1,6 +1,7 @@
 import "../platform/process-shim";
 import { createApp } from "vue";
 import "../styles/design-system.scss";
+import { startFirefoxDevContentScriptRegistrationBridge } from "../dev/firefox-dev-content-script-registration";
 import { gettingStartedView } from "../getting-started-route";
 import GettingStartedPage from "./GettingStartedPage.vue";
 import OptionsPage from "./options-page.vue";
@@ -18,6 +19,10 @@ declare global {
 globalThis.__VUE_OPTIONS_API__ = false;
 globalThis.__VUE_PROD_DEVTOOLS__ = false;
 globalThis.__VUE_PROD_HYDRATION_MISMATCH_DETAILS__ = false;
+
+startFirefoxDevContentScriptRegistrationBridge().catch((error) =>
+    console.debug("Firefox dev content script registration failed:", error)
+);
 
 const view = new URL(globalThis.location.href).searchParams.get("view");
 const App = view === gettingStartedView ? GettingStartedPage : OptionsPage;

@@ -11,6 +11,7 @@ export default defineContentScript({
     allFrames: true,
     runAt: "document_idle",
     main() {
+        console.log("Hi from the content script!");
         const controller = new ContentScriptController();
         controller.initialize(window === top);
     },
