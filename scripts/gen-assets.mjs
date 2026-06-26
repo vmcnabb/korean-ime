@@ -34,9 +34,15 @@ const runtimeIconSizes = [48, 128, 256];
 // /images/...), so they must live in public/. The rest are bundled by Vite
 // (imported with ?url in the service worker, or via CSS in the options page).
 const manifestIcons = ["icon16h.png", "icon48.png", "icon128.png", "icon16a.png", "icon24a.png", "icon32a.png"];
-// One pin animation per theme. (The Parcel build shipped per-browser variants;
-// keeping the Chrome pair here — per-browser selection is a follow-up.)
-const copiedVideos = { "pin-light.mp4": "chrome-lightmode-pin.mp4", "pin-dark.mp4": "chrome-darkmode-pin.mp4" };
+// The getting-started page shows a browser-specific "pin the toolbar icon"
+// animation. Copy the variant for the build target into the generic
+// pin-{light,dark}.mp4 names the Vue component imports. Target comes from argv
+// (`node scripts/gen-assets.mjs firefox`); defaults to chrome.
+const target = process.argv[2] === "firefox" ? "firefox" : "chrome";
+const copiedVideos = {
+    chrome: { "pin-light.mp4": "chrome-lightmode-pin.mp4", "pin-dark.mp4": "chrome-darkmode-pin.mp4" },
+    firefox: { "pin-light.mp4": "firefox-lightmode-pin.mp4", "pin-dark.mp4": "firefox-darkmode-pin.mp4" },
+};
 const modeIconDisplaySize = 16;
 const modeIconRenderSizes = [16, 24, 32, 48];
 const popupModeIconDisplaySize = 24;
@@ -100,10 +106,10 @@ function generateModeIcons() {
 function copyVideos() {
     rmSync(outputVideoDir, { recursive: true, force: true });
     mkdirSync(outputVideoDir, { recursive: true });
-    for (const [outName, sourceName] of Object.entries(copiedVideos)) {
+    for (const [outName, sourceName] of Object.entries(copiedVideos[target])) {
         copyFileSync(resolve(sourceVideoDir, sourceName), resolve(outputVideoDir, outName));
     }
-    console.log("[gen-assets] copied videos (src/videos)");
+    console.log(`[gen-assets] copied ${target} videos (src/videos)`);
 }
 
 function copyLocalesToPublic() {
