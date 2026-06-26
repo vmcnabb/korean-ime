@@ -38,7 +38,9 @@ flowchart LR
     subgraph cs["Content script (every frame)"]
         csc["ContentScriptController"]
         tim["TextInputManager"]
-        ime["HangulImeController"]
+        keys["KeyListener<br/>(window-capture keydown/keyup dispatcher)"]
+        hangul["HangulController"]
+        hanja["HanjaCandidateController"]
         osk["OnScreenKeyboardController<br/>(top frame only)"]
         hanjaClient["Hanja provider client"]
     end
@@ -58,17 +60,21 @@ flowchart LR
     installEv --> gs
 
     %% user input handled inside the page
-    user -. keydown .-> csc
-    user -. keydown capture .-> ime
+    user -. "keydown / keyup capture" .-> keys
     osk -->|on-screen key tap| csc
     csc --> tim
-    tim --> ime
-    ime -->|compose / commit text| page
+    csc -. "inject toggle consumer + OSK observer" .-> tim
+    tim --> keys
+    keys -->|Han/Yong toggle action| csc
+    keys --> hangul
+    keys --> hanja
+    hangul -->|compose / commit text| page
+    hanja -->|commit candidate| page
 
     %% content script -> service worker requests
     csc -. "RefreshState · ToggleHanYong · SendKey · Request/Persist keyboard layout" .-> csl
     csc -. "UpdateCompositionFeatures (broadcast)" .-> csl
-    ime --> hanjaClient
+    hanja --> hanjaClient
     hanjaClient -. "HanjaLookup ⇄ candidates" .-> csl
     csl --> sm
     csl --> hanjaProv
@@ -90,6 +96,11 @@ Notes:
   no keyboard. A key tapped on the OSK is tried locally first; if the focused
   editable lives in another frame, the service worker routes it there as a
   `SendKey` (using the recorded *focused frame*).
+- **`KeyListener` is the content-script physical-key attach point.** It owns the
+  frame's `keydown`/`keyup` listeners on `window` capture. `ContentScriptController`
+  injects the Han/Yong toggle action; the OSK injects passive key-highlight
+  feedback; Hangul and Hanja are swapped per focused editable by
+  `TextInputManager`.
 - **`UpdateCompositionFeatures` is a broadcast.** A frame reports which
   composition features its focused element supports; the service worker relays it
   to the tab so the (top-frame) keyboard can enable/disable keys.
@@ -154,20 +165,27 @@ keystrokes into Hangul and, on demand, Hanja.
 ```mermaid
 flowchart TB
     csc["ContentScriptController"] --> tim["TextInputManager"]
+    csc -. "toggle consumer<br/>OSK observer" .-> tim
     tim -->|"creates per focused element"| factory["CompositionAdapterFactory"]
     factory -->|input| inAd["InputAdapter"]
     factory -->|contentEditable| ceAd["ContentEditableAdapter"]
     factory -->|CKEditor| ckAd["CkEditorAdapter"]
     factory -. "Google Docs ⇒ no adapter (unsupported)" .-> none(("∅"))
 
-    tim --> ime["HangulImeController<br/>(keystroke interpreter)"]
-    ime --> compositor["HangulCompositor<br/>jamo ⇒ syllable blocks"]
+    tim --> keys["KeyListener<br/>(frame-level key dispatcher)"]
+    tim --> hangul["HangulController<br/>(composition actions)"]
+    tim --> hanja["HanjaCandidateController<br/>(Hanja lifecycle)"]
+    keys -->|"candidate keys first"| hanja
+    keys -->|"conversion key"| hanja
+    keys -->|"ordinary composition"| hangul
+    keys -. "passive key observer" .-> osk["OnScreenKeyboardController<br/>(top frame only)"]
+
+    hangul --> compositor["HangulCompositor<br/>jamo ⇒ syllable blocks"]
     compositor --> blocks["hangul-block / hangul-maps"]
-    ime --> box["compositing-box<br/>(composing overlay)"]
-    ime --> adapter["chosen CompositionAdapter"]
+    hangul --> box["compositing-box<br/>(composing overlay)"]
+    hangul --> adapter["chosen CompositionAdapter"]
     adapter --> el["Editable element"]
 
-    ime --> hanja["HanjaCandidateController<br/>(Hanja lifecycle)"]
     subgraph hanjaUI["Hanja conversion (on the convert key)"]
         hkey["hanja-key"]
         conv["hanja-converter"]
@@ -179,15 +197,26 @@ flowchart TB
     hanja --> client["Hanja provider client<br/>→ service worker lookup"]
 ```
 
-- **`TextInputManager`** owns one `HangulImeController` for the focused element,
-  swapping it when focus moves. The right `CompositionAdapter` is picked by
-  `CompositionAdapterFactory` based on the editor type (plain input,
-  contentEditable, CKEditor). **Google Docs gets no adapter** and is unsupported.
+- **`TextInputManager`** owns the active editor route: one `HangulController`, one
+  `HanjaCandidateController`, and the chosen `CompositionAdapter` for the focused
+  element. It also owns the frame-level `KeyListener`, pointing it at the active
+  route as focus moves. **Google Docs gets no adapter** and is unsupported.
+- **`KeyListener`** is pure dispatch for physical keys. In the content-script
+  runtime it is the only `keydown`/`keyup` listener owner: candidate-window keys
+  get first claim, then the Hanja conversion key, then the injected Han/Yong
+  toggle consumer, then ordinary Hangul composition. Observers such as OSK key
+  highlighting run passively and never consume keys.
+- **`CompositionAdapterFactory`** picks the editor adapter (plain input,
+  contentEditable, CKEditor) and reports which composition methods the editor
+  supports.
 - **`HangulCompositor`** is the heart: it assembles jamo into syllable blocks.
 - **`HanjaCandidateController`** owns the whole Hanja conversion lifecycle —
   whether a key starts a conversion, the service-worker dictionary lookup (via the
-  client), and the candidate window, pager, and overlay. `HangulImeController`
-  just offers it each keydown. It's deliberately independent of Han/Yong mode, so
+  client), and the candidate window, pager, and overlay. `KeyListener` offers it
+  each keydown. It's deliberately independent of Han/Yong mode, so
   it converts existing Hangul (including text typed by the OS IME) even while our
   Hangul typing is off.
-```
+- **The romanize popup is a separate extension page.** It uses the same
+  composition pieces with a fixed editable (`KeyListener.forElement(...)`), while
+  the options page's key-binding capture listeners are separate UI, not part of
+  the content-script physical-key dispatcher.

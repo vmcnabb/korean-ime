@@ -102,9 +102,8 @@ export class HangulController {
         }
 
         // Shift+Backspace lifts the previous character back into composition.
-        // Normally already handled in the capture phase (see handleCaptureKey);
-        // this is the fallback for when the capture listener did not run (a detached
-        // element, as in unit tests).
+        // KeyListener runs this handler in window capture so rich editors cannot
+        // delete the previous character before we lift it into composition.
         const reqPrevCharComposition = !this.compositor.isCompositing() && event.shiftKey && code === KeyCode.Backspace;
 
         if (reqPrevCharComposition && this.handlePreviousCharComposition(event)) {
@@ -118,9 +117,8 @@ export class HangulController {
         // only single-character keys are treated as input below.
         const isCharacterKey = event.key.length === 1;
 
-        // Normally already handled in the capture phase (see handleCaptureKey);
-        // this remains as a fallback for cases where the capture listener did not
-        // run (e.g. an element detached from the document, as in unit tests).
+        // KeyListener runs this handler in window capture so rich editors cannot
+        // delete the composing block before we re-render it.
         if (code === KeyCode.Backspace && this.compositor.isCompositing()) {
             this.handleComposingBackspace(event);
             return;
@@ -152,57 +150,7 @@ export class HangulController {
             return;
         }
 
-        // Fallback for when the capture guard did not run (no selection to replace,
-        // or a detached element as in unit tests). On a connected element with a
-        // selection the guard already handled this jamo and stopped the event.
         this.handleJamoKey(event);
-    }
-
-    /**
-     * Capture-phase keydown handling, called by KeyListener on window so it runs before
-     * any page handler. It intercepts the two cases where a rich editor (Word for the
-     * Web) acts on a key in its own capture-phase handler before our bubble handler can
-     * run:
-     *
-     *   1. Backspace while composing: the editor deletes the whole composing block.
-     *   2. The composition-starting jamo while text is selected: the editor replaces
-     *      the selection with the key's literal character ("type over selection").
-     *
-     * Everything else is left to the bubble-phase handler.
-     */
-    handleCaptureKey(event: KeyboardEvent): void {
-        if (isKimeEvent(event)) {
-            return;
-        }
-
-        // The composition-capture handling below only applies while Hangul typing is active.
-        if (!this._isActive) {
-            return;
-        }
-
-        const code = event.code as KeyCode;
-
-        if (code === KeyCode.Backspace) {
-            if (this.compositor.isCompositing()) {
-                this.handleComposingBackspace(event);
-            } else if (event.shiftKey) {
-                // Shift+Backspace must run here, ahead of the editor deleting the
-                // previous character itself. Otherwise getPreviousCharacter() returns
-                // the character before the one the editor just removed, and we lift
-                // the wrong one into composition.
-                this.handlePreviousCharComposition(event);
-            }
-            // A plain (non-shift) Backspace while not composing is left to the editor.
-            return;
-        }
-
-        // Begin composition ahead of the editor's "type over selection" only when
-        // there is a real, non-collapsed document selection to replace. The
-        // no-selection path and plain <input> elements (whose selection is not a
-        // document selection) stay on the bubble handler, unchanged.
-        if (!this.compositor.isCompositing() && this.isJamoKey(event) && this.hasNonCollapsedSelection()) {
-            this.handleJamoKey(event);
-        }
     }
 
     // Commit and clear any in-progress composition. Runs when the controller is
@@ -282,11 +230,6 @@ export class HangulController {
         });
     }
 
-    private isJamoKey(event: KeyboardEvent): boolean {
-        const code = event.code as KeyCode;
-        return !this.isShortcutChord(event) && event.key.length === 1 && !!keyMap[code]?.jamo;
-    }
-
     /**
      * Whether the configured Han/Yong toggle key is a modifier-only key that is
      * currently held. When true, that key is acting as the IME key, not as a
@@ -312,17 +255,12 @@ export class HangulController {
         return hasShortcutModifier(event) && !this.isToggleKeyHeld(event);
     }
 
-    private hasNonCollapsedSelection(): boolean {
-        const selection = document.getSelection();
-        return !!selection && selection.rangeCount > 0 && !selection.getRangeAt(0).collapsed;
-    }
-
     /**
      * Shift+Backspace: lift the character before the caret back into composition so
      * its last jamo can be edited. Deletes the character and re-enters composition
      * with it. Returns false (handling nothing) when the adapter cannot read/delete
      * the previous character or it is not composable Hangul, so the caller can fall
-     * through. Shared by the capture-phase guard (normal path) and the bubble handler.
+     * through.
      */
     private handlePreviousCharComposition(event: KeyboardEvent): boolean {
         if (!this.compositionAdapter.supportsMethods("getPreviousCharacter", "deleteContentBackwards")) {

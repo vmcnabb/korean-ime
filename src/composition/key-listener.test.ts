@@ -18,7 +18,7 @@ function dispatchKeydown(target: EventTarget, code: string, key: string): Keyboa
     return event;
 }
 
-// Each KeyListener registers a capture-phase keydown listener on `window`. Tests
+// Each KeyListener registers capture-phase key listeners on `window`. Tests
 // don't route controllers through TextInputManager, so without cleanup a
 // listener from one test keeps reacting to keystrokes dispatched by the next.
 // Track every listener and dispose them all after each test to keep tests
@@ -47,7 +47,12 @@ function makeControllerFixture(
         () => {},
         hanjaOptions
     );
-    const listener = new KeyListener(compositionAdapter, hangul, hanja);
+    if (!element.isConnected) {
+        document.body.appendChild(element);
+    }
+
+    const listener = new KeyListener();
+    listener.setActiveCompositionRoute(element, compositionAdapter, hangul, hanja);
     liveListeners.push(listener);
     return { hangul, hanja, listener };
 }
@@ -62,6 +67,7 @@ function makeController(
 afterEach(() => {
     liveListeners.forEach((listener) => listener.dispose());
     liveListeners.length = 0;
+    document.body.innerHTML = "";
 });
 
 function makeContentEditable(): HTMLElement {
@@ -81,15 +87,31 @@ describe("KeyListener", () => {
         const elementRemove = jest.spyOn(element, "removeEventListener");
         const documentAdd = jest.spyOn(document, "addEventListener");
         const documentRemove = jest.spyOn(document, "removeEventListener");
+        const windowAdd = jest.spyOn(window, "addEventListener");
+        const windowRemove = jest.spyOn(window, "removeEventListener");
 
         const { listener } = makeControllerFixture(element);
 
-        // contenteditable routes mousedown to `document`; keydown/blur to the element
+        const keydownAdd = windowAdd.mock.calls.find(([type, _listener, capture]) => {
+            return type === "keydown" && capture === true;
+        });
+        const keyupAdd = windowAdd.mock.calls.find(([type, _listener, capture]) => {
+            return type === "keyup" && capture === true;
+        });
+        expect(keydownAdd).toBeDefined();
+        expect(keyupAdd).toBeDefined();
+
+        // contenteditable routes mousedown to `document`; blur to the element.
+        // Physical keys stay on the frame-level window-capture dispatcher.
         const mousedownAdd = documentAdd.mock.calls.find(([type]) => type === "mousedown");
         expect(mousedownAdd).toBeDefined();
-        expect(elementAdd.mock.calls.map(([type]) => type)).toEqual(expect.arrayContaining(["keydown", "blur"]));
+        expect(elementAdd.mock.calls.map(([type]) => type)).toEqual(expect.arrayContaining(["blur"]));
+        expect(elementAdd.mock.calls.map(([type]) => type)).not.toContain("keydown");
 
         listener.dispose();
+
+        expect(windowRemove).toHaveBeenCalledWith("keydown", keydownAdd![1], true);
+        expect(windowRemove).toHaveBeenCalledWith("keyup", keyupAdd![1], true);
 
         // the document mousedown listener (the one that would otherwise leak) is
         // detached using the same reference that was attached
@@ -97,8 +119,41 @@ describe("KeyListener", () => {
         expect(mousedownRemove).toBeDefined();
         expect(mousedownRemove![1]).toBe(mousedownAdd![1]);
 
-        // the element listeners are removed too
-        expect(elementRemove.mock.calls.map(([type]) => type)).toEqual(expect.arrayContaining(["keydown", "blur"]));
+        // the element blur listener is removed too
+        expect(elementRemove.mock.calls.map(([type]) => type)).toEqual(expect.arrayContaining(["blur"]));
+        expect(elementRemove.mock.calls.map(([type]) => type)).not.toContain("keydown");
+    });
+
+    it("runs an injected printable-combo toggle consumer before composition", () => {
+        const beginComposition = jest.spyOn(InputAdapter.prototype, "beginComposition").mockImplementation(() => {});
+        jest.spyOn(InputAdapter.prototype, "updateComposition").mockImplementation(() => {});
+        jest.spyOn(InputAdapter.prototype, "endComposition").mockImplementation(() => {});
+
+        const element = document.createElement("textarea");
+        const { hangul, listener } = makeControllerFixture(element);
+        hangul.activate();
+        const toggleConsumer = jest.fn((event: KeyboardEvent) => {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            return true;
+        });
+        const observer = jest.fn(() => false);
+        listener.setToggleConsumers({ keydown: toggleConsumer });
+        listener.setObserver("test", { keydown: observer });
+
+        const event = new KeyboardEvent("keydown", {
+            code: "KeyS",
+            key: "s",
+            altKey: true,
+            bubbles: true,
+            cancelable: true,
+        });
+        element.dispatchEvent(event);
+
+        expect(toggleConsumer).toHaveBeenCalledWith(event);
+        expect(beginComposition).not.toHaveBeenCalled();
+        expect(event.defaultPrevented).toBe(true);
+        expect(observer).toHaveBeenCalledWith(event);
     });
 });
 
@@ -508,9 +563,10 @@ describe("KeyListener intercepts the first jamo over a selection in the capture 
         expect(reachedBodyCapture).toBe(false); // intercepted at window-capture, ahead of the editor
     });
 
-    // Without a selection there's nothing for the editor to type over, so the
-    // capture guard must stay out of the way and let the normal bubble path run.
-    it("leaves a no-selection jamo to the bubble handler (does not intercept in capture)", () => {
+    // With physical keys centralized, ordinary composition also runs from
+    // window-capture; no-selection jamo still compose, just no longer through a
+    // separate element bubble listener.
+    it("handles a no-selection jamo in the window-capture dispatcher", () => {
         const { element, beginComposition } = activeContentEditable("Hello .");
         selectWithin(element.firstChild as Node, 6, 6); // collapsed caret, no selection
 
@@ -519,9 +575,9 @@ describe("KeyListener intercepts the first jamo over a selection in the capture 
 
         const keydown = pressJamo(element);
 
-        expect(beginComposition).toHaveBeenCalledWith("ㅇ", KeyCode.KeyD); // still composed...
+        expect(beginComposition).toHaveBeenCalledWith("ㅇ", KeyCode.KeyD);
         expect(keydown.defaultPrevented).toBe(true);
-        expect(reachedBodyCapture).toBe(true); // ...but via the bubble path, not capture
+        expect(reachedBodyCapture).toBe(false);
     });
 
     // Regression (macOS): Cmd+C over a selection must reach the browser so copy works.
@@ -868,6 +924,27 @@ describe("KeyListener Hanja candidate selection (KIME_ENABLE_HANJA)", () => {
         element.dispatchEvent(new FocusEvent("blur"));
 
         expect(document.querySelector(HANJA_CANDIDATE_WINDOW_SELECTOR)).not.toBeNull();
+    });
+
+    it("does not route candidate keys after the active composition route is cleared", async () => {
+        process.env.KIME_ENABLE_HANJA = "true";
+        const element = document.createElement("textarea");
+        element.value = "한";
+        element.selectionStart = element.selectionEnd = 1;
+        const { hangul, hanja, listener } = makeControllerFixture(element);
+
+        pressRightCtrl(element);
+        await settleHanjaLookup();
+        expect(document.querySelector(HANJA_CANDIDATE_WINDOW_SELECTOR)).not.toBeNull();
+
+        const handleKey = jest.spyOn(hanja, "handleKey");
+        listener.clearActiveCompositionRoute();
+        hangul.dispose();
+
+        const digit = dispatchKeydown(element, "Digit1", "1");
+
+        expect(handleKey).not.toHaveBeenCalled();
+        expect(digit.defaultPrevented).toBe(false);
     });
 
     // The candidate window can be open while inactive, so candidate keys must be

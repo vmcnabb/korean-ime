@@ -46,7 +46,7 @@ const hanjaController = new HanjaCandidateController(
     new StaticHanjaDictionaryProvider(),
     doRomanize
 );
-new KeyListener(compositionAdapter, hangulController, hanjaController);
+KeyListener.forElement(original, compositionAdapter, hangulController, hanjaController);
 setInputMode(KoreanKeyboardMode.Hangul);
 updateCounts();
 void populateFromStorage();

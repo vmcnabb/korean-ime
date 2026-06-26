@@ -1,6 +1,6 @@
 import { HangulController } from "../composition/hangul-controller";
 import { HanjaCandidateController, HanjaImeOptions } from "../composition/hanja/hanja-candidate-controller";
-import { KeyListener } from "../composition/key-listener";
+import { KeyConsumer, KeyListener, KeyObserver } from "../composition/key-listener";
 import { KoreanKeyboardMode } from "../extension-state/korean-keyboard-mode";
 import { CompositionAdapterFactory } from "../composition/composition-adapter-factory";
 import { isHangulOrJamo } from "../composition/hangul-maps";
@@ -21,7 +21,6 @@ export class TextInputManager {
     private targetElement?: HTMLElement;
     private hangulController?: HangulController;
     private hanjaController?: HanjaCandidateController;
-    private keyListener?: KeyListener;
     private textEntryMode: KoreanKeyboardMode = KoreanKeyboardMode.English;
     // The configured Han/Yong toggle key, kept here so it survives controller
     // recreation on focus change and is applied to each new controller. Defaults to
@@ -30,7 +29,8 @@ export class TextInputManager {
     private hanjaOptions: Partial<HanjaImeOptions> = {};
 
     constructor(
-        private readonly hanjaDictionaryProvider: HanjaDictionaryProvider = new StaticHanjaDictionaryProvider()
+        private readonly hanjaDictionaryProvider: HanjaDictionaryProvider = new StaticHanjaDictionaryProvider(),
+        private readonly keyListener: KeyListener = new KeyListener()
     ) {}
 
     public setMode(mode: KoreanKeyboardMode) {
@@ -52,6 +52,19 @@ export class TextInputManager {
     public setHanjaOptions(options: Partial<HanjaImeOptions>) {
         this.hanjaOptions = { ...this.hanjaOptions, ...options };
         this.hanjaController?.setOptions(this.hanjaOptions);
+    }
+
+    public setToggleKeyConsumers(consumers: { keydown?: KeyConsumer; keyup?: KeyConsumer }) {
+        this.keyListener.setToggleConsumers(consumers);
+    }
+
+    public setKeyObserver(name: string, observer: KeyObserver | undefined) {
+        this.keyListener.setObserver(name, observer);
+    }
+
+    public dispose() {
+        this.clearActiveController();
+        this.keyListener.dispose();
     }
 
     public setActiveElement(element: EventTarget | null): SupportedCompositionFeatures | undefined {
@@ -115,9 +128,8 @@ export class TextInputManager {
     /**
      * Get (creating if necessary) the single Hangul controller for the currently
      * focused element, with its active state synced to the current text-entry
-     * mode. When focus moves, the previous listener/controllers are disposed and a new set
-     * is created so only one window-capture listener and one handler set exist
-     * at a time.
+     * mode. When focus moves, the previous controllers are disposed and the
+     * frame-level KeyListener is pointed at the new handler set.
      */
     private tryGetOrCreateController(element: HTMLElement): HangulController | undefined {
         if (this.targetElement !== element) {
@@ -135,7 +147,12 @@ export class TextInputManager {
                 () => {},
                 this.hanjaOptions
             );
-            this.keyListener = new KeyListener(compositionAdapter, this.hangulController, this.hanjaController);
+            this.keyListener.setActiveCompositionRoute(
+                element,
+                compositionAdapter,
+                this.hangulController,
+                this.hanjaController
+            );
             this.hangulController.setToggleKeyBinding(this.toggleKeyBinding);
         }
 
@@ -164,8 +181,10 @@ export class TextInputManager {
     }
 
     private clearActiveController() {
-        this.keyListener?.dispose();
-        this.keyListener = undefined;
+        this.keyListener.clearActiveCompositionRoute();
+        this.hanjaController?.cancelPendingLookup();
+        this.hanjaController?.close();
+        this.hangulController?.dispose();
         this.hanjaController = undefined;
         this.hangulController = undefined;
         this.targetElement = undefined;

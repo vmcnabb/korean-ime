@@ -203,6 +203,18 @@ export class OnScreenKeyboardController {
         this.updateKeyVisibility();
     }
 
+    public handlePhysicalKeydown(event: KeyboardEvent): boolean {
+        this.setPhysicalKeyActive(event, true);
+        this.setShift(event.shiftKey);
+        return false;
+    }
+
+    public handlePhysicalKeyup(event: KeyboardEvent): boolean {
+        this.setPhysicalKeyActive(event, false);
+        this.setShift(event.shiftKey);
+        return false;
+    }
+
     private updateKeyVisibility() {
         if (this._compositionFeatures) {
             this._keyElements
@@ -577,6 +589,13 @@ export class OnScreenKeyboardController {
         }
     }
 
+    private setPhysicalKeyActive(event: KeyboardEvent, isActive: boolean) {
+        const keyCode = event.code as KeyCode;
+        const keyElement = this._keyboardElement.querySelector(`.${keyCode}`) as HTMLDivElement | null;
+
+        keyElement?.classList.toggle("active", isActive);
+    }
+
     private createKeyboard() {
         const keyboardElement = document.createElement("div");
 
@@ -644,42 +663,11 @@ export class OnScreenKeyboardController {
             this.scheduleDragFrame();
         });
 
-        // listen for keydown and make the key on the keyboard active
-        document.addEventListener("keydown", (e) => {
-            const keyCode = e.code as KeyCode;
-
-            const keyElement = keyboardElement.querySelector(`.${keyCode}`) as HTMLDivElement;
-
-            if (keyElement) {
-                keyElement.classList.add("active");
-            }
-
-            updateShiftState(e);
-        });
-
-        // listen for keyup and make the key on the keyboard inactive
-        document.addEventListener("keyup", (e) => {
-            const keyCode = e.code as KeyCode;
-
-            const keyElement = keyboardElement.querySelector(`.${keyCode}`) as HTMLDivElement;
-
-            if (keyElement) {
-                keyElement.classList.remove("active");
-            }
-
-            updateShiftState(e);
-        });
-
         // listen for blur event and remove all active keys
         window.addEventListener("blur", () => {
             const activeKeys = keyboardElement.querySelectorAll(".active");
             activeKeys.forEach((key) => key.classList.remove("active"));
         });
-
-        // update shift state based on the shift key in the keyboard event.
-        const updateShiftState = (e: KeyboardEvent) => {
-            this.setShift(e.shiftKey);
-        };
 
         // Re-clamp to the viewport when the window (or the visual viewport, e.g.
         // on zoom) changes size, so a smaller viewport can't strand the keyboard
