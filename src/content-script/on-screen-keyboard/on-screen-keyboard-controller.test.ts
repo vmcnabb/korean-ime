@@ -133,6 +133,50 @@ describe("OnScreenKeyboardController han/yong key", () => {
     });
 });
 
+describe("OnScreenKeyboardController physical-key observer", () => {
+    beforeEach(() => {
+        document.body.innerHTML = "";
+        Object.assign(globalThis, {
+            chrome: {
+                runtime: { sendMessage: jest.fn() },
+                i18n: { getMessage: () => "" },
+            },
+        });
+    });
+
+    afterEach(() => jest.restoreAllMocks());
+
+    it("does not attach document key listeners and updates key state through observer methods", () => {
+        const documentAdd = jest.spyOn(document, "addEventListener");
+        const controller = new OnScreenKeyboardController(() => {});
+        const keyElement = document.querySelector(`kbd.${KeyCode.KeyQ}`) as HTMLElement;
+        const keyboard = document.querySelector("[id^='kb-']") as HTMLElement;
+
+        expect(
+            documentAdd.mock.calls.some(([type]) => {
+                return type === "keydown" || type === "keyup";
+            })
+        ).toBe(false);
+
+        const keydown = new KeyboardEvent("keydown", {
+            code: KeyCode.KeyQ,
+            shiftKey: true,
+        });
+        const keyup = new KeyboardEvent("keyup", {
+            code: KeyCode.KeyQ,
+            shiftKey: false,
+        });
+
+        expect(controller.handlePhysicalKeydown(keydown)).toBe(false);
+        expect(keyElement.classList.contains("active")).toBe(true);
+        expect(keyboard.classList.contains("shift")).toBe(true);
+
+        expect(controller.handlePhysicalKeyup(keyup)).toBe(false);
+        expect(keyElement.classList.contains("active")).toBe(false);
+        expect(keyboard.classList.contains("shift")).toBe(false);
+    });
+});
+
 describe("OnScreenKeyboardController resize handling", () => {
     afterEach(() => jest.restoreAllMocks());
 

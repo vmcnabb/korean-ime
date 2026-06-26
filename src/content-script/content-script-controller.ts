@@ -58,8 +58,9 @@ export class ContentScriptController {
             : undefined;
 
         this.setActiveElement(document.activeElement as HTMLElement);
+        this.setupKeyDispatch();
         this.setupMessageListener();
-        this.setupDocumentListeners();
+        this.setupFocusListener();
         this.requestState();
         void this.loadToggleKey();
         this.watchToggleKey();
@@ -224,46 +225,21 @@ export class ContentScriptController {
         }
     }
 
-    private setupDocumentListeners() {
-        document.addEventListener(
-            "keydown",
-            (e) => {
-                const binding = this.toggleKeyBinding;
-                if (this.isHanYongEnabled && binding && !e.repeat && matchesKeyBinding(e, binding)) {
-                    api.runtime.sendMessage<ContentScriptRequestMessage>({
-                        type: "contentScriptRequest",
-                        action: ContentScriptRequestAction.ToggleHanYongMode,
-                    });
-                    e.preventDefault();
+    private setupKeyDispatch() {
+        this.textInputManager.setToggleKeyConsumers({
+            keydown: (event) => this.handleToggleKeydown(event),
+            keyup: (event) => this.handleToggleKeyup(event),
+        });
 
-                    // A printable-key combo (e.g. Alt+S) must be swallowed fully so the
-                    // character doesn't also reach the page or the IME. A modifier-only
-                    // key (e.g. the default Right Alt/Command) is left to propagate so Hangul can
-                    // still track it (see HangulController's `lastModifierKey`).
-                    if (!isModifierOnlyBinding(binding)) {
-                        e.stopImmediatePropagation();
-                    }
-                }
-            },
-            true
-        );
+        if (this.keyboardController) {
+            this.textInputManager.setKeyObserver("on-screen-keyboard", {
+                keydown: (event) => this.keyboardController?.handlePhysicalKeydown?.(event) ?? false,
+                keyup: (event) => this.keyboardController?.handlePhysicalKeyup?.(event) ?? false,
+            });
+        }
+    }
 
-        // Firefox (Windows/Linux) toggles its menu bar when Alt is pressed and
-        // released without an intervening key — triggered on keyup. The keydown
-        // preventDefault above doesn't stop it, so also swallow the keyup of a
-        // modifier-only toggle key. Printable combos don't
-        // trigger the menu, so they need no keyup handling. (No-op on Chrome.)
-        document.addEventListener(
-            "keyup",
-            (e) => {
-                const binding = this.toggleKeyBinding;
-                if (this.isHanYongEnabled && binding && isModifierOnlyBinding(binding) && e.code === binding.code) {
-                    e.preventDefault();
-                }
-            },
-            true
-        );
-
+    private setupFocusListener() {
         // whenever a new element receives focus, notify text input manager
         document.addEventListener(
             "focus",
@@ -272,6 +248,45 @@ export class ContentScriptController {
             },
             true
         );
+    }
+
+    private handleToggleKeydown(event: KeyboardEvent): boolean {
+        const binding = this.toggleKeyBinding;
+        if (!this.isHanYongEnabled || !binding || event.repeat || !matchesKeyBinding(event, binding)) {
+            return false;
+        }
+
+        api.runtime.sendMessage<ContentScriptRequestMessage>({
+            type: "contentScriptRequest",
+            action: ContentScriptRequestAction.ToggleHanYongMode,
+        });
+        event.preventDefault();
+
+        // A printable-key combo (e.g. Alt+S) must be swallowed fully so the
+        // character doesn't also reach the page or the IME. A modifier-only key
+        // (e.g. the default Right Alt/Command) is left to the composition chain so
+        // HangulController can still track it as `lastModifierKey`.
+        if (isModifierOnlyBinding(binding)) {
+            return false;
+        }
+
+        event.stopImmediatePropagation();
+        return true;
+    }
+
+    private handleToggleKeyup(event: KeyboardEvent): boolean {
+        const binding = this.toggleKeyBinding;
+        if (!this.isHanYongEnabled || !binding || !isModifierOnlyBinding(binding) || event.code !== binding.code) {
+            return false;
+        }
+
+        // Firefox (Windows/Linux) toggles its menu bar when Alt is pressed and
+        // released without an intervening key — triggered on keyup. The keydown
+        // preventDefault above doesn't stop it, so also swallow the keyup of a
+        // modifier-only toggle key. Printable combos don't trigger the menu, so
+        // they need no keyup handling. (No-op on Chrome.)
+        event.preventDefault();
+        return true;
     }
 
     private setActiveElement(element: EventTarget | null) {

@@ -34,6 +34,8 @@ jest.mock("./on-screen-keyboard/on-screen-keyboard-controller", () => ({
         setHanYongEnabled: jest.fn(),
         setMode: jest.fn(),
         setCompositionFeatures: jest.fn(),
+        handlePhysicalKeydown: jest.fn().mockReturnValue(false),
+        handlePhysicalKeyup: jest.fn().mockReturnValue(false),
     })),
 }));
 
@@ -69,31 +71,38 @@ describe("ContentScriptController toggle-key handling", () => {
         });
     });
 
-    let keydownHandler: (event: KeyboardEvent) => void;
-    let keyupHandler: (event: KeyboardEvent) => void;
+    afterEach(() => jest.restoreAllMocks());
+
+    let keydownHandler: (event: KeyboardEvent) => boolean;
+    let keyupHandler: (event: KeyboardEvent) => boolean;
 
     // Init a non-top-window controller with the given toggle binding loaded from
-    // (mocked) local storage. We capture the controller's own capture-phase key
-    // handlers rather than attaching them to the shared jsdom `document`: the
-    // controller has no listener teardown, so real dispatch would let an earlier
-    // test's controller fire on a later test's events.
+    // (mocked) local storage. We capture the injected toggle consumers rather
+    // than attaching key listeners to the shared jsdom document: the physical
+    // key listeners now belong to KeyListener.
     async function initController(binding: KeyBinding | null) {
         (loadToggleKeyBinding as jest.Mock).mockResolvedValue(binding);
         (loadHanjaKeyBinding as jest.Mock).mockResolvedValue(null);
-        const add = jest.spyOn(document, "addEventListener").mockImplementation((type, handler, opts) => {
-            if (opts === true && type === "keydown") {
-                keydownHandler = handler as never;
-            }
-            if (opts === true && type === "keyup") {
-                keyupHandler = handler as never;
-            }
+        jest.spyOn(TextInputManager.prototype, "setToggleKeyConsumers").mockImplementation((consumers) => {
+            keydownHandler = consumers.keydown ?? (() => false);
+            keyupHandler = consumers.keyup ?? (() => false);
         });
+        const documentAdd = jest.spyOn(document, "addEventListener").mockImplementation(() => {});
         const controller = new ContentScriptController();
         controller.initialize(false);
-        add.mockRestore();
         await flushMicrotasks();
-        return controller;
+        return { controller, documentAdd };
     }
+
+    it("does not attach document physical-key listeners", async () => {
+        const { documentAdd } = await initController(defaultToggleKeyBinding);
+
+        expect(
+            documentAdd.mock.calls.some(([type]) => {
+                return type === "keydown" || type === "keyup";
+            })
+        ).toBe(false);
+    });
 
     const setHanYongEnabled = (enabled: boolean) =>
         listeners[0]({
@@ -109,7 +118,11 @@ describe("ContentScriptController toggle-key handling", () => {
             },
         });
 
-    function fireKey(handler: (event: KeyboardEvent) => void, code: KeyCode, modifiers: Partial<KeyboardEvent> = {}) {
+    function fireKey(
+        handler: (event: KeyboardEvent) => boolean,
+        code: KeyCode,
+        modifiers: Partial<KeyboardEvent> = {}
+    ) {
         const event = {
             code,
             ctrlKey: false,
@@ -121,8 +134,7 @@ describe("ContentScriptController toggle-key handling", () => {
             preventDefault: jest.fn(),
             stopImmediatePropagation: jest.fn(),
         } as unknown as KeyboardEvent;
-        handler(event);
-        return event;
+        return Object.assign(event, { handled: handler(event) });
     }
 
     const toggleCall = {
@@ -142,6 +154,8 @@ describe("ContentScriptController toggle-key handling", () => {
         expect(keyup.preventDefault).toHaveBeenCalled(); // keyup swallowed (Firefox Alt menu)
         // A modifier-only key is left to propagate so the IME can still track it.
         expect(keydown.stopImmediatePropagation).not.toHaveBeenCalled();
+        expect(keydown.handled).toBe(false);
+        expect(keyup.handled).toBe(true);
         expect(sendMessage).toHaveBeenCalledWith(toggleCall);
     });
 
@@ -155,6 +169,8 @@ describe("ContentScriptController toggle-key handling", () => {
 
         expect(keydown.preventDefault).not.toHaveBeenCalled();
         expect(keyup.preventDefault).not.toHaveBeenCalled();
+        expect(keydown.handled).toBe(false);
+        expect(keyup.handled).toBe(false);
         expect(sendMessage).not.toHaveBeenCalled();
     });
 
@@ -166,6 +182,7 @@ describe("ContentScriptController toggle-key handling", () => {
         const keydown = fireKey(keydownHandler, KeyCode.AltRight, { altKey: true });
 
         expect(keydown.preventDefault).not.toHaveBeenCalled();
+        expect(keydown.handled).toBe(false);
         expect(sendMessage).not.toHaveBeenCalled();
     });
 
@@ -179,6 +196,7 @@ describe("ContentScriptController toggle-key handling", () => {
         expect(keydown.preventDefault).toHaveBeenCalled();
         // A printable combo must be swallowed so the character can't also be typed.
         expect(keydown.stopImmediatePropagation).toHaveBeenCalled();
+        expect(keydown.handled).toBe(true);
         expect(sendMessage).toHaveBeenCalledWith(toggleCall);
     });
 
@@ -190,6 +208,7 @@ describe("ContentScriptController toggle-key handling", () => {
         const keydown = fireKey(keydownHandler, KeyCode.KeyS, { altKey: true, ctrlKey: true });
 
         expect(keydown.preventDefault).not.toHaveBeenCalled();
+        expect(keydown.handled).toBe(false);
         expect(sendMessage).not.toHaveBeenCalled();
     });
 

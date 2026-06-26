@@ -12,6 +12,18 @@ function element(html: string): HTMLElement {
     return wrapper.firstElementChild as HTMLElement;
 }
 
+const managers: TextInputManager[] = [];
+
+function createManager(): TextInputManager {
+    const manager = new TextInputManager();
+    managers.push(manager);
+    return manager;
+}
+
+afterEach(() => {
+    managers.splice(0).forEach((manager) => manager.dispose());
+});
+
 describe("textInputElementsSelector", () => {
     // contenteditable is an enumerated attribute: a bare attribute, "" and
     // "true" (and "plaintext-only") all make the element editable.
@@ -54,14 +66,14 @@ describe("TextInputManager.setActiveElement", () => {
         ["document", document],
         ["null", null],
     ])("returns undefined for a non-element focus target (%s)", (_label, target) => {
-        const manager = new TextInputManager();
+        const manager = createManager();
 
         expect(() => manager.setActiveElement(target)).not.toThrow();
         expect(manager.setActiveElement(target)).toBeUndefined();
     });
 
     it("returns undefined for a focused element that is not a text input", () => {
-        const manager = new TextInputManager();
+        const manager = createManager();
         const button = element("<button></button>");
         document.body.appendChild(button);
 
@@ -70,7 +82,7 @@ describe("TextInputManager.setActiveElement", () => {
 
     it("disposes the current controller when focus moves to another editable", () => {
         const dispose = jest.spyOn(HangulController.prototype, "dispose");
-        const manager = new TextInputManager();
+        const manager = createManager();
 
         const first = document.createElement("textarea");
         const second = document.createElement("textarea");
@@ -84,7 +96,7 @@ describe("TextInputManager.setActiveElement", () => {
 
     it("reuses the current controller when the same editable is reported twice", () => {
         const dispose = jest.spyOn(HangulController.prototype, "dispose");
-        const manager = new TextInputManager();
+        const manager = createManager();
 
         const textarea = document.createElement("textarea");
         document.body.appendChild(textarea);
@@ -97,7 +109,7 @@ describe("TextInputManager.setActiveElement", () => {
 
     it("disposes the current controller when focus leaves editable input", () => {
         const dispose = jest.spyOn(HangulController.prototype, "dispose");
-        const manager = new TextInputManager();
+        const manager = createManager();
 
         const textarea = document.createElement("textarea");
         const button = document.createElement("button");
@@ -109,10 +121,10 @@ describe("TextInputManager.setActiveElement", () => {
         expect(dispose).toHaveBeenCalledTimes(1);
     });
 
-    it("keeps only one window-capture keydown guard after replacing the controller", () => {
+    it("keeps one frame-level key listener set after replacing the controller", () => {
         const add = jest.spyOn(window, "addEventListener");
         const remove = jest.spyOn(window, "removeEventListener");
-        const manager = new TextInputManager();
+        const manager = createManager();
 
         const first = document.createElement("textarea");
         const second = document.createElement("textarea");
@@ -124,15 +136,24 @@ describe("TextInputManager.setActiveElement", () => {
         const keydownCaptureAdds = add.mock.calls.filter(([type, _listener, capture]) => {
             return type === "keydown" && capture === true;
         });
+        const keyupCaptureAdds = add.mock.calls.filter(([type, _listener, capture]) => {
+            return type === "keyup" && capture === true;
+        });
 
-        expect(keydownCaptureAdds).toHaveLength(2);
+        expect(keydownCaptureAdds).toHaveLength(1);
+        expect(keyupCaptureAdds).toHaveLength(1);
+        expect(remove).not.toHaveBeenCalledWith("keydown", keydownCaptureAdds[0][1], true);
+
+        manager.dispose();
+
         expect(remove).toHaveBeenCalledWith("keydown", keydownCaptureAdds[0][1], true);
+        expect(remove).toHaveBeenCalledWith("keyup", keyupCaptureAdds[0][1], true);
     });
 
     it("clears the current controller when the focused editable has no adapter", () => {
         const dispose = jest.spyOn(HangulController.prototype, "dispose");
         const createAdapter = jest.spyOn(CompositionAdapterFactory, "createCompositionAdapter");
-        const manager = new TextInputManager();
+        const manager = createManager();
 
         const textarea = document.createElement("textarea");
         const unsupported = element("<div contenteditable></div>");
@@ -153,14 +174,14 @@ describe("TextInputManager.enterCharacter", () => {
     });
 
     it("returns false when no editable element is focused", () => {
-        const manager = new TextInputManager();
+        const manager = createManager();
 
         expect(manager.enterCharacter("a", KeyCode.KeyA)).toBe(false);
     });
 
     it("clears a stale controller when no editable element is focused", () => {
         const dispose = jest.spyOn(HangulController.prototype, "dispose");
-        const manager = new TextInputManager();
+        const manager = createManager();
 
         const textarea = document.createElement("textarea");
         document.body.appendChild(textarea);
@@ -172,7 +193,7 @@ describe("TextInputManager.enterCharacter", () => {
 
     it("creates a controller for the focused element and routes the character", () => {
         const addCharacter = jest.spyOn(HangulController.prototype, "addCharacter").mockImplementation(() => {});
-        const manager = new TextInputManager();
+        const manager = createManager();
 
         const input = document.createElement("input");
         document.body.appendChild(input);
@@ -189,7 +210,7 @@ describe("TextInputManager.enterCharacter", () => {
     it("replaces the controller with one for the focused element before routing the character", () => {
         const dispose = jest.spyOn(HangulController.prototype, "dispose");
         const addCharacter = jest.spyOn(HangulController.prototype, "addCharacter").mockImplementation(() => {});
-        const manager = new TextInputManager();
+        const manager = createManager();
 
         const first = document.createElement("textarea");
         const second = document.createElement("input");
@@ -214,7 +235,7 @@ describe("TextInputManager.setToggleKeyBinding", () => {
 
     it("forwards a binding change to the live controller", () => {
         const setToggleKeyBinding = jest.spyOn(HangulController.prototype, "setToggleKeyBinding");
-        const manager = new TextInputManager();
+        const manager = createManager();
         const textarea = document.createElement("textarea");
         document.body.appendChild(textarea);
         manager.setActiveElement(textarea); // creates the controller
@@ -227,7 +248,7 @@ describe("TextInputManager.setToggleKeyBinding", () => {
 
     it("applies the current binding to a controller created later", () => {
         const setToggleKeyBinding = jest.spyOn(HangulController.prototype, "setToggleKeyBinding");
-        const manager = new TextInputManager();
+        const manager = createManager();
         manager.setToggleKeyBinding(macDefaultToggleKeyBinding); // no controller yet
 
         const textarea = document.createElement("textarea");
