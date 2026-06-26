@@ -78,53 +78,40 @@ Core domain logic (mostly pure, well unit-tested):
 
 ## Gotchas
 
-- **WXT generates the manifest — there is no `src/manifest.json` to edit.** It's
-  built from the `manifest` field in `wxt.config.ts` plus the entrypoints WXT
-  discovers under `src/entrypoints/`. `version` comes from `package.json` (so
-  **bump the version there**). A stray `src/manifest.json` is a leftover Parcel
-  artifact — gitignored; ignore it. WXT also emits the Firefox MV3
-  `background.scripts` form automatically (no post-build patch needed).
-- **Build output is `.output/`.** Release builds go to `.output/<target>` (e.g.
-  `.output/chrome-mv3`, `.output/firefox-mv3`); dev builds to
-  `.output/<target>-dev`. Both `.output/` and `.wxt/` are gitignored.
-- **`scripts/gen-assets.mjs` generates the build inputs WXT doesn't** (run before
-  every build/dev, and in `prepare`): the action/runtime icon PNGs (rendered from
-  the SVGs — to `src/images/` for Vite-bundled use, and `public/images/` for the
-  static manifest icons), the OSK mode-icon data-URL module (`mode-icons.ts`), the
-  per-browser pin videos (`src/videos/` — pass the target `chrome`/`firefox` for
-  the right variant), and the `public/_locales` copy. All gitignored. **`public/`
-  lives at the repo root** (not under `src/`); WXT copies it to the output as-is.
-- **Vite doesn't polyfill Node's `process` (Parcel did).** `src/platform/process-shim.ts`
-  installs an empty `process.env` so runtime `process.env.*` reads don't throw —
-  import it first in browser entrypoints. `process.env.NODE_ENV` is handled by
-  Vite natively; the `KIME_ENABLE_HANJA` build flag reaches the browser via
-  `import.meta.env` (mirrored from `VITE_ENABLE_HANJA`) in dev and the Vite
-  `define` (which tree-shakes the gated Hanja UI) in production builds.
-- **Firefox MV3 dev needs Firefox 147+.** WXT's MV3 dev mode relies on a Firefox
-  CSP fix that landed in 147; on older Firefox the dev content script won't
-  inject (the page/options/popup still load). Release is MV3 on both browsers
-  regardless. To exercise Firefox MV3 on an older build, use `build:firefox` and
-  load `.output/firefox-mv3` via `about:debugging`.
+- **WXT generates the manifest** from the `manifest` field in `wxt.config.ts`
+  plus the entrypoints under `src/entrypoints/`; `version` comes from
+  `package.json` (**bump it there**). The Firefox MV3 `background.scripts` form is
+  emitted for you.
+- **Build output is `.output/`** — `.output/<target>` for release (`chrome-mv3`,
+  `firefox-mv3`), `.output/<target>-dev` for dev. Both `.output/` and `.wxt/` are
+  gitignored.
+- **`scripts/gen-assets.mjs` generates the icons, OSK mode-icon module
+  (`mode-icons.ts`), per-browser pin videos, and `public/_locales` copy** (run
+  before each build/dev and in `prepare`). Icons go to `src/images/` for bundling
+  and `public/images/` for the static manifest icons; pass `chrome`/`firefox` for
+  the matching pin videos. `public/` sits at the repo root and WXT copies it to
+  the output as-is.
+- **Import `src/platform/process-shim.ts` first in browser entrypoints** — it
+  installs `process.env` so build-flag reads work in the browser.
+  `KIME_ENABLE_HANJA` reaches the browser via `import.meta.env` (mirrored from
+  `VITE_ENABLE_HANJA`) in dev, and a Vite `define` that tree-shakes the gated
+  Hanja UI in production.
+- **Firefox MV3 dev needs Firefox 147+** — its MV3 dev mode relies on a CSP fix
+  from 147; on older Firefox use `build:firefox` + `about:debugging` instead.
 - **`dev:*` serves a localhost test page and opens it.** `scripts/dev.mjs` serves
-  a textarea/input/contenteditable page on `http://localhost:3344` and WXT opens
-  it on launch (`webExt.startUrls` in `wxt.config.ts`), so the content script
-  injects into a real http page (it won't on `file:`/`about:` URLs). The Firefox
-  dev profile also gets prefs to suppress Firefox's own first-run "Welcome" /
-  Terms-of-Use modal.
-- **Google Docs uses canvas + the EditContext API.** Docs
-  ignores synthetic composition events entirely (input goes through an
-  EditContext the page owns, not the DOM), so it's unsupported — the factory
-  returns no adapter for it. Don't waste time trying to drive Docs with
-  synthetic events; that door is closed (Google Input Tools only works via a
-  private main-world bridge into Docs' internal `kix` editor).
-- ESLint uses **flat config** (`eslint.config.mjs`). There is no `.eslintrc`.
-- `tsc` is type-check only (`--noEmit`); **Vite (via WXT) does the actual bundling**.
-- A **husky pre-commit hook** (`.husky/pre-commit`, installed via the `prepare`
-  script on `npm install`) runs `lint-staged` (ESLint `--fix` on staged files)
-  then `tsc --noEmit`. Commits with lint/type errors are blocked; `--no-verify`
-  bypasses.
-- Tracing decorator (`src/decorators/trace.ts`) is a no-op in production and
-  logs method calls in dev — handy for debugging composition flow.
+  a textarea/input/contenteditable page on `http://localhost:3344`; WXT opens it
+  (`webExt.startUrls`) so the content script injects into a real http page. The
+  Firefox dev profile gets prefs to skip Firefox's first-run / Terms-of-Use modal.
+- **Google Docs is unsupported** — it routes input through an EditContext it owns,
+  ignoring synthetic events and DOM mutation, so the factory returns no adapter.
+  (Google Input Tools only works via a private main-world bridge into Docs' `kix`
+  editor.)
+- ESLint uses **flat config** (`eslint.config.mjs`).
+- `tsc --noEmit` type-checks; WXT (Vite) bundles.
+- **husky pre-commit** (`.husky/pre-commit`) runs `lint-staged` then `tsc --noEmit`;
+  bypass with `--no-verify`.
+- The tracing decorator (`src/decorators/trace.ts`) logs method calls in dev and
+  is a no-op in production — handy for tracing composition flow.
 
 ## Releases
 
