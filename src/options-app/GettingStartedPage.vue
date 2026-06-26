@@ -8,6 +8,8 @@ import { initSettings, settings } from "./use-settings";
 import pinDarkVideo from "../videos/pin-dark.mp4?url";
 import pinLightVideo from "../videos/pin-light.mp4?url";
 
+window.document.title = t("gettingStarted_title");
+
 const loading = ref(true);
 const errorMessage = ref("");
 const pinningVideo = ref<HTMLVideoElement>();
