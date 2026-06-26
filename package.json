@@ -19,6 +19,7 @@
     "clean": "rimraf .output .wxt obj coverage src/images src/videos public src/content-script/on-screen-keyboard/mode-icons.ts",
     "lint": "eslint src scripts *.mjs",
     "lint:fix": "eslint src scripts *.mjs --fix",
+    "lint:firefox": "web-ext lint --source-dir .output/firefox-mv3",
     "validate": "npm run check-message-keys && tsc --noEmit && npm run lint && npm run check-translations && npm test",
     "gen-assets": "node scripts/gen-assets.mjs",
     "gen-message-keys": "node scripts/generate-message-keys.mjs",
@@ -68,6 +69,7 @@
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.60.0",
     "vue": "^3.5.33",
+    "web-ext": "^10.4.0",
     "wxt": "^0.20.27"
   }
 }
