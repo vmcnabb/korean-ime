@@ -27,6 +27,8 @@ export default defineConfig({
     webExt: {
         startUrls: ["http://localhost:3344/"],
         chromiumArgs: [
+            // Expose the DevTools protocol so VS Code can attach (.vscode/launch.json).
+            "--remote-debugging-port=9222",
             ...(process.env.KIME_DEV_LOCALE ? [`--lang=${process.env.KIME_DEV_LOCALE}`] : []),
             ...(process.env.KIME_DEV_COLOR_SCHEME === "dark" ? ["--force-dark-mode"] : []),
         ],

@@ -101,7 +101,9 @@ server.listen(PORT, "127.0.0.1", () => {
     if (colorScheme) console.log(`[dev] Color scheme: ${colorScheme}`);
 });
 
-const wxt = spawn("wxt", wxtArgs, { stdio: "inherit", shell: true, env });
+// Pass the command as one shell string (not a separate args array) to avoid
+// Node's DEP0190 warning; wxtArgs are simple flags with no spaces to escape.
+const wxt = spawn(["wxt", ...wxtArgs].join(" "), { stdio: "inherit", shell: true, env });
 
 const shutdown = () => {
     server.close();

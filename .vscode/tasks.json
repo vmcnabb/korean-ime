@@ -10,35 +10,16 @@
                 "reveal": "always",
                 "panel": "dedicated"
             },
-            "problemMatcher": {
-                "owner": "custom",
-                "fileLocation": "autoDetect",
-                "source": "korean-ime-dev",
-                "pattern": {
-                    "regexp": "^(__never_match__):(\\d+):(\\d+):(.*)$",
-                    "file": 1,
-                    "line": 2,
-                    "column": 3,
-                    "message": 4
-                },
-                "background": {
-                    "activeOnStart": true,
-                    "beginsPattern": "^\\[dev\\] [dev] Starting",
-                    "endsPattern": "^\\[dev\\] VS Code debugger target ready\\.$"
-                }
-            }
+            "problemMatcher": []
         },
         {
-            "label": "Stop Dev Chrome",
-            "type": "process",
-            "command": "node",
-            "args": [
-                "scripts/stop-dev.mjs"
-            ],
+            "label": "Start Dev Firefox",
+            "type": "npm",
+            "script": "dev:firefox",
+            "isBackground": true,
             "presentation": {
-                "reveal": "never",
-                "panel": "dedicated",
-                "close": true
+                "reveal": "always",
+                "panel": "dedicated"
             },
             "problemMatcher": []
         }
