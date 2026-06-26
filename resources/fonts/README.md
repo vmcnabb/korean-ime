@@ -3,7 +3,7 @@
 This directory contains source font assets used at build time when rasterizing
 SVG artwork into PNG files.
 
-These font files are used by `scripts/build-manifest.mjs` and are not packaged
+These font files are used by `scripts/gen-assets.mjs` and are not packaged
 into the browser extension bundles.
 
 ## Included Font
