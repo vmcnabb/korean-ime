@@ -23,6 +23,7 @@
         "noFallthroughCasesInSwitch": true,
         "allowSyntheticDefaultImports": true,
         "esModuleInterop": true,
+        "skipLibCheck": true,
         "experimentalDecorators": true,
         "sourceMap": true,
         "forceConsistentCasingInFileNames": true,

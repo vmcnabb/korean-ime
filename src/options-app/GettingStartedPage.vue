@@ -3,10 +3,12 @@ import { computed, nextTick, onMounted, ref } from "vue";
 import { currentKeyBindingPlatform } from "../keyboard/key-binding";
 import { api } from "../platform/browser-api";
 import { GettingStartedChoice, gettingStartedChoices } from "./getting-started-model";
-import { t, type MessageKey } from "../i18n";
+import { t } from "../i18n";
 import { initSettings, settings } from "./use-settings";
-import pinDarkVideo from "url:../videos/pin-dark.mp4";
-import pinLightVideo from "url:../videos/pin-light.mp4";
+import pinDarkVideo from "../videos/pin-dark.mp4?url";
+import pinLightVideo from "../videos/pin-light.mp4?url";
+
+window.document.title = t("gettingStarted_title");
 
 const loading = ref(true);
 const errorMessage = ref("");
@@ -24,8 +26,8 @@ const isFirefoxFamily = browserHasFirefoxExtensionMenu();
 const pinningGuidance = computed(() =>
     isFirefoxFamily ? t("gettingStarted_showIcon_firefox") : t("gettingStarted_showIcon_chrome")
 );
-const gettingStartedNoticeKey = computed<MessageKey>(() =>
-    keyBindingPlatform === "mac" ? "gettingStarted_notice_mac" : "gettingStarted_notice"
+const gettingStartedNotice = computed<string>(() =>
+    keyBindingPlatform === "mac" ? t("gettingStarted_notice_mac") : t("gettingStarted_notice")
 );
 
 onMounted(async () => {
@@ -126,7 +128,7 @@ function getPreferredPinningVideoSrc(): string {
                 {{ t("gettingStarted_noticeOtherTools") }}
             </p>
             <p v-else-if="selectedChoice === gettingStartedChoices.typeHangul" class="notice" role="status">
-                {{ t(gettingStartedNoticeKey) }}
+                {{ gettingStartedNotice }}
             </p>
             <p v-if="errorMessage" class="error" role="alert">{{ errorMessage }}</p>
         </section>

@@ -1,8 +1,8 @@
 import { HanjaCandidate } from "../composition/hanja/hanja-candidate";
 import { HanjaDictionaryProvider } from "../composition/hanja/hanja-dictionary-provider";
 import { api } from "../platform/browser-api";
-import generatedDictionaryUrl from "url:../hanja-dictionary/single-syllable.data";
-import generatedHanziMetadataUrl from "url:../hanja-dictionary/hanja-hanzi.data";
+import generatedDictionaryUrl from "../hanja-dictionary/single-syllable.data?url";
+import generatedHanziMetadataUrl from "../hanja-dictionary/hanja-hanzi.data?url";
 
 type GeneratedHanjaCandidate = readonly [hanja: string, korean: string];
 type GeneratedHanjaDictionary = Record<string, readonly GeneratedHanjaCandidate[]>;

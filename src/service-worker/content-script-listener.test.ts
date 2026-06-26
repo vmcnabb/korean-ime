@@ -3,8 +3,8 @@ import { ContentScriptRequestAction } from "../messaging/content-to-service-mess
 import { ContentScriptListener } from "./content-script-listener";
 import { StateManager } from "./state-manager";
 
-jest.mock("url:../hanja-dictionary/single-syllable.data", () => "single-syllable.data", { virtual: true });
-jest.mock("url:../hanja-dictionary/hanja-hanzi.data", () => "hanja-hanzi.data", { virtual: true });
+jest.mock("../hanja-dictionary/single-syllable.data?url", () => "single-syllable.data", { virtual: true });
+jest.mock("../hanja-dictionary/hanja-hanzi.data?url", () => "hanja-hanzi.data", { virtual: true });
 
 async function settleResponse() {
     await Promise.resolve();

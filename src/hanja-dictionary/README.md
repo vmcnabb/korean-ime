@@ -15,7 +15,8 @@ conversion. It contains:
 
 The generated `.data` files contain JSON. The neutral extension is
 intentional: it lets the extension fetch the file at runtime as a packaged asset
-without Parcel compiling it into a JavaScript JSON module.
+(imported with Vite's `?url` suffix) instead of being compiled into a JavaScript
+JSON module.
 
 It does not include multi-syllable word keys or frequency ranking data.
 

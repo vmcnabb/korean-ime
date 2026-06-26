@@ -5,6 +5,8 @@ import { t } from "../i18n";
 import OnScreenKeyboardSection from "./OnScreenKeyboardSection.vue";
 import HanYongSection from "./HanYongSection.vue";
 
+window.document.title = t("options_title");
+
 const HanjaSection =
     process.env.KIME_ENABLE_HANJA === "true" ? defineAsyncComponent(() => import("./HanjaSection.vue")) : undefined;
 const showHanjaSection = !!HanjaSection;

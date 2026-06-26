@@ -1,11 +1,11 @@
 import { TabState } from "../extension-state/tab-state";
 import { KoreanKeyboardMode } from "../extension-state/korean-keyboard-mode";
-import icon16h from "url:../images/icon16h.png";
-import icon24h from "url:../images/icon24h.png";
-import icon32h from "url:../images/icon32h.png";
-import icon16a from "url:../images/icon16a.png";
-import icon24a from "url:../images/icon24a.png";
-import icon32a from "url:../images/icon32a.png";
+import icon16h from "../images/icon16h.png?url";
+import icon24h from "../images/icon24h.png?url";
+import icon32h from "../images/icon32h.png?url";
+import icon16a from "../images/icon16a.png?url";
+import icon24a from "../images/icon24a.png?url";
+import icon32a from "../images/icon32a.png?url";
 import {
     ServiceScriptMessage,
     ServiceScriptMessageAction,

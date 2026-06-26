@@ -37,29 +37,27 @@ npm install
 
 ### Build
 
+The project is built with [WXT](https://wxt.dev) (on Vite). Everything is
+Manifest V3 — both browsers, dev and release.
+
 | Command | Description |
 |---|---|
-| `npm run build` | Build **both** targets (Chrome + Firefox) — an all-targets sanity build |
-| `npm run build:chrome` | Production Chrome build to `/dist-chrome` (bundle only — run `validate` for gates) |
-| `npm run build:firefox` | Production Firefox build to `/dist-firefox` |
-| `npm run build-dev:chrome` | Development Chrome build to `/dist-chrome-dev` (no optimisation) |
-| `npm run start:chrome` | Watch mode (to `/dist-chrome-dev`) — rebuilds on file changes |
-| `npm run dev:chrome` | Build + launch Chrome (fresh throwaway profile), auto-load the extension over CDP, open a test page (add `--watch` for live reload) |
-| `npm run dev:firefox` | Build + launch Firefox (via `web-ext`, temporary add-on on a throwaway profile), open a test page (add `--watch` to rebuild + reload on change) |
-| `npm run check` | Type-check without emitting output |
+| `npm run dev:chrome` / `dev:firefox` | WXT dev server + launch the browser on a throwaway profile with HMR, opening the localhost test page. Session flags after `--`: `--enable-hanja`, `--locale=<code>`, `--dark`/`--light` |
+| `npm run build:chrome` / `build:firefox` | Production build to `.output/<target>` — `.output/chrome-mv3` / `.output/firefox-mv3` (run `validate` separately for gates) |
+| `npm run zip:chrome` / `zip:firefox` | Build + zip for the Web Store / AMO |
+| `npm run validate` | Full gate: message keys → type-check → lint → translations → tests |
 | `npm run lint` | Lint with ESLint (`npm run lint:fix` to auto-fix) |
 | `npm test` | Run unit tests |
-| `npm run package:chrome` | Chrome build + zip `/dist-chrome` into `korean-ime-<version>-chrome.zip` (Web Store) |
-| `npm run package:firefox` | Firefox build + `web-ext lint` + zip `/dist-firefox` into `korean-ime-<version>-firefox.zip` (AMO) |
+| `npm run package:chrome` / `package:firefox` | `validate` then `zip:<target>` |
 
-The Chrome production build (`npm run build:chrome`) outputs to `/dist-chrome` (dev builds go to `/dist-chrome-dev`, kept separate so they can't be shipped by accident) and can be loaded directly as an unpacked extension:
-1. Open `chrome://extensions`
-2. Enable **Developer mode**
-3. Click **Load unpacked** and select the `/dist-chrome` folder
+Production builds output to `.output/<target>` (dev builds to
+`.output/<target>-dev`, kept separate). Load as an unpacked extension:
+1. **Chrome:** `chrome://extensions` → **Developer mode** → **Load unpacked** → `.output/chrome-mv3`
+2. **Firefox:** `about:debugging` → **This Firefox** → **Load Temporary Add-on** → `.output/firefox-mv3/manifest.json`
 
 #### Firefox development
 
-`npm run dev:firefox` builds to `/dist-firefox-dev` and uses [`web-ext`](https://github.com/mozilla/web-ext) to launch Firefox with the extension installed as a temporary add-on on a throwaway profile — no manual loading. Add `--watch` to rebuild, re-patch the manifest, and reload the extension on every change. Set `FIREFOX_PATH` if Firefox isn't found automatically. The `--locale` flag below works the same as for `dev:chrome`.
+`npm run dev:firefox` launches Firefox (MV3) via WXT/[`web-ext`](https://github.com/mozilla/web-ext) with the extension as a temporary add-on on a throwaway profile, with HMR — no manual loading. **Content-script injection in dev needs Firefox 147+** (WXT's MV3 dev mode depends on a Firefox CSP fix from 147); on an older Firefox, use `npm run build:firefox` + `about:debugging`. Set `FIREFOX_PATH` if Firefox isn't found automatically. The `--locale` flag below works the same as for `dev:chrome`.
 
 #### Testing a different locale
 
@@ -81,7 +79,7 @@ Press `F5` with one of these configs selected:
 2. **Debug Options Page in Dev Chrome** for the extension settings page
 3. **Debug Popup Converter in Dev Chrome** for the popup converter window
 
-Stopping any of those debug sessions from VS Code also shuts down the matching Chrome/dev task. (If VS Code keeps auto-attaching to `scripts/dev-chrome.mjs`, set the terminal's **Auto Attach** to **Only With Flag** — it only targets the Node launcher, not Chrome.)
+The dev server (the **Start Dev Chrome** task) keeps running independently — stop it with `Ctrl+C` in its terminal when you're done.
 
 ### Releasing
 
@@ -97,7 +95,7 @@ See [RELEASING.md](RELEASING.md) for the release checklist. Building the Firefox
 `npm install` sets up a [husky](https://typicode.github.io/husky/) pre-commit
 hook (via the `prepare` script). On commit it runs ESLint (`--fix`) on staged
 files through [lint-staged](https://github.com/lint-staged/lint-staged), then a
-full type-check (`npm run check`). Bypass with `git commit --no-verify` if you
+full type-check (`tsc --noEmit`). Bypass with `git commit --no-verify` if you
 ever need to.
 
 ## Contributing

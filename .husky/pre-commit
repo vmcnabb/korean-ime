@@ -1,7 +1,5 @@
 # Auto-fix + lint the staged files (re-staged by lint-staged on fix).
 npx lint-staged
 
-# Type-check the whole project. tsc --noEmit can't be scoped to staged files
-# (types are cross-file), so this runs over everything — fast enough for a hook,
-# and catches type errors before they reach CI.
-npm run check
+# Type-check the whole project.
+npx tsc --noEmit

@@ -4,10 +4,10 @@ Guidance for working in this repo. Keep it short and current.
 
 ## What this is
 
-A **Chrome Manifest V3 extension** that lets people type Hangul (Korean) in the
-browser without an OS-level Korean IME, plus romanization tools and a floating
-on-screen keyboard. TypeScript, bundled with **Parcel**; the options page uses
-**Vue 3**.
+A **Manifest V3 browser extension** (Chrome + Firefox) that lets people type
+Hangul (Korean) in the browser without an OS-level Korean IME, plus romanization
+tools and a floating on-screen keyboard. TypeScript, built with **WXT** (which
+runs on Vite); the options page uses **Vue 3**.
 
 ## Workflow
 
@@ -26,23 +26,20 @@ git pull` first if you do check locally.
 
 | Command | Purpose |
 |---|---|
-| `npm run start:chrome` | Parcel watch mode (Chrome) — rebuilds to `dist-chrome-dev/` on change |
-| `npm run build` | Build **both** targets (Chrome + Firefox) — all-targets sanity build |
-| `npm run build:chrome` | Production Chrome build to `dist-chrome/`: `clean` → `gen-manifest:chrome` → `parcel build` (no gates — run `validate` separately) |
-| `npm run validate` | `check` + `lint` + `check-translations` + `test` — the full gate (also run by `package:*` and CI) |
-| `npm run build:firefox` | Firefox build to `dist-firefox/` (see Firefox build note below) |
-| `npm run lint:firefox` | `web-ext lint` the Firefox build in `dist-firefox/` |
-| `npm run build-dev:chrome` | Unoptimized dev Chrome build to `dist-chrome-dev/` |
-| `npm run dev:chrome` | One-off dev build + launch Chrome on a fresh throwaway profile, auto-load the extension over CDP, open a test page (no watcher; re-run to rebuild — see `scripts/dev-chrome.mjs`). Add `--watch` for a live-reloading Parcel watcher. |
-| `npm run dev:firefox` | One-off dev build (to `dist-firefox-dev/`, patched) + launch Firefox via `web-ext` with the extension as a temporary add-on on a throwaway profile, open a test page (see `scripts/dev-firefox.mjs`). Add `--watch` to rebuild → re-patch → reload on change. Set `FIREFOX_PATH` to override the binary. |
-| `npm run check` | Type-check only (`tsc --noEmit`) |
+| `npm run dev:chrome` | WXT dev server + launches Chrome on a throwaway profile with HMR, opening the localhost test page (`scripts/dev.mjs`). Session flags after `--`: `--enable-hanja`, `--locale=<code>`, `--dark`/`--light`. |
+| `npm run dev:firefox` | Same, for Firefox (MV3). Content-script injection in dev needs **Firefox 147+** (see gotcha). |
+| `npm run build:chrome` / `build:firefox` | Production build to `.output/<target>` (`gen-assets` → `wxt build`). Both targets are MV3. No gates — run `validate` separately. |
+| `npm run zip:chrome` / `zip:firefox` | Build + zip for store upload (`wxt zip`) — Chrome Web Store / AMO. |
+| `npm run validate` | `check-message-keys` + `tsc --noEmit` + `lint` + `check-translations` + `test` — the full gate (also run by `package:*` and CI). |
+| `npm run package:chrome` / `package:firefox` | `validate` then `zip:<target>`. |
 | `npm run lint` / `lint:fix` | ESLint (flat config in `eslint.config.mjs`) |
 | `npm test` | Jest unit tests (ts-jest + jsdom) |
-| `npm run package` | Prints guidance — packaging is per-browser (run `package:chrome` or `package:firefox`) |
-| `npm run package:chrome` | Chrome build + zip `dist-chrome/` into `korean-ime-<version>-chrome.zip` (Web Store upload) |
-| `npm run package:firefox` | Firefox build + `web-ext lint` + zip `dist-firefox/` into `korean-ime-<version>-firefox.zip` (AMO upload) |
+| `npm run gen-assets` | Generate the build inputs WXT doesn't (icons, OSK mode-icons, pin videos, public `_locales`) — see gotcha. Pass `chrome`/`firefox` for the right pin videos. |
+| `npm run clean` | Remove `.output/`, `.wxt/`, and generated assets. |
 
-Load `dist-chrome/` as an unpacked extension at `chrome://extensions` (Developer mode → Load unpacked).
+Dev/release manifest version: **everything is MV3** — both browsers, dev and
+release. Load `.output/chrome-mv3/` (or `.output/firefox-mv3/`) as an unpacked
+extension at `chrome://extensions` / `about:debugging`.
 
 ## Architecture
 
@@ -81,72 +78,40 @@ Core domain logic (mostly pure, well unit-tested):
 
 ## Gotchas
 
-- **Do NOT add `engines.node` to `package.json`.** Parcel reads it as a build
-  target and the web-extension HTML transformer then fails with
-  `invalid type: unit value, expected a sequence`. The Node version is pinned in
-  `.nvmrc` (used by CI) instead.
-- **`src/manifest.json` is generated — do not edit it.** It's produced from
-  `src/manifest.base.json` by `scripts/build-manifest.mjs` (run as
-  `gen-manifest:chrome` before a Chrome build, and inline in `build:firefox`)
-  and is gitignored. Edit `manifest.base.json` for shared
-  fields; `version` comes from `package.json` (so **bump the version there**) and
-  the per-browser `background` key + browser-specific settings come from the
-  target overrides in `build-manifest.mjs`. Parcel requires the generated file to
-  be named exactly `manifest.json` and to sit in `src/` beside the assets it
-  references (relative paths like `images/`, `_locales/`), which is why it's
-  generated in place.
-- **Firefox build needs a post-build manifest patch.** Firefox MV3 requires
-  `background.scripts` (it doesn't support `service_worker`), but Parcel's
-  webextension transformer *only* accepts `service_worker` and rejects a manifest
-  with both keys. So `build:firefox` generates a `service_worker` manifest (what
-  Parcel allows), lets Parcel bundle, then `scripts/patch-firefox-manifest.mjs`
-  rewrites the *emitted* `dist-firefox/manifest.json`, swapping `service_worker`
-  for `background.scripts` (dropping the `service_worker` key Firefox ignores),
-  assembled after Parcel because it won't pass `scripts` through pre-build. We
-  swap rather than keep both keys because this manifest is Firefox-only — Mozilla's
-  dual-key form only helps a single manifest shared across browsers, and keeping
-  `service_worker` here would just earn a `BACKGROUND_SERVICE_WORKER_IGNORED`
-  warning from `web-ext lint` for no benefit. `lint:firefox` (`web-ext lint`)
-  validates the result. In
-  `dev:firefox --watch` this patch must re-run after *every* Parcel rebuild
-  (Parcel re-emits the `service_worker`-only manifest each time), and the Firefox
-  reload must fire only after the patch — `scripts/dev-firefox.mjs` drives that
-  `rebuild → patch → reload` sequence (web-ext's own auto-reload is disabled).
-- **`dev:firefox` needs a detached reaper to close Firefox on Ctrl+C.** Firefox's
-  Windows launcher process detaches the real browser from the PID web-ext
-  spawned, so web-ext's `runner.exit()` can't kill it; worse, Ctrl+C through
-  npm/cmd can kill the launcher node before its SIGINT cleanup runs at all. So
-  `dev-firefox.mjs` spawns `scripts/firefox-reaper.mjs` *detached* (its own
-  process group, immune to the same Ctrl+C); it waits for the launcher PID to
-  die, then tree-kills the Firefox matching our throwaway profile dir name
-  (scoped so it never touches the user's own Firefox).
-- **Google Docs uses canvas + the EditContext API.** Docs
-  ignores synthetic composition events entirely (input goes through an
-  EditContext the page owns, not the DOM), so it's unsupported — the factory
-  returns no adapter for it. Don't waste time trying to drive Docs with
-  synthetic events; that door is closed (Google Input Tools only works via a
-  private main-world bridge into Docs' internal `kix` editor).
-- **`--load-extension` is dead in current Chrome, so `dev:chrome` loads over
-  CDP.** Chrome 137+ removed the command-line switch (anti-malware), and by Chrome
-  148 the `--disable-features=DisableLoadExtensionCommandLineSwitch` opt-out no
-  longer works either. So `npm run dev:chrome` instead launches Chrome on a
-  *fresh throwaway profile* with `--enable-unsafe-extension-debugging` +
-  `--remote-debugging-pipe` and loads `dist-chrome-dev/` over the DevTools
-  Protocol (`Extensions.loadUnpacked`). The Extensions domain is gated to the
-  **pipe** transport (fd 3/4) — over `--remote-debugging-port` it returns "Method
-  not available", so the port is kept only for VS Code debugging + `/json`
-  polling. No manual "Load unpacked" step, and the throwaway profile means no
-  stale extension to uninstall. Needs a recent Chrome (we assume the latest). The
-  temp profile is removed on shutdown; `.chrome-profile/` now only holds the
-  stop-dev session file. Dev builds stay out of the production `dist-chrome/`.
-- ESLint uses **flat config** (`eslint.config.mjs`). There is no `.eslintrc`.
-- `tsc` is type-check only (`--noEmit`); Parcel does the actual bundling.
-- A **husky pre-commit hook** (`.husky/pre-commit`, installed via the `prepare`
-  script on `npm install`) runs `lint-staged` (ESLint `--fix` on staged files)
-  then `npm run check`. Commits with lint/type errors are blocked; `--no-verify`
-  bypasses.
-- Tracing decorator (`src/decorators/trace.ts`) is a no-op in production and
-  logs method calls in dev — handy for debugging composition flow.
+- **WXT generates the manifest** from the `manifest` field in `wxt.config.ts`
+  plus the entrypoints under `src/entrypoints/`; `version` comes from
+  `package.json` (**bump it there**). The Firefox MV3 `background.scripts` form is
+  emitted for you.
+- **Build output is `.output/`** — `.output/<target>` for release (`chrome-mv3`,
+  `firefox-mv3`), `.output/<target>-dev` for dev. Both `.output/` and `.wxt/` are
+  gitignored.
+- **`scripts/gen-assets.mjs` generates the icons, OSK mode-icon module
+  (`mode-icons.ts`), per-browser pin videos, and `public/_locales` copy** (run
+  before each build/dev and in `prepare`). Icons go to `src/images/` for bundling
+  and `public/images/` for the static manifest icons; pass `chrome`/`firefox` for
+  the matching pin videos. `public/` sits at the repo root and WXT copies it to
+  the output as-is.
+- **Import `src/platform/process-shim.ts` first in browser entrypoints** — it
+  installs `process.env` so build-flag reads work in the browser.
+  `KIME_ENABLE_HANJA` reaches the browser via `import.meta.env` (mirrored from
+  `VITE_ENABLE_HANJA`) in dev, and a Vite `define` that tree-shakes the gated
+  Hanja UI in production.
+- **Firefox MV3 dev needs Firefox 147+** — its MV3 dev mode relies on a CSP fix
+  from 147; on older Firefox use `build:firefox` + `about:debugging` instead.
+- **`dev:*` serves a localhost test page and opens it.** `scripts/dev.mjs` serves
+  a textarea/input/contenteditable page on `http://localhost:3344`; WXT opens it
+  (`webExt.startUrls`) so the content script injects into a real http page. The
+  Firefox dev profile gets prefs to skip Firefox's first-run / Terms-of-Use modal.
+- **Google Docs is unsupported** — it routes input through an EditContext it owns,
+  ignoring synthetic events and DOM mutation, so the factory returns no adapter.
+  (Google Input Tools only works via a private main-world bridge into Docs' `kix`
+  editor.)
+- ESLint uses **flat config** (`eslint.config.mjs`).
+- `tsc --noEmit` type-checks; WXT (Vite) bundles.
+- **husky pre-commit** (`.husky/pre-commit`) runs `lint-staged` then `tsc --noEmit`;
+  bypass with `--no-verify`.
+- The tracing decorator (`src/decorators/trace.ts`) logs method calls in dev and
+  is a no-op in production — handy for tracing composition flow.
 
 ## Releases
 
