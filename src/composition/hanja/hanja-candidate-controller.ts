@@ -101,14 +101,19 @@ export class HanjaCandidateController {
 
     /**
      * Drive an open candidate window. Returns true when the key was a candidate
-     * action (number/arrow/Enter/Escape/Backspace) and was consumed. Any other key
-     * while the window is open closes it and returns false, so the caller can let
-     * that key fall through to normal handling.
+     * action (Hanja/number/arrow/Enter/Escape/Backspace) and was consumed. Any
+     * other key while the window is open closes it and returns false, so the caller
+     * can let that key fall through to normal handling.
      */
     handleKey(event: KeyboardEvent): boolean {
         const shiftKey = this.syncShiftState(event);
         if (!this.selection) {
             return false;
+        }
+        if (this.isConversionKey(event)) {
+            this.close();
+            cancelEvent(event);
+            return true;
         }
         if (shiftKey) {
             cancelEvent(event);

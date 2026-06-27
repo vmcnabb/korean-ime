@@ -856,6 +856,21 @@ describe("KeyListener Hanja candidate selection (KIME_ENABLE_HANJA)", () => {
         expect(candidateTexts()).toEqual(["1安", "2岸"]);
     });
 
+    it("closes an open candidate list when the Hanja key is pressed again", async () => {
+        process.env.KIME_ENABLE_HANJA = "true";
+        const { element } = composingController();
+        composeHan(element);
+        pressRightCtrl(element);
+        await settleHanjaLookup();
+
+        const ctrl = pressRightCtrl(element);
+        await settleHanjaLookup();
+
+        expect(element.value).toBe("한");
+        expect(document.querySelector(HANJA_CANDIDATE_WINDOW_SELECTOR)).toBeNull();
+        expect(ctrl.defaultPrevented).toBe(true);
+    });
+
     it("commits a composing candidate selected by number", async () => {
         process.env.KIME_ENABLE_HANJA = "true";
         const { element, deleteContentBackwards, inputCharacter } = composingController();
