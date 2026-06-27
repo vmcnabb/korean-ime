@@ -59,8 +59,8 @@ export class HanjaCompositionOverlay {
             return;
         }
 
-        const runRects = this.adapter.getTextRangeRects(completeRunTextRange(this.target));
-        const matchRects = this.adapter.getTextRangeRects(matchedTextRange(this.target));
+        const runRects = mergeAdjacentLineRects(this.adapter.getTextRangeRects(completeRunTextRange(this.target)));
+        const matchRects = mergeAdjacentLineRects(this.adapter.getTextRangeRects(matchedTextRange(this.target)));
         this.root.replaceChildren(
             ...runRects.map((rect) => createDecoration(rect, "underline")),
             ...matchRects.map((rect) => createDecoration(rect, "match"))
@@ -87,4 +87,42 @@ function createDecoration(rect: GlyphRect, kind: "underline" | "match"): HTMLDiv
     });
     decoration.dataset.kimeHanjaDecoration = kind;
     return decoration;
+}
+
+/**
+ * A contenteditable Range can expose one client rect per text node even when
+ * those nodes form one visually continuous line. Merge touching fragments so a
+ * matched word gets one box per rendered line, not one box per DOM node.
+ */
+function mergeAdjacentLineRects(rects: readonly GlyphRect[]): GlyphRect[] {
+    const sorted = [...rects].sort((left, right) => left.top - right.top || left.left - right.left);
+    const merged: GlyphRect[] = [];
+
+    for (const rect of sorted) {
+        const previous = merged.at(-1);
+        if (!previous || !isSameLine(previous, rect) || horizontalGap(previous, rect) > 1) {
+            merged.push({ ...rect });
+            continue;
+        }
+
+        const right = Math.max(previous.left + previous.width, rect.left + rect.width);
+        const bottom = Math.max(previous.top + previous.height, rect.top + rect.height);
+        previous.left = Math.min(previous.left, rect.left);
+        previous.top = Math.min(previous.top, rect.top);
+        previous.width = right - previous.left;
+        previous.height = bottom - previous.top;
+    }
+
+    return merged;
+}
+
+function isSameLine(left: GlyphRect, right: GlyphRect): boolean {
+    const overlap = Math.min(left.top + left.height, right.top + right.height) - Math.max(left.top, right.top);
+    return overlap > 0 && overlap >= Math.min(left.height, right.height) / 2;
+}
+
+function horizontalGap(left: GlyphRect, right: GlyphRect): number {
+    const leftEdge = Math.max(left.left, right.left);
+    const rightEdge = Math.min(left.left + left.width, right.left + right.width);
+    return Math.max(0, leftEdge - rightEdge);
 }

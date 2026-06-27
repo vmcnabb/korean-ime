@@ -47,4 +47,16 @@ describe("HanjaCompositionOverlay", () => {
         expect(document.querySelectorAll('[data-kime-hanja-decoration="underline"]')).toHaveLength(2);
         expect(document.querySelectorAll('[data-kime-hanja-decoration="match"]')).toHaveLength(2);
     });
+
+    it("merges adjacent contenteditable fragments into one box on the same line", () => {
+        const adapter = {
+            supportsMethods: jest.fn().mockReturnValue(true),
+            getTextRangeRects: jest.fn(() => [rect(10, 20, 16, 20), rect(26, 20, 16, 20)]),
+        } as unknown as CompositionAdapter;
+        const overlay = new HanjaCompositionOverlay(adapter);
+
+        expect(overlay.show({ run: "한국", matchStart: 0, reading: "한국" })).toEqual(rect(10, 20, 32, 20));
+        expect(document.querySelectorAll('[data-kime-hanja-decoration="underline"]')).toHaveLength(1);
+        expect(document.querySelectorAll('[data-kime-hanja-decoration="match"]')).toHaveLength(1);
+    });
 });
