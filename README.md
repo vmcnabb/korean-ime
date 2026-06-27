@@ -43,7 +43,7 @@ Manifest V3 — both browsers, dev and release.
 | Command | Description |
 |---|---|
 | `npm run dev:chrome` / `dev:firefox` | WXT dev server + launch the browser on a throwaway profile with HMR, opening the localhost test page. Session flags after `--`: `--enable-hanja`, `--locale=<code>`, `--dark`/`--light` |
-| `npm run build:chrome` / `build:firefox` | Production build to `.output/<target>` — `.output/chrome-mv3` / `.output/firefox-mv3` (run `validate` separately for gates) |
+| `npm run build:chrome` / `build:firefox` | Production build to `.output/<target>` — `.output/chrome-mv3` / `.output/firefox-mv3`. Pass `-- --enable-hanja` to include the gated Hanja feature (run `validate` separately for gates). |
 | `npm run zip:chrome` / `zip:firefox` | Build + zip for the Web Store / AMO |
 | `npm run validate` | Full gate: message keys → type-check → lint → translations → tests |
 | `npm run lint` | Lint with ESLint (`npm run lint:fix` to auto-fix) |
@@ -54,6 +54,13 @@ Production builds output to `.output/<target>` (dev builds to
 `.output/<target>-dev`, kept separate). Load as an unpacked extension:
 1. **Chrome:** `chrome://extensions` → **Developer mode** → **Load unpacked** → `.output/chrome-mv3`
 2. **Firefox:** `about:debugging` → **This Firefox** → **Load Temporary Add-on** → `.output/firefox-mv3/manifest.json`
+
+To test the gated Hanja feature in a normal browser profile, build it explicitly:
+
+```sh
+npm run build:chrome -- --enable-hanja
+npm run build:firefox -- --enable-hanja
+```
 
 #### Firefox development
 

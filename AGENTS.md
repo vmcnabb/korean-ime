@@ -28,7 +28,7 @@ git pull` first if you do check locally.
 |---|---|
 | `npm run dev:chrome` | WXT dev server + launches Chrome on a throwaway profile with HMR, opening the localhost test page (`scripts/dev.mjs`). Session flags after `--`: `--enable-hanja`, `--locale=<code>`, `--dark`/`--light`. |
 | `npm run dev:firefox` | Same, for Firefox (MV3). Content-script injection in dev needs **Firefox 147+** (see gotcha). |
-| `npm run build:chrome` / `build:firefox` | Production build to `.output/<target>` (`gen-assets` → `wxt build`). Both targets are MV3. No gates — run `validate` separately. |
+| `npm run build:chrome` / `build:firefox` | Production build to `.output/<target>` (`gen-assets` → `wxt build`). Both targets are MV3. Pass `-- --enable-hanja` to include the gated Hanja feature. No gates — run `validate` separately. |
 | `npm run zip:chrome` / `zip:firefox` | Build + zip for store upload (`wxt zip`) — Chrome Web Store / AMO. |
 | `npm run validate` | `check-message-keys` + `tsc --noEmit` + `lint` + `check-translations` + `test` — the full gate (also run by `package:*` and CI). |
 | `npm run package:chrome` / `package:firefox` | `validate` then `zip:<target>`. |

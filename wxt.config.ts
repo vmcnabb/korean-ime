@@ -1,9 +1,10 @@
 import { defineConfig } from "wxt";
 
-// Single input for the gated Hanja feature: KIME_ENABLE_HANJA (set by
-// `--enable-hanja` in dev, or `KIME_ENABLE_HANJA=true npm run build`). Mirror it
-// to VITE_ENABLE_HANJA so Vite exposes it on import.meta.env for the dev process
-// shim (custom defines don't fold in the dev server; VITE_* env does).
+// Single input for the gated Hanja feature: KIME_ENABLE_HANJA (set by the
+// `--enable-hanja` flag in scripts/dev.mjs and scripts/build.mjs, or directly in
+// the shell). Mirror it to VITE_ENABLE_HANJA so Vite exposes it on
+// import.meta.env for the dev process shim (custom defines don't fold in the dev
+// server; VITE_* env does).
 if (process.env.KIME_ENABLE_HANJA && !process.env.VITE_ENABLE_HANJA) {
     process.env.VITE_ENABLE_HANJA = process.env.KIME_ENABLE_HANJA;
 }
