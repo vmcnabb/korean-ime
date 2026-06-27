@@ -46,11 +46,20 @@ export function commitHanjaCandidate(
     candidate: HanjaCandidate,
     target: HanjaConversionTarget,
     adapter: CompositionAdapter,
-    _keyCode: KeyCode,
+    keyCode: KeyCode,
     options: CommitHanjaCandidateOptions = {}
 ): boolean {
-    const replacement = options.useSimplified && candidate.simplified ? candidate.simplified : candidate.hanja;
-    return adapter.replaceTextBeforeCaret(matchedTextRange(target), replacement);
+    const hanja = options.useSimplified && candidate.simplified ? candidate.simplified : candidate.hanja;
+    // Re-compose the entire run with only the matched portion converted, matching
+    // the native IME (한국말 → 韓國말): unmatched leading and trailing Hangul ride
+    // along rather than being replaced piecemeal.
+    const characters = [...target.run];
+    const readingLength = [...target.reading].length;
+    const commitText =
+        characters.slice(0, target.matchStart).join("") +
+        hanja +
+        characters.slice(target.matchStart + readingLength).join("");
+    return adapter.replaceTextBeforeCaret(completeRunTextRange(target), commitText, keyCode);
 }
 
 export function completeRunTextRange(target: HanjaConversionTarget): BeforeCaretTextRange {

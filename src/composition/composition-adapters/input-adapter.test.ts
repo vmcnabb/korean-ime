@@ -216,18 +216,34 @@ describe("InputAdapter committed text ranges", () => {
         expect(makeAdapter(element).getTextBeforeCaret()).toBeUndefined();
     });
 
-    it("replaces an earlier unequal-length range and preserves the logical caret position", () => {
+    it("replaces an earlier unequal-length range as a composition and preserves the logical caret position", () => {
         const element = makeTextarea("가가와현은");
         const adapter = makeAdapter(element);
-        const recorded = recordEvents(element, ["beforeinput", "input"]);
+        const recorded = recordEvents(element, [
+            "compositionstart",
+            "compositionupdate",
+            "compositionend",
+            "beforeinput",
+            "input",
+        ]);
 
         expect(adapter.replaceTextBeforeCaret({ text: "가가와현", offset: 1 }, "香川縣")).toBe(true);
 
         expect(element.value).toBe("香川縣은");
         expect(element.selectionStart).toBe(4);
         expect(element.selectionEnd).toBe(4);
-        expect(recorded.types).toEqual(["beforeinput", "input"]);
-        expect((recorded.events[1] as InputEvent).inputType).toBe("insertReplacementText");
+        // The native IME re-composes the committed text, so conversion is delivered
+        // as insertCompositionText, not insertReplacementText.
+        expect(recorded.types).toEqual([
+            "compositionstart",
+            "beforeinput",
+            "compositionupdate",
+            "input",
+            "compositionend",
+            "input",
+        ]);
+        expect((recorded.events[0] as CompositionEvent).data).toBe("가가와현");
+        expect((recorded.events[1] as InputEvent).inputType).toBe("insertCompositionText");
     });
 
     it("refuses to replace a stale range", () => {

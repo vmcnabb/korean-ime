@@ -128,7 +128,7 @@ export class InputAdapter extends CompositionAdapter {
             return false;
         }
 
-        this._replaceText(data, () => {
+        this._replaceText(range.text, data, () => {
             this.element.value =
                 this.element.value.substring(0, bounds.start) + data + this.element.value.substring(bounds.end);
             const nextCaret = caret + data.length - range.text.length;

@@ -883,7 +883,7 @@ describe("KeyListener Hanja candidate selection (KIME_ENABLE_HANJA)", () => {
 
         const digit = dispatchKeydown(element, "Digit2", "2");
 
-        expect(replaceTextBeforeCaret).toHaveBeenCalledWith({ text: "한", offset: 0 }, "寒");
+        expect(replaceTextBeforeCaret).toHaveBeenCalledWith({ text: "한", offset: 0 }, "寒", KeyCode.Digit2);
         expect(element.value).toBe("寒");
         expect(document.querySelector(HANJA_CANDIDATE_WINDOW_SELECTOR)).toBeNull();
         expect(digit.defaultPrevented).toBe(true);
@@ -899,7 +899,7 @@ describe("KeyListener Hanja candidate selection (KIME_ENABLE_HANJA)", () => {
         const arrow = dispatchKeydown(element, "ArrowDown", "ArrowDown");
         const enter = dispatchKeydown(element, "Enter", "Enter");
 
-        expect(replaceTextBeforeCaret).toHaveBeenCalledWith({ text: "한", offset: 0 }, "寒");
+        expect(replaceTextBeforeCaret).toHaveBeenCalledWith({ text: "한", offset: 0 }, "寒", KeyCode.Enter);
         expect(arrow.defaultPrevented).toBe(true);
         expect(enter.defaultPrevented).toBe(true);
     });

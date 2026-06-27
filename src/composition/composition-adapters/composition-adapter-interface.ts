@@ -22,7 +22,7 @@ export interface ICompositionAdapter {
     getTextBeforeCaret(): string | undefined;
     getTextRangeRects(range: BeforeCaretTextRange): readonly GlyphRect[];
     inputCharacter(data: string, keyCode: KeyCode): void;
-    replaceTextBeforeCaret(range: BeforeCaretTextRange, data: string): boolean;
+    replaceTextBeforeCaret(range: BeforeCaretTextRange, data: string, keyCode: KeyCode): boolean;
 
     beginComposition(data: string, keyCode: KeyCode): void;
     updateComposition(data: string, keyCode: KeyCode): void;

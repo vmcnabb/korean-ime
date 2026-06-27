@@ -92,21 +92,29 @@ describe("matchedTextRange", () => {
 });
 
 describe("commitHanjaCandidate", () => {
-    it("replaces the matched substring while leaving trailing text in place", () => {
+    it("re-composes the whole run with only the matched portion converted", () => {
         const adapter = fakeAdapter();
         const target = { run: "한국중국", matchStart: 0, reading: "한국" };
 
         expect(commitHanjaCandidate(hanCandidates[0], target, asAdapter(adapter), KeyCode.Digit1)).toBe(true);
-        expect(adapter.replaceTextBeforeCaret).toHaveBeenCalledWith({ text: "한국", offset: 2 }, "韓國");
+        expect(adapter.replaceTextBeforeCaret).toHaveBeenCalledWith(
+            { text: "한국중국", offset: 0 },
+            "韓國중국",
+            KeyCode.Digit1
+        );
     });
 
-    it("replaces a non-length-preserving entry through the same range operation", () => {
+    it("carries unmatched trailing text through a non-length-preserving conversion", () => {
         const adapter = fakeAdapter();
         const target = { run: "가가와현은", matchStart: 0, reading: "가가와현" };
 
         commitHanjaCandidate({ hanja: "香川縣", korean: "" }, target, asAdapter(adapter), KeyCode.Enter);
 
-        expect(adapter.replaceTextBeforeCaret).toHaveBeenCalledWith({ text: "가가와현", offset: 1 }, "香川縣");
+        expect(adapter.replaceTextBeforeCaret).toHaveBeenCalledWith(
+            { text: "가가와현은", offset: 0 },
+            "香川縣은",
+            KeyCode.Enter
+        );
     });
 
     it("uses the simplified form when requested", () => {
@@ -121,7 +129,7 @@ describe("commitHanjaCandidate", () => {
             { useSimplified: true }
         );
 
-        expect(adapter.replaceTextBeforeCaret).toHaveBeenCalledWith({ text: "한", offset: 0 }, "韩");
+        expect(adapter.replaceTextBeforeCaret).toHaveBeenCalledWith({ text: "한", offset: 0 }, "韩", KeyCode.Digit1);
     });
 
     it("reports a stale range that the adapter refused to replace", () => {

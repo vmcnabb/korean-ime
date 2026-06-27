@@ -252,14 +252,14 @@ export class ContentEditableAdapter extends CompositionAdapter {
         return super._inputCharacter(data, keyCode, inputCharacterFn);
     }
 
-    replaceTextBeforeCaret(range: BeforeCaretTextRange, data: string): boolean {
+    replaceTextBeforeCaret(range: BeforeCaretTextRange, data: string, _keyCode: KeyCode): boolean {
         const caretOffset = this.getCaretTextOffset();
         const target = this.createRangeBeforeCaret(range);
         if (caretOffset === undefined || !target) {
             return false;
         }
 
-        this._replaceText(data, () => {
+        this._replaceText(range.text, data, () => {
             if (!this.replaceRangeContents(target, data)) {
                 return;
             }
@@ -327,8 +327,9 @@ export class ContentEditableAdapter extends CompositionAdapter {
     }
 
     /**
-     * CKEditor overrides this mutation and lets its own beforeinput handling
-     * update the editor model.
+     * Direct DOM replacement of the range, for plain contentEditable (which has no
+     * separate model to revert it). CKEditor can't use this — it discards direct
+     * writes — so `CkEditorAdapter` overrides `replaceTextBeforeCaret` instead.
      */
     protected replaceRangeContents(range: Range, data: string): boolean {
         range.deleteContents();

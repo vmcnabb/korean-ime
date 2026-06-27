@@ -137,7 +137,7 @@ describe("ContentEditableAdapter committed text ranges", () => {
         placeCaretAtEnd(element);
         const adapter = new ContentEditableAdapter(element);
 
-        expect(adapter.replaceTextBeforeCaret({ text: "가가와현", offset: 1 }, "香川縣")).toBe(true);
+        expect(adapter.replaceTextBeforeCaret({ text: "가가와현", offset: 1 }, "香川縣", KeyCode.Enter)).toBe(true);
 
         expect(element.textContent).toBe("香川縣은");
         expect(adapter.getTextBeforeCaret()).toBe("香川縣은");
@@ -148,9 +148,13 @@ describe("ContentEditableAdapter committed text ranges", () => {
         element.textContent = "한국은";
         placeCaretAtEnd(element);
 
-        expect(new ContentEditableAdapter(element).replaceTextBeforeCaret({ text: "한국", offset: 0 }, "韓國")).toBe(
-            false
-        );
+        expect(
+            new ContentEditableAdapter(element).replaceTextBeforeCaret(
+                { text: "한국", offset: 0 },
+                "韓國",
+                KeyCode.Enter
+            )
+        ).toBe(false);
         expect(element.textContent).toBe("한국은");
     });
 });
