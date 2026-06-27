@@ -978,6 +978,42 @@ describe("KeyListener Hanja candidate selection (KIME_ENABLE_HANJA)", () => {
         expect(digit.defaultPrevented).toBe(true);
     });
 
+    it("selects by physical number-row position when the host layout reports a symbol", async () => {
+        process.env.KIME_ENABLE_HANJA = "true";
+        const { element } = await controllerAfterCommittedSyllable("한", { provider: simplifiedProvider() });
+
+        const digit = dispatchKeydown(element, "Digit1", "&");
+
+        expect(element.value).toBe("韓");
+        expect(document.querySelector(HANJA_CANDIDATE_WINDOW_SELECTOR)).toBeNull();
+        expect(digit.defaultPrevented).toBe(true);
+    });
+
+    it("commits the simplified form with Enter while Shift is held", async () => {
+        process.env.KIME_ENABLE_HANJA = "true";
+        const { element } = await controllerAfterCommittedSyllable("한", { provider: simplifiedProvider() });
+
+        dispatchKeydown(element, "ShiftLeft", "Shift", { shiftKey: true });
+        const enter = dispatchKeydown(element, "Enter", "Enter", { shiftKey: true });
+
+        expect(element.value).toBe("韩");
+        expect(document.querySelector(HANJA_CANDIDATE_WINDOW_SELECTOR)).toBeNull();
+        expect(enter.defaultPrevented).toBe(true);
+    });
+
+    it("commits the normal form with a number after Shift is released", async () => {
+        process.env.KIME_ENABLE_HANJA = "true";
+        const { element } = await controllerAfterCommittedSyllable("한", { provider: simplifiedProvider() });
+
+        dispatchKeydown(element, "ShiftLeft", "Shift", { shiftKey: true });
+        dispatchKeyup(element, "ShiftLeft", "Shift", { shiftKey: false });
+        const digit = dispatchKeydown(element, "Digit1", "1");
+
+        expect(element.value).toBe("韓");
+        expect(document.querySelector(HANJA_CANDIDATE_WINDOW_SELECTOR)).toBeNull();
+        expect(digit.defaultPrevented).toBe(true);
+    });
+
     it("falls back to normal Hanja when a shifted candidate has no simplified form", async () => {
         process.env.KIME_ENABLE_HANJA = "true";
         const { element } = await controllerAfterCommittedSyllable("한", { provider: simplifiedProvider() });
