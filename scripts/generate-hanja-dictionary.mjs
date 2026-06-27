@@ -8,7 +8,7 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 const DEFAULT_LIBHANGUL_DIR = path.resolve(repoRoot, "../libhangul");
 const DEFAULT_UNIHAN_DIR = path.resolve(repoRoot, "../Unihan");
 const OUTPUT_DIR = path.join(repoRoot, "src/hanja-dictionary");
-const SINGLE_SYLLABLE_OUTPUT_FILE = path.join(OUTPUT_DIR, "single-syllable.data");
+const DICTIONARY_OUTPUT_FILE = path.join(OUTPUT_DIR, "dictionary.data");
 const HANJA_HANZI_OUTPUT_FILE = path.join(OUTPUT_DIR, "hanja-hanzi.data");
 
 const args = parseArgs(process.argv.slice(2));
@@ -19,8 +19,10 @@ const unihanVariantsFile = path.join(unihanDir, "Unihan_Variants.txt");
 const unihanReadingsFile = path.join(unihanDir, "Unihan_Readings.txt");
 
 const source = await readFile(hanjaFile, "utf8");
-const dictionary = buildSingleSyllableDictionary(source);
-const hanjaCharacters = new Set(Object.values(dictionary).flatMap((candidates) => candidates.map(([hanja]) => hanja)));
+const dictionary = buildDictionary(source);
+const hanjaCharacters = new Set(
+    Object.values(dictionary).flatMap((candidates) => candidates.flatMap(([hanja]) => [...hanja]))
+);
 const hanziMetadata = buildHanziMetadata(
     hanjaCharacters,
     await readFile(unihanVariantsFile, "utf8"),
@@ -28,15 +30,15 @@ const hanziMetadata = buildHanziMetadata(
 );
 
 await mkdir(OUTPUT_DIR, { recursive: true });
-await writeFile(SINGLE_SYLLABLE_OUTPUT_FILE, `${JSON.stringify(dictionary)}\n`, "utf8");
+await writeFile(DICTIONARY_OUTPUT_FILE, `${JSON.stringify(dictionary)}\n`, "utf8");
 await writeFile(HANJA_HANZI_OUTPUT_FILE, `${JSON.stringify(hanziMetadata)}\n`, "utf8");
 
 const readingCount = Object.keys(dictionary).length;
 const candidateCount = Object.values(dictionary).reduce((total, candidates) => total + candidates.length, 0);
 const metadataCount = Object.keys(hanziMetadata).length;
-console.log(`[gen-hanja] wrote ${path.relative(repoRoot, SINGLE_SYLLABLE_OUTPUT_FILE)}`);
+console.log(`[gen-hanja] wrote ${path.relative(repoRoot, DICTIONARY_OUTPUT_FILE)}`);
 console.log(`[gen-hanja] wrote ${path.relative(repoRoot, HANJA_HANZI_OUTPUT_FILE)}`);
-console.log(`[gen-hanja] ${readingCount} single-syllable readings, ${candidateCount} candidates`);
+console.log(`[gen-hanja] ${readingCount} readings, ${candidateCount} candidates`);
 console.log(`[gen-hanja] ${metadataCount} Hanja/Hanzi metadata rows`);
 console.log(`[gen-hanja] source ${path.relative(repoRoot, hanjaFile)}`);
 console.log(`[gen-hanja] source ${path.relative(repoRoot, unihanVariantsFile)}`);
@@ -65,7 +67,7 @@ function parseArgs(argv) {
     return parsed;
 }
 
-function buildSingleSyllableDictionary(sourceText) {
+function buildDictionary(sourceText) {
     const dictionary = {};
 
     for (const line of sourceText.split(/\r?\n/)) {
@@ -74,7 +76,7 @@ function buildSingleSyllableDictionary(sourceText) {
         }
 
         const [reading, hanja, ...glossParts] = line.split(":");
-        if (!isSingleHangulSyllable(reading)) {
+        if (![...reading].every(isHanjaReadingCharacter)) {
             continue;
         }
 
@@ -148,15 +150,14 @@ function codePointTokenToCharacter(token) {
     return String.fromCodePoint(codePoint);
 }
 
-function isSingleHangulSyllable(text) {
-    if ([...text].length !== 1) {
-        return false;
-    }
-
-    const codePoint = text.codePointAt(0);
-    if (codePoint === undefined) {
-        return false;
-    }
-
-    return codePoint >= 0xac00 && codePoint <= 0xd7a3;
+function isHanjaReadingCharacter(character) {
+    const codePoint = character.codePointAt(0);
+    return (
+        codePoint !== undefined &&
+        ((codePoint >= 0x1100 && codePoint <= 0x11ff) ||
+            (codePoint >= 0x3130 && codePoint <= 0x318f) ||
+            (codePoint >= 0xa960 && codePoint <= 0xa97f) ||
+            (codePoint >= 0xac00 && codePoint <= 0xd7a3) ||
+            (codePoint >= 0xd7b0 && codePoint <= 0xd7ff))
+    );
 }

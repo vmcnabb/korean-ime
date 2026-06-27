@@ -2,6 +2,7 @@ import { KeyCode } from "../../keyboard/korean-keyboard-map";
 import { CompositionAdapter, DispatchableAction } from "./composition-adapter";
 import { methodNotSupported } from "../../decorators/method-not-supported";
 import { GlyphRect } from "../compositing-box";
+import { BeforeCaretTextRange } from "./composition-adapter-interface";
 
 /**
  * Handles IME composition (and selection) for Google Docs.
@@ -26,6 +27,16 @@ export class GoogleDocsAdapter extends CompositionAdapter {
         return;
     }
 
+    @methodNotSupported
+    getTextBeforeCaret(): string | undefined {
+        return;
+    }
+
+    @methodNotSupported
+    getTextRangeRects(_range: BeforeCaretTextRange): readonly GlyphRect[] {
+        return [];
+    }
+
     deleteContentBackwards(): void {
         if (this.isCompositing) {
             throw new Error("Cannot delete character backward when compositing");
@@ -34,6 +45,11 @@ export class GoogleDocsAdapter extends CompositionAdapter {
         super._deleteContentBackwards(() => {
             // do nothing as Google Docs handles this for us
         });
+    }
+
+    @methodNotSupported
+    replaceTextBeforeCaret(_range: BeforeCaretTextRange, _data: string): boolean {
+        return false;
     }
 
     blur() {

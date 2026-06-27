@@ -1,4 +1,4 @@
-import { ICompositionAdapter } from "./composition-adapter-interface";
+import { BeforeCaretTextRange, ICompositionAdapter } from "./composition-adapter-interface";
 import { GlyphRect } from "../compositing-box";
 
 /**
@@ -19,10 +19,19 @@ export class DummyAdapter implements ICompositionAdapter {
     getPreviousCharacterRect(): GlyphRect | undefined {
         throw new Error("Method not implemented.");
     }
+    getTextBeforeCaret(): string | undefined {
+        throw new Error("Method not implemented.");
+    }
+    getTextRangeRects(_range: BeforeCaretTextRange): readonly GlyphRect[] {
+        throw new Error("Method not implemented.");
+    }
     deleteContentBackwards(): void {
         throw new Error("Method not implemented.");
     }
     inputCharacter(): void {
+        throw new Error("Method not implemented.");
+    }
+    replaceTextBeforeCaret(): boolean {
         throw new Error("Method not implemented.");
     }
     beginComposition(): void {

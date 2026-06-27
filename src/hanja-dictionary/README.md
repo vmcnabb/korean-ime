@@ -4,21 +4,20 @@ This directory contains generated runtime data for the feature-flagged Hanja IME
 
 ## Scope
 
-The current generated data is intentionally limited to individual Hangul syllable
-conversion. It contains:
+The generated data contains:
 
-- single-syllable Hangul readings only
+- single- and multi-character Hangul readings
 - ordered Hanja candidates for each reading
 - Korean reading/gloss text from libhangul
-- Simplified Chinese variants from Unihan, when one is listed
-- Pinyin from Unihan `kMandarin`, when one is listed
+- Simplified Chinese variants from Unihan for single-character candidates, when listed
+- Pinyin from Unihan `kMandarin` for single-character candidates, when listed
 
 The generated `.data` files contain JSON. The neutral extension is
 intentional: it lets the extension fetch the file at runtime as a packaged asset
 (imported with Vite's `?url` suffix) instead of being compiled into a JavaScript
 JSON module.
 
-It does not include multi-syllable word keys or frequency ranking data.
+It does not include frequency ranking data.
 
 ## Source
 

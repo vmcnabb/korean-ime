@@ -82,3 +82,75 @@ describe("ContentEditableAdapter compositing box", () => {
         expect(adapter.getPreviousCharacterRect()).toEqual({ left: 5, top: 6, width: 10, height: 12 });
     });
 });
+
+describe("ContentEditableAdapter committed text ranges", () => {
+    beforeEach(() => {
+        (Range.prototype as { getBoundingClientRect?: () => DOMRect }).getBoundingClientRect = () =>
+            ({
+                left: 5,
+                top: 6,
+                width: 40,
+                height: 12,
+                right: 45,
+                bottom: 18,
+                x: 5,
+                y: 6,
+                toJSON: () => ({}),
+            }) as DOMRect;
+    });
+
+    afterEach(() => {
+        document.body.innerHTML = "";
+        window.getSelection()?.removeAllRanges();
+        delete (Range.prototype as { getBoundingClientRect?: () => DOMRect }).getBoundingClientRect;
+    });
+
+    it("reads text before the caret across inline nodes", () => {
+        const element = makeContentEditable();
+        element.innerHTML = "한국<span>중국</span>";
+        placeCaretAtEnd(element);
+
+        expect(new ContentEditableAdapter(element).getTextBeforeCaret()).toBe("한국중국");
+    });
+
+    it("keeps line and block boundaries from joining separate Hangul runs", () => {
+        const element = makeContentEditable();
+        element.innerHTML = "<div>한국</div><div>중국<br>대한</div>";
+        placeCaretAtEnd(element);
+
+        expect(new ContentEditableAdapter(element).getTextBeforeCaret()).toBe("한국\n중국\n대한");
+    });
+
+    it("measures a range spanning inline nodes", () => {
+        const element = makeContentEditable();
+        element.innerHTML = "한국<span>중국</span>";
+        placeCaretAtEnd(element);
+
+        expect(new ContentEditableAdapter(element).getTextRangeRects({ text: "한국중국", offset: 0 })).toEqual([
+            { left: 5, top: 6, width: 40, height: 12 },
+        ]);
+    });
+
+    it("replaces an unequal-length range across inline nodes and restores the caret after trailing text", () => {
+        const element = makeContentEditable();
+        element.innerHTML = "가가<span>와현</span>은";
+        placeCaretAtEnd(element);
+        const adapter = new ContentEditableAdapter(element);
+
+        expect(adapter.replaceTextBeforeCaret({ text: "가가와현", offset: 1 }, "香川縣")).toBe(true);
+
+        expect(element.textContent).toBe("香川縣은");
+        expect(adapter.getTextBeforeCaret()).toBe("香川縣은");
+    });
+
+    it("refuses to replace a stale range", () => {
+        const element = makeContentEditable();
+        element.textContent = "한국은";
+        placeCaretAtEnd(element);
+
+        expect(new ContentEditableAdapter(element).replaceTextBeforeCaret({ text: "한국", offset: 0 }, "韓國")).toBe(
+            false
+        );
+        expect(element.textContent).toBe("한국은");
+    });
+});

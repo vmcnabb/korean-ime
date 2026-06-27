@@ -1,6 +1,7 @@
 import { KeyCode } from "../../keyboard/korean-keyboard-map";
 import { CompositionAdapter } from "./composition-adapter";
 import { CompositingBox, GlyphRect } from "../compositing-box";
+import { BeforeCaretTextRange } from "./composition-adapter-interface";
 
 /**
  * Handles IME composition for contentEditable elements.
@@ -63,6 +64,41 @@ export class ContentEditableAdapter extends CompositionAdapter {
         range.setStart(range.startContainer, range.startOffset - 1);
 
         return range.toString();
+    }
+
+    getTextBeforeCaret(): string | undefined {
+        const caret = this.getCollapsedCaret();
+        if (!caret) {
+            return undefined;
+        }
+
+        const beforeCaret = document.createRange();
+        beforeCaret.selectNodeContents(this.element);
+        try {
+            beforeCaret.setEnd(caret.startContainer, caret.startOffset);
+        } catch {
+            return undefined;
+        }
+        return textWithEditingBoundaries(beforeCaret.cloneContents());
+    }
+
+    getTextRangeRects(range: BeforeCaretTextRange): readonly GlyphRect[] {
+        const target = this.createRangeBeforeCaret(range);
+        if (!target) {
+            return [];
+        }
+
+        const rects =
+            typeof target.getClientRects === "function"
+                ? Array.from(target.getClientRects()).filter(hasVisibleRect)
+                : [];
+        if (rects.length === 0 && typeof target.getBoundingClientRect === "function") {
+            const boundingRect = target.getBoundingClientRect();
+            if (hasVisibleRect(boundingRect)) {
+                rects.push(boundingRect);
+            }
+        }
+        return rects.map(({ left, top, width, height }) => ({ left, top, width, height }));
     }
 
     blur() {
@@ -216,6 +252,23 @@ export class ContentEditableAdapter extends CompositionAdapter {
         return super._inputCharacter(data, keyCode, inputCharacterFn);
     }
 
+    replaceTextBeforeCaret(range: BeforeCaretTextRange, data: string): boolean {
+        const caretOffset = this.getCaretTextOffset();
+        const target = this.createRangeBeforeCaret(range);
+        if (caretOffset === undefined || !target) {
+            return false;
+        }
+
+        this._replaceText(data, () => {
+            if (!this.replaceRangeContents(target, data)) {
+                return;
+            }
+            this.placeCaretAtTextOffset(caretOffset + data.length - range.text.length);
+            document.dispatchEvent(new Event("selectionchange"));
+        });
+        return true;
+    }
+
     /** @returns {EventTarget} */
     getListenerTarget(eventType: string): EventTarget {
         switch (eventType) {
@@ -272,4 +325,168 @@ export class ContentEditableAdapter extends CompositionAdapter {
     private measureCompositingRect(): GlyphRect | undefined {
         return this.getPreviousCharacterRect();
     }
+
+    /**
+     * CKEditor overrides this mutation and lets its own beforeinput handling
+     * update the editor model.
+     */
+    protected replaceRangeContents(range: Range, data: string): boolean {
+        range.deleteContents();
+        range.insertNode(document.createTextNode(data));
+        return true;
+    }
+
+    protected createRangeBeforeCaret(spec: BeforeCaretTextRange): Range | undefined {
+        const caretOffset = this.getCaretTextOffset();
+        if (caretOffset === undefined || spec.offset < 0) {
+            return undefined;
+        }
+
+        const endOffset = caretOffset - spec.offset;
+        const startOffset = endOffset - spec.text.length;
+        if (startOffset < 0) {
+            return undefined;
+        }
+
+        const start = textPositionAt(this.element, startOffset);
+        const end = textPositionAt(this.element, endOffset);
+        if (!start || !end) {
+            return undefined;
+        }
+
+        const range = document.createRange();
+        range.setStart(start.node, start.offset);
+        range.setEnd(end.node, end.offset);
+        return range.toString() === spec.text ? range : undefined;
+    }
+
+    private getCollapsedCaret(): Range | undefined {
+        const selection = window.getSelection();
+        if (!selection || selection.rangeCount !== 1) {
+            return undefined;
+        }
+
+        const caret = selection.getRangeAt(0);
+        if (
+            !caret.collapsed ||
+            !this.element.contains(caret.startContainer) ||
+            !this.element.contains(caret.endContainer)
+        ) {
+            return undefined;
+        }
+        return caret;
+    }
+
+    private getCaretTextOffset(): number | undefined {
+        const caret = this.getCollapsedCaret();
+        if (!caret) {
+            return undefined;
+        }
+
+        const beforeCaret = document.createRange();
+        beforeCaret.selectNodeContents(this.element);
+        try {
+            beforeCaret.setEnd(caret.startContainer, caret.startOffset);
+        } catch {
+            return undefined;
+        }
+        return beforeCaret.toString().length;
+    }
+
+    private placeCaretAtTextOffset(offset: number): void {
+        const point = textPositionAt(this.element, offset);
+        const selection = window.getSelection();
+        if (!point || !selection) {
+            return;
+        }
+
+        const caret = document.createRange();
+        caret.setStart(point.node, point.offset);
+        caret.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(caret);
+    }
+}
+
+function textPositionAt(root: HTMLElement, offset: number): { node: Node; offset: number } | undefined {
+    if (offset < 0) {
+        return undefined;
+    }
+
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    let remaining = offset;
+    let node = walker.nextNode();
+    while (node) {
+        const length = node.textContent?.length ?? 0;
+        if (remaining <= length) {
+            return { node, offset: remaining };
+        }
+        remaining -= length;
+        node = walker.nextNode();
+    }
+
+    return remaining === 0 ? { node: root, offset: root.childNodes.length } : undefined;
+}
+
+function hasVisibleRect(rect: DOMRect): boolean {
+    return rect.width !== 0 || rect.height !== 0;
+}
+
+const BLOCK_BOUNDARY_ELEMENTS = new Set([
+    "ADDRESS",
+    "ARTICLE",
+    "ASIDE",
+    "BLOCKQUOTE",
+    "DIV",
+    "DL",
+    "FIELDSET",
+    "FIGCAPTION",
+    "FIGURE",
+    "FOOTER",
+    "FORM",
+    "H1",
+    "H2",
+    "H3",
+    "H4",
+    "H5",
+    "H6",
+    "HEADER",
+    "HR",
+    "LI",
+    "MAIN",
+    "NAV",
+    "OL",
+    "P",
+    "PRE",
+    "SECTION",
+    "TABLE",
+    "UL",
+]);
+
+/**
+ * Range.toString() omits `<br>` and block boundaries. Preserve them as newline
+ * sentinels so Hanja run collection never joins visually separate lines.
+ */
+function textWithEditingBoundaries(root: Node): string {
+    if (root.nodeType === Node.TEXT_NODE) {
+        return root.textContent ?? "";
+    }
+    if (root instanceof HTMLBRElement) {
+        return "\n";
+    }
+
+    const children = Array.from(root.childNodes);
+    let text = "";
+    children.forEach((child, index) => {
+        const previous = children[index - 1];
+        if (index > 0 && (isBlockBoundary(child) || isBlockBoundary(previous))) {
+            text += "\n";
+        }
+        text += textWithEditingBoundaries(child);
+    });
+    return text;
+}
+
+function isBlockBoundary(node: Node | undefined): boolean {
+    return node instanceof HTMLElement && BLOCK_BOUNDARY_ELEMENTS.has(node.tagName);
 }

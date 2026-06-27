@@ -4,7 +4,11 @@ import { setAsKimeEvent } from "../../messaging/dom-events";
 import { trace } from "../../decorators/trace";
 import { DummyAdapter } from "./dummy-adapter";
 import { MethodKeys } from "../../types/objects";
-import { ICompositionAdapter, SupportedCompositionFeatures } from "./composition-adapter-interface";
+import {
+    BeforeCaretTextRange,
+    ICompositionAdapter,
+    SupportedCompositionFeatures,
+} from "./composition-adapter-interface";
 import { GlyphRect } from "../compositing-box";
 
 type DispatchableEvent = KeyboardEvent | CompositionEvent | InputEvent;
@@ -66,6 +70,12 @@ export abstract class CompositionAdapter implements ICompositionAdapter {
      * If selection is not collapsed or the glyph cannot be measured, returns undefined.
      */
     abstract getPreviousCharacterRect(): GlyphRect | undefined;
+
+    /** Returns the text before a collapsed caret, or undefined when no valid caret exists. */
+    abstract getTextBeforeCaret(): string | undefined;
+
+    /** Measure every visible line fragment occupied by a range before the caret. */
+    abstract getTextRangeRects(range: BeforeCaretTextRange): readonly GlyphRect[];
 
     /**
      * Delete selection if exists, otherwise delete the character immediately before the caret.
@@ -143,6 +153,27 @@ export abstract class CompositionAdapter implements ICompositionAdapter {
         ];
 
         this.dispatchActions(eventsToDispatch);
+    }
+
+    /**
+     * Replace a committed range before the caret and keep the caret after the
+     * same untouched trailing text.
+     */
+    abstract replaceTextBeforeCaret(range: BeforeCaretTextRange, data: string): boolean;
+    protected _replaceText(data: string, replaceFn: () => void): void {
+        this.dispatchActions([
+            new InputEvent("beforeinput", {
+                data,
+                bubbles: true,
+                inputType: "insertReplacementText",
+            }),
+            replaceFn,
+            new InputEvent("input", {
+                data,
+                bubbles: true,
+                inputType: "insertReplacementText",
+            }),
+        ]);
     }
 
     abstract beginComposition(data: string, keyCode: KeyCode): void;

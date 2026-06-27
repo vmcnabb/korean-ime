@@ -55,11 +55,11 @@ export class ContentScriptListener {
 
                 if (message.action === ContentScriptRequestAction.HanjaLookup) {
                     void this.hanjaDictionaryProvider
-                        .lookup(message.data.reading)
-                        .then((candidates) => sendResponse({ candidates } satisfies HanjaLookupResponse))
+                        .lookup(message.data.run)
+                        .then((match) => sendResponse({ match } satisfies HanjaLookupResponse))
                         .catch((error) => {
                             debugLog("hanjaLookup failed:", error);
-                            sendResponse({ candidates: [] } satisfies HanjaLookupResponse);
+                            sendResponse({} satisfies HanjaLookupResponse);
                         });
                     return true;
                 }

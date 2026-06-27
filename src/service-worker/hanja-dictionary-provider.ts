@@ -1,7 +1,10 @@
-import { HanjaCandidate } from "../composition/hanja/hanja-candidate";
-import { HanjaDictionaryProvider } from "../composition/hanja/hanja-dictionary-provider";
+import {
+    findHanjaDictionaryMatch,
+    HanjaDictionaryMatch,
+    HanjaDictionaryProvider,
+} from "../composition/hanja/hanja-dictionary-provider";
 import { api } from "../platform/browser-api";
-import generatedDictionaryUrl from "../hanja-dictionary/single-syllable.data?url";
+import generatedDictionaryUrl from "../hanja-dictionary/dictionary.data?url";
 import generatedHanziMetadataUrl from "../hanja-dictionary/hanja-hanzi.data?url";
 
 type GeneratedHanjaCandidate = readonly [hanja: string, korean: string];
@@ -19,17 +22,22 @@ export class GeneratedHanjaDictionaryProvider implements HanjaDictionaryProvider
         private readonly fetchDictionary: typeof fetch = defaultFetchDictionary
     ) {}
 
-    async lookup(reading: string): Promise<readonly HanjaCandidate[]> {
+    async lookup(run: string): Promise<HanjaDictionaryMatch | undefined> {
         const [dictionary, hanziMetadata] = await Promise.all([this.loadDictionary(), this.loadHanziMetadata()]);
-        return (dictionary[reading] ?? []).map(([hanja, korean]) => {
-            const metadata = hanziMetadata[hanja];
-            return {
-                hanja,
-                korean,
-                ...(metadata?.s ? { simplified: metadata.s } : {}),
-                ...(metadata?.p ? { pinyin: metadata.p } : {}),
-            };
-        });
+        return findHanjaDictionaryMatch(run, (reading) =>
+            dictionary[reading]?.map(([hanja, korean]) => {
+                // The existing Unihan display metadata is intentionally limited
+                // to single-character candidates.
+                const metadata =
+                    [...reading].length === 1 && [...hanja].length === 1 ? hanziMetadata[hanja] : undefined;
+                return {
+                    hanja,
+                    korean,
+                    ...(metadata?.s ? { simplified: metadata.s } : {}),
+                    ...(metadata?.p ? { pinyin: metadata.p } : {}),
+                };
+            })
+        );
     }
 
     private loadDictionary(): Promise<GeneratedHanjaDictionary> {

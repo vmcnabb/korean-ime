@@ -195,6 +195,51 @@ describe("InputAdapter composition events", () => {
     });
 });
 
+describe("InputAdapter committed text ranges", () => {
+    afterEach(() => {
+        document.body.innerHTML = "";
+    });
+
+    it("reads all text before a collapsed caret", () => {
+        const element = makeTextarea("앞 한국은 뒤");
+        element.selectionStart = element.selectionEnd = 5;
+        const adapter = makeAdapter(element);
+
+        expect(adapter.getTextBeforeCaret()).toBe("앞 한국은");
+    });
+
+    it("does not expose text while a selection is active", () => {
+        const element = makeTextarea("한국");
+        element.selectionStart = 0;
+        element.selectionEnd = 2;
+
+        expect(makeAdapter(element).getTextBeforeCaret()).toBeUndefined();
+    });
+
+    it("replaces an earlier unequal-length range and preserves the logical caret position", () => {
+        const element = makeTextarea("가가와현은");
+        const adapter = makeAdapter(element);
+        const recorded = recordEvents(element, ["beforeinput", "input"]);
+
+        expect(adapter.replaceTextBeforeCaret({ text: "가가와현", offset: 1 }, "香川縣")).toBe(true);
+
+        expect(element.value).toBe("香川縣은");
+        expect(element.selectionStart).toBe(4);
+        expect(element.selectionEnd).toBe(4);
+        expect(recorded.types).toEqual(["beforeinput", "input"]);
+        expect((recorded.events[1] as InputEvent).inputType).toBe("insertReplacementText");
+    });
+
+    it("refuses to replace a stale range", () => {
+        const element = makeTextarea("한국은");
+        const adapter = makeAdapter(element);
+
+        expect(adapter.replaceTextBeforeCaret({ text: "한국", offset: 0 }, "韓國")).toBe(false);
+        expect(element.value).toBe("한국은");
+        expect(element.selectionStart).toBe(3);
+    });
+});
+
 describe("InputAdapter glyph measurement", () => {
     beforeEach(() => {
         (Range.prototype as { getBoundingClientRect?: () => DOMRect }).getBoundingClientRect = () =>
@@ -231,5 +276,14 @@ describe("InputAdapter glyph measurement", () => {
 
         expect(document.body.childElementCount).toBe(1);
         expect(document.body.firstElementChild).toBe(element);
+    });
+
+    it("measures a committed range before the caret", () => {
+        const element = makeTextarea("한국은");
+        const adapter = makeAdapter(element);
+
+        expect(adapter.getTextRangeRects({ text: "한국", offset: 1 })).toEqual([
+            { left: 11, top: 12, width: 13, height: 14 },
+        ]);
     });
 });

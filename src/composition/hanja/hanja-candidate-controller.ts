@@ -11,8 +11,13 @@ import {
     HanjaCandidateWindowPage,
 } from "./hanja-candidate-window";
 import { HanjaCompositionOverlay } from "./hanja-composition-overlay";
-import { commitHanjaCandidate, getHanjaConversionTarget, HanjaConversionTarget } from "./hanja-converter";
-import { HanjaDictionaryProvider } from "./hanja-dictionary-provider";
+import {
+    commitHanjaCandidate,
+    getHanjaConversionContext,
+    HanjaConversionContext,
+    HanjaConversionTarget,
+} from "./hanja-converter";
+import { HanjaDictionaryMatch, HanjaDictionaryProvider } from "./hanja-dictionary-provider";
 import { defaultHanjaKeyBindingForPlatform } from "./hanja-key";
 
 /** All user-configurable Hanja settings, owned here (not by the IME controller). */
@@ -162,18 +167,18 @@ export class HanjaCandidateController {
         const lookupGeneration = this.beginLookup();
         cancelEvent(event);
 
-        const target = getHanjaConversionTarget(this.adapter);
-        if (!target) {
+        const context = getHanjaConversionContext(this.adapter);
+        if (!context) {
             return;
         }
 
-        void this.openCandidates(target, lookupGeneration);
+        void this.openCandidates(context, lookupGeneration);
     }
 
-    private async openCandidates(target: HanjaConversionTarget, lookupGeneration: number): Promise<void> {
-        let candidates: readonly HanjaCandidate[];
+    private async openCandidates(context: HanjaConversionContext, lookupGeneration: number): Promise<void> {
+        let match: HanjaDictionaryMatch | undefined;
         try {
-            candidates = await this.dictionaryProvider.lookup(target.reading);
+            match = await this.dictionaryProvider.lookup(context.run);
         } catch (error) {
             console.error(error);
             return;
@@ -183,13 +188,18 @@ export class HanjaCandidateController {
         // Han/Yong mode (matching the Microsoft IME, where the Hanja key works in
         // 영 mode too). Staleness from a mode change mid-lookup is still covered —
         // the owner calls cancelPendingLookup(), which bumps the generation.
-        if (lookupGeneration !== this.lookupGeneration || candidates.length === 0) {
+        if (lookupGeneration !== this.lookupGeneration || !match) {
             return;
         }
 
-        const overlay = new HanjaCompositionOverlay(this.element, this.adapter);
-        const overlayRect = overlay.show(target.reading);
-        const pager = new HanjaCandidatePager(candidates);
+        const target: HanjaConversionTarget = {
+            run: context.run,
+            matchStart: match.start,
+            reading: match.reading,
+        };
+        const overlay = new HanjaCompositionOverlay(this.adapter);
+        const overlayRect = overlay.show(target);
+        const pager = new HanjaCandidatePager(match.candidates);
         this.selection = {
             target,
             pager,
@@ -308,10 +318,12 @@ export class HanjaCandidateController {
         }
 
         this.close();
-        commitHanjaCandidate(candidate, this.adapter, keyCode, {
+        const committed = commitHanjaCandidate(candidate, selection.target, this.adapter, keyCode, {
             useSimplified: this.options.showSimplified && useSimplified,
         });
-        this.onCommitted();
+        if (committed) {
+            this.onCommitted();
+        }
     }
 
     private page(pager: HanjaCandidatePager<HanjaCandidate>): HanjaCandidateWindowPage {
