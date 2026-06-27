@@ -856,6 +856,21 @@ describe("KeyListener Hanja candidate selection (KIME_ENABLE_HANJA)", () => {
         expect(candidateTexts()).toEqual(["1安", "2岸"]);
     });
 
+    it("closes an open candidate list when the Hanja key is pressed again", async () => {
+        process.env.KIME_ENABLE_HANJA = "true";
+        const { element } = composingController();
+        composeHan(element);
+        pressRightCtrl(element);
+        await settleHanjaLookup();
+
+        const ctrl = pressRightCtrl(element);
+        await settleHanjaLookup();
+
+        expect(element.value).toBe("한");
+        expect(document.querySelector(HANJA_CANDIDATE_WINDOW_SELECTOR)).toBeNull();
+        expect(ctrl.defaultPrevented).toBe(true);
+    });
+
     it("commits a composing candidate selected by number", async () => {
         process.env.KIME_ENABLE_HANJA = "true";
         const { element, deleteContentBackwards, inputCharacter } = composingController();
@@ -974,6 +989,42 @@ describe("KeyListener Hanja candidate selection (KIME_ENABLE_HANJA)", () => {
         const digit = dispatchKeydown(element, "Digit1", "!", { shiftKey: true });
 
         expect(element.value).toBe("韩");
+        expect(document.querySelector(HANJA_CANDIDATE_WINDOW_SELECTOR)).toBeNull();
+        expect(digit.defaultPrevented).toBe(true);
+    });
+
+    it("selects by physical number-row position when the host layout reports a symbol", async () => {
+        process.env.KIME_ENABLE_HANJA = "true";
+        const { element } = await controllerAfterCommittedSyllable("한", { provider: simplifiedProvider() });
+
+        const digit = dispatchKeydown(element, "Digit1", "&");
+
+        expect(element.value).toBe("韓");
+        expect(document.querySelector(HANJA_CANDIDATE_WINDOW_SELECTOR)).toBeNull();
+        expect(digit.defaultPrevented).toBe(true);
+    });
+
+    it("commits the simplified form with Enter while Shift is held", async () => {
+        process.env.KIME_ENABLE_HANJA = "true";
+        const { element } = await controllerAfterCommittedSyllable("한", { provider: simplifiedProvider() });
+
+        dispatchKeydown(element, "ShiftLeft", "Shift", { shiftKey: true });
+        const enter = dispatchKeydown(element, "Enter", "Enter", { shiftKey: true });
+
+        expect(element.value).toBe("韩");
+        expect(document.querySelector(HANJA_CANDIDATE_WINDOW_SELECTOR)).toBeNull();
+        expect(enter.defaultPrevented).toBe(true);
+    });
+
+    it("commits the normal form with a number after Shift is released", async () => {
+        process.env.KIME_ENABLE_HANJA = "true";
+        const { element } = await controllerAfterCommittedSyllable("한", { provider: simplifiedProvider() });
+
+        dispatchKeydown(element, "ShiftLeft", "Shift", { shiftKey: true });
+        dispatchKeyup(element, "ShiftLeft", "Shift", { shiftKey: false });
+        const digit = dispatchKeydown(element, "Digit1", "1");
+
+        expect(element.value).toBe("韓");
         expect(document.querySelector(HANJA_CANDIDATE_WINDOW_SELECTOR)).toBeNull();
         expect(digit.defaultPrevented).toBe(true);
     });

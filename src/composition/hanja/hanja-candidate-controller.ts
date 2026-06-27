@@ -53,7 +53,6 @@ export class HanjaCandidateController {
     private selection?: HanjaCandidateSelection;
     private lookupGeneration = 0;
     private options: HanjaImeOptions;
-    private readonly heldShiftKeys = new Set<KeyCode>();
     private isSelectingSimplified = false;
 
     constructor(
@@ -102,14 +101,19 @@ export class HanjaCandidateController {
 
     /**
      * Drive an open candidate window. Returns true when the key was a candidate
-     * action (number/arrow/Enter/Escape/Backspace) and was consumed. Any other key
-     * while the window is open closes it and returns false, so the caller can let
-     * that key fall through to normal handling.
+     * action (Hanja/number/arrow/Enter/Escape/Backspace) and was consumed. Any
+     * other key while the window is open closes it and returns false, so the caller
+     * can let that key fall through to normal handling.
      */
     handleKey(event: KeyboardEvent): boolean {
-        const shiftKey = this.syncShiftStateFromKeydown(event);
+        const shiftKey = this.syncShiftState(event);
         if (!this.selection) {
             return false;
+        }
+        if (this.isConversionKey(event)) {
+            this.close();
+            cancelEvent(event);
+            return true;
         }
         if (shiftKey) {
             cancelEvent(event);
@@ -127,7 +131,7 @@ export class HanjaCandidateController {
      * true only when an open candidate window consumed the keyup.
      */
     handleKeyUp(event: KeyboardEvent): boolean {
-        const shiftKey = this.syncShiftStateFromKeyup(event);
+        const shiftKey = this.syncShiftState(event);
         if (!this.selection || !shiftKey) {
             return false;
         }
@@ -146,7 +150,6 @@ export class HanjaCandidateController {
         this.selection?.window.remove();
         this.selection = undefined;
         this.isSelectingSimplified = false;
-        this.heldShiftKeys.clear();
     }
 
     /**
@@ -155,7 +158,7 @@ export class HanjaCandidateController {
      */
     startConversion(event: KeyboardEvent): void {
         this.close();
-        this.syncShiftStateFromKeydown(event);
+        this.syncShiftState(event);
         const lookupGeneration = this.beginLookup();
         cancelEvent(event);
 
@@ -279,11 +282,7 @@ export class HanjaCandidateController {
         this.refresh();
     }
 
-    private commitVisible(
-        visibleIndex: number,
-        keyCode: KeyCode,
-        modifiers: HanjaCandidateSelectionModifiers = { shiftKey: this.isSelectingSimplified }
-    ): void {
+    private commitVisible(visibleIndex: number, keyCode: KeyCode, modifiers: HanjaCandidateSelectionModifiers): void {
         const selection = this.selection;
         if (!selection) {
             return;
@@ -297,7 +296,7 @@ export class HanjaCandidateController {
         this.commit(candidateIndex, keyCode, modifiers.shiftKey);
     }
 
-    private commit(index: number, keyCode: KeyCode, useSimplified = this.isSelectingSimplified): void {
+    private commit(index: number, keyCode: KeyCode, useSimplified: boolean): void {
         const selection = this.selection;
         if (!selection) {
             return;
@@ -347,30 +346,10 @@ export class HanjaCandidateController {
         return this.lookupGeneration;
     }
 
-    private syncShiftStateFromKeydown(event: KeyboardEvent): boolean {
+    private syncShiftState(event: KeyboardEvent): boolean {
         const code = event.code as KeyCode;
-        if (isShiftKey(code)) {
-            this.heldShiftKeys.add(code);
-        } else if (!event.shiftKey) {
-            this.heldShiftKeys.clear();
-        }
-
-        this.setSelectingSimplified(event.shiftKey || this.heldShiftKeys.size > 0);
+        this.setSelectingSimplified(event.shiftKey);
         return isShiftKey(code);
-    }
-
-    private syncShiftStateFromKeyup(event: KeyboardEvent): boolean {
-        const code = event.code as KeyCode;
-        if (!isShiftKey(code)) {
-            if (!event.shiftKey) {
-                this.setSelectingSimplified(false);
-            }
-            return false;
-        }
-
-        this.heldShiftKeys.delete(code);
-        this.setSelectingSimplified(event.shiftKey || this.heldShiftKeys.size > 0);
-        return true;
     }
 
     private setSelectingSimplified(active: boolean): void {
@@ -386,6 +365,9 @@ export class HanjaCandidateController {
 
 function hanjaCandidateNumberIndex(event: KeyboardEvent): number | undefined {
     if (!/^[1-9]$/.test(event.key)) {
+        // Candidate shortcuts follow the physical Korean number row even when
+        // the host layout reports a symbol (for example, "&" on AZERTY) or
+        // Shift changes the key value to punctuation.
         return digitKeyIndex(event.code);
     }
 
