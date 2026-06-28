@@ -1,6 +1,7 @@
 import { KeyCode } from "../../keyboard/korean-keyboard-map";
 import { CompositionAdapter } from "./composition-adapter";
 import { CompositingBox, GlyphRect } from "../compositing-box";
+import { BeforeCaretTextRange } from "./composition-adapter-interface";
 
 export class InputAdapter extends CompositionAdapter {
     private isCompositing = false;
@@ -87,6 +88,20 @@ export class InputAdapter extends CompositionAdapter {
         return measureInputRangeRect(this.element, caret - 1, caret);
     }
 
+    getTextBeforeCaret(): string | undefined {
+        const start = this.element.selectionStart;
+        const end = this.element.selectionEnd;
+        if (start == null || end == null || start !== end) {
+            return undefined;
+        }
+        return this.element.value.substring(0, start);
+    }
+
+    getTextRangeRects(range: BeforeCaretTextRange): readonly GlyphRect[] {
+        const bounds = this.getRangeBounds(range);
+        return bounds ? measureInputRangeRects(this.element, bounds.start, bounds.end) : [];
+    }
+
     inputCharacter(data: string, keyCode: KeyCode): void {
         super._inputCharacter(data, keyCode, () => {
             const element = this.element;
@@ -104,6 +119,23 @@ export class InputAdapter extends CompositionAdapter {
             element.selectionStart = end;
             element.selectionEnd = end;
         });
+    }
+
+    replaceTextBeforeCaret(range: BeforeCaretTextRange, data: string): boolean {
+        const bounds = this.getRangeBounds(range);
+        const caret = this.element.selectionStart;
+        if (!bounds || caret == null) {
+            return false;
+        }
+
+        this._replaceText(range.text, data, () => {
+            this.element.value =
+                this.element.value.substring(0, bounds.start) + data + this.element.value.substring(bounds.end);
+            const nextCaret = caret + data.length - range.text.length;
+            this.element.selectionStart = nextCaret;
+            this.element.selectionEnd = nextCaret;
+        });
+        return true;
     }
 
     collapseSelection(toStart?: boolean) {
@@ -156,6 +188,21 @@ export class InputAdapter extends CompositionAdapter {
             }
         });
     }
+
+    private getRangeBounds(range: BeforeCaretTextRange): { start: number; end: number } | undefined {
+        const startSelection = this.element.selectionStart;
+        const endSelection = this.element.selectionEnd;
+        if (startSelection == null || endSelection == null || startSelection !== endSelection || range.offset < 0) {
+            return undefined;
+        }
+
+        const end = startSelection - range.offset;
+        const start = end - range.text.length;
+        if (start < 0 || this.element.value.substring(start, end) !== range.text) {
+            return undefined;
+        }
+        return { start, end };
+    }
 }
 
 /**
@@ -203,6 +250,14 @@ function measureInputRangeRect(
     start: number,
     end: number
 ): GlyphRect | undefined {
+    return measureInputRangeRects(field, start, end)[0];
+}
+
+function measureInputRangeRects(
+    field: HTMLInputElement | HTMLTextAreaElement,
+    start: number,
+    end: number
+): readonly GlyphRect[] {
     const doc = field.ownerDocument;
     const computed = window.getComputedStyle(field);
     const isSingleLine = field.nodeName === "INPUT";
@@ -231,7 +286,7 @@ function measureInputRangeRect(
 
     const value = field.value;
     if (value.length === 0) {
-        return undefined;
+        return [];
     }
 
     mirror.textContent = value;
@@ -240,21 +295,28 @@ function measureInputRangeRect(
     const range = document.createRange();
     range.setStart(mirror.firstChild || mirror, start);
     range.setEnd(mirror.firstChild || mirror, end);
-    const markerRect = range.getBoundingClientRect();
+    const markerRects =
+        typeof range.getClientRects === "function" ? Array.from(range.getClientRects()).filter(hasVisibleRect) : [];
+    if (markerRects.length === 0 && typeof range.getBoundingClientRect === "function") {
+        const boundingRect = range.getBoundingClientRect();
+        if (hasVisibleRect(boundingRect)) {
+            markerRects.push(boundingRect);
+        }
+    }
 
     doc.body.removeChild(mirror);
 
-    if (markerRect.width === 0 && markerRect.height === 0) {
-        return undefined;
-    }
-
     const fieldRect = field.getBoundingClientRect();
-    return {
+    return markerRects.map((markerRect) => ({
         left: markerRect.left + fieldRect.left - field.scrollLeft,
         top: markerRect.top + fieldRect.top - field.scrollTop,
         width: markerRect.width,
         height: markerRect.height,
-    };
+    }));
+}
+
+function hasVisibleRect(rect: DOMRect): boolean {
+    return rect.width !== 0 || rect.height !== 0;
 }
 
 function toKebabCase(property: string): string {

@@ -1,5 +1,4 @@
-import { HanjaCandidate } from "../composition/hanja/hanja-candidate";
-import { HanjaDictionaryProvider } from "../composition/hanja/hanja-dictionary-provider";
+import { HanjaDictionaryMatch, HanjaDictionaryProvider } from "../composition/hanja/hanja-dictionary-provider";
 import {
     ContentScriptRequestAction,
     ContentScriptRequestMessage,
@@ -8,26 +7,26 @@ import {
 import { api } from "../platform/browser-api";
 
 export class ServiceWorkerHanjaDictionaryProviderClient implements HanjaDictionaryProvider {
-    async lookup(reading: string): Promise<readonly HanjaCandidate[]> {
+    async lookup(run: string): Promise<HanjaDictionaryMatch | undefined> {
         const message = {
             type: "contentScriptRequest",
             action: ContentScriptRequestAction.HanjaLookup,
-            data: { reading },
+            data: { run },
         } satisfies ContentScriptRequestMessage;
 
         if ((globalThis as { browser?: typeof chrome }).browser) {
             const response = (await api.runtime.sendMessage(message)) as HanjaLookupResponse | undefined;
-            return response?.candidates ?? [];
+            return response?.match;
         }
 
         return new Promise((resolve) => {
             api.runtime.sendMessage(message, (response: HanjaLookupResponse | undefined) => {
                 if (api.runtime.lastError) {
-                    resolve([]);
+                    resolve(undefined);
                     return;
                 }
 
-                resolve(response?.candidates ?? []);
+                resolve(response?.match);
             });
         });
     }

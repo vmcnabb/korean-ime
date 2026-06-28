@@ -1,6 +1,6 @@
 import { GeneratedHanjaDictionaryProvider } from "./hanja-dictionary-provider";
 
-jest.mock("../hanja-dictionary/single-syllable.data?url", () => "single-syllable.data", { virtual: true });
+jest.mock("../hanja-dictionary/dictionary.data?url", () => "dictionary.data", { virtual: true });
 jest.mock("../hanja-dictionary/hanja-hanzi.data?url", () => "hanja-hanzi.data", { virtual: true });
 
 function okJson(data: unknown) {
@@ -25,17 +25,20 @@ describe("GeneratedHanjaDictionaryProvider", () => {
         jest.restoreAllMocks();
     });
 
-    it("resolves the packaged dictionary asset through the runtime API", async () => {
+    it("resolves the packaged dictionary assets and enriches a single-character match", async () => {
         const fetchDictionary = jest
             .fn()
             .mockResolvedValueOnce(okJson({ 안: [["安", "편안할 안, 어찌 안"]] }))
             .mockResolvedValueOnce(okJson({ 安: { p: "ān" } })) as unknown as typeof fetch;
         const provider = new GeneratedHanjaDictionaryProvider(undefined, undefined, fetchDictionary);
 
-        await expect(provider.lookup("안")).resolves.toEqual([
-            { hanja: "安", korean: "편안할 안, 어찌 안", pinyin: "ān" },
-        ]);
-        expect(fetchDictionary).toHaveBeenNthCalledWith(1, "chrome-extension://id/single-syllable.data");
+        await expect(provider.lookup("안")).resolves.toEqual({
+            start: 0,
+            length: 1,
+            reading: "안",
+            candidates: [{ hanja: "安", korean: "편안할 안, 어찌 안", pinyin: "ān" }],
+        });
+        expect(fetchDictionary).toHaveBeenNthCalledWith(1, "chrome-extension://id/dictionary.data");
         expect(fetchDictionary).toHaveBeenNthCalledWith(2, "chrome-extension://id/hanja-hanzi.data");
     });
 
@@ -56,10 +59,10 @@ describe("GeneratedHanjaDictionaryProvider", () => {
         try {
             const provider = new GeneratedHanjaDictionaryProvider();
 
-            await expect(provider.lookup("안")).resolves.toEqual([
+            await expect(provider.lookup("안").then((match) => match?.candidates)).resolves.toEqual([
                 { hanja: "安", korean: "편안할 안, 어찌 안", pinyin: "ān" },
             ]);
-            expect(fetchDictionary).toHaveBeenCalledWith("chrome-extension://id/single-syllable.data", undefined);
+            expect(fetchDictionary).toHaveBeenCalledWith("chrome-extension://id/dictionary.data", undefined);
             expect(fetchDictionary).toHaveBeenCalledWith("chrome-extension://id/hanja-hanzi.data", undefined);
         } finally {
             if (originalFetch) {
@@ -70,52 +73,52 @@ describe("GeneratedHanjaDictionaryProvider", () => {
         }
     });
 
-    it("maps compact generated dictionary rows to Hanja candidates", async () => {
+    it("finds the leftmost-longest word and omits single-character metadata", async () => {
         const fetchDictionary = jest
             .fn()
             .mockResolvedValueOnce(
                 okJson({
-                    한: [
-                        ["韓", "나라 이름 한, 한나라 한"],
-                        ["寒", "찰 한"],
-                        ["漢", "한수 한"],
+                    한국: [
+                        ["寒國", ""],
+                        ["韓國", "대한민국"],
                     ],
+                    중국: [["中國", ""]],
+                    한: [["韓", "나라 이름 한"]],
                 })
             )
-            .mockResolvedValueOnce(
-                okJson({
-                    韓: { s: "韩", p: "hán" },
-                    漢: { s: "汉" },
-                })
-            ) as unknown as typeof fetch;
-        const provider = new GeneratedHanjaDictionaryProvider(
-            "chrome-extension://id/single-syllable.json",
-            "chrome-extension://id/hanja-hanzi.json",
-            fetchDictionary
-        );
-
-        await expect(provider.lookup("한")).resolves.toEqual([
-            { hanja: "韓", korean: "나라 이름 한, 한나라 한", simplified: "韩", pinyin: "hán" },
-            { hanja: "寒", korean: "찰 한" },
-            { hanja: "漢", korean: "한수 한", simplified: "汉" },
-        ]);
-    });
-
-    it("returns no candidates for an unknown reading", async () => {
-        const fetchDictionary = jest
-            .fn()
-            .mockResolvedValueOnce(okJson({ 한: [["韓", "나라 이름 한, 한나라 한"]] }))
             .mockResolvedValueOnce(okJson({ 韓: { s: "韩", p: "hán" } })) as unknown as typeof fetch;
         const provider = new GeneratedHanjaDictionaryProvider(
-            "chrome-extension://id/single-syllable.json",
+            "chrome-extension://id/dictionary.json",
             "chrome-extension://id/hanja-hanzi.json",
             fetchDictionary
         );
 
-        await expect(provider.lookup("글")).resolves.toEqual([]);
+        await expect(provider.lookup("한국중국")).resolves.toEqual({
+            start: 0,
+            length: 2,
+            reading: "한국",
+            candidates: [
+                { hanja: "寒國", korean: "" },
+                { hanja: "韓國", korean: "대한민국" },
+            ],
+        });
     });
 
-    it("fetches the generated data once and shares the loaded data", async () => {
+    it("returns no match for an unknown run", async () => {
+        const fetchDictionary = jest
+            .fn()
+            .mockResolvedValueOnce(okJson({ 한: [["韓", "나라 이름 한"]] }))
+            .mockResolvedValueOnce(okJson({ 韓: { s: "韩", p: "hán" } })) as unknown as typeof fetch;
+        const provider = new GeneratedHanjaDictionaryProvider(
+            "chrome-extension://id/dictionary.json",
+            "chrome-extension://id/hanja-hanzi.json",
+            fetchDictionary
+        );
+
+        await expect(provider.lookup("글")).resolves.toBeUndefined();
+    });
+
+    it("fetches the generated data once and shares concurrent loads", async () => {
         let resolveDictionaryJson!: (data: unknown) => void;
         let resolveHanziJson!: (data: unknown) => void;
         const fetchDictionary = jest.fn(
@@ -136,7 +139,7 @@ describe("GeneratedHanjaDictionaryProvider", () => {
                 }) as unknown as Response
         ) as unknown as typeof fetch;
         const provider = new GeneratedHanjaDictionaryProvider(
-            "chrome-extension://id/single-syllable.json",
+            "chrome-extension://id/dictionary.json",
             "chrome-extension://id/hanja-hanzi.json",
             fetchDictionary
         );
@@ -145,18 +148,20 @@ describe("GeneratedHanjaDictionaryProvider", () => {
         const anLookup = provider.lookup("안");
         await Promise.resolve();
         resolveDictionaryJson({
-            한: [["韓", "나라 이름 한, 한나라 한"]],
-            안: [["安", "편안할 안, 어찌 안"]],
+            한: [["韓", "나라 이름 한"]],
+            안: [["安", "편안할 안"]],
         });
         resolveHanziJson({
             韓: { s: "韩", p: "hán" },
             安: { p: "ān" },
         });
 
-        await expect(hanLookup).resolves.toEqual([
-            { hanja: "韓", korean: "나라 이름 한, 한나라 한", simplified: "韩", pinyin: "hán" },
+        await expect(hanLookup.then((match) => match?.candidates)).resolves.toEqual([
+            { hanja: "韓", korean: "나라 이름 한", simplified: "韩", pinyin: "hán" },
         ]);
-        await expect(anLookup).resolves.toEqual([{ hanja: "安", korean: "편안할 안, 어찌 안", pinyin: "ān" }]);
+        await expect(anLookup.then((match) => match?.candidates)).resolves.toEqual([
+            { hanja: "安", korean: "편안할 안", pinyin: "ān" },
+        ]);
         expect(fetchDictionary).toHaveBeenCalledTimes(2);
     });
 
@@ -165,16 +170,16 @@ describe("GeneratedHanjaDictionaryProvider", () => {
             .fn()
             .mockResolvedValueOnce({ ok: false, status: 404, json: jest.fn() } as unknown as Response)
             .mockResolvedValueOnce(okJson({ 韓: { s: "韩", p: "hán" } }))
-            .mockResolvedValueOnce(okJson({ 한: [["韓", "나라 이름 한, 한나라 한"]] })) as unknown as typeof fetch;
+            .mockResolvedValueOnce(okJson({ 한: [["韓", "나라 이름 한"]] })) as unknown as typeof fetch;
         const provider = new GeneratedHanjaDictionaryProvider(
-            "chrome-extension://id/single-syllable.json",
+            "chrome-extension://id/dictionary.json",
             "chrome-extension://id/hanja-hanzi.json",
             fetchDictionary
         );
 
         await expect(provider.lookup("한")).rejects.toThrow("Failed to load Hanja dictionary: 404");
-        await expect(provider.lookup("한")).resolves.toEqual([
-            { hanja: "韓", korean: "나라 이름 한, 한나라 한", simplified: "韩", pinyin: "hán" },
+        await expect(provider.lookup("한").then((match) => match?.candidates)).resolves.toEqual([
+            { hanja: "韓", korean: "나라 이름 한", simplified: "韩", pinyin: "hán" },
         ]);
         expect(fetchDictionary).toHaveBeenCalledTimes(3);
     });

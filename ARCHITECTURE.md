@@ -105,8 +105,8 @@ Notes:
   composition features its focused element supports; the service worker relays it
   to the tab so the (top-frame) keyboard can enable/disable keys.
 - **Hanja lookup is a request/response round-trip.** The dictionary lives in the
-  service worker; the content-script `HanjaDictionaryProviderClient` asks for
-  candidates and gets them back.
+  service worker; the content-script `HanjaDictionaryProviderClient` sends the
+  complete Hangul run and receives the leftmost-longest match plus its candidates.
 
 ## 2. Shared state via `chrome.storage`
 

@@ -36,7 +36,7 @@ describe("isContentScriptRequestMessage", () => {
             isContentScriptRequestMessage({
                 type: "contentScriptRequest",
                 action: ContentScriptRequestAction.HanjaLookup,
-                data: { reading: "한" },
+                data: { run: "한" },
             })
         ).toBe(true);
     });

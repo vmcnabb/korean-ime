@@ -1,15 +1,47 @@
 import { HanjaCandidate } from "./hanja-candidate";
 
+export type HanjaDictionaryMatch = {
+    /** Zero-based character offset within the supplied Hangul run. */
+    start: number;
+    /** Character count of the matched reading. */
+    length: number;
+    reading: string;
+    candidates: readonly HanjaCandidate[];
+};
+
 export interface HanjaDictionaryProvider {
-    lookup(reading: string): Promise<readonly HanjaCandidate[]>;
+    lookup(run: string): Promise<HanjaDictionaryMatch | undefined>;
 }
 
 export class StaticHanjaDictionaryProvider implements HanjaDictionaryProvider {
     constructor(private readonly dictionary: ReadonlyMap<string, readonly HanjaCandidate[]> = bootstrapDictionary) {}
 
-    lookup(reading: string): Promise<readonly HanjaCandidate[]> {
-        return Promise.resolve(this.dictionary.get(reading) ?? []);
+    lookup(run: string): Promise<HanjaDictionaryMatch | undefined> {
+        return Promise.resolve(findHanjaDictionaryMatch(run, (reading) => this.dictionary.get(reading)));
     }
+}
+
+/**
+ * Find the leftmost match in a Hangul run, preferring the longest reading at
+ * each start position.
+ */
+export function findHanjaDictionaryMatch(
+    run: string,
+    candidatesFor: (reading: string) => readonly HanjaCandidate[] | undefined
+): HanjaDictionaryMatch | undefined {
+    const characters = [...run];
+
+    for (let start = 0; start < characters.length; start += 1) {
+        for (let length = characters.length - start; length >= 1; length -= 1) {
+            const reading = characters.slice(start, start + length).join("");
+            const candidates = candidatesFor(reading);
+            if (candidates?.length) {
+                return { start, length, reading, candidates };
+            }
+        }
+    }
+
+    return undefined;
 }
 
 /**

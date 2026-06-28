@@ -3,7 +3,7 @@
 import { KeyCode } from "../keyboard/korean-keyboard-map";
 import { KeyboardPlacement } from "../extension-state/osk-layout";
 import { hasProperties } from "../types/objects";
-import { HanjaCandidate } from "../composition/hanja/hanja-candidate";
+import { HanjaDictionaryMatch } from "../composition/hanja/hanja-dictionary-provider";
 
 export enum ContentScriptRequestAction {
     /** request the TabState from the service script */
@@ -43,11 +43,11 @@ export type PersistOnScreenKeyboardLayoutMessage = {
 export type HanjaLookupRequestMessage = {
     type: "contentScriptRequest";
     action: ContentScriptRequestAction.HanjaLookup;
-    data: { reading: string };
+    data: { run: string };
 };
 
 export type HanjaLookupResponse = {
-    candidates: readonly HanjaCandidate[];
+    match?: HanjaDictionaryMatch;
 };
 
 export type ContentScriptRequestMessage =

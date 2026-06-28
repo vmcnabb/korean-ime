@@ -4,7 +4,11 @@ import { setAsKimeEvent } from "../../messaging/dom-events";
 import { trace } from "../../decorators/trace";
 import { DummyAdapter } from "./dummy-adapter";
 import { MethodKeys } from "../../types/objects";
-import { ICompositionAdapter, SupportedCompositionFeatures } from "./composition-adapter-interface";
+import {
+    BeforeCaretTextRange,
+    ICompositionAdapter,
+    SupportedCompositionFeatures,
+} from "./composition-adapter-interface";
 import { GlyphRect } from "../compositing-box";
 
 type DispatchableEvent = KeyboardEvent | CompositionEvent | InputEvent;
@@ -66,6 +70,12 @@ export abstract class CompositionAdapter implements ICompositionAdapter {
      * If selection is not collapsed or the glyph cannot be measured, returns undefined.
      */
     abstract getPreviousCharacterRect(): GlyphRect | undefined;
+
+    /** Returns the text before a collapsed caret, or undefined when no valid caret exists. */
+    abstract getTextBeforeCaret(): string | undefined;
+
+    /** Measure every visible line fragment occupied by a range before the caret. */
+    abstract getTextRangeRects(range: BeforeCaretTextRange): readonly GlyphRect[];
 
     /**
      * Delete selection if exists, otherwise delete the character immediately before the caret.
@@ -143,6 +153,101 @@ export abstract class CompositionAdapter implements ICompositionAdapter {
         ];
 
         this.dispatchActions(eventsToDispatch);
+    }
+
+    /**
+     * Replace a committed range before the caret and keep the caret after the
+     * same untouched trailing text.
+     */
+    abstract replaceTextBeforeCaret(range: BeforeCaretTextRange, data: string, keyCode: KeyCode): boolean;
+    /**
+     * Replace committed text the way a real IME does Hanja conversion: by
+     * re-composing the run. A native IME (verified with the MS Korean IME) takes
+     * the already-committed `previousText`, puts it back into composition, then
+     * commits the converted `data` — all as `insertCompositionText`, never
+     * `insertReplacementText`. Driving it as composition (rather than a plain
+     * replacement) is what lets editors that own their model — CKEditor most
+     * notably — reconcile from the DOM mutation in `replaceFn` instead of
+     * applying their own edit at the model caret (which appended the Hanja).
+     *
+     *  compositionstart(previousText) → beforeinput(insertCompositionText) →
+     *  compositionupdate → [replaceFn] → input(isComposing) →
+     *  compositionend → input(insertCompositionText)
+     */
+    protected _replaceText(previousText: string, data: string, replaceFn: () => void): void {
+        this.dispatchActions([
+            new CompositionEvent("compositionstart", {
+                data: previousText,
+                view: window,
+                bubbles: true,
+                composed: true,
+            }),
+            new CompositionEvent("compositionupdate", {
+                data: previousText,
+                view: window,
+                bubbles: true,
+                composed: true,
+            }),
+            new InputEvent("beforeinput", {
+                data: previousText,
+                isComposing: true,
+                composed: true,
+                inputType: "insertCompositionText",
+                bubbles: true,
+            }),
+            new InputEvent("input", {
+                data: previousText,
+                isComposing: true,
+                inputType: "insertCompositionText",
+                bubbles: true,
+                composed: true,
+            }),
+            new KeyboardEvent("keydown", {
+                key: "Process",
+                code: "ControlRight",
+                which: 229,
+                keyCode: 229,
+                composed: true,
+                isComposing: true,
+                view: window,
+                bubbles: true,
+            }),
+            new KeyboardEvent("keyup", {
+                key: "HanjaMode",
+                code: "ControlRight",
+                which: 25,
+                keyCode: 25,
+                composed: true,
+                isComposing: true,
+                view: window,
+                bubbles: true,
+            }),
+            new CompositionEvent("compositionupdate", { data, view: window, bubbles: true, composed: true }),
+            new InputEvent("beforeinput", {
+                data,
+                isComposing: true,
+                inputType: "insertCompositionText",
+                bubbles: true,
+                composed: true,
+            }),
+            new InputEvent("textInput", { data, inputType: "insertCompositionText", bubbles: true, composed: false }),
+            replaceFn,
+            new InputEvent("input", {
+                data,
+                isComposing: true,
+                inputType: "insertCompositionText",
+                bubbles: true,
+                composed: true,
+            }),
+            new CompositionEvent("compositionend", { data, view: window, bubbles: true, composed: true }),
+            new InputEvent("input", {
+                data,
+                isComposing: false,
+                inputType: "insertCompositionText",
+                bubbles: true,
+                composed: true,
+            }),
+        ]);
     }
 
     abstract beginComposition(data: string, keyCode: KeyCode): void;

@@ -3,7 +3,7 @@ import { ContentScriptRequestAction } from "../messaging/content-to-service-mess
 import { ContentScriptListener } from "./content-script-listener";
 import { StateManager } from "./state-manager";
 
-jest.mock("../hanja-dictionary/single-syllable.data?url", () => "single-syllable.data", { virtual: true });
+jest.mock("../hanja-dictionary/dictionary.data?url", () => "dictionary.data", { virtual: true });
 jest.mock("../hanja-dictionary/hanja-hanzi.data?url", () => "hanja-hanzi.data", { virtual: true });
 
 async function settleResponse() {
@@ -33,7 +33,12 @@ describe("ContentScriptListener Hanja lookup", () => {
 
     it("responds directly to Hanja lookup requests", async () => {
         const provider: HanjaDictionaryProvider = {
-            lookup: jest.fn(async () => [{ hanja: "韓", korean: "나라 이름 한, 한나라 한" }]),
+            lookup: jest.fn(async () => ({
+                start: 0,
+                length: 1,
+                reading: "한",
+                candidates: [{ hanja: "韓", korean: "나라 이름 한, 한나라 한" }],
+            })),
         };
         const listener = new ContentScriptListener({} as StateManager, provider);
         listener.listen();
@@ -46,7 +51,7 @@ describe("ContentScriptListener Hanja lookup", () => {
             {
                 type: "contentScriptRequest",
                 action: ContentScriptRequestAction.HanjaLookup,
-                data: { reading: "한" },
+                data: { run: "한" },
             },
             { tab: { id: 1 } } as chrome.runtime.MessageSender,
             sendResponse
@@ -56,7 +61,12 @@ describe("ContentScriptListener Hanja lookup", () => {
         expect(keepChannelOpen).toBe(true);
         expect(provider.lookup).toHaveBeenCalledWith("한");
         expect(sendResponse).toHaveBeenCalledWith({
-            candidates: [{ hanja: "韓", korean: "나라 이름 한, 한나라 한" }],
+            match: {
+                start: 0,
+                length: 1,
+                reading: "한",
+                candidates: [{ hanja: "韓", korean: "나라 이름 한, 한나라 한" }],
+            },
         });
     });
 
@@ -77,7 +87,7 @@ describe("ContentScriptListener Hanja lookup", () => {
             {
                 type: "contentScriptRequest",
                 action: ContentScriptRequestAction.HanjaLookup,
-                data: { reading: "한" },
+                data: { run: "한" },
             },
             { tab: { id: 1 } } as chrome.runtime.MessageSender,
             sendResponse
@@ -85,6 +95,6 @@ describe("ContentScriptListener Hanja lookup", () => {
         await settleResponse();
 
         expect(keepChannelOpen).toBe(true);
-        expect(sendResponse).toHaveBeenCalledWith({ candidates: [] });
+        expect(sendResponse).toHaveBeenCalledWith({});
     });
 });

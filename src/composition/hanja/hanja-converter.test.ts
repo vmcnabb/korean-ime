@@ -1,29 +1,29 @@
-import { commitHanjaCandidate, getHanjaConversionTarget } from "./hanja-converter";
+import {
+    commitHanjaCandidate,
+    getHanjaConversionContext,
+    isHanjaReadingCharacter,
+    matchedTextRange,
+} from "./hanja-converter";
 import { CompositionAdapter } from "../composition-adapters/composition-adapter";
 import { KeyCode } from "../../keyboard/korean-keyboard-map";
 import { HanjaCandidate } from "./hanja-candidate";
 
 const hanCandidates: readonly HanjaCandidate[] = [
-    { hanja: "韓", korean: "나라 이름 한, 한나라 한" },
-    { hanja: "寒", korean: "찰 한" },
-    { hanja: "恨", korean: "한탄할 한, 한될 한" },
+    { hanja: "韓國", korean: "대한민국" },
+    { hanja: "寒國", korean: "" },
 ];
 
-// A minimal stand-in for the bits of the adapter the converter touches. supportsMethods
-// defaults to true (the input/contenteditable/CKEditor adapters all support these).
 function fakeAdapter(
     overrides: Partial<{
         supportsMethods: jest.Mock;
-        getPreviousCharacter: jest.Mock;
-        deleteContentBackwards: jest.Mock;
-        inputCharacter: jest.Mock;
+        getTextBeforeCaret: jest.Mock;
+        replaceTextBeforeCaret: jest.Mock;
     }> = {}
 ) {
     return {
         supportsMethods: jest.fn().mockReturnValue(true),
-        getPreviousCharacter: jest.fn(),
-        deleteContentBackwards: jest.fn(),
-        inputCharacter: jest.fn(),
+        getTextBeforeCaret: jest.fn(),
+        replaceTextBeforeCaret: jest.fn().mockReturnValue(true),
         ...overrides,
     };
 }
@@ -32,73 +32,116 @@ function asAdapter(fake: ReturnType<typeof fakeAdapter>): CompositionAdapter {
     return fake as unknown as CompositionAdapter;
 }
 
-describe("getHanjaConversionTarget", () => {
-    describe("after a committed syllable", () => {
-        it("returns the reading for the preceding syllable", () => {
-            const adapter = fakeAdapter({ getPreviousCharacter: jest.fn().mockReturnValue("한") });
+describe("getHanjaConversionContext", () => {
+    it("collects the complete Hangul run before the caret", () => {
+        const adapter = fakeAdapter({ getTextBeforeCaret: jest.fn().mockReturnValue("hello 한국은") });
 
-            expect(getHanjaConversionTarget(asAdapter(adapter))).toEqual({
-                kind: "previous-character",
-                reading: "한",
-            });
-            expect(adapter.deleteContentBackwards).not.toHaveBeenCalled();
-            expect(adapter.inputCharacter).not.toHaveBeenCalled();
-        });
+        expect(getHanjaConversionContext(asAdapter(adapter))).toEqual({ run: "한국은" });
+    });
 
-        it("does nothing when the preceding character is not a Hangul syllable", () => {
-            const adapter = fakeAdapter({ getPreviousCharacter: jest.fn().mockReturnValue("a") });
+    it("includes Hangul Jamo from every configured Unicode range", () => {
+        const run = "\u1100\u3131\uA960가\uD7B0";
+        const adapter = fakeAdapter({ getTextBeforeCaret: jest.fn().mockReturnValue(`.${run}`) });
 
-            expect(getHanjaConversionTarget(asAdapter(adapter))).toBeUndefined();
-            expect(adapter.deleteContentBackwards).not.toHaveBeenCalled();
-            expect(adapter.inputCharacter).not.toHaveBeenCalled();
-        });
+        expect(getHanjaConversionContext(asAdapter(adapter))).toEqual({ run });
+    });
 
-        it("does nothing when there is no preceding character", () => {
-            const adapter = fakeAdapter({ getPreviousCharacter: jest.fn().mockReturnValue(undefined) });
+    it("does nothing when the preceding character is not Hangul", () => {
+        const adapter = fakeAdapter({ getTextBeforeCaret: jest.fn().mockReturnValue("한국 ") });
 
-            expect(getHanjaConversionTarget(asAdapter(adapter))).toBeUndefined();
-            expect(adapter.inputCharacter).not.toHaveBeenCalled();
-        });
+        expect(getHanjaConversionContext(asAdapter(adapter))).toBeUndefined();
+    });
 
-        it("bails out (without reading the document) on an adapter that can't replace the previous char", () => {
-            const adapter = fakeAdapter({ supportsMethods: jest.fn().mockReturnValue(false) });
+    it("does nothing when there is no text before the caret", () => {
+        const adapter = fakeAdapter({ getTextBeforeCaret: jest.fn().mockReturnValue("") });
 
-            expect(getHanjaConversionTarget(asAdapter(adapter))).toBeUndefined();
-            expect(adapter.getPreviousCharacter).not.toHaveBeenCalled();
+        expect(getHanjaConversionContext(asAdapter(adapter))).toBeUndefined();
+    });
+
+    it("bails out without reading the document when range replacement is unsupported", () => {
+        const adapter = fakeAdapter({ supportsMethods: jest.fn().mockReturnValue(false) });
+
+        expect(getHanjaConversionContext(asAdapter(adapter))).toBeUndefined();
+        expect(adapter.getTextBeforeCaret).not.toHaveBeenCalled();
+    });
+});
+
+describe("isHanjaReadingCharacter", () => {
+    it.each([
+        ["Hangul Jamo", "\u1100"],
+        ["Hangul Compatibility Jamo", "\u3130"],
+        ["Hangul Jamo Extended-A", "\uA960"],
+        ["Hangul syllable", "\uAC00"],
+        ["Hangul Jamo Extended-B", "\uD7B0"],
+    ])("accepts %s", (_label, character) => {
+        expect(isHanjaReadingCharacter(character)).toBe(true);
+    });
+
+    it.each(["\u10ff", "\u1200", "\u3190", "\uA980", "\uD7A4", "\uD800", "A", ""])("rejects %p", (character) => {
+        expect(isHanjaReadingCharacter(character)).toBe(false);
+    });
+});
+
+describe("matchedTextRange", () => {
+    it("expresses the match relative to the untouched text before the caret", () => {
+        expect(matchedTextRange({ run: "한국중국", matchStart: 0, reading: "한국" })).toEqual({
+            text: "한국",
+            offset: 2,
         });
     });
 });
 
 describe("commitHanjaCandidate", () => {
-    it("replaces the preceding syllable with the selected candidate", () => {
-        const adapter = fakeAdapter({ getPreviousCharacter: jest.fn().mockReturnValue("한") });
+    it("re-composes the whole run with only the matched portion converted", () => {
+        const adapter = fakeAdapter();
+        const target = { run: "한국중국", matchStart: 0, reading: "한국" };
 
-        commitHanjaCandidate(hanCandidates[2], asAdapter(adapter), KeyCode.Digit3);
-
-        expect(adapter.deleteContentBackwards).toHaveBeenCalled();
-        expect(adapter.inputCharacter).toHaveBeenCalledWith("恨", KeyCode.Digit3);
+        expect(commitHanjaCandidate(hanCandidates[0], target, asAdapter(adapter), KeyCode.Digit1)).toBe(true);
+        expect(adapter.replaceTextBeforeCaret).toHaveBeenCalledWith(
+            { text: "한국중국", offset: 0 },
+            "韓國중국",
+            KeyCode.Digit1
+        );
     });
 
-    it("replaces the preceding syllable with the simplified form when requested", () => {
-        const adapter = fakeAdapter({ getPreviousCharacter: jest.fn().mockReturnValue("한") });
+    it("carries unmatched trailing text through a non-length-preserving conversion", () => {
+        const adapter = fakeAdapter();
+        const target = { run: "가가와현은", matchStart: 0, reading: "가가와현" };
+
+        commitHanjaCandidate({ hanja: "香川縣", korean: "" }, target, asAdapter(adapter), KeyCode.Enter);
+
+        expect(adapter.replaceTextBeforeCaret).toHaveBeenCalledWith(
+            { text: "가가와현은", offset: 0 },
+            "香川縣은",
+            KeyCode.Enter
+        );
+    });
+
+    it("uses the simplified form when requested", () => {
+        const adapter = fakeAdapter();
+        const target = { run: "한", matchStart: 0, reading: "한" };
 
         commitHanjaCandidate(
-            { hanja: "韓", korean: "나라 이름 한, 한나라 한", simplified: "韩" },
+            { hanja: "韓", korean: "나라 이름 한", simplified: "韩" },
+            target,
             asAdapter(adapter),
             KeyCode.Digit1,
             { useSimplified: true }
         );
 
-        expect(adapter.deleteContentBackwards).toHaveBeenCalled();
-        expect(adapter.inputCharacter).toHaveBeenCalledWith("韩", KeyCode.Digit1);
+        expect(adapter.replaceTextBeforeCaret).toHaveBeenCalledWith({ text: "한", offset: 0 }, "韩", KeyCode.Digit1);
     });
 
-    it("falls back to Hanja when simplified selection is requested but unavailable", () => {
-        const adapter = fakeAdapter({ getPreviousCharacter: jest.fn().mockReturnValue("한") });
+    it("reports a stale range that the adapter refused to replace", () => {
+        const adapter = fakeAdapter({ replaceTextBeforeCaret: jest.fn().mockReturnValue(false) });
 
-        commitHanjaCandidate(hanCandidates[1], asAdapter(adapter), KeyCode.Digit2, { useSimplified: true });
-
-        expect(adapter.deleteContentBackwards).toHaveBeenCalled();
-        expect(adapter.inputCharacter).toHaveBeenCalledWith("寒", KeyCode.Digit2);
+        expect(
+            commitHanjaCandidate(
+                hanCandidates[1],
+                { run: "한국", matchStart: 0, reading: "한국" },
+                asAdapter(adapter),
+                KeyCode.Digit2
+            )
+        ).toBe(false);
     });
 });
