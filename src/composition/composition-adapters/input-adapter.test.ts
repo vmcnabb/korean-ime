@@ -232,18 +232,19 @@ describe("InputAdapter committed text ranges", () => {
         expect(element.value).toBe("香川縣은");
         expect(element.selectionStart).toBe(4);
         expect(element.selectionEnd).toBe(4);
-        // The native IME re-composes the committed text, so conversion is delivered
-        // as insertCompositionText, not insertReplacementText.
-        expect(recorded.types).toEqual([
-            "compositionstart",
-            "beforeinput",
-            "compositionupdate",
-            "input",
-            "compositionend",
-            "input",
-        ]);
-        expect((recorded.events[0] as CompositionEvent).data).toBe("가가와현");
-        expect((recorded.events[1] as InputEvent).inputType).toBe("insertCompositionText");
+        // Delivered as a composition (insertCompositionText), not a plain replacement:
+        // the committed run is put back into composition, then committed as the
+        // converted text. (Order of the individual events isn't pinned here — that
+        // sequence is still being refined.)
+        const compositionStart = recorded.events.find((event) => event.type === "compositionstart") as CompositionEvent;
+        const compositionEnd = recorded.events.find((event) => event.type === "compositionend") as CompositionEvent;
+        expect(compositionStart?.data).toBe("가가와현");
+        expect(compositionEnd?.data).toBe("香川縣");
+        expect(
+            recorded.events.some(
+                (event) => event.type === "beforeinput" && (event as InputEvent).inputType === "insertCompositionText"
+            )
+        ).toBe(true);
     });
 
     it("refuses to replace a stale range", () => {

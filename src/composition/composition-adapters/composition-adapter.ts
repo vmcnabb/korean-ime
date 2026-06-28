@@ -176,18 +176,77 @@ export abstract class CompositionAdapter implements ICompositionAdapter {
      */
     protected _replaceText(previousText: string, data: string, replaceFn: () => void): void {
         this.dispatchActions([
-            new CompositionEvent("compositionstart", { data: previousText, view: window, bubbles: true }),
+            new CompositionEvent("compositionstart", {
+                data: previousText,
+                view: window,
+                bubbles: true,
+                composed: true,
+            }),
+            new CompositionEvent("compositionupdate", {
+                data: previousText,
+                view: window,
+                bubbles: true,
+                composed: true,
+            }),
+            new InputEvent("beforeinput", {
+                data: previousText,
+                isComposing: true,
+                composed: true,
+                inputType: "insertCompositionText",
+                bubbles: true,
+            }),
+            new InputEvent("input", {
+                data: previousText,
+                isComposing: true,
+                inputType: "insertCompositionText",
+                bubbles: true,
+                composed: true,
+            }),
+            new KeyboardEvent("keydown", {
+                key: "Process",
+                code: "ControlRight",
+                which: 229,
+                keyCode: 229,
+                composed: true,
+                isComposing: true,
+                view: window,
+                bubbles: true,
+            }),
+            new KeyboardEvent("keyup", {
+                key: "HanjaMode",
+                code: "ControlRight",
+                which: 25,
+                keyCode: 25,
+                composed: true,
+                isComposing: true,
+                view: window,
+                bubbles: true,
+            }),
+            new CompositionEvent("compositionupdate", { data, view: window, bubbles: true, composed: true }),
             new InputEvent("beforeinput", {
                 data,
                 isComposing: true,
                 inputType: "insertCompositionText",
                 bubbles: true,
+                composed: true,
             }),
-            new CompositionEvent("compositionupdate", { data, view: window, bubbles: true }),
+            new InputEvent("textInput", { data, inputType: "insertCompositionText", bubbles: true, composed: false }),
             replaceFn,
-            new InputEvent("input", { data, isComposing: true, inputType: "insertCompositionText", bubbles: true }),
-            new CompositionEvent("compositionend", { data, view: window, bubbles: true }),
-            new InputEvent("input", { data, isComposing: false, inputType: "insertCompositionText", bubbles: true }),
+            new InputEvent("input", {
+                data,
+                isComposing: true,
+                inputType: "insertCompositionText",
+                bubbles: true,
+                composed: true,
+            }),
+            new CompositionEvent("compositionend", { data, view: window, bubbles: true, composed: true }),
+            new InputEvent("input", {
+                data,
+                isComposing: false,
+                inputType: "insertCompositionText",
+                bubbles: true,
+                composed: true,
+            }),
         ]);
     }
 
